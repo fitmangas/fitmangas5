@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#FAF7F2" />
+  <title>Fit Mangas — Barre & Pilates</title>
+
+  <!-- How to edit:
+    1) Change HERO image in script.js (HERO_IMAGE_URL).
+    2) Stripe links are in script.js (offers object).
+    3) Text translations are in script.js (i18n object).
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- Background layers -->
+  <div class="bg" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main class="wrap">
+    <section class="sheet" role="region" aria-label="Fit Mangas — Barre & Pilates">
+      <!-- Top bar -->
+      <div class="topbar">
+        <div class="lang" role="tablist" aria-label="Language">
+          <button class="langBtn isActive" data-lang="fr" role="tab" aria-selected="true">FR</button>
+          <button class="langBtn" data-lang="es" role="tab" aria-selected="false">ES</button>
+        </div>
+      </div>
+      <!-- Proof Section (Apple-like) -->
+      <section id="proofBar" class="proofBar">
+  <div class="proofRow">
+    <div class="proofMetric">
+      <div class="proofMain">
+        <span class="proofValue" id="proofTotal">2 496</span>
+        <span class="proofLabel" data-i18n="proofGiven">cours donnés</span>
+      </div>
+      <div class="proofSub" id="proofDate">au 10 mars 2026</div>
+    </div>
+
+    <div class="proofMetric proofMetric--right">
+      <div class="proofMain">
+        <span class="proofValue">180</span>
+        <span class="proofLabel" data-i18n="proofPeople">personnes / semaine</span>
+
+        <button class="proofInfo" type="button" aria-label="Info" aria-expanded="false">
+          i
+        </button>
+      </div>
+
+      <div class="proofTooltip" role="tooltip">
+        Cours collectifs et cours individuels confondus.
+      </div>
+    </div>
+  </div>
+</section>
+
+<p class="proofTagline">
+  J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles. 👇
+</p>
+
+      <!-- Header -->
+      <header class="hero">
+        <div class="hero-photo"></div>
+        <div class="hero-fade"></div>
+        <div class="hero-inner">
+          <h1 class="h1" data-i18n="title">Alejandra</h1>
+          <p class="sub" data-i18n="subtitle">Barre & Pilates en visio</p>
+          
+          <div class="hero-socials">
+            <a class="social-ico" id="ig-hero" target="_blank" rel="noopener" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 2.8h10A4.2 4.2 0 0 1 21.2 7v10A4.2 4.2 0 0 1 17 21.2H7A4.2 4.2 0 0 1 2.8 17V7A4.2 4.2 0 0 1 7 2.8Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 16.2A4.2 4.2 0 1 0 7.8 12 4.2 4.2 0 0 0 12 16.2Z" stroke="currentColor" stroke-width="1.8"/><path d="M17.5 6.8h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </a>
+            <a class="social-ico" id="wa-hero" target="_blank" rel="noopener" aria-label="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.5-3.5A8 8 0 1 1 8.5 19.5L4 20"/><path d="M10 11a.5.5 0 0 0 1 0v-1a.5.5 0 0 0-1 0v1a4 4 0 0 0 4 4h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-1 0v1"/></svg>
+            </a>
+            <a class="social-ico" id="mail-hero" aria-label="Email">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8"/><path d="m4 8 8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Segmented control -->
+      <div class="segment" role="tablist" aria-label="Choisir un format">
+        <button class="segBtn isActive" data-seg="visio" role="tab" aria-selected="true">
+          <span data-i18n="segVisio">Visio</span>
+        </button>
+        <button class="segBtn" data-seg="nantes" role="tab" aria-selected="false">
+          <span data-i18n="segNantes">Nantes</span>
+        </button>
+      </div>
+
+      <!-- Offers -->
+      <section class="offers" aria-label="Offres">
+        <div class="sectionTitle" data-i18n="sectionTitle">Choisis ton cours</div>
+        
+        <!-- VISIO -->
+        <div class="panel isActive" data-panel="visio">
+          <a class="offer offerPrimary" id="offer-visio-collectif" target="_blank" rel="noopener">
+            <div class="offerHeader">
+              <div class="offerTitle" data-i18n="o1Title">Visio collectif</div>
+              <div class="offerMetaRow">
+                <div class="offerPrice" data-i18n="o1Small">39€ / mois</div>
+                <div class="badge" data-i18n="trialBadge">7 jours gratuits</div>
+              </div>
+              <div class="offerChevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </a>
+
+          <a class="offer offerPrimary" id="offer-visio-individuel" target="_blank" rel="noopener">
+            <div class="offerHeader">
+              <div class="offerTitle" data-i18n="o2Title">Visio individuel</div>
+              <div class="offerMetaRow">
+                <div class="offerPrice" data-i18n="o2Small">269€ / mois</div>
+                <div class="badge" data-i18n="trialBadge">7 jours gratuits</div>
+              </div>
+              <div class="offerChevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </a>
+
+          <div class="trustLine" data-i18n="trustLine">
+            Paiement sécurisé • Abonnements gérés par Stripe
+          </div>
+        </div>
+
+        <!-- NANTES -->
+        <div class="panel" data-panel="nantes">
+          <a class="offer" id="offer-nantes-collectif" target="_blank" rel="noopener">
+            <div class="offerHeader">
+              <div class="offerIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 11a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 16.5 11Z" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 20a5.2 5.2 0 0 1 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <div class="offerTitle">
+                <span class="offerTitleName" data-i18n="o3Title">Nantes collectif</span>
+                <span class="offerTitlePrice" data-i18n="o3Small"> — 10€ / séance</span>
+              </div>
+              <div class="offerChevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </a>
+
+          <a class="offer" id="offer-nantes-individuel" target="_blank" rel="noopener">
+            <div class="offerHeader">
+              <div class="offerIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s6-5 6-11a6 6 0 0 0-12 0c0 6 6 11 6 11Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 12.2a2.2 2.2 0 1 0-2.2-2.2 2.2 2.2 0 0 0 2.2 2.2Z" stroke="currentColor" stroke-width="1.8"/></svg>
+              </div>
+              <div class="offerTitle">
+                <span class="offerTitleName" data-i18n="o4Title">Nantes individuel</span>
+                <span class="offerTitlePrice" data-i18n="o4Small"> — 50€ / séance</span>
+              </div>
+              <div class="offerChevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </a>
+
+          <div class="trustLine" data-i18n="trustLine2">
+            Paiement sécurisé • Confirmation immédiate
+          </div>
+        </div>
+
+        <!-- WhatsApp help -->
+        <a class="helpCard" id="whatsapp-help" target="_blank" rel="noopener">
+          <div class="helpLeft">
+            <div class="helpTitle" data-i18n="helpTitle">Je t’aide à choisir (WhatsApp)</div>
+            <div class="helpSub" data-i18n="helpSub">Conseil rapide et gratuit</div>
+          </div>
+          <div class="helpIcon" aria-hidden="true">
+            <!-- chat bubble -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 12a7.5 7.5 0 0 1-7.5 7.5A7.6 7.6 0 0 1 9 18.8L4 20l1.2-5A7.6 7.6 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5 7.5 7.5 0 0 1 20 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Testimonials -->
+        <div class="quotes" aria-label="Témoignages">
+          <div class="testimonial">
+            <img src="https://www.dropbox.com/scl/fi/4cwoxuwzourdv5rw4q92b/Spreadshop-Logo-8.png?rlkey=ydnyy8emq627bwz132x9ds4wp&st=oquc9u6z&raw=1" class="avatar" alt="Karla" referrerPolicy="no-referrer">
+            <div class="testimonial-content">
+              <div class="stars" aria-hidden="true">★★★★★</div>
+              <p class="quote-text" data-i18n="t1">“Séances fluides, efficaces et agréables.”</p>
+              <div class="author" data-i18n="t1Author">Camille — Nantes</div>
+            </div>
+          </div>
+
+          <div class="testimonial">
+            <img src="https://www.dropbox.com/scl/fi/6pysu0buam1lvnkjxu7z5/Spreadshop-Logo-9.png?rlkey=mqkhpt6h2z3ejkq1u968okwz2&st=oharyxlf&raw=1" class="avatar" alt="Léa" referrerPolicy="no-referrer">
+            <div class="testimonial-content">
+              <div class="stars" aria-hidden="true">★★★★★</div>
+              <p class="quote-text" data-i18n="t2">“Un accompagnement premium qui change tout.”</p>
+              <div class="author" data-i18n="t2Author">Léa — Nantes</div>
+            </div>
+          </div>
+
+          <div class="testimonial">
+            <img src="https://www.dropbox.com/scl/fi/7zic5m7zizghd2rtk7xr7/Spreadshop-Logo-10.png?rlkey=5epsn6ajvskswrorvbf1btrd7&st=15wdvyn7&raw=1" class="avatar" alt="Mélodie" referrerPolicy="no-referrer">
+            <div class="testimonial-content">
+              <div class="stars" aria-hidden="true">★★★★★</div>
+              <p class="quote-text" data-i18n="t3">“Le Pilates à la maison n’a jamais été aussi motivant.”</p>
+              <div class="author" data-i18n="t3Author">Mélodie — Pornic</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <div class="icons">
+            <a class="ico" id="ig-link" target="_blank" rel="noopener" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 2.8h10A4.2 4.2 0 0 1 21.2 7v10A4.2 4.2 0 0 1 17 21.2H7A4.2 4.2 0 0 1 2.8 17V7A4.2 4.2 0 0 1 7 2.8Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 16.2A4.2 4.2 0 1 0 7.8 12 4.2 4.2 0 0 0 12 16.2Z" stroke="currentColor" stroke-width="1.8"/><path d="M17.5 6.8h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </a>
+            <a class="ico" id="mail-link" aria-label="Email">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8"/><path d="m4 8 8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="ico" id="wa-link" target="_blank" rel="noopener" aria-label="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.5-3.5A8 8 0 1 1 8.5 19.5L4 20"/><path d="M10 11a.5.5 0 0 0 1 0v-1a.5.5 0 0 0-1 0v1a4 4 0 0 0 4 4h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0-1 0v1"/></svg>
+            </a>
+          </div>
+          <div class="fine">© 2026 CASA MANGAS</div>
+        </footer>
+      </section>
+    </section>
+  </main>
+
+  <button id="scrollToTop" class="scroll-to-top" aria-label="Retour en haut de la page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>
