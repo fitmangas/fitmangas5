@@ -1,45 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Globe, ArrowRight, Instagram, Play, Sparkles, MessageCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { 
+  Globe, 
+  ArrowRight, 
+  Instagram, 
+  MessageCircle, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Info,
+  ChevronUp
+} from 'lucide-react';
 import { Language, Segment, translations, WHATSAPP_PHONE } from './types';
-import { generatePremiumImage } from './services/geminiService';
+
+const HERO_IMAGE_URL = "https://www.dropbox.com/scl/fi/vmq043zpcjkehh6rsyn7n/DSC_3488.PNG?rlkey=gladkol1foebum7jcagsz1mf3&st=awo05ygo&raw=1";
 
 export default function App() {
   const [lang, setLang] = useState<Language>('FR');
   const [segment, setSegment] = useState<Segment>('VISIO');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [images, setImages] = useState<{ [key: string]: string | null }>({
-    hero: null,
-    background: null,
-    detail: null
-  });
-  const [loading, setLoading] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [count, setCount] = useState(2496);
 
   const t = translations[lang];
 
   useEffect(() => {
-    const loadImages = async () => {
-      setLoading(true);
-      try {
-        const [hero, bg, detail] = await Promise.all([
-          generatePremiumImage("Editorial fashion photography, high-end Pilates studio, minimalist aesthetic, soft natural sunlight, graceful woman in beige activewear, 16:9", "16:9"),
-          generatePremiumImage("Abstract macro photography of soft silk fabric in cream and sand tones, minimalist luxury wellness texture, 16:9", "16:9"),
-          generatePremiumImage("Close-up of a wooden Pilates barre, soft linen curtains, neutral tones, luxury wellness aesthetic, 1:1", "1:1")
-        ]);
-        setImages({ hero, background: bg, detail });
-      } catch (error) {
-        console.error("Image generation failed", error);
-      } finally {
-        setLoading(false);
+    // Stats animation logic
+    const baseCount = 2496;
+    const baseDate = new Date("2026-03-10T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = Math.max(0, today.getTime() - baseDate.getTime());
+    const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const targetTotal = baseCount + (daysElapsed * 3);
+
+    let start = baseCount;
+    const duration = 1500;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+      const currentCount = Math.floor(easedProgress * (targetTotal - start) + start);
+      setCount(currentCount);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
       }
     };
 
-    loadImages();
+    requestAnimationFrame(animate);
+
+    // Scroll to top visibility
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const toggleLang = (newLang: Language) => {
     setLang(newLang);
-    setIsMenuOpen(false);
   };
 
   const getWaLink = (msg: string) => {
@@ -48,337 +69,235 @@ export default function App() {
 
   const activeCourses = segment === 'VISIO' ? t.courses.visio : t.courses.nantes;
 
+  const formattedDate = new Date().toLocaleDateString(lang === 'ES' ? 'es-ES' : 'fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
-    <div className="min-h-screen selection:bg-brand-accent/30 bg-brand-beige">
-      <div className="grain pointer-events-none" />
-      
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-8 flex justify-between items-center mix-blend-difference text-white">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-2xl font-serif tracking-widest uppercase italic cursor-pointer"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        >
-          {t.title}
-        </motion.div>
-        
-        <div className="flex items-center gap-8">
-          <div className="hidden md:flex items-center gap-4">
-            <button 
-              onClick={() => toggleLang('FR')}
-              className={`text-xs tracking-[0.2em] uppercase transition-opacity ${lang === 'FR' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
-            >
-              FR
-            </button>
-            <button 
-              onClick={() => toggleLang('ES')}
-              className={`text-xs tracking-[0.2em] uppercase transition-opacity ${lang === 'ES' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
-            >
-              ES
-            </button>
+    <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
+      {/* Top Stats Bar */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-brand-ink/5 sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-6 py-3 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-medium">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="text-brand-accent">{t.proofLabel}</span>
+              <span className="text-brand-ink/40">{lang === 'ES' ? 'al ' : 'au '} {formattedDate}</span>
+            </div>
+            <div className="h-8 w-px bg-brand-ink/10" />
+            <div className="flex flex-col">
+              <span className="text-lg font-serif italic leading-none">{count.toLocaleString()}</span>
+              <span className="text-brand-ink/40">{t.proofGiven}</span>
+            </div>
           </div>
           
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-lg font-serif italic leading-none">150</span>
+              <span className="text-brand-ink/40">{t.proofPeople}</span>
+            </div>
+            <div className="relative">
+              <button 
+                onClick={() => setShowTooltip(!showTooltip)}
+                className="p-2 hover:bg-brand-sand/50 rounded-full transition-colors"
+              >
+                <Info size={16} className="text-brand-accent" />
+              </button>
+              <AnimatePresence>
+                {showTooltip && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute right-0 mt-2 w-48 bg-brand-ink text-white p-3 rounded-xl text-[10px] normal-case tracking-normal z-50 shadow-xl"
+                  >
+                    {t.proofTooltip}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-2xl mx-auto px-6 pt-12 pb-24">
+        {/* Language Switcher */}
+        <div className="flex justify-end mb-8 gap-4">
           <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:opacity-60 transition-opacity"
-            aria-label="Toggle Menu"
+            onClick={() => toggleLang('FR')}
+            className={`text-[10px] tracking-widest uppercase transition-all ${lang === 'FR' ? 'text-brand-accent font-bold' : 'text-brand-ink/40 hover:text-brand-ink'}`}
           >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            Français
+          </button>
+          <button 
+            onClick={() => toggleLang('ES')}
+            className={`text-[10px] tracking-widest uppercase transition-all ${lang === 'ES' ? 'text-brand-accent font-bold' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+          >
+            Español
           </button>
         </div>
-      </nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-40 bg-brand-beige flex flex-col items-center justify-center gap-8"
+        {/* Hero Card */}
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-brand-ink/5 mb-12"
+        >
+          <div className="aspect-[4/5] relative overflow-hidden">
+            <img 
+              src={HERO_IMAGE_URL} 
+              alt="Alejandra Mangas" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-8 text-center">
+              <h1 className="text-5xl font-serif italic mb-2">{t.title}</h1>
+              <p className="text-xs tracking-[0.3em] uppercase text-brand-accent font-medium">{t.subtitle}</p>
+            </div>
+          </div>
+          <div className="p-8 pt-0 text-center">
+            <p className="text-brand-ink/60 leading-relaxed max-w-sm mx-auto mb-8">
+              {t.accroche}
+            </p>
+            <div className="flex justify-center gap-6">
+              <a href="https://www.instagram.com/fit.mangas/" target="_blank" rel="noopener noreferrer" className="p-3 bg-brand-sand/30 rounded-full hover:bg-brand-sand transition-colors">
+                <Instagram size={20} />
+              </a>
+              <a href={`mailto:info@casamangas.fr`} className="p-3 bg-brand-sand/30 rounded-full hover:bg-brand-sand transition-colors">
+                <MessageCircle size={20} />
+              </a>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Segment Toggle */}
+        <div className="flex bg-brand-sand/30 p-1 rounded-full mb-12">
+          <button 
+            onClick={() => setSegment('VISIO')}
+            className={`flex-1 py-3 rounded-full text-[10px] tracking-widest uppercase transition-all ${segment === 'VISIO' ? 'bg-white text-brand-ink shadow-sm' : 'text-brand-ink/40 hover:text-brand-ink'}`}
           >
-            {['Studio', 'Classes', 'Philosophy', 'Contact'].map((item, i) => (
-              <motion.a
-                key={item}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                href={`#${item.toLowerCase()}`}
-                className="text-4xl font-serif italic hover:text-brand-accent transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item}
-              </motion.a>
-            ))}
-            <div className="flex gap-8 mt-8">
-              <button onClick={() => toggleLang('FR')} className={`text-xs tracking-widest uppercase ${lang === 'FR' ? 'font-bold underline underline-offset-8' : 'opacity-50'}`}>Français</button>
-              <button onClick={() => toggleLang('ES')} className={`text-xs tracking-widest uppercase ${lang === 'ES' ? 'font-bold underline underline-offset-8' : 'opacity-50'}`}>Español</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Hero Section */}
-      <section id="studio" className="relative h-screen flex flex-col justify-center overflow-hidden">
-        {/* Background Texture */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.4 }}
-          transition={{ duration: 2 }}
-          className="absolute inset-0 z-0"
-          style={{ 
-            backgroundImage: images.background ? `url(${images.background})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-
-        <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-7">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span className="text-xs tracking-[0.4em] uppercase text-brand-accent mb-6 block">
-                {t.subtitle}
-              </span>
-              <h1 className="text-7xl md:text-[120px] text-editorial font-serif italic mb-8">
-                {t.title}
-              </h1>
-              <p className="text-lg md:text-xl max-w-md text-brand-ink/70 font-light leading-relaxed mb-12">
-                {t.accroche}
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-6">
-                <a 
-                  href="#classes"
-                  className="group relative px-10 py-5 bg-brand-ink text-white rounded-pill overflow-hidden transition-all hover:pr-14 text-center"
-                >
-                  <span className="relative z-10 text-xs tracking-widest uppercase">{lang === 'FR' ? 'Découvrir les cours' : 'Descubrir las clases'}</span>
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">
-                    <ArrowRight size={16} />
-                  </div>
-                </a>
-                
-                <a 
-                  href={getWaLink(t.waMsg)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 text-xs tracking-widest uppercase hover:opacity-60 transition-opacity"
-                >
-                  <div className="w-12 h-12 rounded-full border border-brand-ink/20 flex items-center justify-center">
-                    <MessageCircle size={14} fill="currentColor" />
-                  </div>
-                  {lang === 'FR' ? 'Contact WhatsApp' : 'Contacto WhatsApp'}
-                </a>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="lg:col-span-5 relative">
-            <motion.div
-              initial={{ opacity: 0, scale: 1.1, rotate: 2 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              className="relative aspect-[3/4] rounded-[40px] overflow-hidden shadow-2xl"
-            >
-              {loading ? (
-                <div className="absolute inset-0 bg-brand-sand animate-pulse flex items-center justify-center">
-                  <Sparkles className="text-brand-accent animate-bounce" />
-                </div>
-              ) : (
-                <img 
-                  src={images.hero || 'https://picsum.photos/seed/pilates/800/1200'} 
-                  alt="Hero" 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-ink/40 to-transparent" />
-              
-              <div className="absolute bottom-8 left-8 right-8 text-white">
-                <p className="text-xs tracking-widest uppercase opacity-80 mb-2">{t.microline}</p>
-                <h3 className="text-2xl font-serif italic">Barre Sculpt & Flow</h3>
-              </div>
-            </motion.div>
-          </div>
+            {t.segVisio}
+          </button>
+          <button 
+            onClick={() => setSegment('NANTES')}
+            className={`flex-1 py-3 rounded-full text-[10px] tracking-widest uppercase transition-all ${segment === 'NANTES' ? 'bg-white text-brand-ink shadow-sm' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+          >
+            {t.segNantes}
+          </button>
         </div>
-      </section>
 
-      {/* Classes Section */}
-      <section id="classes" className="py-32 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-8">
-            <div className="text-center md:text-left">
-              <span className="text-xs tracking-[0.4em] uppercase text-brand-accent mb-4 block">Collection</span>
-              <h2 className="text-5xl font-serif italic">{t.sectionTitle}</h2>
-            </div>
-            
-            {/* Segment Toggle */}
-            <div className="flex bg-brand-sand/30 p-1 rounded-pill">
-              <button 
-                onClick={() => setSegment('VISIO')}
-                className={`px-8 py-3 rounded-pill text-xs tracking-widest uppercase transition-all ${segment === 'VISIO' ? 'bg-brand-ink text-white shadow-lg' : 'text-brand-ink/50 hover:text-brand-ink'}`}
-              >
-                {t.segVisio}
-              </button>
-              <button 
-                onClick={() => setSegment('NANTES')}
-                className={`px-8 py-3 rounded-pill text-xs tracking-widest uppercase transition-all ${segment === 'NANTES' ? 'bg-brand-ink text-white shadow-lg' : 'text-brand-ink/50 hover:text-brand-ink'}`}
-              >
-                {t.segNantes}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {/* Offers Grid */}
+        <div className="space-y-6 mb-12">
+          <h2 className="text-xs tracking-[0.4em] uppercase text-brand-accent text-center mb-8">{t.sectionTitle}</h2>
+          <div className="grid grid-cols-1 gap-6">
             {activeCourses.map((course, i) => (
               <motion.a
                 key={course.id}
                 href={course.stripeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                whileInView={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="group relative bg-brand-beige p-10 rounded-card hover:bg-brand-ink hover:text-white transition-all duration-500 flex flex-col justify-between h-[320px]"
+                className="group bg-white p-8 rounded-[24px] border border-brand-ink/5 hover:border-brand-accent transition-all flex justify-between items-center"
               >
                 <div>
-                  <div className="flex justify-between items-start mb-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-serif italic">{course.title}</h3>
                     {course.badge && (
-                      <span className="bg-brand-accent text-white text-[10px] tracking-widest uppercase px-3 py-1 rounded-full">
+                      <span className="bg-brand-accent/10 text-brand-accent text-[8px] tracking-widest uppercase px-2 py-0.5 rounded-full">
                         {course.badge}
                       </span>
                     )}
-                    <div className="w-10 h-10 rounded-full border border-brand-ink/10 flex items-center justify-center group-hover:border-white/20 ml-auto">
-                      <ArrowRight size={14} className="-rotate-45 group-hover:rotate-0 transition-transform duration-500" />
-                    </div>
                   </div>
-                  <h3 className="text-4xl font-serif italic mb-4">{course.title}</h3>
-                  <p className="text-xl font-light opacity-60">{course.price}</p>
+                  <p className="text-xs text-brand-ink/40 tracking-wider">{course.price}</p>
                 </div>
-                
-                <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase opacity-40 group-hover:opacity-80 transition-opacity">
-                  <ShieldCheck size={14} />
-                  {course.isUnitPay ? t.trustLine2 : t.trustLine}
+                <div className="w-10 h-10 rounded-full bg-brand-sand/20 flex items-center justify-center group-hover:bg-brand-accent group-hover:text-white transition-all">
+                  <ArrowRight size={16} />
                 </div>
               </motion.a>
             ))}
           </div>
-
-          {/* WhatsApp Help Card */}
-          <motion.a
-            href={getWaLink(t.waMsg)}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 30 }}
-            viewport={{ once: true }}
-            className="mt-12 flex flex-col md:flex-row items-center justify-between bg-brand-sand/20 p-8 rounded-card border border-brand-ink/5 hover:border-brand-accent transition-colors max-w-5xl mx-auto group"
-          >
-            <div className="flex items-center gap-6 mb-6 md:mb-0">
-              <div className="w-16 h-16 rounded-full bg-brand-ink text-white flex items-center justify-center">
-                <MessageCircle size={24} />
-              </div>
-              <div>
-                <h4 className="text-xl font-serif italic">{t.helpTitle}</h4>
-                <p className="text-sm text-brand-ink/50">{t.helpSub}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 text-xs tracking-widest uppercase font-medium group-hover:text-brand-accent transition-colors">
-              {lang === 'FR' ? 'Discuter sur WhatsApp' : 'Chatear en WhatsApp'}
-              <ArrowRight size={16} />
-            </div>
-          </motion.a>
         </div>
-      </section>
 
-      {/* Testimonials Section */}
-      <section id="philosophy" className="py-32 bg-brand-sand/10">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-24">
-            <span className="text-xs tracking-[0.4em] uppercase text-brand-accent mb-4 block">Testimonials</span>
-            <h2 className="text-5xl md:text-6xl font-serif italic">Elles en parlent mieux que moi</h2>
+        {/* WhatsApp Help Card */}
+        <motion.a
+          href={getWaLink(t.waMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-brand-ink text-white p-8 rounded-[32px] flex flex-col items-center text-center gap-6 mb-24 hover:opacity-90 transition-opacity"
+        >
+          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+            <MessageCircle size={24} />
           </div>
+          <div>
+            <h4 className="text-xl font-serif italic mb-2">{t.helpTitle}</h4>
+            <p className="text-xs text-white/50 tracking-wide">{t.helpSub}</p>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-brand-accent">
+            {lang === 'FR' ? 'Discuter' : 'Chatear'}
+            <ArrowRight size={14} />
+          </div>
+        </motion.a>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        {/* Testimonials */}
+        <section className="mb-24">
+          <div className="text-center mb-12">
+            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-2 block">Community</span>
+            <h2 className="text-3xl font-serif italic">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
+          </div>
+          <div className="space-y-8">
             {t.testimonials.map((testimonial, i) => (
-              <motion.div
+              <motion.div 
                 key={i}
-                whileInView={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 40 }}
-                transition={{ delay: i * 0.1 }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                className="relative"
+                className="bg-white/50 p-8 rounded-[24px] border border-brand-ink/5"
               >
-                <div className="text-brand-accent mb-6">
-                  <CheckCircle2 size={24} />
+                <div className="flex gap-1 text-brand-accent mb-4">
+                  {[...Array(5)].map((_, i) => <CheckCircle2 key={i} size={12} />)}
                 </div>
-                <p className="text-2xl font-serif italic leading-relaxed mb-8">
+                <p className="text-lg font-serif italic leading-relaxed mb-4 text-brand-ink/80">
                   {testimonial.text}
                 </p>
-                <div className="h-px w-12 bg-brand-accent/30 mb-4" />
-                <p className="text-xs tracking-widest uppercase text-brand-ink/50">
+                <p className="text-[10px] tracking-widest uppercase text-brand-ink/40">
                   {testimonial.author}
                 </p>
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer id="contact" className="py-24 bg-brand-ink text-white">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
-            <div className="md:col-span-2">
-              <h2 className="text-4xl font-serif italic mb-8">{t.title}</h2>
-              <p className="text-white/50 max-w-xs leading-relaxed">
-                {lang === 'FR' 
-                  ? "Rejoignez notre communauté et recevez nos pensées sur le mouvement et le bien-être." 
-                  : "Únete a nuestra comunidad y recibe nuestros pensamientos sobre el movimiento y el bienestar."}
-              </p>
-              <div className="mt-8 flex gap-4">
-                <input 
-                  type="email" 
-                  placeholder="Email" 
-                  className="bg-transparent border-b border-white/20 py-2 focus:border-white outline-none transition-colors w-full max-w-xs text-sm"
-                />
-                <button className="text-xs tracking-widest uppercase hover:text-brand-accent transition-colors">Join</button>
-              </div>
-            </div>
-            <div>
-              <h4 className="text-[10px] tracking-[0.3em] uppercase opacity-30 mb-8">Navigation</h4>
-              <ul className="space-y-4 text-sm tracking-wide">
-                <li><a href="#studio" className="hover:text-brand-accent transition-colors">Studio</a></li>
-                <li><a href="#classes" className="hover:text-brand-accent transition-colors">Classes</a></li>
-                <li><a href="#philosophy" className="hover:text-brand-accent transition-colors">Philosophy</a></li>
-                <li><a href="#contact" className="hover:text-brand-accent transition-colors">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-[10px] tracking-[0.3em] uppercase opacity-30 mb-8">Social</h4>
-              <div className="flex gap-6">
-                <a href="https://www.instagram.com/fit.mangas/" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors"><Instagram size={20} /></a>
-                <a href={getWaLink(t.waMsg)} target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors"><MessageCircle size={20} /></a>
-              </div>
-            </div>
+        {/* Footer */}
+        <footer className="text-center">
+          <div className="h-px w-12 bg-brand-accent/30 mx-auto mb-8" />
+          <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-4">
+            © 2024 {t.title} Studio
+          </p>
+          <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
+            <a href="#" className="hover:text-brand-ink transition-colors">Privacy</a>
+            <a href="#" className="hover:text-brand-ink transition-colors">Terms</a>
           </div>
-          
-          <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8">
-            <p className="text-[10px] tracking-widest uppercase opacity-30">
-              © 2024 {t.title} Studio. All rights reserved.
-            </p>
-            <div className="flex gap-8 text-[10px] tracking-widest uppercase opacity-30">
-              <a href="#">Privacy</a>
-              <a href="#">Terms</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </main>
+
+      {/* Scroll to Top */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-8 right-8 w-12 h-12 bg-white shadow-lg rounded-full flex items-center justify-center text-brand-ink z-50 hover:bg-brand-sand transition-colors"
+          >
+            <ChevronUp size={20} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -28,6 +28,10 @@ export interface Content {
   helpTitle: string;
   helpSub: string;
   waMsg: string;
+  proofLabel: string;
+  proofGiven: string;
+  proofPeople: string;
+  proofTooltip: string;
   testimonials: Testimonial[];
   courses: {
     visio: Course[];
@@ -58,6 +62,10 @@ export const translations: Record<Language, Content> = {
     helpTitle: "Je t’aide à choisir (WhatsApp)",
     helpSub: "Conseil rapide et gratuit",
     waMsg: "Bonjour Alejandra, je viens d’Instagram. Peux-tu m’aider à choisir mon cours ? Objectif : ____ / Niveau : ____ / Dispos : ____",
+    proofLabel: "PREUVES",
+    proofGiven: "cours donnés",
+    proofPeople: "personnes / semaine",
+    proofTooltip: "Cours collectifs et cours individuels confondus.",
     testimonials: [
       { text: "“Séances fluides, efficaces et agréables.”", author: "Karla — Mexico" },
       { text: "“Un accompagnement premium qui change tout.”", author: "Léa — Nantes" },
@@ -87,6 +95,10 @@ export const translations: Record<Language, Content> = {
     helpTitle: "Te ayudo a elegir (WhatsApp)",
     helpSub: "Consejo rápido y gratis",
     waMsg: "Hola Alejandra, vengo de Instagram. ¿Me ayudas a elegir mi clase? Objetivo: ____ / Nivel: ____ / Disponibilidad: ____",
+    proofLabel: "PRUEBAS",
+    proofGiven: "clases dadas",
+    proofPeople: "personas / semana",
+    proofTooltip: "Clases grupales e individuales combinadas.",
     testimonials: [
       { text: "“Sesiones fluidas, eficaces y agradables.”", author: "Karla — México" },
       { text: "“Un acompañamiento premium que lo cambia todo.”", author: "Léa — Nantes" },
