@@ -4,6 +4,7 @@ export type Segment = 'VISIO' | 'NANTES';
 export interface Testimonial {
   text: string;
   author: string;
+  avatar: string;
 }
 
 export interface Course {
@@ -67,9 +68,21 @@ export const translations: Record<Language, Content> = {
     proofPeople: "personnes / semaine",
     proofTooltip: "Cours collectifs et cours individuels confondus.",
     testimonials: [
-      { text: "“Séances fluides, efficaces et agréables.”", author: "Karla — Mexico" },
-      { text: "“Un accompagnement premium qui change tout.”", author: "Léa — Nantes" },
-      { text: "“Le Pilates à la maison n’a jamais été aussi motivant.”", author: "Mélodie — Pornic" }
+      { 
+        text: "“Séances fluides, efficaces et agréables.”", 
+        author: "Karla — Mexico",
+        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80"
+      },
+      { 
+        text: "“Un accompagnement premium qui change tout.”", 
+        author: "Léa — Nantes",
+        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&h=150&q=80"
+      },
+      { 
+        text: "“Le Pilates à la maison n’a jamais été aussi motivant.”", 
+        author: "Mélodie — Pornic",
+        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80"
+      }
     ],
     courses: {
       visio: [
@@ -100,9 +113,21 @@ export const translations: Record<Language, Content> = {
     proofPeople: "personas / semana",
     proofTooltip: "Clases grupales e individuales combinadas.",
     testimonials: [
-      { text: "“Sesiones fluidas, eficaces y agradables.”", author: "Karla — México" },
-      { text: "“Un acompañamiento premium que lo cambia todo.”", author: "Léa — Nantes" },
-      { text: "“El Pilates en casa nunca fue tan motivador.”", author: "Mélodie — Pornic" }
+      { 
+        text: "“Sesiones fluidas, eficaces y agradables.”", 
+        author: "Karla — México",
+        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80"
+      },
+      { 
+        text: "“Un acompañamiento premium que lo cambia todo.”", 
+        author: "Léa — Nantes",
+        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&h=150&q=80"
+      },
+      { 
+        text: "“El Pilates en casa nunca fue tan motivador.”", 
+        author: "Mélodie — Pornic",
+        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80"
+      }
     ],
     courses: {
       visio: [

@@ -78,39 +78,39 @@ export default function App() {
   return (
     <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       {/* Top Stats Bar */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-brand-ink/5 sticky top-0 z-50">
-        <div className="max-w-2xl mx-auto px-6 py-3 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-medium">
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col">
-              <span className="text-brand-accent">{t.proofLabel}</span>
-              <span className="text-brand-ink/40">{lang === 'ES' ? 'al ' : 'au '} {formattedDate}</span>
+      <div className="bg-white/90 backdrop-blur-md border-b border-brand-ink/[0.03] sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] tracking-[0.3em] uppercase font-bold text-brand-accent leading-none">{t.proofLabel}</span>
+              <span className="text-[9px] tracking-widest uppercase text-brand-ink/30 leading-none">{lang === 'ES' ? 'al ' : 'au '} {formattedDate}</span>
             </div>
-            <div className="h-8 w-px bg-brand-ink/10" />
-            <div className="flex flex-col">
-              <span className="text-lg font-serif italic leading-none">{count.toLocaleString()}</span>
-              <span className="text-brand-ink/40">{t.proofGiven}</span>
+            <div className="h-10 w-px bg-brand-ink/[0.06]" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-2xl font-serif italic leading-none tracking-tighter">{count.toLocaleString()}</span>
+              <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none">{t.proofGiven}</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="text-lg font-serif italic leading-none">150</span>
-              <span className="text-brand-ink/40">{t.proofPeople}</span>
+          <div className="flex items-center gap-8">
+            <div className="hidden sm:flex flex-col items-end gap-0.5">
+              <span className="text-2xl font-serif italic leading-none tracking-tighter">150</span>
+              <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none">{t.proofPeople}</span>
             </div>
             <div className="relative">
               <button 
                 onClick={() => setShowTooltip(!showTooltip)}
-                className="p-2 hover:bg-brand-sand/50 rounded-full transition-colors"
+                className="w-8 h-8 flex items-center justify-center bg-brand-sand/30 hover:bg-brand-sand/60 rounded-full transition-all"
               >
-                <Info size={16} className="text-brand-accent" />
+                <Info size={14} className="text-brand-accent" />
               </button>
               <AnimatePresence>
                 {showTooltip && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2 w-48 bg-brand-ink text-white p-3 rounded-xl text-[10px] normal-case tracking-normal z-50 shadow-xl"
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-3 w-56 bg-brand-ink text-white p-4 rounded-2xl text-[11px] leading-relaxed z-50 shadow-2xl border border-white/10"
                   >
                     {t.proofTooltip}
                   </motion.div>
@@ -121,28 +121,40 @@ export default function App() {
         </div>
       </div>
 
-      <main className="max-w-2xl mx-auto px-6 pt-12 pb-24">
+      <main className="max-w-2xl mx-auto px-6 pt-10 pb-24">
         {/* Language Switcher */}
-        <div className="flex justify-end mb-8 gap-4">
+        <div className="flex justify-end mb-12 gap-6">
           <button 
             onClick={() => toggleLang('FR')}
-            className={`text-[10px] tracking-widest uppercase transition-all ${lang === 'FR' ? 'text-brand-accent font-bold' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'FR' ? 'text-brand-accent font-bold border-b border-brand-accent pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
           >
-            Français
+            FR
           </button>
           <button 
             onClick={() => toggleLang('ES')}
-            className={`text-[10px] tracking-widest uppercase transition-all ${lang === 'ES' ? 'text-brand-accent font-bold' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'ES' ? 'text-brand-accent font-bold border-b border-brand-accent pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
           >
-            Español
+            ES
           </button>
         </div>
+
+        {/* Bio Sentence - Restored placement */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12 px-4"
+        >
+          <p className="text-lg md:text-xl font-serif italic leading-relaxed text-brand-ink/70 max-w-md mx-auto">
+            {t.accroche}
+          </p>
+        </motion.div>
 
         {/* Hero Card */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-brand-ink/5 mb-12"
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-[40px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-brand-ink/[0.03] mb-16"
         >
           <div className="aspect-[4/5] relative overflow-hidden">
             <img 
@@ -151,22 +163,25 @@ export default function App() {
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-8 text-center">
-              <h1 className="text-5xl font-serif italic mb-2">{t.title}</h1>
-              <p className="text-xs tracking-[0.3em] uppercase text-brand-accent font-medium">{t.subtitle}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-10 text-center">
+              <h1 className="text-6xl md:text-7xl font-serif italic mb-3 tracking-tighter leading-none">{t.title}</h1>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-brand-accent font-bold">{t.subtitle}</p>
             </div>
           </div>
-          <div className="p-8 pt-0 text-center">
-            <p className="text-brand-ink/60 leading-relaxed max-w-sm mx-auto mb-8">
-              {t.accroche}
-            </p>
-            <div className="flex justify-center gap-6">
-              <a href="https://www.instagram.com/fit.mangas/" target="_blank" rel="noopener noreferrer" className="p-3 bg-brand-sand/30 rounded-full hover:bg-brand-sand transition-colors">
-                <Instagram size={20} />
+          <div className="p-10 pt-0 text-center">
+            <div className="flex justify-center gap-8">
+              <a href="https://www.instagram.com/fit.mangas/" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2">
+                <div className="w-12 h-12 flex items-center justify-center bg-brand-sand/20 rounded-full group-hover:bg-brand-sand transition-all">
+                  <Instagram size={20} />
+                </div>
+                <span className="text-[8px] tracking-widest uppercase opacity-40">Instagram</span>
               </a>
-              <a href={`mailto:info@casamangas.fr`} className="p-3 bg-brand-sand/30 rounded-full hover:bg-brand-sand transition-colors">
-                <MessageCircle size={20} />
+              <a href={`mailto:info@casamangas.fr`} className="group flex flex-col items-center gap-2">
+                <div className="w-12 h-12 flex items-center justify-center bg-brand-sand/20 rounded-full group-hover:bg-brand-sand transition-all">
+                  <MessageCircle size={20} />
+                </div>
+                <span className="text-[8px] tracking-widest uppercase opacity-40">Contact</span>
               </a>
             </div>
           </div>
@@ -227,45 +242,57 @@ export default function App() {
           href={getWaLink(t.waMsg)}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-brand-ink text-white p-8 rounded-[32px] flex flex-col items-center text-center gap-6 mb-24 hover:opacity-90 transition-opacity"
+          className="bg-white p-10 rounded-[40px] flex flex-col items-center text-center gap-6 mb-24 hover:shadow-xl transition-all border border-brand-ink/[0.03] group"
         >
-          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-            <MessageCircle size={24} />
+          <div className="w-16 h-16 rounded-full bg-brand-sand/30 text-brand-accent flex items-center justify-center group-hover:bg-brand-accent group-hover:text-white transition-all">
+            <MessageCircle size={28} />
           </div>
           <div>
-            <h4 className="text-xl font-serif italic mb-2">{t.helpTitle}</h4>
-            <p className="text-xs text-white/50 tracking-wide">{t.helpSub}</p>
+            <h4 className="text-2xl font-serif italic mb-2">{t.helpTitle}</h4>
+            <p className="text-xs text-brand-ink/40 tracking-wide leading-relaxed max-w-[240px] mx-auto">{t.helpSub}</p>
           </div>
-          <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-brand-accent">
+          <div className="flex items-center gap-3 text-[10px] tracking-[0.2em] uppercase font-bold text-brand-accent">
             {lang === 'FR' ? 'Discuter' : 'Chatear'}
             <ArrowRight size={14} />
           </div>
         </motion.a>
 
         {/* Testimonials */}
-        <section className="mb-24">
-          <div className="text-center mb-12">
-            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-2 block">Community</span>
-            <h2 className="text-3xl font-serif italic">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
+        <section className="mb-32">
+          <div className="text-center mb-16">
+            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">Community</span>
+            <h2 className="text-4xl font-serif italic tracking-tight">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
           </div>
-          <div className="space-y-8">
+          <div className="space-y-12">
             {t.testimonials.map((testimonial, i) => (
               <motion.div 
                 key={i}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="bg-white/50 p-8 rounded-[24px] border border-brand-ink/5"
+                transition={{ delay: i * 0.1 }}
+                className="flex flex-col items-center text-center"
               >
-                <div className="flex gap-1 text-brand-accent mb-4">
-                  {[...Array(5)].map((_, i) => <CheckCircle2 key={i} size={12} />)}
+                <div className="w-20 h-20 rounded-full overflow-hidden mb-6 border-4 border-white shadow-md">
+                  <img 
+                    src={testimonial.avatar} 
+                    alt={testimonial.author} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-                <p className="text-lg font-serif italic leading-relaxed mb-4 text-brand-ink/80">
+                <div className="flex gap-1 text-brand-accent mb-6">
+                  {[...Array(5)].map((_, i) => <CheckCircle2 key={i} size={12} fill="currentColor" />)}
+                </div>
+                <p className="text-2xl font-serif italic leading-relaxed mb-6 text-brand-ink/80 max-w-lg">
                   {testimonial.text}
                 </p>
-                <p className="text-[10px] tracking-widest uppercase text-brand-ink/40">
-                  {testimonial.author}
-                </p>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="h-px w-8 bg-brand-accent/30 mb-2" />
+                  <p className="text-[10px] tracking-[0.2em] uppercase text-brand-ink/40 font-bold">
+                    {testimonial.author}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
