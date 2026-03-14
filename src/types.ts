@@ -14,6 +14,7 @@ export interface Course {
   badge?: string;
   stripeUrl: string;
   isUnitPay?: boolean;
+  imageUrl?: string;
 }
 
 export interface Content {
@@ -23,6 +24,8 @@ export interface Content {
   microline: string;
   segVisio: string;
   segNantes: string;
+  visioLabel: string;
+  nantesLabel: string;
   sectionTitle: string;
   trustLine: string;
   trustLine2: string;
@@ -53,10 +56,12 @@ export const translations: Record<Language, Content> = {
   FR: {
     title: "Alejandra",
     subtitle: "Barre & Pilates en visio",
-    accroche: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles. 👇",
+    accroche: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
     microline: "Réserve en 30 secondes.",
     segVisio: "Visio",
     segNantes: "Nantes",
+    visioLabel: "5 cours par mois",
+    nantesLabel: "Studio Nantes",
     sectionTitle: "Choisis ton cours",
     trustLine: "Paiement sécurisé • Abonnements gérés par Stripe",
     trustLine2: "Paiement sécurisé • Confirmation immédiate",
@@ -71,37 +76,39 @@ export const translations: Record<Language, Content> = {
       { 
         text: "“Séances fluides, efficaces et agréables.”", 
         author: "Karla — Mexico",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/4cwoxuwzourdv5rw4q92b/Spreadshop-Logo-8.png?rlkey=ydnyy8emq627bwz132x9ds4wp&st=18y1w3jl&raw=1"
       },
       { 
         text: "“Un accompagnement premium qui change tout.”", 
         author: "Léa — Nantes",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/7zic5m7zizghd2rtk7xr7/Spreadshop-Logo-10.png?rlkey=5epsn6ajvskswrorvbf1btrd7&st=6l0241gr&raw=1"
       },
       { 
         text: "“Le Pilates à la maison n’a jamais été aussi motivant.”", 
         author: "Mélodie — Pornic",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/6pysu0buam1lvnkjxu7z5/Spreadshop-Logo-9.png?rlkey=mqkhpt6h2z3ejkq1u968okwz2&st=cx051en2&raw=1"
       }
     ],
     courses: {
       visio: [
-        { id: 'v-coll', title: "Visio collectif", price: "39€ / mois", badge: "7 jours gratuits", stripeUrl: STRIPE_LINKS.visioCollectif },
-        { id: 'v-ind', title: "Visio individuel", price: "269€ / mois", stripeUrl: STRIPE_LINKS.visioIndividuel }
+        { id: 'v-coll', title: "Visio collectif", price: "39€ / mois", badge: "7 jours gratuits", stripeUrl: STRIPE_LINKS.visioCollectif, imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
+        { id: 'v-ind', title: "Visio individuel", price: "269€ / mois", badge: "7 jours gratuits", stripeUrl: STRIPE_LINKS.visioIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
       ],
       nantes: [
-        { id: 'n-coll', title: "Nantes collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif },
-        { id: 'n-ind', title: "Nantes individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel }
+        { id: 'n-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'n-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   },
   ES: {
     title: "Alejandra",
     subtitle: "Barre & Pilates online",
-    accroche: "Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa. 👇",
+    accroche: "Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.",
     microline: "Reserva en 30 segundos.",
     segVisio: "Online",
     segNantes: "Nantes",
+    visioLabel: "5 clases al mes",
+    nantesLabel: "Studio Nantes",
     sectionTitle: "Elige tu clase",
     trustLine: "Pago seguro • Suscripciones gestionadas por Stripe",
     trustLine2: "Pago seguro • Confirmación inmediata",
@@ -116,27 +123,27 @@ export const translations: Record<Language, Content> = {
       { 
         text: "“Sesiones fluidas, eficaces y agradables.”", 
         author: "Karla — México",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/4cwoxuwzourdv5rw4q92b/Spreadshop-Logo-8.png?rlkey=ydnyy8emq627bwz132x9ds4wp&st=18y1w3jl&raw=1"
       },
       { 
         text: "“Un acompañamiento premium que lo cambia todo.”", 
         author: "Léa — Nantes",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/7zic5m7zizghd2rtk7xr7/Spreadshop-Logo-10.png?rlkey=5epsn6ajvskswrorvbf1btrd7&st=6l0241gr&raw=1"
       },
       { 
         text: "“El Pilates en casa nunca fue tan motivador.”", 
         author: "Mélodie — Pornic",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80"
+        avatar: "https://www.dropbox.com/scl/fi/6pysu0buam1lvnkjxu7z5/Spreadshop-Logo-9.png?rlkey=mqkhpt6h2z3ejkq1u968okwz2&st=cx051en2&raw=1"
       }
     ],
     courses: {
       visio: [
-        { id: 'v-coll', title: "Online grupal", price: "39€ / mes", badge: "7 días gratis", stripeUrl: STRIPE_LINKS.visioCollectif },
-        { id: 'v-ind', title: "Online individual", price: "269€ / mes", stripeUrl: STRIPE_LINKS.visioIndividuel }
+        { id: 'v-coll', title: "Online grupal", price: "39€ / mes", badge: "7 días gratis", stripeUrl: STRIPE_LINKS.visioCollectif, imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
+        { id: 'v-ind', title: "Online individual", price: "269€ / mes", badge: "7 días gratis", stripeUrl: STRIPE_LINKS.visioIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
       ],
       nantes: [
-        { id: 'n-coll', title: "Nantes grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif },
-        { id: 'n-ind', title: "Nantes individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel }
+        { id: 'n-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'n-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   }
