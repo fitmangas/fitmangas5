@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -12,7 +14,9 @@ import {
   Mail,
   Star
 } from 'lucide-react';
-import { Language, Segment, translations, WHATSAPP_PHONE } from './types';
+import { SignupCheckoutModal } from './SignupCheckoutModal';
+import type { Course } from '@/types';
+import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 
 const HERO_IMAGE_URL = "https://www.dropbox.com/scl/fi/vmq043zpcjkehh6rsyn7n/DSC_3488.PNG?rlkey=gladkol1foebum7jcagsz1mf3&st=awo05ygo&raw=1";
 
@@ -22,12 +26,13 @@ const WhatsAppIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-export default function App() {
+export function LandingPage() {
   const [lang, setLang] = useState<Language>('FR');
   const [segment, setSegment] = useState<Segment>('VISIO');
   const [showTooltip, setShowTooltip] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [count, setCount] = useState(2496);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   const t = translations[lang];
 
@@ -254,15 +259,21 @@ export default function App() {
           </div>
           <div className="grid grid-cols-1 gap-10">
             {activeCourses.map((course, i) => (
-              <motion.a
+              <motion.div
                 key={course.id}
-                href={course.stripeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedCourse(course)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedCourse(course);
+                  }
+                }}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
-                className="group bg-white rounded-[40px] border border-brand-ink/[0.03] hover:border-brand-accent/20 transition-all duration-500 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.02)] flex flex-col md:flex-row"
+                className="group cursor-pointer bg-white rounded-[40px] border border-brand-ink/[0.03] hover:border-brand-accent/20 transition-all duration-500 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.02)] flex flex-col md:flex-row"
               >
                 {/* Image Section */}
                 <div className="md:w-64 h-64 md:h-auto relative overflow-hidden">
@@ -347,7 +358,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              </motion.a>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -453,6 +464,13 @@ export default function App() {
           </div>
         </footer>
       </main>
+
+      <SignupCheckoutModal
+        course={selectedCourse}
+        segment={segment}
+        lang={lang}
+        onClose={() => setSelectedCourse(null)}
+      />
 
       {/* Scroll to Top */}
       <AnimatePresence>
