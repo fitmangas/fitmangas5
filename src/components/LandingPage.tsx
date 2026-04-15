@@ -1,18 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Globe, 
   ArrowRight, 
   Instagram, 
-  MessageCircle, 
   ShieldCheck, 
   CheckCircle2, 
   Info,
   ChevronUp,
   Mail,
-  Star
+  Star,
+  LockKeyhole,
 } from 'lucide-react';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import type { Course } from '@/types';
@@ -461,6 +461,16 @@ export function LandingPage() {
           <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
             <a href="#" className="hover:text-brand-ink transition-colors">Privacy</a>
             <a href="#" className="hover:text-brand-ink transition-colors">Terms</a>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <Link
+              href="/login"
+              aria-label="Accès administrateur"
+              title="Accès administrateur"
+              className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-ink/10 text-brand-ink/30 transition hover:border-brand-accent/40 hover:text-brand-accent"
+            >
+              <LockKeyhole size={14} className="transition group-hover:scale-110" />
+            </Link>
           </div>
         </footer>
       </main>
