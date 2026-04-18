@@ -19,6 +19,7 @@ export type AdminCourseRow = {
   capacity_max: number | null;
   location: string | null;
   live_url: string | null;
+  jitsi_link: string | null;
   replay_url: string | null;
   is_published: boolean;
   created_at: string;
@@ -54,6 +55,7 @@ type FormState = {
   isPublished: boolean;
   location: string;
   liveUrl: string;
+  jitsiLink: string;
   replayUrl: string;
 };
 
@@ -72,6 +74,7 @@ function emptyCreateForm(): FormState {
     isPublished: false,
     location: '',
     liveUrl: '',
+    jitsiLink: '',
     replayUrl: '',
   };
 }
@@ -88,6 +91,7 @@ function courseToFormState(c: AdminCourseRow): FormState {
     isPublished: c.is_published,
     location: c.location ?? '',
     liveUrl: c.live_url ?? '',
+    jitsiLink: c.jitsi_link ?? '',
     replayUrl: c.replay_url ?? '',
   };
 }
@@ -111,6 +115,7 @@ function formToPayload(f: FormState) {
     isPublished: f.isPublished,
     location: f.location.trim() || null,
     liveUrl: f.liveUrl.trim() || null,
+    jitsiLink: f.jitsiLink.trim() || null,
     replayUrl: f.replayUrl.trim() || null,
     timezone: 'Europe/Paris',
   };
@@ -324,6 +329,16 @@ export function AdminCoursesManager({ courses }: Props) {
               onChange={(e) => setCreateForm((s) => ({ ...s, replayUrl: e.target.value }))}
               className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
               placeholder="https://…"
+            />
+          </label>
+          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+            Lien Jitsi
+            <input
+              type="url"
+              value={createForm.jitsiLink}
+              onChange={(e) => setCreateForm((s) => ({ ...s, jitsiLink: e.target.value }))}
+              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              placeholder="https://meet.jit.si/NomDuCours-ID"
             />
           </label>
           <div className="md:col-span-2">
@@ -546,6 +561,16 @@ export function AdminCoursesManager({ courses }: Props) {
                   />
                 </label>
               </div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                Lien Jitsi
+                <input
+                  type="url"
+                  value={editForm.jitsiLink}
+                  onChange={(e) => setEditForm((s) => (s ? { ...s, jitsiLink: e.target.value } : s))}
+                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                  placeholder="https://meet.jit.si/NomDuCours-ID"
+                />
+              </label>
               <button
                 type="submit"
                 disabled={isPending}

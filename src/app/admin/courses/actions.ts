@@ -31,6 +31,7 @@ const courseUpsertSchema = z
     isPublished: z.boolean(),
     location: z.string().max(500).nullable().optional(),
     liveUrl: z.string().nullable().optional(),
+    jitsiLink: z.string().nullable().optional(),
     replayUrl: z.string().nullable().optional(),
     timezone: z.string().max(64).default('Europe/Paris'),
   })
@@ -88,6 +89,7 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
       capacity_max: d.capacityMax ?? null,
       location: d.location?.trim() || null,
       live_url: normalizeOptionalUrl(d.liveUrl),
+      jitsi_link: normalizeOptionalUrl(d.jitsiLink),
       replay_url: normalizeOptionalUrl(d.replayUrl),
       is_published: d.isPublished,
       created_by: user.id,
@@ -137,6 +139,7 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
         capacity_max: d.capacityMax ?? null,
         location: d.location?.trim() || null,
         live_url: normalizeOptionalUrl(d.liveUrl),
+        jitsi_link: normalizeOptionalUrl(d.jitsiLink),
         replay_url: normalizeOptionalUrl(d.replayUrl),
         is_published: d.isPublished,
         auto_add_for_monthly: d.courseFormat === 'online',

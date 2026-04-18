@@ -15,7 +15,7 @@ export default async function AdminCoursesPage() {
     const { data, error } = await admin
       .from('courses')
       .select(
-        'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, capacity_max, location, live_url, replay_url, is_published, created_at',
+        'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, capacity_max, location, live_url, jitsi_link, replay_url, is_published, created_at',
       )
       .order('starts_at', { ascending: true });
 
