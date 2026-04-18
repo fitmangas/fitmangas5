@@ -11,7 +11,8 @@
     "clean": "rm -rf .next dist",
     "db:link": "supabase link",
     "db:push": "supabase db push",
-    "db:status": "supabase migration list"
+    "db:status": "supabase migration list",
+    "seed:test-data": "tsx scripts/seed-test-data.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -32,6 +33,7 @@
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.4",
     "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "supabase": "^2.20.12"
   }
