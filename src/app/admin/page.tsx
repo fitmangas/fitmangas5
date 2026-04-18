@@ -73,11 +73,16 @@ export default async function AdminPage() {
             <p className="mt-3 text-3xl font-semibold tracking-tight text-brand-ink">{totalClients ?? 0}</p>
             <p className="mt-2 text-xs text-brand-ink/50">Profils enregistrés dans Supabase</p>
           </article>
-          <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-5">
+          <Link
+            href="/admin/courses"
+            className="group rounded-[24px] border border-brand-ink/[0.05] bg-white p-5 transition hover:border-brand-accent/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
+          >
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-brand-ink/40">Cours</p>
-            <p className="mt-3 text-xl font-semibold tracking-tight text-brand-ink">Gestion à venir</p>
-            <p className="mt-2 text-xs text-brand-ink/50">Création / édition du calendrier et des places</p>
-          </article>
+            <p className="mt-3 text-xl font-semibold tracking-tight text-brand-ink group-hover:text-brand-accent">
+              Gérer les séances
+            </p>
+            <p className="mt-2 text-xs text-brand-ink/50">Création, publication, capacités et calendrier client</p>
+          </Link>
           <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-5">
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-brand-ink/40">Vimeo</p>
             <p className="mt-3 text-xl font-semibold tracking-tight text-brand-ink">Intégration à venir</p>

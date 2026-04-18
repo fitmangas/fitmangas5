@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 type AdminCheckResult = {
   isAdmin: boolean;
   source: 'email' | 'role' | 'none';
@@ -12,15 +14,7 @@ function parseAdminEmails() {
 }
 
 export async function checkIsAdmin(
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (column: string, value: string) => {
-          maybeSingle: () => Promise<{ data: { role?: string } | null; error: unknown }>;
-        };
-      };
-    };
-  },
+  supabase: SupabaseClient,
   user: { id: string; email?: string | null },
 ): Promise<AdminCheckResult> {
   const normalizedEmail = user.email?.trim().toLowerCase();
