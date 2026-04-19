@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Play, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Eye, Play, Plus, Pencil, Trash2, UserCheck, X } from 'lucide-react';
 import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/app/admin/courses/actions';
 
 export type AdminCourseRow = {
@@ -370,7 +370,9 @@ export function AdminCoursesManager({ courses }: Props) {
               </tr>
             </thead>
             <tbody className="text-brand-ink/85">
-              {courses.map((c) => (
+              {courses.map((c) => {
+                const coursePast = new Date(c.ends_at).getTime() < Date.now();
+                return (
                 <tr key={c.id} className="border-b border-brand-ink/[0.04] hover:bg-brand-beige/20">
                   <td className="max-w-[200px] truncate px-4 py-3 font-medium">{c.title}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs">
@@ -411,6 +413,26 @@ export function AdminCoursesManager({ courses }: Props) {
                     >
                       <Play size={14} strokeWidth={2} className="-ml-px" aria-hidden />
                     </a>
+                    <a
+                      href={`/live/${c.id}?preview=client`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mr-2 inline-flex items-center rounded-full border border-brand-ink/12 bg-white p-2 text-brand-ink/70 hover:border-brand-accent/40 hover:bg-brand-beige/50 hover:text-brand-ink"
+                      aria-label="Aperçu client (nouvel onglet)"
+                      title="Aperçu client — comme un élève avec accès complet"
+                    >
+                      <Eye size={14} aria-hidden />
+                    </a>
+                    {coursePast ? (
+                      <Link
+                        href={`/admin/courses/${c.id}/attendance`}
+                        className="mr-2 inline-flex items-center rounded-full border border-brand-ink/12 bg-white p-2 text-brand-ink/70 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900"
+                        aria-label="Faire le pointage"
+                        title="Pointage présence"
+                      >
+                        <UserCheck size={14} aria-hidden />
+                      </Link>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => handleDelete(c.id)}
@@ -421,7 +443,8 @@ export function AdminCoursesManager({ courses }: Props) {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {courses.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-brand-ink/45">
@@ -437,19 +460,35 @@ export function AdminCoursesManager({ courses }: Props) {
       {editing && editForm ? (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-ink/50 p-4">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[24px] border border-brand-ink/[0.08] bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-serif text-xl italic">Modifier la séance</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing(null);
-                  setEditForm(null);
-                }}
-                className="rounded-full p-2 text-brand-ink/45 hover:bg-brand-beige"
-                aria-label="Fermer"
-              >
-                <X size={18} />
-              </button>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-brand-ink/[0.06] pb-4">
+              <div className="min-w-0 flex-1 pr-2">
+                <h3 className="font-serif text-xl italic leading-snug text-brand-ink">Modifier la séance</h3>
+                <p className="mt-1 text-[11px] leading-snug text-brand-ink/45">
+                  Ouvre l’aperçu élève dans un nouvel onglet pour tes démos prospects.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <a
+                  href={`/live/${editing.id}?preview=client`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-brand-accent/35 bg-brand-accent/[0.08] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-brand-accent hover:bg-brand-accent/[0.14]"
+                >
+                  <Eye size={14} aria-hidden />
+                  Voir l’aperçu client
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(null);
+                    setEditForm(null);
+                  }}
+                  className="rounded-full p-2 text-brand-ink/45 hover:bg-brand-beige"
+                  aria-label="Fermer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <form onSubmit={handleUpdate} className="grid gap-4">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">

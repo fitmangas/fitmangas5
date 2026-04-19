@@ -10,13 +10,23 @@ type Props = {
   displayName: string;
   email: string;
   isModerator: boolean;
+  /** Aligné sur /live?preview=client — JWT participant uniquement. */
+  studentPreview?: boolean;
 };
 
 type TokenResponse = {
   token: string;
 };
 
-export function JitsiRoomLoader({ courseId, roomUrl, title, displayName, email, isModerator }: Props) {
+export function JitsiRoomLoader({
+  courseId,
+  roomUrl,
+  title,
+  displayName,
+  email,
+  isModerator,
+  studentPreview,
+}: Props) {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +40,10 @@ export function JitsiRoomLoader({ courseId, roomUrl, title, displayName, email, 
         const res = await fetch('/api/jitsi/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId }),
+          body: JSON.stringify({
+            courseId,
+            ...(studentPreview ? { studentPreview: true } : {}),
+          }),
         });
         const json = (await res.json()) as TokenResponse | { error: string };
         if (!res.ok) {
@@ -53,7 +66,7 @@ export function JitsiRoomLoader({ courseId, roomUrl, title, displayName, email, 
     return () => {
       cancelled = true;
     };
-  }, [courseId]);
+  }, [courseId, studentPreview]);
 
   if (error) {
     return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-900">{error}</div>;

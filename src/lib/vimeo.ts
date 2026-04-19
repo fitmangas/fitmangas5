@@ -73,7 +73,8 @@ function extractVimeoIdFromUri(uri: string): string {
 function extractEmbedUrl(embedHtml?: string): string | null {
   if (!embedHtml) return null;
   const src = embedHtml.match(/src="([^"]+)"/i)?.[1] ?? null;
-  return src;
+  if (!src) return null;
+  return src.replace(/&amp;/g, '&');
 }
 
 /**

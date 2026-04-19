@@ -7,6 +7,8 @@ import { createJitsiJwtToken } from '@/lib/jitsi/jwt';
 
 const bodySchema = z.object({
   courseId: z.string().uuid(),
+  /** Aperçu « côté élève » : JWT sans droits modérateur même si admin. */
+  studentPreview: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Requete invalide.' }, { status: 400 });
     }
 
-    const { courseId } = parsed.data;
+    const { courseId, studentPreview } = parsed.data;
     const { supabase, user } = auth;
 
     const { data: course, error: courseError } = await supabase
@@ -46,6 +48,8 @@ export async function POST(request: Request) {
       (user.email?.split('@')[0] ?? 'Participant');
     const email = user.email ?? 'participant@local';
 
+    const moderatorInRoom = privileges.isAdmin && !studentPreview;
+
     let token: string;
     try {
       token = createJitsiJwtToken({
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
         domain,
         displayName,
         email,
-        isModerator: privileges.isAdmin,
+        isModerator: moderatorInRoom,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Configuration JWT absente.';
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
       token,
       roomName,
       domain,
-      moderator: privileges.isAdmin,
+      moderator: moderatorInRoom,
       user: { displayName, email },
     });
   } catch (error) {

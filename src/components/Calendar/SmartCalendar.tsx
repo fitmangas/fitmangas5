@@ -130,12 +130,12 @@ export function SmartCalendar() {
   }, [events]);
 
   return (
-    <section className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.03)] sm:p-6">
+    <section className="rounded-[28px] border border-brand-ink/[0.05] bg-white p-5 shadow-[0_12px_48px_rgba(0,0,0,0.04)] sm:p-7">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-brand-accent">Calendrier intelligent</p>
-          <h2 className="mt-1 font-serif text-2xl italic text-brand-ink">Tes cours</h2>
-          <p className="mt-2 text-xs text-brand-ink/45">
+          <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-accent/90">Calendrier intelligent</p>
+          <h2 className="mt-1.5 font-serif text-2xl italic tracking-tight text-brand-ink md:text-[1.65rem]">Tes cours</h2>
+          <p className="mt-2 text-xs leading-relaxed text-brand-ink/48">
             Prochains {FORTNIGHT_DAYS} jours · {formatFortnightSubtitle()}
           </p>
         </div>

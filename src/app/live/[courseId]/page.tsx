@@ -2,8 +2,17 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { JitsiRoomLoader } from '@/components/Jitsi/JitsiRoomLoader';
-import { getAccessType, getUserLivePrivileges } from '@/lib/access-control';
+import { ReplayViewTracker } from '@/components/Replay/ReplayViewTracker';
+import { VimeoReplayEmbed } from '@/components/Replay/VimeoReplayEmbed';
+import {
+  getAccessType,
+  getUserLivePrivileges,
+  type UserLivePrivileges,
+} from '@/lib/access-control';
+import { checkIsAdmin } from '@/lib/auth/admin';
+import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const uuidSchema = z.string().uuid();
 
@@ -30,10 +39,19 @@ function AccessDenied({ subtitle }: { subtitle: string }) {
 
 export default async function LiveCoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ preview?: string | string[] }>;
 }) {
   const { courseId } = await params;
+  const urlParams = await searchParams;
+  const previewRaw = urlParams.preview;
+  const previewToken =
+    typeof previewRaw === 'string' ? previewRaw : Array.isArray(previewRaw) ? previewRaw[0] : undefined;
+  const studentPreview =
+    previewToken === 'client' || previewToken === 'eleve' || previewToken === 'student';
+
   const idParsed = uuidSchema.safeParse(courseId);
   if (!idParsed.success) {
     return <AccessDenied subtitle="Lien invalide." />;
@@ -48,17 +66,29 @@ export default async function LiveCoursePage({
     return <AccessDenied subtitle="Connexion requise." />;
   }
 
+  const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
+  const globalDemo = (await getDemoClientMode()) && realAdmin;
+  const effectiveStudentPreview = studentPreview || globalDemo;
+
   let allowed = false;
   let isModerator = false;
+  let livePriv: UserLivePrivileges | undefined;
   try {
-    const priv = await getUserLivePrivileges(user.id);
-    isModerator = priv.isAdmin;
-    allowed = priv.isAdmin || (await getAccessType(user.id, idParsed.data)) === 'full';
+    livePriv = await getUserLivePrivileges(user.id);
+    const accessFull = (await getAccessType(user.id, idParsed.data)) === 'full';
+
+    if (effectiveStudentPreview) {
+      allowed = accessFull || livePriv.isAdmin;
+      isModerator = false;
+    } else {
+      isModerator = livePriv.isAdmin;
+      allowed = livePriv.isAdmin || accessFull;
+    }
   } catch {
     return <AccessDenied subtitle="Impossible de vérifier ton accès." />;
   }
 
-  if (!allowed) {
+  if (!allowed || !livePriv) {
     return <AccessDenied subtitle="Tu n’as pas accès à ce live." />;
   }
 
@@ -74,7 +104,7 @@ export default async function LiveCoursePage({
 
   const { data: course, error } = await supabase
     .from('courses')
-    .select('id, title, jitsi_link')
+    .select('id, title, jitsi_link, ends_at')
     .eq('id', idParsed.data)
     .eq('is_published', true)
     .maybeSingle();
@@ -83,7 +113,35 @@ export default async function LiveCoursePage({
     return <AccessDenied subtitle="Séance introuvable." />;
   }
 
-  if (!course.jitsi_link?.trim()) {
+  const courseEndedAt = new Date(course.ends_at);
+  const courseIsPast = !Number.isNaN(courseEndedAt.getTime()) && courseEndedAt < new Date();
+
+  const useAdminReplayFetch = realAdmin;
+
+  const { data: replay } = useAdminReplayFetch
+    ? await createAdminClient()
+        .from('video_recordings')
+        .select('id, embed_url, title')
+        .eq('course_id', idParsed.data)
+        .eq('is_ready', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : await supabase
+        .from('video_recordings')
+        .select('id, embed_url, title')
+        .eq('course_id', idParsed.data)
+        .eq('is_ready', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+  const replayEmbedUrl = replay?.embed_url?.trim() ?? '';
+  const showVimeoReplay = courseIsPast && replayEmbedUrl.length > 0;
+  const hasJitsi = !!course.jitsi_link?.trim();
+
+  // Live à venir ou en cours : la salle Jitsi est obligatoire tant qu’il n’y a pas de replay.
+  if (!showVimeoReplay && !hasJitsi && !courseIsPast) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-beige px-6 py-16">
         <div className="max-w-md rounded-[28px] border border-brand-ink/[0.08] bg-white px-8 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
@@ -121,14 +179,40 @@ export default async function LiveCoursePage({
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
-        <JitsiRoomLoader
-          courseId={course.id}
-          roomUrl={course.jitsi_link}
-          title={`Live — ${course.title}`}
-          displayName={displayName}
-          email={emailForJitsi}
-          isModerator={isModerator}
-        />
+        {effectiveStudentPreview ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 shadow-sm">
+            <strong className="font-semibold">{globalDemo ? 'Mode démo · ' : ''}Aperçu élève</strong> — Rendu comme un
+            élève avec accès complet ({!courseIsPast ? 'live / Jitsi' : 'replay'}). Pas de droits animateur.
+          </div>
+        ) : null}
+        {showVimeoReplay ? (
+          <>
+            {replay?.id ? <ReplayViewTracker recordingId={replay.id} /> : null}
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Replay</p>
+            <VimeoReplayEmbed
+              embedUrl={replayEmbedUrl}
+              title={replay?.title?.trim() || `Replay — ${course.title}`}
+            />
+          </>
+        ) : courseIsPast ? (
+          <div className="rounded-2xl border border-brand-ink/10 bg-white px-6 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-ink/45">Séance terminée</p>
+            <h2 className="mt-3 font-serif text-xl italic text-brand-ink">Replay en préparation</h2>
+            <p className="mt-3 text-sm text-brand-ink/65">
+              La vidéo sera disponible ici dès qu’elle aura été traitée. Repasse un peu plus tard.
+            </p>
+          </div>
+        ) : (
+          <JitsiRoomLoader
+            courseId={course.id}
+            roomUrl={course.jitsi_link!}
+            title={`Live — ${course.title}`}
+            displayName={displayName}
+            email={emailForJitsi}
+            isModerator={isModerator}
+            studentPreview={effectiveStudentPreview}
+          />
+        )}
       </main>
     </div>
   );

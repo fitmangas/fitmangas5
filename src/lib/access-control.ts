@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isListedAdminEmail } from '@/lib/auth/admin';
+import { DEMO_SIMULATED_CUSTOMER_TIER, getDemoClientMode } from '@/lib/demo-client-mode';
 import type { AccessPolicy, AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse } from '@/lib/domain/calendar-types';
 
 export type { AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse };
@@ -51,11 +53,15 @@ export type UserLivePrivileges = {
 };
 
 /**
- * Source unique pour les privilèges live (rôle admin + tier utilisateur).
+ * Privilèges réels (sans mode démo). Pour l’UI admin vs simulation client.
  */
-export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
+export async function getLivePrivilegesTruthful(userId: string): Promise<UserLivePrivileges> {
   const safeUserId = sanitizeUuid(userId);
   const supabase = await createClient();
+
+  const {
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
 
   const [{ data: tierData, error: tierError }, profileRole] = await Promise.all([
     supabase.rpc('current_customer_tier', { target_user_id: safeUserId }),
@@ -64,9 +70,28 @@ export async function getUserLivePrivileges(userId: string): Promise<UserLivePri
 
   if (tierError) throw new Error(`Erreur profil utilisateur: ${tierError.message}`);
   const tier = (tierData as CustomerTier | null) ?? null;
-  const isAdmin = (profileRole ?? '').toLowerCase() === 'admin';
+  const roleAdmin = (profileRole ?? '').toLowerCase() === 'admin';
+  const emailMatchesSession =
+    sessionUser?.id === safeUserId ? isListedAdminEmail(sessionUser.email) : false;
+  const isAdmin = roleAdmin || emailMatchesSession;
 
   return { tier, isAdmin, profileRole };
+}
+
+/**
+ * Source unique pour les privilèges live (rôle admin + tier utilisateur).
+ * En mode démo (admin + cookie), ressemble à un élève abonné : pas de flag admin.
+ */
+export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
+  const truth = await getLivePrivilegesTruthful(userId);
+  if (truth.isAdmin && (await getDemoClientMode())) {
+    return {
+      tier: DEMO_SIMULATED_CUSTOMER_TIER,
+      isAdmin: false,
+      profileRole: truth.profileRole,
+    };
+  }
+  return truth;
 }
 
 function sanitizeUuid(value: string): string {
@@ -79,6 +104,10 @@ function sanitizeUuid(value: string): string {
 }
 
 export async function getUserTier(userId: string): Promise<CustomerTier | null> {
+  const truth = await getLivePrivilegesTruthful(userId);
+  if (truth.isAdmin && (await getDemoClientMode())) {
+    return DEMO_SIMULATED_CUSTOMER_TIER;
+  }
   const supabase = await createClient();
   const safeUserId = sanitizeUuid(userId);
   const { data, error } = await supabase.rpc('current_customer_tier', { target_user_id: safeUserId });
@@ -87,6 +116,10 @@ export async function getUserTier(userId: string): Promise<CustomerTier | null> 
 }
 
 export async function getAccessType(userId: string, courseId: string): Promise<AccessType> {
+  const truth = await getLivePrivilegesTruthful(userId);
+  if (truth.isAdmin && (await getDemoClientMode())) {
+    return 'full';
+  }
   const supabase = await createClient();
   const safeUserId = sanitizeUuid(userId);
   const safeCourseId = sanitizeUuid(courseId);
@@ -115,7 +148,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
   const safeUserId = sanitizeUuid(userId);
   const supabase = await createClient();
 
-  const [{ tier, isAdmin }, { data: courses, error: coursesError }] =
+  const [{ tier, isAdmin }, { data: courses, error: coursesError }, demoSimulateClient] =
     await Promise.all([
       getUserLivePrivileges(userId),
       supabase
@@ -125,6 +158,10 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
         )
         .eq('is_published', true)
         .order('starts_at', { ascending: true }),
+      (async () => {
+        const t = await getLivePrivilegesTruthful(userId);
+        return t.isAdmin && (await getDemoClientMode());
+      })(),
     ]);
 
   if (coursesError) throw new Error(`Erreur chargement cours: ${coursesError.message}`);
@@ -193,6 +230,14 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
   }
 
   const enrolledCourseIds = new Set((enrollmentQuery.data ?? []).map((item) => item.course_id));
+
+  if (demoSimulateClient) {
+    for (const c of courses) {
+      if (c.course_format === 'online') {
+        enrolledCourseIds.add(c.id);
+      }
+    }
+  }
 
   return courses.map((course) => {
     const key = `${course.course_format}:${course.course_category}`;
