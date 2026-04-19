@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { AccessPolicy, AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse } from '@/lib/domain/calendar-types';
 
 export type { AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse };
@@ -7,6 +8,65 @@ function statusLabelFromAccess(accessType: AccessType): SmartCourse['status_labe
   if (accessType === 'full') return 'Accès complet';
   if (accessType === 'preview') return 'Accès limité';
   return 'Accès refusé';
+}
+
+/** Aligné avec canAccessCourse : exposer le lien Jitsi au client calendrier. */
+function shouldExposeJitsiLink(
+  accessType: AccessType,
+  isAdmin: boolean,
+): boolean {
+  return accessType === 'full' || isAdmin;
+}
+
+/** `profiles.role` via SERVICE_ROLE_KEY (prioritaire pour confirmer l’admin). */
+async function fetchProfileRoleViaServiceRole(safeUserId: string): Promise<string | null> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin.from('profiles').select('role').eq('id', safeUserId).maybeSingle();
+    if (!error && data?.role != null && String(data.role).trim() !== '') return String(data.role).trim();
+  } catch {
+    // SUPABASE_SERVICE_ROLE_KEY absent ou erreur réseau.
+  }
+  return null;
+}
+
+/** Retombée : session utilisateur (anon + cookies). */
+async function fetchProfileRoleViaSession(safeUserId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from('profiles').select('role').eq('id', safeUserId).maybeSingle();
+  return data?.role != null && String(data.role).trim() !== '' ? String(data.role).trim() : null;
+}
+
+async function fetchProfileRoleForAccess(safeUserId: string): Promise<string | null> {
+  const viaService = await fetchProfileRoleViaServiceRole(safeUserId);
+  if (viaService != null) return viaService;
+  return fetchProfileRoleViaSession(safeUserId);
+}
+
+export type UserLivePrivileges = {
+  tier: CustomerTier | null;
+  isAdmin: boolean;
+  /** Valeur brute `profiles.role` (debug + branches explicites). */
+  profileRole: string | null;
+};
+
+/**
+ * Source unique pour les privilèges live (rôle admin + tier utilisateur).
+ */
+export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
+  const safeUserId = sanitizeUuid(userId);
+  const supabase = await createClient();
+
+  const [{ data: tierData, error: tierError }, profileRole] = await Promise.all([
+    supabase.rpc('current_customer_tier', { target_user_id: safeUserId }),
+    fetchProfileRoleForAccess(safeUserId),
+  ]);
+
+  if (tierError) throw new Error(`Erreur profil utilisateur: ${tierError.message}`);
+  const tier = (tierData as CustomerTier | null) ?? null;
+  const isAdmin = (profileRole ?? '').toLowerCase() === 'admin';
+
+  return { tier, isAdmin, profileRole };
 }
 
 function sanitizeUuid(value: string): string {
@@ -42,25 +102,11 @@ export async function getAccessType(userId: string, courseId: string): Promise<A
 }
 
 export async function canAccessCourse(userId: string, courseId: string): Promise<boolean> {
-  const supabase = await createClient();
-  const safeUserId = sanitizeUuid(userId);
   sanitizeUuid(courseId);
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', safeUserId)
-    .maybeSingle();
-
-  if (profile?.role === 'admin') {
+  const { isAdmin } = await getUserLivePrivileges(userId);
+  if (isAdmin) {
     return true;
   }
-
-  const tier = await getUserTier(userId);
-  if (tier === 'online_individual_monthly') {
-    return true;
-  }
-
   const accessType = await getAccessType(userId, courseId);
   return accessType === 'full';
 }
@@ -69,32 +115,49 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
   const safeUserId = sanitizeUuid(userId);
   const supabase = await createClient();
 
-  const [{ data: tierData, error: tierError }, { data: courses, error: coursesError }] = await Promise.all([
-    supabase.rpc('current_customer_tier', { target_user_id: safeUserId }),
-    supabase
-      .from('courses')
-      .select(
-        'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, replay_url, capacity_max, is_published',
-      )
-      .eq('is_published', true)
-      .order('starts_at', { ascending: true }),
-  ]);
+  const [{ tier, isAdmin }, { data: courses, error: coursesError }] =
+    await Promise.all([
+      getUserLivePrivileges(userId),
+      supabase
+        .from('courses')
+        .select(
+          'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, replay_url, capacity_max, is_published',
+        )
+        .eq('is_published', true)
+        .order('starts_at', { ascending: true }),
+    ]);
 
-  if (tierError) throw new Error(`Erreur profil utilisateur: ${tierError.message}`);
   if (coursesError) throw new Error(`Erreur chargement cours: ${coursesError.message}`);
 
-  const tier = (tierData as CustomerTier | null) ?? null;
   if (!courses?.length) return [];
-  if (!tier) {
+
+  const isAdminUser = isAdmin;
+
+  if (!tier && !isAdminUser) {
     return courses.map((course) => ({
       ...course,
       jitsi_link: null,
+      viewer_is_admin: false,
       access_type: 'locked' as const,
       can_purchase_single: false,
       cta_label: 'Découvrir les abonnements',
       cta_url: '/#offers',
       upsell_tier: null,
       status_label: statusLabelFromAccess('locked'),
+    }));
+  }
+
+  if (isAdminUser) {
+    return courses.map((course) => ({
+      ...course,
+      jitsi_link: shouldExposeJitsiLink('full', true) ? course.jitsi_link ?? null : null,
+      viewer_is_admin: true,
+      access_type: 'full' as const,
+      can_purchase_single: false,
+      cta_label: 'Découvrir les abonnements',
+      cta_url: '/#offers',
+      upsell_tier: null,
+      status_label: statusLabelFromAccess('full'),
     }));
   }
 
@@ -139,7 +202,8 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
 
     return {
       ...course,
-      jitsi_link: accessType === 'full' ? course.jitsi_link ?? null : null,
+      jitsi_link: shouldExposeJitsiLink(accessType, isAdminUser) ? course.jitsi_link ?? null : null,
+      viewer_is_admin: false,
       access_type: accessType,
       can_purchase_single: policy?.can_purchase_single ?? false,
       cta_label: policy?.cta_label ?? 'Découvrir',

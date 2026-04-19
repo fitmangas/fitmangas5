@@ -29,10 +29,12 @@ export type SmartCourse = {
   timezone: string;
   location: string | null;
   live_url: string | null;
-  /** Présent seulement si `access_type === 'full'` (non exposé aux autres au chargement agenda). */
+  /** Présent selon les règles serveur (full / admin / tier test). */
   jitsi_link: string | null;
   replay_url: string | null;
   capacity_max: number | null;
+  /** Si true, traiter comme accès complet côté UI (profil admin). */
+  viewer_is_admin?: boolean;
   access_type: AccessType;
   can_purchase_single: boolean;
   cta_label: string | null;

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Play, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/app/admin/courses/actions';
 
 export type AdminCourseRow = {
@@ -402,6 +402,15 @@ export function AdminCoursesManager({ courses }: Props) {
                     >
                       <Pencil size={14} />
                     </button>
+                    <a
+                      href={`/live/${c.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mr-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/80 p-2 text-emerald-800 hover:bg-emerald-100"
+                      aria-label="Ouvrir le live dans un nouvel onglet"
+                    >
+                      <Play size={14} strokeWidth={2} className="-ml-px" aria-hidden />
+                    </a>
                     <button
                       type="button"
                       onClick={() => handleDelete(c.id)}

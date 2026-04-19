@@ -50,6 +50,14 @@ function badgeForAccess(access: AccessType) {
   return 'Accès refusé';
 }
 
+/** Admin ou accès complet déclaré. */
+function effectiveAccessForUi(course: SmartCourse): AccessType {
+  if (course.viewer_is_admin === true || course.access_type === 'full') {
+    return 'full';
+  }
+  return course.access_type;
+}
+
 function formatFortnightSubtitle() {
   const days = getFortnightUtcDays();
   const first = days[0];
@@ -193,10 +201,10 @@ export function SmartCalendar() {
                         key={event.id}
                         type="button"
                         onClick={() => setSelectedCourse(event)}
-                        className={`w-full rounded-lg border px-2 py-1 text-left text-[10px] transition hover:opacity-95 ${classForAccess(event.access_type)}`}
+                        className={`w-full rounded-lg border px-2 py-1 text-left text-[10px] transition hover:opacity-95 ${classForAccess(effectiveAccessForUi(event))}`}
                       >
                         <div className="truncate font-medium">{event.title}</div>
-                        <div className="mt-0.5 text-[9px] opacity-80">{badgeForAccess(event.access_type)}</div>
+                        <div className="mt-0.5 text-[9px] opacity-80">{badgeForAccess(effectiveAccessForUi(event))}</div>
                       </button>
                     ))}
                     {dayEvents.length > 3 ? (
@@ -245,7 +253,7 @@ export function SmartCalendar() {
                 <div className="inline-flex items-center gap-2 rounded-full border border-brand-ink/15 bg-brand-ink/[0.04] px-3 py-1 text-xs text-brand-ink/70">
                   Séance terminée · plus de réservation
                 </div>
-                {selectedCourse.access_type === 'full' && selectedCourse.replay_url ? (
+                {effectiveAccessForUi(selectedCourse) === 'full' && selectedCourse.replay_url ? (
                   <a
                     href={selectedCourse.replay_url}
                     target="_blank"
@@ -256,7 +264,7 @@ export function SmartCalendar() {
                   </a>
                 ) : null}
               </div>
-            ) : selectedCourse.access_type === 'full' ? (
+            ) : effectiveAccessForUi(selectedCourse) === 'full' ? (
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-800">
                   <Unlock size={12} />

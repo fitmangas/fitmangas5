@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
-import { JitsiRoom } from '@/components/Jitsi/JitsiRoom';
-import { canAccessCourse } from '@/lib/access-control';
+import { JitsiRoomLoader } from '@/components/Jitsi/JitsiRoomLoader';
+import { getAccessType, getUserLivePrivileges } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
 
 const uuidSchema = z.string().uuid();
@@ -49,8 +49,11 @@ export default async function LiveCoursePage({
   }
 
   let allowed = false;
+  let isModerator = false;
   try {
-    allowed = await canAccessCourse(user.id, idParsed.data);
+    const priv = await getUserLivePrivileges(user.id);
+    isModerator = priv.isAdmin;
+    allowed = priv.isAdmin || (await getAccessType(user.id, idParsed.data)) === 'full';
   } catch {
     return <AccessDenied subtitle="Impossible de vérifier ton accès." />;
   }
@@ -58,6 +61,16 @@ export default async function LiveCoursePage({
   if (!allowed) {
     return <AccessDenied subtitle="Tu n’as pas accès à ce live." />;
   }
+
+  const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).maybeSingle();
+
+  const displayName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
+    (typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '') ||
+    user.email?.split('@')[0] ||
+    'Participant';
+
+  const emailForJitsi = user.email ?? '';
 
   const { data: course, error } = await supabase
     .from('courses')
@@ -108,7 +121,14 @@ export default async function LiveCoursePage({
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
-        <JitsiRoom roomUrl={course.jitsi_link} title={`Live — ${course.title}`} />
+        <JitsiRoomLoader
+          courseId={course.id}
+          roomUrl={course.jitsi_link}
+          title={`Live — ${course.title}`}
+          displayName={displayName}
+          email={emailForJitsi}
+          isModerator={isModerator}
+        />
       </main>
     </div>
   );
