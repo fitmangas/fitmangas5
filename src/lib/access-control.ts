@@ -42,6 +42,25 @@ export async function getAccessType(userId: string, courseId: string): Promise<A
 }
 
 export async function canAccessCourse(userId: string, courseId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const safeUserId = sanitizeUuid(userId);
+  sanitizeUuid(courseId);
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', safeUserId)
+    .maybeSingle();
+
+  if (profile?.role === 'admin') {
+    return true;
+  }
+
+  const tier = await getUserTier(userId);
+  if (tier === 'online_individual_monthly') {
+    return true;
+  }
+
   const accessType = await getAccessType(userId, courseId);
   return accessType === 'full';
 }
@@ -55,7 +74,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
     supabase
       .from('courses')
       .select(
-        'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, replay_url, capacity_max, is_published',
+        'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, replay_url, capacity_max, is_published',
       )
       .eq('is_published', true)
       .order('starts_at', { ascending: true }),
@@ -69,6 +88,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
   if (!tier) {
     return courses.map((course) => ({
       ...course,
+      jitsi_link: null,
       access_type: 'locked' as const,
       can_purchase_single: false,
       cta_label: 'Découvrir les abonnements',
@@ -119,6 +139,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
 
     return {
       ...course,
+      jitsi_link: accessType === 'full' ? course.jitsi_link ?? null : null,
       access_type: accessType,
       can_purchase_single: policy?.can_purchase_single ?? false,
       cta_label: policy?.cta_label ?? 'Découvrir',

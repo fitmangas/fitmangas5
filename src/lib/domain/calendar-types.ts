@@ -29,6 +29,8 @@ export type SmartCourse = {
   timezone: string;
   location: string | null;
   live_url: string | null;
+  /** Présent seulement si `access_type === 'full'` (non exposé aux autres au chargement agenda). */
+  jitsi_link: string | null;
   replay_url: string | null;
   capacity_max: number | null;
   access_type: AccessType;

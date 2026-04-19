@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { CalendarPlus2, Lock, Unlock, X, RefreshCw } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
 import { FORTNIGHT_DAYS, getUtcFortnightWindow, isCoursePast } from '@/lib/calendar-window';
@@ -262,7 +263,14 @@ export function SmartCalendar() {
                   Accès complet
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {selectedCourse.live_url ? (
+                  {selectedCourse.jitsi_link ? (
+                    <Link
+                      href={`/live/${selectedCourse.id}`}
+                      className="rounded-full bg-emerald-600 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm ring-1 ring-emerald-700/20 hover:bg-emerald-700"
+                    >
+                      REJOINDRE LE LIVE
+                    </Link>
+                  ) : selectedCourse.live_url ? (
                     <a
                       href={selectedCourse.live_url}
                       target="_blank"
