@@ -33,6 +33,7 @@ const courseUpsertSchema = z
     liveUrl: z.string().nullable().optional(),
     jitsiLink: z.string().nullable().optional(),
     replayUrl: z.string().nullable().optional(),
+    spotifyPlaylistUrl: z.string().nullable().optional(),
     timezone: z.string().max(64).default('Europe/Paris'),
   })
   .superRefine((data, ctx) => {
@@ -91,6 +92,7 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
       live_url: normalizeOptionalUrl(d.liveUrl),
       jitsi_link: normalizeOptionalUrl(d.jitsiLink),
       replay_url: normalizeOptionalUrl(d.replayUrl),
+      spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
       is_published: d.isPublished,
       created_by: user.id,
       auto_add_for_monthly: d.courseFormat === 'online',
@@ -141,6 +143,7 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
         live_url: normalizeOptionalUrl(d.liveUrl),
         jitsi_link: normalizeOptionalUrl(d.jitsiLink),
         replay_url: normalizeOptionalUrl(d.replayUrl),
+        spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
         is_published: d.isPublished,
         auto_add_for_monthly: d.courseFormat === 'online',
       })

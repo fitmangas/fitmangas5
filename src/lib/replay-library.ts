@@ -13,6 +13,8 @@ export type ReplayLibraryItem = {
   durationSeconds: number | null;
   startsAt: string;
   endsAt: string;
+  isFavorite?: boolean;
+  progressSeconds?: number | null;
 };
 
 type CourseEmbed = {
@@ -77,17 +79,48 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
   const selectCols =
     'id, title, thumbnail_url, duration_seconds, courses ( id, title, slug, starts_at, ends_at, is_published )';
 
+  let list: ReplayLibraryItem[];
+
   if (truth.isAdmin && demo) {
     const admin = createAdminClient();
     const { data, error } = await admin.from('video_recordings').select(selectCols).eq('is_ready', true);
     if (error) throw new Error(error.message);
     /* En démo : montrer aussi les replays prêts avant la fin officielle du cours (ex. « Test live » pour présentation). */
-    return mapAndFilter(data as unknown as RecordingRow[] | null, { demoAdminShowUpcomingWithReplay: true });
+    list = mapAndFilter(data as unknown as RecordingRow[] | null, { demoAdminShowUpcomingWithReplay: true });
+  } else {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('video_recordings').select(selectCols).eq('is_ready', true);
+
+    if (error) throw new Error(error.message);
+    list = mapAndFilter(data as unknown as RecordingRow[] | null);
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.from('video_recordings').select(selectCols).eq('is_ready', true);
+  return attachReplayExtras(userId, list);
+}
 
-  if (error) throw new Error(error.message);
-  return mapAndFilter(data as unknown as RecordingRow[] | null);
+async function attachReplayExtras(userId: string, list: ReplayLibraryItem[]): Promise<ReplayLibraryItem[]> {
+  const ids = list.map((i) => i.recordingId);
+  if (ids.length === 0) return list;
+
+  const supabase = await createClient();
+
+  const [favRes, progRes] = await Promise.all([
+    supabase.from('replay_favorites').select('recording_id').eq('user_id', userId).in('recording_id', ids),
+    supabase.from('replay_playback_progress').select('recording_id, position_seconds').eq('user_id', userId).in('recording_id', ids),
+  ]);
+
+  if (favRes.error || progRes.error) {
+    return list;
+  }
+
+  const favSet = new Set((favRes.data ?? []).map((r: { recording_id: string }) => r.recording_id));
+  const progMap = new Map(
+    (progRes.data ?? []).map((r: { recording_id: string; position_seconds: number }) => [r.recording_id, r.position_seconds]),
+  );
+
+  return list.map((item) => ({
+    ...item,
+    isFavorite: favSet.has(item.recordingId),
+    progressSeconds: progMap.get(item.recordingId) ?? null,
+  }));
 }

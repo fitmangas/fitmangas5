@@ -12,12 +12,15 @@
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "db:status": "supabase migration list",
-    "seed:test-data": "tsx scripts/seed-test-data.ts"
+    "seed:test-data": "tsx scripts/seed-test-data.ts",
+    "automation:inactive": "tsx scripts/automation/report-inactive-users.ts",
+    "automation:birthdays": "tsx scripts/automation/run-birthday-day.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
+    "@vimeo/player": "^2.30.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "next": "^15.2.4",
@@ -33,9 +36,9 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.4",
+    "supabase": "^2.20.12",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "supabase": "^2.20.12"
+    "typescript": "~5.8.2"
   }
 }

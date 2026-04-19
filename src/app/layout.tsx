@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { DemoModeBanner } from '@/components/DemoModeBanner';
+import { FloatingWhatsApp } from '@/components/Support/FloatingWhatsApp';
 
 import './globals.css';
 
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <DemoModeBanner />
         {children}
+        <FloatingWhatsApp />
       </body>
     </html>
   );

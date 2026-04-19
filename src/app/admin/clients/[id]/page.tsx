@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { AvatarWithRibbon } from '@/components/ui/AvatarWithRibbon';
+import { gradeLabel } from '@/lib/gamification';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -35,6 +37,10 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
     role: string | null;
     id: string;
     customer_tier?: string | null;
+    avatar_url?: string | null;
+    gamification_grade?: string | null;
+    gamification_points?: number | null;
+    birth_date?: string | null;
   };
 
   return (
@@ -48,12 +54,31 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
 
         <header className="rounded-lg border border-neutral-200 bg-white p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Fiche client</p>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">{displayName}</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Tier profil : <strong>{formatTier(p.customer_tier ?? null)}</strong> · Rôle :{' '}
-            <strong>{p.role ?? 'member'}</strong>
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">ID : {p.id}</p>
+          <div className="mt-4 flex flex-wrap items-start gap-5">
+            <AvatarWithRibbon
+              avatarUrl={p.avatar_url}
+              displayName={displayName}
+              grade={p.gamification_grade}
+              sizePx={80}
+              showPoints
+              points={p.gamification_points ?? 0}
+            />
+            <div className="min-w-0 flex-1 pt-1">
+              <h1 className="text-2xl font-semibold text-neutral-900">{displayName}</h1>
+              <p className="mt-2 text-sm text-neutral-600">
+                Tier profil : <strong>{formatTier(p.customer_tier ?? null)}</strong> · Rôle :{' '}
+                <strong>{p.role ?? 'member'}</strong> · Grade :{' '}
+                <strong>{gradeLabel(p.gamification_grade)}</strong>
+                {p.gamification_points != null ? ` (${p.gamification_points} pts)` : ''}
+              </p>
+              {p.birth_date ? (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Naissance : {new Date(p.birth_date).toLocaleDateString('fr-FR')}
+                </p>
+              ) : null}
+              <p className="mt-1 text-xs text-neutral-500">ID : {p.id}</p>
+            </div>
+          </div>
         </header>
 
         <section className="rounded-lg border border-neutral-200 bg-white p-6">

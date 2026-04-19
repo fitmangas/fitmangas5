@@ -18,6 +18,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -90,6 +91,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            ...(birthDate.trim() ? { birth_date: birthDate.trim() } : {}),
             segment,
             preferred_course_id: course.id,
           },
@@ -216,6 +218,15 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                />
+              </label>
+              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                {lang === 'FR' ? 'Date de naissance (optionnel)' : 'Fecha de nacimiento (opcional)'}
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
                   className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                 />
               </label>

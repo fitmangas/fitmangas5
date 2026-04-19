@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { JitsiRoomLoader } from '@/components/Jitsi/JitsiRoomLoader';
+import { LiveVisitRecorder } from '@/components/Live/LiveVisitRecorder';
 import { ReplayViewTracker } from '@/components/Replay/ReplayViewTracker';
-import { VimeoReplayEmbed } from '@/components/Replay/VimeoReplayEmbed';
+import { VimeoReplayWithResume } from '@/components/Replay/VimeoReplayWithResume';
 import {
   getAccessType,
   getUserLivePrivileges,
@@ -104,7 +105,7 @@ export default async function LiveCoursePage({
 
   const { data: course, error } = await supabase
     .from('courses')
-    .select('id, title, jitsi_link, ends_at')
+    .select('id, title, jitsi_link, ends_at, spotify_playlist_url')
     .eq('id', idParsed.data)
     .eq('is_published', true)
     .maybeSingle();
@@ -139,6 +140,20 @@ export default async function LiveCoursePage({
   const replayEmbedUrl = replay?.embed_url?.trim() ?? '';
   const showVimeoReplay = courseIsPast && replayEmbedUrl.length > 0;
   const hasJitsi = !!course.jitsi_link?.trim();
+  const spotifyUrl = course.spotify_playlist_url?.trim() ?? '';
+
+  let initialReplaySeconds = 0;
+  if (replay?.id && showVimeoReplay) {
+    const { data: prog, error: progErr } = await supabase
+      .from('replay_playback_progress')
+      .select('position_seconds')
+      .eq('recording_id', replay.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!progErr && prog) {
+      initialReplaySeconds = prog.position_seconds ?? 0;
+    }
+  }
 
   // Live à venir ou en cours : la salle Jitsi est obligatoire tant qu’il n’y a pas de replay.
   if (!showVimeoReplay && !hasJitsi && !courseIsPast) {
@@ -189,10 +204,25 @@ export default async function LiveCoursePage({
           <>
             {replay?.id ? <ReplayViewTracker recordingId={replay.id} /> : null}
             <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Replay</p>
-            <VimeoReplayEmbed
+            <VimeoReplayWithResume
               embedUrl={replayEmbedUrl}
               title={replay?.title?.trim() || `Replay — ${course.title}`}
+              recordingId={replay?.id ?? null}
+              initialSeconds={initialReplaySeconds}
             />
+            {spotifyUrl ? (
+              <p className="text-sm text-brand-ink/70">
+                <span className="font-semibold text-brand-ink">Playlist :</span>{' '}
+                <a
+                  href={spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-accent underline-offset-4 hover:underline"
+                >
+                  Ouvrir sur Spotify
+                </a>
+              </p>
+            ) : null}
           </>
         ) : courseIsPast ? (
           <div className="rounded-2xl border border-brand-ink/10 bg-white px-6 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
@@ -203,15 +233,31 @@ export default async function LiveCoursePage({
             </p>
           </div>
         ) : (
-          <JitsiRoomLoader
-            courseId={course.id}
-            roomUrl={course.jitsi_link!}
-            title={`Live — ${course.title}`}
-            displayName={displayName}
-            email={emailForJitsi}
-            isModerator={isModerator}
-            studentPreview={effectiveStudentPreview}
-          />
+          <>
+            <LiveVisitRecorder courseId={course.id} />
+            <JitsiRoomLoader
+              courseId={course.id}
+              roomUrl={course.jitsi_link!}
+              title={`Live — ${course.title}`}
+              displayName={displayName}
+              email={emailForJitsi}
+              isModerator={isModerator}
+              studentPreview={effectiveStudentPreview}
+            />
+            {spotifyUrl ? (
+              <p className="text-sm text-brand-ink/70">
+                <span className="font-semibold text-brand-ink">Playlist séance :</span>{' '}
+                <a
+                  href={spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-accent underline-offset-4 hover:underline"
+                >
+                  Spotify
+                </a>
+              </p>
+            ) : null}
+          </>
         )}
       </main>
     </div>

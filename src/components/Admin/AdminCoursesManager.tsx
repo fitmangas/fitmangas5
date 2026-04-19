@@ -21,6 +21,7 @@ export type AdminCourseRow = {
   live_url: string | null;
   jitsi_link: string | null;
   replay_url: string | null;
+  spotify_playlist_url?: string | null;
   is_published: boolean;
   created_at: string;
 };
@@ -57,6 +58,7 @@ type FormState = {
   liveUrl: string;
   jitsiLink: string;
   replayUrl: string;
+  spotifyPlaylistUrl: string;
 };
 
 function emptyCreateForm(): FormState {
@@ -76,6 +78,7 @@ function emptyCreateForm(): FormState {
     liveUrl: '',
     jitsiLink: '',
     replayUrl: '',
+    spotifyPlaylistUrl: '',
   };
 }
 
@@ -93,6 +96,7 @@ function courseToFormState(c: AdminCourseRow): FormState {
     liveUrl: c.live_url ?? '',
     jitsiLink: c.jitsi_link ?? '',
     replayUrl: c.replay_url ?? '',
+    spotifyPlaylistUrl: c.spotify_playlist_url ?? '',
   };
 }
 
@@ -117,6 +121,7 @@ function formToPayload(f: FormState) {
     liveUrl: f.liveUrl.trim() || null,
     jitsiLink: f.jitsiLink.trim() || null,
     replayUrl: f.replayUrl.trim() || null,
+    spotifyPlaylistUrl: f.spotifyPlaylistUrl.trim() || null,
     timezone: 'Europe/Paris',
   };
 }
@@ -339,6 +344,16 @@ export function AdminCoursesManager({ courses }: Props) {
               onChange={(e) => setCreateForm((s) => ({ ...s, jitsiLink: e.target.value }))}
               className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
               placeholder="https://meet.jit.si/NomDuCours-ID"
+            />
+          </label>
+          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+            Playlist Spotify (replay / live)
+            <input
+              type="url"
+              value={createForm.spotifyPlaylistUrl}
+              onChange={(e) => setCreateForm((s) => ({ ...s, spotifyPlaylistUrl: e.target.value }))}
+              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              placeholder="https://open.spotify.com/playlist/…"
             />
           </label>
           <div className="md:col-span-2">
@@ -617,6 +632,16 @@ export function AdminCoursesManager({ courses }: Props) {
                   onChange={(e) => setEditForm((s) => (s ? { ...s, jitsiLink: e.target.value } : s))}
                   className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
                   placeholder="https://meet.jit.si/NomDuCours-ID"
+                />
+              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                Playlist Spotify (replay / live)
+                <input
+                  type="url"
+                  value={editForm.spotifyPlaylistUrl}
+                  onChange={(e) => setEditForm((s) => (s ? { ...s, spotifyPlaylistUrl: e.target.value } : s))}
+                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                  placeholder="https://open.spotify.com/playlist/…"
                 />
               </label>
               <button
