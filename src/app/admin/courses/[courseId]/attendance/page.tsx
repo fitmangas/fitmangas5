@@ -38,14 +38,14 @@ export default async function CourseAttendancePage({ params }: { params: Promise
   const ended = new Date(course.ends_at) < new Date();
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-10">
+    <div className="min-h-screen px-4 py-10">
       <div className="mx-auto max-w-3xl space-y-6">
-        <Link href="/admin/courses" className="text-sm text-neutral-600 underline">
+        <Link href="/admin/courses" className="text-sm font-medium text-luxury-orange underline-offset-4 hover:underline">
           ← Séances
         </Link>
-        <header className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h1 className="text-xl font-semibold text-neutral-900">Pointage — {course.title}</h1>
-          <p className="mt-2 text-sm text-neutral-600">
+        <header className="glass-card rounded-2xl p-6 md:p-8">
+          <h1 className="text-xl font-semibold tracking-tight text-luxury-ink">Pointage — {course.title}</h1>
+          <p className="mt-2 text-sm text-luxury-muted">
             Fin de séance : {new Date(course.ends_at).toLocaleString('fr-FR')}
             {!ended ? (
               <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
@@ -56,7 +56,7 @@ export default async function CourseAttendancePage({ params }: { params: Promise
         </header>
 
         {!rows.length ? (
-          <p className="text-sm text-neutral-600">Aucune inscription pour ce cours.</p>
+          <p className="text-sm text-luxury-muted">Aucune inscription pour ce cours.</p>
         ) : (
           <AttendanceMarking rows={rows} />
         )}

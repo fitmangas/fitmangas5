@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AvatarWithRibbon } from '@/components/ui/AvatarWithRibbon';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { createClient } from '@/lib/supabase/server';
 
 import { NotificationBell, type NotificationRow } from './NotificationBell';
@@ -36,31 +37,30 @@ export async function CompteTopBar() {
   const points = (profile as { gamification_points?: number | null })?.gamification_points;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 pb-10 pt-4 md:px-8">
-      <Link href="/compte" className="flex min-w-0 items-start gap-3">
-        <AvatarWithRibbon
-          avatarUrl={avatarUrl}
-          displayName={display}
-          grade={grade}
-          sizePx={48}
-          showPoints
-          points={points ?? 0}
-        />
-        <div className="min-w-0 pt-1">
-          <p className="truncate text-[10px] font-bold uppercase tracking-[0.28em] text-brand-accent">Espace client</p>
-          <p className="truncate font-serif text-lg italic text-brand-ink">{display}</p>
-        </div>
-      </Link>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <NotificationBell items={(notifications ?? []) as NotificationRow[]} />
-        <Link
-          href="/compte/profil"
-          className="rounded-full border border-brand-ink/[0.1] bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-ink/75 transition hover:border-brand-accent/30 hover:bg-brand-beige/40"
-        >
-          Mon profil
+    <GlassCard className="mx-4 mb-6 mt-4 px-4 py-4 md:mx-auto md:max-w-5xl md:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Link href="/compte" className="flex min-w-0 items-start gap-3">
+          <AvatarWithRibbon
+            avatarUrl={avatarUrl}
+            displayName={display}
+            grade={grade}
+            sizePx={48}
+            showPoints
+            points={points ?? 0}
+          />
+          <div className="min-w-0 pt-1">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Espace client</p>
+            <p className="truncate text-lg font-semibold tracking-tight text-luxury-ink">{display}</p>
+          </div>
         </Link>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <NotificationBell items={(notifications ?? []) as NotificationRow[]} />
+          <Link href="/compte/profil" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.16em]">
+            Mon profil
+          </Link>
+        </div>
       </div>
-    </div>
+    </GlassCard>
   );
 }

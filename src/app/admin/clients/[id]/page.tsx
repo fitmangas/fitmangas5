@@ -44,16 +44,16 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-10">
+    <div className="min-h-screen px-4 py-10">
       <div className="mx-auto max-w-4xl space-y-8">
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <Link href="/admin" className="text-neutral-600 underline">
+          <Link href="/admin" className="font-medium text-luxury-orange underline-offset-4 hover:underline">
             ← Dashboard
           </Link>
         </div>
 
-        <header className="rounded-lg border border-neutral-200 bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Fiche client</p>
+        <header className="glass-card rounded-2xl p-6 md:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">Fiche client</p>
           <div className="mt-4 flex flex-wrap items-start gap-5">
             <AvatarWithRibbon
               avatarUrl={p.avatar_url}
@@ -64,31 +64,31 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
               points={p.gamification_points ?? 0}
             />
             <div className="min-w-0 flex-1 pt-1">
-              <h1 className="text-2xl font-semibold text-neutral-900">{displayName}</h1>
-              <p className="mt-2 text-sm text-neutral-600">
+              <h1 className="text-2xl font-semibold tracking-tight text-luxury-ink">{displayName}</h1>
+              <p className="mt-2 text-sm text-luxury-muted">
                 Tier profil : <strong>{formatTier(p.customer_tier ?? null)}</strong> · Rôle :{' '}
                 <strong>{p.role ?? 'member'}</strong> · Grade :{' '}
                 <strong>{gradeLabel(p.gamification_grade)}</strong>
                 {p.gamification_points != null ? ` (${p.gamification_points} pts)` : ''}
               </p>
               {p.birth_date ? (
-                <p className="mt-1 text-xs text-neutral-500">
+                <p className="mt-1 text-xs text-luxury-soft">
                   Naissance : {new Date(p.birth_date).toLocaleDateString('fr-FR')}
                 </p>
               ) : null}
-              <p className="mt-1 text-xs text-neutral-500">ID : {p.id}</p>
+              <p className="mt-1 text-xs text-luxury-soft">ID : {p.id}</p>
             </div>
           </div>
         </header>
 
-        <section className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">Abonnements / offres</h2>
+        <section className="glass-card rounded-2xl p-6 md:p-8">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-luxury-soft">Abonnements / offres</h2>
           {!subs?.length ? (
-            <p className="mt-3 text-sm text-neutral-500">Aucun abonnement en base.</p>
+            <p className="mt-3 text-sm text-luxury-muted">Aucun abonnement en base.</p>
           ) : (
             <ul className="mt-4 space-y-3 text-sm">
               {subs.map((s) => (
-                <li key={s.id} className="rounded border border-neutral-100 px-3 py-2">
+                <li key={s.id} className="rounded-xl border border-white/35 bg-white/25 px-3 py-2 backdrop-blur-sm">
                   <span className="font-medium">{formatTier(s.tier)}</span> · {s.status} ·{' '}
                   {(s.price_cents ?? 0) / 100} € / {s.interval ?? 'month'}
                   {s.ends_at ? ` · fin ${new Date(s.ends_at).toLocaleDateString('fr-FR')}` : ''}
@@ -98,17 +98,17 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
           )}
         </section>
 
-        <section className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">
+        <section className="glass-card rounded-2xl p-6 md:p-8">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-luxury-soft">
             Historique de présence / inscriptions
           </h2>
           {!enrollments?.length ? (
-            <p className="mt-3 text-sm text-neutral-500">Aucune inscription.</p>
+            <p className="mt-3 text-sm text-luxury-muted">Aucune inscription.</p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-200 text-xs uppercase text-neutral-500">
+                  <tr className="border-b border-white/30 text-xs uppercase text-luxury-soft">
                     <th className="py-2 pr-4">Séance</th>
                     <th className="py-2 pr-4">Date</th>
                     <th className="py-2">Statut</th>
@@ -122,9 +122,9 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
                       | null;
                     const c = Array.isArray(raw) ? raw[0] : raw;
                     return (
-                      <tr key={e.id} className="border-b border-neutral-100">
+                      <tr key={e.id} className="border-b border-white/20">
                         <td className="py-2 pr-4">{c?.title ?? '—'}</td>
-                        <td className="py-2 pr-4 text-neutral-600">
+                        <td className="py-2 pr-4 text-luxury-muted">
                           {c?.starts_at ? new Date(c.starts_at).toLocaleString('fr-FR') : '—'}
                         </td>
                         <td className="py-2">{e.status}</td>

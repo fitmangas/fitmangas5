@@ -194,14 +194,14 @@ export function AdminCoursesManager({ courses }: Props) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-serif text-2xl italic text-brand-ink">Séances</h2>
-          <p className="mt-1 text-sm text-brand-ink/55">
+          <h2 className="text-2xl font-semibold tracking-tight text-luxury-ink">Séances</h2>
+          <p className="mt-1 text-sm text-luxury-muted">
             Seuls les cours <strong>publiés</strong> apparaissent sur le calendrier client (/compte).
           </p>
         </div>
         <Link
           href="/admin"
-          className="rounded-full border border-brand-ink/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-brand-ink/70 hover:bg-brand-sand/30"
+          className="btn-luxury-ghost px-4 py-2 text-[10px] tracking-[0.12em]"
         >
           ← Dashboard
         </Link>
@@ -219,7 +219,7 @@ export function AdminCoursesManager({ courses }: Props) {
         </div>
       ) : null}
 
-      <section className="rounded-[24px] border border-brand-ink/[0.06] bg-white p-6 shadow-sm">
+      <section className="glass-card p-6">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-brand-ink/50">
           <Plus size={16} className="text-brand-accent" />
           Nouvelle séance
@@ -368,14 +368,14 @@ export function AdminCoursesManager({ courses }: Props) {
         </form>
       </section>
 
-      <section className="overflow-hidden rounded-[24px] border border-brand-ink/[0.06] bg-white shadow-sm">
-        <div className="border-b border-brand-ink/[0.06] px-6 py-4">
+      <section className="glass-card overflow-hidden">
+        <div className="border-b border-white/35 px-6 py-4">
           <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-brand-ink/50">Toutes les séances</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-brand-ink/[0.06] bg-brand-beige/40 text-[10px] uppercase tracking-wider text-brand-ink/45">
+              <tr className="border-b border-white/30 bg-white/25 text-[10px] uppercase tracking-wider text-luxury-soft backdrop-blur-sm">
                 <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Début</th>
                 <th className="px-4 py-3">Format</th>
@@ -388,7 +388,7 @@ export function AdminCoursesManager({ courses }: Props) {
               {courses.map((c) => {
                 const coursePast = new Date(c.ends_at).getTime() < Date.now();
                 return (
-                <tr key={c.id} className="border-b border-brand-ink/[0.04] hover:bg-brand-beige/20">
+                <tr key={c.id} className="border-b border-white/20 hover:bg-white/25">
                   <td className="max-w-[200px] truncate px-4 py-3 font-medium">{c.title}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs">
                     {new Date(c.starts_at).toLocaleString('fr-FR', {
@@ -473,11 +473,11 @@ export function AdminCoursesManager({ courses }: Props) {
       </section>
 
       {editing && editForm ? (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-ink/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[24px] border border-brand-ink/[0.08] bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-brand-ink/[0.06] pb-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm">
+          <div className="glass-card max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 shadow-2xl">
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-white/35 pb-4">
               <div className="min-w-0 flex-1 pr-2">
-                <h3 className="font-serif text-xl italic leading-snug text-brand-ink">Modifier la séance</h3>
+                <h3 className="text-xl font-semibold leading-snug text-luxury-ink">Modifier la séance</h3>
                 <p className="mt-1 text-[11px] leading-snug text-brand-ink/45">
                   Ouvre l’aperçu élève dans un nouvel onglet pour tes démos prospects.
                 </p>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useFormStatus } from 'react-dom';
 
 import { updateAvatarAction } from '@/app/compte/actions';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 function SubmitLabel() {
   const { pending } = useFormStatus();
@@ -14,16 +15,16 @@ export function ProfileAvatarForm({ avatarUrl }: { avatarUrl: string | null | un
   const url = avatarUrl?.trim();
 
   return (
-    <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
-      <h2 className="font-serif text-xl italic text-brand-ink">Photo de profil</h2>
-      <p className="mt-2 text-sm text-brand-ink/50">JPG, PNG ou WebP — max 4 Mo.</p>
+    <GlassCard className="p-8">
+      <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Photo de profil</h2>
+      <p className="mt-2 text-sm text-luxury-muted">JPG, PNG ou WebP — max 4 Mo.</p>
       <div className="mt-6 flex flex-wrap items-end gap-6">
         {url ? (
-          <span className="relative h-24 w-24 overflow-hidden rounded-full border border-brand-ink/[0.08] bg-brand-beige">
+          <span className="relative h-24 w-24 overflow-hidden rounded-full border border-white/45 bg-white/30 shadow-inner">
             <Image src={url} alt="" fill className="object-cover" sizes="96px" />
           </span>
         ) : (
-          <span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-brand-ink/15 bg-brand-beige/40 text-sm text-brand-ink/40">
+          <span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/45 bg-white/20 text-sm text-luxury-soft">
             Aucune
           </span>
         )}
@@ -33,16 +34,13 @@ export function ProfileAvatarForm({ avatarUrl }: { avatarUrl: string | null | un
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             required
-            className="max-w-full text-sm text-brand-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-brand-accent file:px-4 file:py-2 file:text-[11px] file:font-bold file:uppercase file:tracking-wider file:text-white"
+            className="max-w-full text-sm text-luxury-muted file:mr-4 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-luxury-orange file:to-luxury-orange-deep file:px-4 file:py-2 file:text-[11px] file:font-semibold file:uppercase file:tracking-wider file:text-white"
           />
-          <button
-            type="submit"
-            className="inline-flex w-fit min-h-[44px] items-center justify-center rounded-full bg-brand-accent px-6 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-white hover:opacity-93"
-          >
+          <button type="submit" className="btn-luxury-primary w-fit min-h-[44px] px-6 py-2">
             <SubmitLabel />
           </button>
         </form>
       </div>
-    </div>
+    </GlassCard>
   );
 }

@@ -1,48 +1,119 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400&display=swap');
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
+@import 'tailwindcss';
+
+/* Charte Premium — Glassmorphism. Une seule famille : Inter (sans-serif). */
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  --color-brand-beige: #F5F2ED;
-  --color-brand-sand: #E8E2D9;
-  --color-brand-ink: #1A1A1A;
-  --color-brand-accent: #8C7E6D;
+  /* Texte principal */
+  --color-luxury-ink: #0f172a;
+  --color-luxury-muted: #475569;
+  --color-luxury-soft: #64748b;
+
+  /* Accents vifs */
+  --color-luxury-orange: #f97316;
+  --color-luxury-orange-deep: #ea580c;
+  --color-luxury-rose: #f43f5e;
+  --color-luxury-emerald: #10b981;
+  --color-luxury-emerald-bright: #34d399;
+  --color-luxury-violet: #8b5cf6;
+
+  /* Compat composants existants — pointer vers la charte premium */
+  --color-brand-beige: #e4e9f2;
+  --color-brand-sand: rgba(255, 255, 255, 0.35);
+  --color-brand-ink: #0f172a;
+  --color-brand-accent: #f97316;
 
   --radius-pill: 9999px;
-  --radius-card: 24px;
 }
 
 @layer base {
+  html {
+    @apply antialiased;
+  }
+
   body {
-    @apply bg-brand-beige text-brand-ink font-sans antialiased;
+    @apply min-h-screen font-sans text-luxury-ink font-normal;
+    background: linear-gradient(
+      145deg,
+      #cfd8e8 0%,
+      #dde4f0 22%,
+      #e8ecf4 45%,
+      #d4dce8 72%,
+      #c5d0e3 100%
+    );
+    background-attachment: fixed;
   }
 
-  h1, h2, h3, h4, .serif {
-    @apply font-serif;
+  /* Plus de serif sur les titres : tout en Inter */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans tracking-tight font-semibold;
   }
 }
 
-.glass {
-  @apply bg-white/40 backdrop-blur-md border border-white/20;
-}
-
-.grain {
+/* Grain décoratif léger — profondeur « luxe » sans surcharger */
+.luxury-grain {
   position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.04;
+  inset: 0;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Carte glass standard — utilisée partout (Admin + Client) */
+.glass-card {
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow:
+    0 4px 24px rgba(15, 23, 42, 0.06),
+    0 24px 48px -12px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-card--dark {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.35);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Boutons premium — pilule + gradient au survol */
+.btn-luxury-primary {
+  @apply inline-flex items-center justify-center rounded-full px-8 py-3.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-lg transition-all duration-300;
+  background: linear-gradient(135deg, var(--color-luxury-orange) 0%, var(--color-luxury-orange-deep) 100%);
+  box-shadow:
+    0 4px 14px rgba(249, 115, 22, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn-luxury-primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 28px rgba(249, 115, 22, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-luxury-ghost {
+  @apply inline-flex items-center justify-center rounded-full border border-white/40 bg-white/25 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-luxury-ink/85 backdrop-blur-md transition-all duration-300 hover:border-white/60 hover:bg-white/45;
+}
+
+/* Pastilles KPI (icônes rondes colorées) */
+.kpi-icon-wrap {
+  @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-inner;
 }
 
 .text-editorial {
-  @apply leading-[0.9] tracking-tighter;
+  @apply leading-snug tracking-tight;
 }
 
 .mask-oval {

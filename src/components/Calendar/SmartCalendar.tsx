@@ -36,12 +36,12 @@ function getFortnightUtcDays() {
 
 function classForAccess(access: AccessType) {
   if (access === 'full') {
-    return 'border-brand-accent/35 bg-white text-brand-ink shadow-[0_4px_14px_rgba(0,0,0,0.04)]';
+    return 'border-emerald-400/45 bg-white/55 text-luxury-ink shadow-[0_4px_14px_rgba(16,185,129,0.12)] backdrop-blur-sm';
   }
   if (access === 'preview') {
-    return 'border-brand-ink/10 bg-brand-sand/25 text-brand-ink/65';
+    return 'border-orange-300/40 bg-orange-50/40 text-luxury-muted backdrop-blur-sm';
   }
-  return 'border-brand-ink/10 bg-brand-ink/[0.03] text-brand-ink/45 blur-[1px]';
+  return 'border-white/25 bg-slate-900/[0.06] text-luxury-soft blur-[0.5px]';
 }
 
 function badgeForAccess(access: AccessType) {
@@ -130,12 +130,12 @@ export function SmartCalendar() {
   }, [events]);
 
   return (
-    <section className="rounded-[28px] border border-brand-ink/[0.05] bg-white p-5 shadow-[0_12px_48px_rgba(0,0,0,0.04)] sm:p-7">
+    <section className="glass-card rounded-[1.75rem] p-5 sm:p-7">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-accent/90">Calendrier intelligent</p>
-          <h2 className="mt-1.5 font-serif text-2xl italic tracking-tight text-brand-ink md:text-[1.65rem]">Tes cours</h2>
-          <p className="mt-2 text-xs leading-relaxed text-brand-ink/48">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Calendrier intelligent</p>
+          <h2 className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.65rem]">Tes cours</h2>
+          <p className="mt-2 text-xs leading-relaxed text-luxury-muted">
             Prochains {FORTNIGHT_DAYS} jours · {formatFortnightSubtitle()}
           </p>
         </div>
@@ -143,7 +143,7 @@ export function SmartCalendar() {
           <button
             type="button"
             onClick={() => void fetchEvents(true)}
-            className="inline-flex items-center gap-1 rounded-full border border-brand-ink/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-ink/60 hover:bg-brand-sand/30"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/45 bg-white/30 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-luxury-ink/80 backdrop-blur-md transition hover:bg-white/50"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> Actualiser
           </button>
@@ -151,17 +151,17 @@ export function SmartCalendar() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-brand-ink/55">Seules les séances à venir dans cette fenêtre sont affichées.</p>
+        <p className="text-xs text-luxury-muted">Seules les séances à venir dans cette fenêtre sont affichées.</p>
         {monthlyTier ? (
           <a
             href="/api/calendar/export-ical"
-            className="inline-flex items-center gap-2 rounded-full bg-brand-accent px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:opacity-90"
+            className="btn-luxury-primary inline-flex items-center gap-2 px-5 py-2.5 text-[10px] tracking-[0.14em]"
           >
             <CalendarPlus2 size={14} />
             Ajouter à Google Calendar
           </a>
         ) : (
-          <p className="text-xs text-brand-ink/45">Export Google Calendar réservé aux abonnements mensuels.</p>
+          <p className="text-xs text-luxury-soft">Export Google Calendar réservé aux abonnements mensuels.</p>
         )}
       </div>
 
@@ -170,7 +170,7 @@ export function SmartCalendar() {
       ) : null}
 
       {/* 2 semaines : grille 7 + 7 jours */}
-      <div className="mb-2 grid grid-cols-7 text-center text-[10px] uppercase tracking-widest text-brand-ink/35">
+      <div className="mb-2 grid grid-cols-7 text-center text-[10px] uppercase tracking-widest text-luxury-soft">
         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
           <div key={day} className="py-2">
             {day}
@@ -181,7 +181,7 @@ export function SmartCalendar() {
       <div className="grid grid-cols-7 gap-2">
         {loading
           ? Array.from({ length: 14 }, (_, index) => (
-              <div key={index} className="min-h-24 animate-pulse rounded-xl bg-brand-sand/20" />
+              <div key={index} className="min-h-24 animate-pulse rounded-xl bg-white/35" />
             ))
           : fortnightDays.map((date) => {
               const key = date.toISOString().slice(0, 10);
@@ -190,9 +190,9 @@ export function SmartCalendar() {
               return (
                 <div
                   key={key}
-                  className="min-h-24 rounded-xl border border-brand-ink/[0.05] bg-brand-beige/25 p-1.5"
+                  className="min-h-24 rounded-xl border border-white/35 bg-white/25 p-1.5 backdrop-blur-md"
                 >
-                  <div className="mb-1 text-[11px] font-semibold text-brand-ink/65">
+                  <div className="mb-1 text-[11px] font-semibold text-luxury-muted">
                     {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
                   </div>
                   <div className="space-y-1">
@@ -208,7 +208,7 @@ export function SmartCalendar() {
                       </button>
                     ))}
                     {dayEvents.length > 3 ? (
-                      <p className="px-1 text-[9px] text-brand-ink/45">+{dayEvents.length - 3}</p>
+                      <p className="px-1 text-[9px] text-luxury-soft">+{dayEvents.length - 3}</p>
                     ) : null}
                   </div>
                 </div>
@@ -217,27 +217,27 @@ export function SmartCalendar() {
       </div>
 
       {selectedCourse ? (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-brand-ink/45 p-0 sm:items-center sm:p-6">
-          <div className="relative z-10 w-full max-w-md rounded-t-[30px] border border-brand-ink/[0.08] bg-white p-6 shadow-2xl sm:rounded-[30px]">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+          <div className="relative z-10 w-full max-w-md rounded-t-[1.75rem] border border-white/35 bg-white/[0.42] p-6 shadow-[0_24px_64px_rgba(15,23,42,0.18)] backdrop-blur-[22px] sm:rounded-[1.75rem]">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">
                   {selectedCourse.course_format === 'online' ? 'En ligne' : 'Présentiel'} ·{' '}
                   {selectedCourse.course_category === 'group' ? 'Collectif' : 'Individuel'}
                 </p>
-                <h3 className="mt-1 font-serif text-2xl italic">{selectedCourse.title}</h3>
+                <h3 className="mt-1 text-2xl font-semibold tracking-tight text-luxury-ink">{selectedCourse.title}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedCourse(null)}
-                className="rounded-full border border-brand-ink/10 p-2 text-brand-ink/45 hover:bg-brand-sand/30"
+                className="rounded-full border border-white/40 bg-white/30 p-2 text-luxury-soft transition hover:bg-white/50"
                 aria-label="Fermer"
               >
                 <X size={14} />
               </button>
             </div>
 
-            <p className="mb-3 text-sm text-brand-ink/70">
+            <p className="mb-3 text-sm text-luxury-muted">
               {new Date(selectedCourse.starts_at).toLocaleString('fr-FR', {
                 weekday: 'long',
                 day: 'numeric',
@@ -246,11 +246,11 @@ export function SmartCalendar() {
                 minute: '2-digit',
               })}
             </p>
-            <p className="mb-4 text-sm text-brand-ink/70">{selectedCourse.description || 'Description à venir.'}</p>
+            <p className="mb-4 text-sm text-luxury-muted">{selectedCourse.description || 'Description à venir.'}</p>
 
             {selectedIsPast ? (
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-brand-ink/15 bg-brand-ink/[0.04] px-3 py-1 text-xs text-brand-ink/70">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/30 px-3 py-1 text-xs text-luxury-muted backdrop-blur-sm">
                   Séance terminée · plus de réservation
                 </div>
                 {effectiveAccessForUi(selectedCourse) === 'full' && selectedCourse.replay_url ? (
@@ -258,7 +258,7 @@ export function SmartCalendar() {
                     href={selectedCourse.replay_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex rounded-full border border-brand-ink/10 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-ink/75"
+                    className="btn-luxury-ghost rounded-full px-4 py-2 text-[10px] tracking-[0.12em]"
                   >
                     Voir le replay
                   </a>
@@ -274,7 +274,7 @@ export function SmartCalendar() {
                   {selectedCourse.jitsi_link ? (
                     <Link
                       href={`/live/${selectedCourse.id}`}
-                      className="rounded-full bg-emerald-600 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm ring-1 ring-emerald-700/20 hover:bg-emerald-700"
+                      className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white shadow-lg shadow-emerald-500/25 transition hover:brightness-105"
                     >
                       REJOINDRE LE LIVE
                     </Link>
@@ -283,7 +283,7 @@ export function SmartCalendar() {
                       href={selectedCourse.live_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-full bg-brand-accent px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white"
+                      className="btn-luxury-primary px-5 py-2.5 text-[10px] tracking-[0.14em]"
                     >
                       Rejoindre le live
                     </a>
@@ -293,7 +293,7 @@ export function SmartCalendar() {
                       href={selectedCourse.replay_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-full border border-brand-ink/10 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-brand-ink/75"
+                      className="btn-luxury-ghost rounded-full px-4 py-2 text-[10px] tracking-[0.12em]"
                     >
                       Voir le replay
                     </a>
@@ -306,12 +306,12 @@ export function SmartCalendar() {
                   <Lock size={12} />
                   {selectedCourse.access_type === 'preview' ? 'Accès limité' : 'Accès refusé'}
                 </div>
-                <p className="text-sm text-brand-ink/65">
+                <p className="text-sm text-luxury-muted">
                   Cet événement est visible pour te guider, mais il n’est pas inclus dans ton plan actuel.
                 </p>
                 <a
                   href={selectedCourse.cta_url ?? '/#offers'}
-                  className="inline-flex rounded-full bg-brand-accent px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white"
+                  className="btn-luxury-primary inline-flex px-5 py-2.5 text-[10px] tracking-[0.14em]"
                 >
                   {selectedCourse.cta_label ?? 'Débloquer'}
                 </a>

@@ -17,10 +17,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className="min-h-screen">
-        <DemoModeBanner />
-        {children}
-        <FloatingWhatsApp />
+      <body className="relative min-h-screen">
+        <div className="luxury-grain" aria-hidden />
+        <div className="relative z-10 min-h-screen">
+          <DemoModeBanner />
+          {children}
+          <FloatingWhatsApp />
+        </div>
       </body>
     </html>
   );

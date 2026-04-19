@@ -76,70 +76,70 @@ export function ReplayLibraryCard({ item }: { item: ReplayLibraryItem }) {
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-ink/[0.03] shadow-[0_8px_32px_rgba(0,0,0,0.08)] ring-1 ring-brand-ink/[0.06] transition duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.14)] hover:ring-brand-accent/25">
+    <div className="group relative flex flex-col overflow-hidden rounded-[1.65rem] border border-white/35 bg-white/[0.28] shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-[20px] transition duration-500 ease-out hover:-translate-y-1.5 hover:border-white/50 hover:shadow-[0_28px_56px_rgba(15,23,42,0.14)]">
       <button
         type="button"
         onClick={onFavoriteClick}
         disabled={pending}
         title={fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        className="absolute left-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60 disabled:opacity-50"
+        className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/40 text-white shadow-lg shadow-black/20 backdrop-blur-md transition hover:bg-slate-900/55 disabled:opacity-50"
         aria-label={fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       >
         <Heart
           size={20}
-          className={fav ? 'fill-red-400 text-red-400' : 'text-white'}
+          className={fav ? 'fill-rose-400 text-rose-400' : 'text-white'}
           aria-hidden
         />
       </button>
 
       <Link href={`/live/${item.courseId}`} className="flex flex-1 flex-col">
-        <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-[#2a2622] to-[#1a1816]">
+        <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950">
           {thumb ? (
             <Image
               src={thumb}
               alt={`Aperçu vidéo · ${item.courseTitle}`}
               fill
-              className="object-cover opacity-[0.96] transition duration-700 ease-out group-hover:scale-[1.06] group-hover:opacity-100"
+              className="object-cover opacity-[0.97] transition duration-700 ease-out group-hover:scale-[1.05] group-hover:opacity-100"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
-            <div className="flex h-full min-h-[160px] items-center justify-center bg-gradient-to-br from-brand-sand/30 via-brand-beige to-brand-sand/50">
-              <Play className="h-16 w-16 text-white/25" strokeWidth={1} aria-hidden />
+            <div className="flex h-full min-h-[180px] items-center justify-center bg-gradient-to-br from-orange-400/25 via-white/10 to-emerald-400/20">
+              <Play className="h-16 w-16 text-white/35" strokeWidth={1} aria-hidden />
             </div>
           )}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.82] via-black/25 to-transparent" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-accent/[0.07] to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.88] via-black/28 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-orange-500/[0.08] to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
 
           {item.durationSeconds ? (
-            <span className="absolute right-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold tabular-nums text-white backdrop-blur-[2px]">
+            <span className="absolute right-3 top-3 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold tabular-nums text-white backdrop-blur-md">
               {formatDuration(item.durationSeconds)}
             </span>
           ) : null}
 
           {resumeHint ? (
-            <span className="absolute right-3 top-14 max-w-[70%] rounded-md bg-brand-accent/90 px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
+            <span className="absolute right-3 top-14 max-w-[72%] rounded-full bg-emerald-500/95 px-2.5 py-1 text-[10px] font-semibold text-white shadow-md">
               {resumeHint}
             </span>
           ) : null}
 
           <div className="absolute inset-x-0 bottom-0 p-5 pt-16 md:p-6 md:pt-20">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/65">Séance</p>
-            <h3 className="font-serif text-xl italic leading-snug tracking-tight text-white drop-shadow-md md:text-[1.35rem]">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/65">Séance</p>
+            <h3 className="text-xl font-semibold leading-snug tracking-tight text-white drop-shadow-md md:text-[1.35rem]">
               {item.courseTitle}
             </h3>
             {sessionLabel ? (
-              <p className="mt-2 text-[13px] font-medium leading-snug text-white/88">{sessionLabel}</p>
+              <p className="mt-2 text-[13px] font-medium leading-snug text-white/90">{sessionLabel}</p>
             ) : null}
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col justify-between gap-3 border-t border-brand-ink/[0.06] bg-white px-5 py-4 md:px-6">
+        <div className="flex flex-1 flex-col justify-between gap-3 border-t border-white/30 bg-white/[0.35] px-5 py-5 backdrop-blur-md md:px-6">
           {showReplaySubtitle ? (
-            <p className="text-[13px] leading-relaxed text-brand-ink/65">&ldquo;{replayLabel}&rdquo;</p>
+            <p className="text-[13px] leading-relaxed text-luxury-muted">&ldquo;{replayLabel}&rdquo;</p>
           ) : (
-            <p className="text-[13px] leading-relaxed text-brand-ink/45">Replay disponible · Fit Mangas</p>
+            <p className="text-[13px] leading-relaxed text-luxury-soft">Replay disponible · Fit Mangas</p>
           )}
-          <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-accent opacity-90 transition group-hover:gap-3">
+          <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-luxury-orange transition group-hover:gap-3">
             Lecture
             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
               →

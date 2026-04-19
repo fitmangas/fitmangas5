@@ -29,7 +29,7 @@ export default async function AdminCoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-beige px-6 py-10 md:py-14">
+    <div className="min-h-screen px-6 py-10 md:py-14">
       <div className="mx-auto max-w-6xl">
         <AdminCoursesManager courses={rows} />
       </div>

@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { BillingPortalButton } from '@/components/Compte/BillingPortalButton';
 import { ProfileAvatarForm } from '@/components/Compte/ProfileAvatarForm';
 import { ProfileBirthDateForm } from '@/components/Compte/ProfileBirthDateForm';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { gradeLabel } from '@/lib/gamification';
 import { createClient } from '@/lib/supabase/server';
 
@@ -77,90 +78,93 @@ export default async function ProfilPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-10 px-5 pb-16 md:px-8">
       <div className="flex flex-wrap items-center gap-4">
-        <Link href="/compte" className="text-sm font-semibold text-brand-accent underline-offset-4 hover:underline">
+        <Link
+          href="/compte"
+          className="text-sm font-semibold text-luxury-orange underline-offset-4 transition hover:underline"
+        >
           ← Espace client
         </Link>
       </div>
 
-      <header className="rounded-[28px] border border-brand-ink/[0.05] bg-white p-8 shadow-[0_16px_56px_rgba(0,0,0,0.05)] md:p-10">
-        <p className="text-[10px] font-bold uppercase tracking-[0.38em] text-brand-accent">Mon profil</p>
-        <h1 className="mt-3 font-serif text-[2rem] italic leading-tight text-brand-ink">Paramètres du compte</h1>
-        <p className="mt-4 text-sm text-brand-ink/55">
-          E-mail : <span className="font-medium text-brand-ink">{user.email}</span>
+      <GlassCard className="p-8 md:p-10">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-luxury-soft">Mon profil</p>
+        <h1 className="mt-3 text-[2rem] font-semibold leading-tight tracking-tight text-luxury-ink">
+          Paramètres du compte
+        </h1>
+        <p className="mt-4 text-sm text-luxury-muted">
+          E-mail : <span className="font-medium text-luxury-ink">{user.email}</span>
         </p>
-        <p className="mt-2 text-sm text-brand-ink/55">
-          Offre affichée : <span className="font-medium text-brand-ink">{formatTier(p?.customer_tier ?? null)}</span>
+        <p className="mt-2 text-sm text-luxury-muted">
+          Offre affichée : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
         </p>
-        <p className="mt-3 text-sm text-brand-ink/55">
-          Grade : <span className="font-medium text-brand-ink">{gradeLabel(p?.gamification_grade)}</span>
+        <p className="mt-3 text-sm text-luxury-muted">
+          Grade : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade)}</span>
           {p?.gamification_points != null ? (
-            <span className="text-brand-ink/45"> · {p.gamification_points} pts</span>
+            <span className="text-luxury-soft"> · {p.gamification_points} pts</span>
           ) : null}
         </p>
-      </header>
+      </GlassCard>
 
       <ProfileAvatarForm avatarUrl={p?.avatar_url} />
 
       <ProfileBirthDateForm defaultIsoDate={p?.birth_date ?? null} />
 
-      <section className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
-        <h2 className="font-serif text-xl italic text-brand-ink">Parcours & progression</h2>
-        <ul className="mt-4 space-y-2 text-sm text-brand-ink/70">
+      <GlassCard className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Parcours & progression</h2>
+        <ul className="mt-4 space-y-2 text-sm text-luxury-muted">
           <li>
             Présences studio (pointage) :{' '}
-            <strong className="text-brand-ink">{p?.onsite_presence_count ?? 0}</strong>
+            <strong className="text-luxury-ink">{p?.onsite_presence_count ?? 0}</strong>
           </li>
           <li>
             Temps replay cumulé :{' '}
-            <strong className="text-brand-ink">
-              {Math.round((p?.total_replay_watch_seconds ?? 0) / 60)} min
-            </strong>
+            <strong className="text-luxury-ink">{Math.round((p?.total_replay_watch_seconds ?? 0) / 60)} min</strong>
           </li>
           <li>
             Participations live (jours distincts) :{' '}
-            <strong className="text-brand-ink">{p?.live_visit_count ?? 0}</strong>
+            <strong className="text-luxury-ink">{p?.live_visit_count ?? 0}</strong>
           </li>
         </ul>
-      </section>
+      </GlassCard>
 
-      <section className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
-        <h2 className="font-serif text-xl italic text-brand-ink">Abonnement & facturation</h2>
-        <p className="mt-3 text-sm leading-relaxed text-brand-ink/55">
+      <GlassCard className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Abonnement & facturation</h2>
+        <p className="mt-3 text-sm leading-relaxed text-luxury-muted">
           Modifie ton moyen de paiement, consulte les renouvellements et résilie depuis le portail sécurisé Stripe.
         </p>
         <div className="mt-6">
           <BillingPortalButton disabled={!customerId} />
         </div>
-      </section>
+      </GlassCard>
 
-      <section className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
-        <h2 className="font-serif text-xl italic text-brand-ink">Abonnements enregistrés</h2>
+      <GlassCard className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Abonnements enregistrés</h2>
         {!subs?.length ? (
-          <p className="mt-4 text-sm text-brand-ink/45">Aucune ligne en base pour l’instant.</p>
+          <p className="mt-4 text-sm text-luxury-soft">Aucune ligne en base pour l’instant.</p>
         ) : (
           <ul className="mt-6 space-y-3 text-sm">
             {subs.map((s) => (
-              <li key={s.id} className="rounded-xl border border-brand-ink/[0.06] px-4 py-3">
-                <span className="font-medium text-brand-ink">{formatTier(s.tier)}</span> · {s.status} ·{' '}
+              <li key={s.id} className="rounded-xl border border-white/35 bg-white/25 px-4 py-3 backdrop-blur-sm">
+                <span className="font-medium text-luxury-ink">{formatTier(s.tier)}</span> · {s.status} ·{' '}
                 {(s.price_cents ?? 0) / 100} € / {s.interval ?? 'month'}
                 {s.ends_at ? ` · fin ${new Date(s.ends_at).toLocaleDateString('fr-FR')}` : ''}
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </GlassCard>
 
-      <section className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
-        <h2 className="font-serif text-xl italic text-brand-ink">Factures Stripe</h2>
+      <GlassCard className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Factures Stripe</h2>
         {!customerId ? (
-          <p className="mt-4 text-sm text-brand-ink/45">Disponibles après association à un client Stripe.</p>
+          <p className="mt-4 text-sm text-luxury-soft">Disponibles après association à un client Stripe.</p>
         ) : invoices.length === 0 ? (
-          <p className="mt-4 text-sm text-brand-ink/45">Aucune facture récente.</p>
+          <p className="mt-4 text-sm text-luxury-soft">Aucune facture récente.</p>
         ) : (
           <div className="mt-6 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-brand-ink/[0.08] text-[10px] uppercase tracking-widest text-brand-ink/45">
+                <tr className="border-b border-white/35 text-[10px] uppercase tracking-widest text-luxury-soft">
                   <th className="py-3 pr-4">Date</th>
                   <th className="py-3 pr-4">N°</th>
                   <th className="py-3 pr-4">Statut</th>
@@ -168,9 +172,9 @@ export default async function ProfilPage() {
                   <th className="py-3">PDF</th>
                 </tr>
               </thead>
-              <tbody className="text-brand-ink/85">
+              <tbody className="text-luxury-muted">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-brand-ink/[0.04]">
+                  <tr key={inv.id} className="border-b border-white/20">
                     <td className="py-3 pr-4 whitespace-nowrap">
                       {new Date(inv.created * 1000).toLocaleDateString('fr-FR')}
                     </td>
@@ -185,7 +189,7 @@ export default async function ProfilPage() {
                           href={inv.hosted_invoice_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-brand-accent underline-offset-4 hover:underline"
+                          className="font-semibold text-luxury-orange underline-offset-4 hover:underline"
                         >
                           Ouvrir
                         </a>
@@ -199,7 +203,7 @@ export default async function ProfilPage() {
             </table>
           </div>
         )}
-      </section>
+      </GlassCard>
     </div>
   );
 }

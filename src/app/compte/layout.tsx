@@ -14,7 +14,7 @@ export default async function CompteLayout({ children }: { children: React.React
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-beige via-brand-beige to-brand-sand/30">
+    <div className="relative min-h-screen">
       <CompteTopBar />
       {children}
     </div>

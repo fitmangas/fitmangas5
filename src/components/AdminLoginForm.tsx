@@ -44,15 +44,15 @@ export function AdminLoginForm({ initialError }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-[32px] border border-brand-ink/[0.08] bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.05)] sm:p-10">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Admin</p>
-      <h1 className="mb-3 font-serif text-3xl italic text-brand-ink">Connexion privée</h1>
-      <p className="mb-6 text-sm text-brand-ink/55">
+    <div className="glass-card mx-auto max-w-md p-8 sm:p-10">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-luxury-orange">Admin</p>
+      <h1 className="mb-3 text-3xl font-semibold tracking-tight text-luxury-ink">Connexion privée</h1>
+      <p className="mb-6 text-sm text-luxury-muted">
         Connecte-toi avec ton email administrateur pour accéder au tableau de bord.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/45">
+        <label className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
           E-mail
           <input
             type="email"
@@ -60,10 +60,10 @@ export function AdminLoginForm({ initialError }: Props) {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm outline-none ring-brand-accent/30 transition focus:ring-2"
+            className="mt-2 w-full rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-sm text-luxury-ink outline-none backdrop-blur-sm ring-luxury-orange/25 transition focus:ring-2"
           />
         </label>
-        <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/45">
+        <label className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
           Mot de passe
           <input
             type="password"
@@ -71,26 +71,24 @@ export function AdminLoginForm({ initialError }: Props) {
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm outline-none ring-brand-accent/30 transition focus:ring-2"
+            className="mt-2 w-full rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-sm text-luxury-ink outline-none backdrop-blur-sm ring-luxury-orange/25 transition focus:ring-2"
           />
         </label>
 
         {error ? (
-          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</p>
+          <p className="rounded-2xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-xs text-red-800 backdrop-blur-sm">
+            {error}
+          </p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-accent py-4 text-[10px] font-bold uppercase tracking-[0.25em] text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
-        >
+        <button type="submit" disabled={loading} className="btn-luxury-primary flex w-full items-center justify-center gap-2 py-4 disabled:opacity-60">
           {loading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
           Se connecter
         </button>
       </form>
 
       <div className="mt-6 text-center">
-        <Link href="/" className="text-[10px] uppercase tracking-widest text-brand-ink/40 hover:text-brand-accent">
+        <Link href="/" className="text-[10px] uppercase tracking-[0.14em] text-luxury-soft transition hover:text-luxury-orange">
           Retour au site
         </Link>
       </div>

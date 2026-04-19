@@ -1,0 +1,40 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { CalendarDays, Clapperboard, LayoutDashboard, TicketPercent } from 'lucide-react';
+
+const links = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
+  { href: '/admin/planning', label: 'Planning', icon: CalendarDays },
+  { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
+];
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/35 bg-white/30 p-2 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl md:flex">
+      {links.map(({ href, label, icon: Icon }) => {
+        const isActive =
+          href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);
+
+        return (
+          <Link
+            key={href}
+            href={href}
+            title={label}
+            className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+              isActive
+                ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-[0_4px_16px_rgba(249,115,22,0.45)]'
+                : 'text-luxury-muted hover:bg-white/50 hover:text-luxury-ink'
+            }`}
+          >
+            <Icon size={22} strokeWidth={2} aria-hidden />
+          </Link>
+        );
+      })}
+    </aside>
+  );
+}

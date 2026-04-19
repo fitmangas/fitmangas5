@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Clapperboard, Euro, Eye, Percent, Users, Video } from 'lucide-react';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getAdminKpis } from '@/lib/admin/kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 type ProfileRow = {
   id: string;
@@ -56,148 +58,175 @@ export default async function AdminPage() {
     kpis.occupancyPercent != null ? `${kpis.occupancyPercent.toLocaleString('fr-FR')}%` : '—';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-beige via-brand-beige to-brand-sand/25 px-5 py-12 md:px-8 md:py-16">
-      <div className="mx-auto max-w-5xl space-y-8 md:space-y-10">
-        <header className="rounded-[28px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_16px_48px_rgba(0,0,0,0.05)] md:p-8">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Administration</p>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="mx-auto max-w-5xl space-y-8 md:space-y-10">
+      <GlassCard className="p-6 md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-luxury-soft">Administration</p>
+        <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Dashboard Fit Mangas</h1>
+            <p className="mt-2 text-sm text-luxury-muted">
+              Connecté avec <span className="font-medium text-luxury-ink">{user.email}</span>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/" className="btn-luxury-ghost">
+              Retour site
+            </Link>
+            <form action="/auth/signout" method="post">
+              <button type="submit" className="btn-luxury-primary">
+                Déconnexion
+              </button>
+            </form>
+          </div>
+        </div>
+      </GlassCard>
+
+      <section className="grid gap-5 md:grid-cols-3">
+        <GlassCard className="p-6">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-serif text-3xl italic tracking-tight text-brand-ink">Dashboard FitMangas</h1>
-              <p className="mt-2 text-sm text-brand-ink/60">
-                Connecté en admin avec <span className="font-medium text-brand-ink">{user.email}</span>
-              </p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">MRR</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{mrrLabel}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Source : {mrrHint}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/"
-                className="rounded-full border border-brand-ink/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-brand-ink/70 transition hover:bg-brand-sand/30"
-              >
-                Retour site
-              </Link>
-              <form action="/auth/signout" method="post">
-                <button
-                  type="submit"
-                  className="rounded-full bg-brand-accent px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:opacity-90"
-                >
-                  Se déconnecter
-                </button>
-              </form>
-            </div>
+            <span className="kpi-icon-wrap bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-lg shadow-orange-500/25">
+              <Euro size={20} aria-hidden />
+            </span>
           </div>
-        </header>
-
-        <section className="grid gap-5 md:grid-cols-3">
-          <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Revenu mensuel (MRR)</p>
-            <p className="mt-4 font-serif text-4xl italic tracking-tight text-brand-ink">{mrrLabel}</p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">Source : {mrrHint}</p>
-          </article>
-          <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Taux d&apos;occupation</p>
-            <p className="mt-4 font-serif text-4xl italic tracking-tight text-brand-ink">{occupancyLabel}</p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">
-              Moyenne réservations / places max · cours collectifs terminés
-            </p>
-          </article>
-          <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Engagement replay</p>
-            <p className="mt-4 font-serif text-4xl italic tracking-tight text-brand-ink">
-              {kpis.totalReplayViews.toLocaleString('fr-FR')}
-            </p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">Cumul des vues enregistrées sur les replays</p>
-          </article>
-        </section>
-
-        <section className="rounded-[28px] border border-brand-accent/15 bg-gradient-to-br from-white to-brand-sand/15 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.04)] md:p-8">
-          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Présentation client</p>
-          <div className="mt-4 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-xl">
-              <h2 className="font-serif text-xl italic text-brand-ink md:text-2xl">Lancer le mode Démo (Vue Client)</h2>
-              <p className="mt-2 text-sm leading-relaxed text-brand-ink/58">
-                Simule un compte élève avec abonnement visio collectif actif : calendrier, réservations, replays et
-                navigation dans l’espace personnel — sans créer de compte test.
-              </p>
+        </GlassCard>
+        <GlassCard className="p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Occupation</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{occupancyLabel}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Collectifs terminés · résa / places max</p>
             </div>
-            <a
-              href="/api/demo-mode/enable"
-              className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand-accent px-8 py-4 text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white shadow-[0_10px_32px_rgba(0,0,0,0.14)] transition hover:opacity-95 md:min-w-[280px]"
-            >
-              Lancer le mode Démo (Vue Client)
-            </a>
+            <span className="kpi-icon-wrap bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-lg shadow-rose-500/25">
+              <Percent size={20} aria-hidden />
+            </span>
           </div>
-        </section>
+        </GlassCard>
+        <GlassCard className="p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Replay</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                {kpis.totalReplayViews.toLocaleString('fr-FR')}
+              </p>
+              <p className="mt-2 text-xs text-luxury-muted">Vues cumulées</p>
+            </div>
+            <span className="kpi-icon-wrap bg-gradient-to-br from-violet-400 to-indigo-600 text-white shadow-lg shadow-violet-500/25">
+              <Eye size={20} aria-hidden />
+            </span>
+          </div>
+        </GlassCard>
+      </section>
 
-        <section className="grid gap-5 md:grid-cols-3">
-          <article className="rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Clients</p>
-            <p className="mt-4 font-serif text-4xl italic tracking-tight text-brand-ink">{totalClients ?? 0}</p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">Profils enregistrés</p>
-          </article>
+      <GlassCard className="p-6 md:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Démo client</p>
+        <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <h2 className="text-lg font-semibold tracking-tight text-luxury-ink md:text-xl">Mode démo (vue élève)</h2>
+            <p className="mt-2 text-sm leading-relaxed text-luxury-muted">
+              Simule un compte élève avec abonnement visio collectif : calendrier, réservations, replays — sans compte test.
+            </p>
+          </div>
+          <a href="/api/demo-mode/enable" className="btn-luxury-primary shrink-0 md:min-w-[260px]">
+            Lancer la démo
+          </a>
+        </div>
+      </GlassCard>
+
+      <section className="grid gap-5 md:grid-cols-3">
+        <GlassCard className="p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Clients</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalClients ?? 0}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Profils</p>
+            </div>
+            <span className="kpi-icon-wrap bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-lg shadow-sky-500/25">
+              <Users size={20} aria-hidden />
+            </span>
+          </div>
+        </GlassCard>
+        <Link href="/admin/courses" className="group block">
+          <GlassCard className="h-full p-6 transition-all duration-300 hover:border-orange-300/60 hover:shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Cours</p>
+                <p className="mt-3 text-lg font-semibold tracking-tight text-luxury-ink group-hover:text-orange-600">
+                  Gérer les séances
+                </p>
+                <p className="mt-2 text-xs text-luxury-muted">Création, publication, capacités</p>
+              </div>
+              <span className="kpi-icon-wrap bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-lg shadow-amber-500/25">
+                <Clapperboard size={20} aria-hidden />
+              </span>
+            </div>
+          </GlassCard>
+        </Link>
+        <GlassCard className="flex flex-col p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Vimeo</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalReplaysReady ?? 0}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Replays prêts</p>
+            </div>
+            <span className="kpi-icon-wrap bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-500/25">
+              <Video size={20} aria-hidden />
+            </span>
+          </div>
           <Link
             href="/admin/courses"
-            className="group rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)] transition hover:border-brand-accent/22 hover:shadow-[0_12px_40px_rgba(0,0,0,0.07)]"
+            className="btn-luxury-ghost mt-6 w-full text-center text-[10px] tracking-[0.18em]"
           >
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Cours</p>
-            <p className="mt-4 font-serif text-xl italic tracking-tight text-brand-ink group-hover:text-brand-accent">
-              Gérer les séances
-            </p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">Création, publication, capacités</p>
+            Vidéos
           </Link>
-          <div className="flex flex-col rounded-[24px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-ink/38">Statistiques Vimeo</p>
-            <p className="mt-4 font-serif text-4xl italic tracking-tight text-brand-ink">{totalReplaysReady ?? 0}</p>
-            <p className="mt-3 text-xs leading-relaxed text-brand-ink/48">Replays prêts à la lecture</p>
-            <Link
-              href="/admin/courses"
-              className="mt-6 inline-flex items-center justify-center rounded-full border border-brand-ink/[0.08] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/70 transition hover:border-brand-accent/30 hover:bg-brand-beige/40 hover:text-brand-ink"
-            >
-              Gérer mes vidéos
-            </Link>
-          </div>
-        </section>
+        </GlassCard>
+      </section>
 
-        <section className="rounded-[28px] border border-brand-ink/[0.05] bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.04)] md:p-8">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-brand-ink/50">Derniers clients</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left">
-              <thead>
-                <tr className="border-b border-brand-ink/[0.06] text-[10px] uppercase tracking-widest text-brand-ink/45">
-                  <th className="px-2 py-3">Nom</th>
-                  <th className="px-2 py-3">Rôle</th>
-                  <th className="px-2 py-3">Dernière offre</th>
-                  <th className="px-2 py-3">Mise à jour</th>
+      <GlassCard className="p-6 md:p-8">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-luxury-soft">Derniers clients</h2>
+        <div className="mt-5 overflow-x-auto">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="border-b border-luxury-ink/10 text-[10px] uppercase tracking-wider text-luxury-soft">
+                <th className="px-2 py-3">Nom</th>
+                <th className="px-2 py-3">Rôle</th>
+                <th className="px-2 py-3">Dernière offre</th>
+                <th className="px-2 py-3">Mise à jour</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm text-luxury-ink/85">
+              {(latestProfiles as ProfileRow[] | null)?.map((profile) => (
+                <tr key={profile.id} className="border-b border-white/20">
+                  <td className="px-2 py-3">
+                    <Link
+                      href={`/admin/clients/${profile.id}`}
+                      className="font-medium text-orange-600 underline-offset-4 hover:underline"
+                    >
+                      {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8)}
+                    </Link>
+                  </td>
+                  <td className="px-2 py-3">{profile.role || 'member'}</td>
+                  <td className="px-2 py-3">{profile.last_checkout_course_id || '—'}</td>
+                  <td className="px-2 py-3">
+                    {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString('fr-FR') : '—'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="text-sm text-brand-ink/80">
-                {(latestProfiles as ProfileRow[] | null)?.map((profile) => (
-                  <tr key={profile.id} className="border-b border-brand-ink/[0.04]">
-                    <td className="px-2 py-3">
-                      <Link
-                        href={`/admin/clients/${profile.id}`}
-                        className="font-medium text-brand-accent underline-offset-4 hover:underline"
-                      >
-                        {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8)}
-                      </Link>
-                    </td>
-                    <td className="px-2 py-3">{profile.role || 'member'}</td>
-                    <td className="px-2 py-3">{profile.last_checkout_course_id || '—'}</td>
-                    <td className="px-2 py-3">
-                      {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString('fr-FR') : '—'}
-                    </td>
-                  </tr>
-                ))}
-                {!latestProfiles?.length ? (
-                  <tr>
-                    <td className="px-2 py-4 text-brand-ink/45" colSpan={4}>
-                      Aucun profil trouvé pour l’instant.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+              ))}
+              {!latestProfiles?.length ? (
+                <tr>
+                  <td className="px-2 py-4 text-luxury-muted" colSpan={4}>
+                    Aucun profil trouvé pour l’instant.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
     </div>
   );
 }
