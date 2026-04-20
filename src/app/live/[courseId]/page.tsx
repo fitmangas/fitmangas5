@@ -20,15 +20,15 @@ const uuidSchema = z.string().uuid();
 function AccessDenied({ subtitle }: { subtitle: string }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">
-      <div className="glass-card max-w-md px-8 py-10 text-center">
+      <div className="max-w-md rounded-[28px] border border-brand-ink/[0.08] bg-white px-8 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
         <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-red-700">Accès refusé</p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-luxury-ink">{subtitle}</h1>
-        <p className="mt-4 text-sm text-luxury-muted">
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-brand-ink">{subtitle}</h1>
+        <p className="mt-4 text-sm text-brand-ink/70">
           Tu n’as pas accès complet à cette séance, ou le lien n’est pas valide.
         </p>
         <Link
           href="/compte"
-          className="btn-luxury-primary mt-8 inline-flex items-center gap-2 px-6 py-3 text-[10px] tracking-[0.14em]"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:opacity-95"
         >
           <ArrowLeft size={14} />
           Retour au calendrier
@@ -159,15 +159,15 @@ export default async function LiveCoursePage({
   if (!showVimeoReplay && !hasJitsi && !courseIsPast) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">
-        <div className="glass-card max-w-md px-8 py-10 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-luxury-orange">Live</p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-luxury-ink">Live non configuré</h1>
-          <p className="mt-4 text-sm text-luxury-muted">
+        <div className="max-w-md rounded-[28px] border border-brand-ink/[0.08] bg-white px-8 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-accent">Live</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-brand-ink">Live non configuré</h1>
+          <p className="mt-4 text-sm text-brand-ink/70">
             Aucune salle Jitsi n’est encore renseignée pour cette séance.
           </p>
           <Link
             href="/compte"
-            className="btn-luxury-primary mt-8 inline-flex items-center gap-2 px-6 py-3 text-[10px] tracking-[0.14em]"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:opacity-95"
           >
             <ArrowLeft size={14} />
             Retour au calendrier
@@ -179,23 +179,23 @@ export default async function LiveCoursePage({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="glass-card mx-4 mt-4 rounded-[1.75rem] border-b-0 px-4 py-4 shadow-none sm:mx-auto sm:max-w-6xl sm:px-8">
+      <header className="border-b border-brand-ink/[0.06] bg-white px-4 py-4 shadow-sm sm:px-8">
         <div className="flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <Link
               href="/compte"
-              className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft transition hover:text-luxury-ink"
+              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-ink/50 hover:text-brand-ink"
             >
               <ArrowLeft size={14} />
               Calendrier
             </Link>
-            <h1 className="mt-2 truncate text-xl font-semibold tracking-tight text-luxury-ink sm:text-2xl">{course.title}</h1>
+            <h1 className="mt-2 truncate font-serif text-xl italic text-brand-ink sm:text-2xl">{course.title}</h1>
           </div>
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
         {effectiveStudentPreview ? (
-          <div className="rounded-xl border border-amber-300/45 bg-amber-100/35 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 backdrop-blur-md">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 shadow-sm">
             <strong className="font-semibold">{globalDemo ? 'Mode démo · ' : ''}Aperçu élève</strong> — Rendu comme un
             élève avec accès complet ({!courseIsPast ? 'live / Jitsi' : 'replay'}). Pas de droits animateur.
           </div>
@@ -203,7 +203,7 @@ export default async function LiveCoursePage({
         {showVimeoReplay ? (
           <>
             {replay?.id ? <ReplayViewTracker recordingId={replay.id} /> : null}
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-luxury-orange">Replay</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-accent">Replay</p>
             <VimeoReplayWithResume
               embedUrl={replayEmbedUrl}
               title={replay?.title?.trim() || `Replay — ${course.title}`}
@@ -211,13 +211,13 @@ export default async function LiveCoursePage({
               initialSeconds={initialReplaySeconds}
             />
             {spotifyUrl ? (
-              <p className="text-sm text-luxury-muted">
-                <span className="font-semibold text-luxury-ink">Playlist :</span>{' '}
+              <p className="text-sm text-brand-ink/70">
+                <span className="font-semibold text-brand-ink">Playlist :</span>{' '}
                 <a
                   href={spotifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-luxury-orange underline-offset-4 hover:underline"
+                  className="text-brand-accent underline-offset-4 hover:underline"
                 >
                   Ouvrir sur Spotify
                 </a>
@@ -225,10 +225,10 @@ export default async function LiveCoursePage({
             ) : null}
           </>
         ) : courseIsPast ? (
-          <div className="glass-card px-6 py-10 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-luxury-soft">Séance terminée</p>
-            <h2 className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">Replay en préparation</h2>
-            <p className="mt-3 text-sm text-luxury-muted">
+          <div className="rounded-2xl border border-brand-ink/10 bg-white px-6 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-ink/45">Séance terminée</p>
+            <h2 className="mt-3 font-serif text-xl italic text-brand-ink">Replay en préparation</h2>
+            <p className="mt-3 text-sm text-brand-ink/70">
               La vidéo sera disponible ici dès qu’elle aura été traitée. Repasse un peu plus tard.
             </p>
           </div>
@@ -245,13 +245,13 @@ export default async function LiveCoursePage({
               studentPreview={effectiveStudentPreview}
             />
             {spotifyUrl ? (
-              <p className="text-sm text-luxury-muted">
-                <span className="font-semibold text-luxury-ink">Playlist séance :</span>{' '}
+              <p className="text-sm text-brand-ink/70">
+                <span className="font-semibold text-brand-ink">Playlist séance :</span>{' '}
                 <a
                   href={spotifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-luxury-orange underline-offset-4 hover:underline"
+                  className="text-brand-accent underline-offset-4 hover:underline"
                 >
                   Spotify
                 </a>

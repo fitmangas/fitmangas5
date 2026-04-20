@@ -23,7 +23,7 @@
   --color-brand-beige: #f5f5f3;
   --color-brand-sand: rgba(255, 255, 255, 0.45);
   --color-brand-ink: #1d1d1f;
-  --color-brand-accent: #ff7a00;
+  --color-brand-accent: #9c9284;
 
   --radius-pill: 9999px;
 }
@@ -35,7 +35,7 @@
 
   body {
     @apply min-h-screen font-sans font-normal text-brand-ink;
-    background: #f8f7f4;
+    background: #f3f1ed;
   }
 
   h1,
@@ -44,7 +44,7 @@
   h4,
   h5,
   h6 {
-    @apply font-sans font-semibold tracking-tight text-luxury-ink;
+    @apply tracking-tight text-brand-ink;
   }
 }
 

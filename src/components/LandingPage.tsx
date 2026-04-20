@@ -98,7 +98,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       {/* Top Stats Bar */}
-      <div className="bg-white/90 backdrop-blur-md border-b border-brand-ink/[0.03] sticky top-0 z-50">
+      <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-3 md:py-4">
           {/* Desktop Layout */}
           <div className="hidden md:flex justify-between items-center">
@@ -229,7 +229,7 @@ export function LandingPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-10 text-center">
-              <h1 className="text-6xl md:text-7xl font-serif italic mb-3 tracking-tighter leading-none">{t.title}</h1>
+              <h1 className="text-6xl md:text-7xl font-serif font-normal italic mb-3 tracking-tighter leading-none">{t.title}</h1>
               <p className="text-[10px] tracking-[0.4em] uppercase text-brand-accent font-bold">{t.subtitle}</p>
             </div>
           </div>
@@ -336,7 +336,7 @@ export function LandingPage() {
                   <div className="absolute inset-0 bg-brand-ink/5 group-hover:bg-transparent transition-colors duration-500" />
                   {course.badge && (
                     <div className="absolute top-6 left-6">
-                      <span className="bg-brand-accent text-white text-[9px] tracking-[0.2em] uppercase px-4 py-2 rounded-full font-bold shadow-xl backdrop-blur-md">
+                      <span className="bg-brand-accent text-white text-[9px] tracking-[0.2em] uppercase px-4 py-2 rounded-full font-bold shadow-xl">
                         {course.badge}
                       </span>
                     </div>
@@ -351,7 +351,7 @@ export function LandingPage() {
                         <span className="text-[10px] tracking-[0.3em] uppercase text-brand-accent font-bold opacity-80">
                           {segment === 'VISIO' ? t.visioLabel : `${lang === 'FR' ? 'Studio' : 'Studio'} ${onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}`}
                         </span>
-                        <h3 className="text-2xl md:text-4xl font-serif tracking-tight text-brand-ink group-hover:text-brand-accent transition-colors duration-300 leading-none">
+                        <h3 className="text-2xl md:text-4xl font-serif font-normal tracking-tight text-brand-ink group-hover:text-brand-accent transition-colors duration-300 leading-none">
                           {course.title}
                         </h3>
                       </div>
@@ -422,7 +422,7 @@ export function LandingPage() {
             <WhatsAppIcon size={28} />
           </div>
           <div>
-            <h4 className="text-2xl md:text-3xl font-serif tracking-tight text-brand-ink mb-2">{t.helpTitle}</h4>
+            <h4 className="text-2xl md:text-3xl font-serif font-normal tracking-tight text-brand-ink mb-2">{t.helpTitle}</h4>
             <p className="text-xs text-brand-ink/40 tracking-wide leading-relaxed max-w-[240px] mx-auto">{t.helpSub}</p>
           </div>
           <div className="flex items-center gap-3 text-[10px] tracking-[0.2em] uppercase font-bold text-brand-accent">
@@ -435,7 +435,7 @@ export function LandingPage() {
         <section className="mb-32">
           <div className="text-center mb-12">
             <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">Les adhérentes alias Mangitas</span>
-            <h2 className="text-4xl font-serif italic tracking-tight mb-10">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
+            <h2 className="text-4xl font-serif font-normal italic tracking-tight mb-10">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
             
             {/* Grouped Avatars Row - Structural inspiration from Canva */}
             <div className="flex justify-center -space-x-5 mb-6">

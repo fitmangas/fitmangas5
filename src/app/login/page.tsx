@@ -29,7 +29,7 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen px-6 py-16">
+    <div className="min-h-screen bg-brand-beige px-6 py-16">
       <AdminLoginForm initialError={getInitialError(params.error)} />
     </div>
   );
