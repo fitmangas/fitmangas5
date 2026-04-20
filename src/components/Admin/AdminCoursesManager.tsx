@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, Play, Pencil, Trash2, UserCheck, X } from 'lucide-react';
@@ -81,6 +81,24 @@ const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
     'Renforcement du core avec sequences ciblees sur sangle abdominale, dos et bassin. Intensite adaptable, priorite a la technique et au controle.',
 };
 
+const TEMPLATE_STORAGE_KEY = 'admin-course-description-templates-v1';
+
+/** En-têtes tableau : même gris anthracite que la carte calendrier du dashboard. */
+const ADMIN_TABLE_HEAD_ROW =
+  'border-b border-white/10 bg-[rgba(29,29,31,0.78)] text-[10px] uppercase tracking-wider text-white/80 backdrop-blur-md';
+
+function getCourseTypeLabel(courseType: FormState['courseType']): string {
+  return COURSE_TYPE_OPTIONS.find((opt) => opt.value === courseType)?.label ?? 'Cours';
+}
+
+function inferCourseTypeFromTitle(title: string): FormState['courseType'] {
+  const normalized = title.toLowerCase();
+  if (normalized.includes('yoga')) return 'yoga-flow';
+  if (normalized.includes('postural')) return 'postural';
+  if (normalized.includes('renfo') || normalized.includes('core')) return 'renfo-core';
+  return 'pilates-mat';
+}
+
 function computeDefaultPoints(courseFormat: FormState['courseFormat']): number {
   return courseFormat === 'onsite' ? 30 : 15;
 }
@@ -103,7 +121,7 @@ function emptyCreateForm(): FormState {
   start.setMinutes(0, 0, 0);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return {
-    title: '',
+    title: getCourseTypeLabel('pilates-mat'),
     description: DESCRIPTION_TEMPLATES['pilates-mat'],
     courseType: 'pilates-mat',
     startsLocal: toDatetimeLocalValue(start.toISOString()),
@@ -122,10 +140,11 @@ function emptyCreateForm(): FormState {
 }
 
 function courseToFormState(c: AdminCourseRow): FormState {
+  const inferredType = inferCourseTypeFromTitle(c.title);
   return {
     title: c.title,
     description: c.description ?? '',
-    courseType: 'pilates-mat',
+    courseType: inferredType,
     startsLocal: toDatetimeLocalValue(c.starts_at),
     endsLocal: toDatetimeLocalValue(c.ends_at),
     courseFormat: c.course_format,
@@ -152,8 +171,10 @@ function formToPayload(f: FormState) {
   const autoPoints = computeDefaultPoints(f.courseFormat);
   const pointsPrefix = `[${autoPoints} pts]`;
   const normalizedDescription = f.description.trim();
+  const autoTitle = getCourseTypeLabel(f.courseType);
+  const autoJitsi = buildAutoJitsiLink(autoTitle, f.startsLocal);
   return {
-    title: f.title,
+    title: autoTitle,
     description: `${pointsPrefix} ${normalizedDescription}`.trim() || pointsPrefix,
     startsAt: isoFromDatetimeLocal(f.startsLocal),
     endsAt: isoFromDatetimeLocal(f.endsLocal),
@@ -162,8 +183,8 @@ function formToPayload(f: FormState) {
     capacityMax: f.courseFormat === 'onsite' ? parseCapacity(f.capacityMax) : null,
     isPublished: f.isPublished,
     location: f.courseFormat === 'onsite' ? f.city : null,
-    liveUrl: f.courseFormat === 'online' ? buildAutoJitsiLink(f.title, f.startsLocal) : null,
-    jitsiLink: f.courseFormat === 'online' ? buildAutoJitsiLink(f.title, f.startsLocal) : null,
+    liveUrl: f.courseFormat === 'online' ? autoJitsi : null,
+    jitsiLink: f.courseFormat === 'online' ? autoJitsi : null,
     replayUrl: null,
     spotifyPlaylistUrl: null,
     timezone: 'Europe/Paris',
@@ -176,7 +197,32 @@ export function AdminCoursesManager({ courses }: Props) {
   const [editing, setEditing] = useState<AdminCourseRow | null>(null);
   const [editForm, setEditForm] = useState<FormState | null>(null);
   const [createForm, setCreateForm] = useState<FormState>(() => emptyCreateForm());
+  const [templates, setTemplates] = useState<Record<FormState['courseType'], string>>(DESCRIPTION_TEMPLATES);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<Record<FormState['courseType'], string>>;
+      const merged = { ...DESCRIPTION_TEMPLATES, ...parsed };
+      setTemplates(merged);
+      setCreateForm((s) => ({ ...s, description: merged[s.courseType] }));
+    } catch {
+      // ignore parse issues
+    }
+  }, []);
+
+  function saveTemplate(type: FormState['courseType'], description: string) {
+    const next = { ...templates, [type]: description };
+    setTemplates(next);
+    try {
+      window.localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(next));
+      setNotice({ type: 'ok', text: `Template enregistré pour ${getCourseTypeLabel(type)}.` });
+    } catch {
+      setNotice({ type: 'err', text: 'Impossible d’enregistrer le template localement.' });
+    }
+  }
 
   function refreshData() {
     router.refresh();
@@ -189,7 +235,7 @@ export function AdminCoursesManager({ courses }: Props) {
       const res = await createCourseAction(formToPayload(createForm));
       if (res.ok) {
         setNotice({ type: 'ok', text: 'Séance créée.' });
-        setCreateForm(emptyCreateForm());
+        setCreateForm((s) => ({ ...emptyCreateForm(), description: templates[s.courseType] ?? templates['pilates-mat'] }));
         refreshData();
       } else {
         setNotice({ type: 'err', text: res.message });
@@ -262,22 +308,13 @@ export function AdminCoursesManager({ courses }: Props) {
 
       <section className="glass-card border-white/80 bg-white/45 p-5 backdrop-blur-2xl">
         <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
-          <label className="md:col-span-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Titre *
-            <input
-              required
-              value={createForm.title}
-              onChange={(e) => setCreateForm((s) => ({ ...s, title: e.target.value }))}
-              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
-            />
-          </label>
           <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Type de cours
             <select
               value={createForm.courseType}
               onChange={(e) => {
                 const selected = e.target.value as FormState['courseType'];
-                setCreateForm((s) => ({ ...s, courseType: selected, description: DESCRIPTION_TEMPLATES[selected] }));
+                setCreateForm((s) => ({ ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) }));
               }}
               className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             >
@@ -296,6 +333,13 @@ export function AdminCoursesManager({ courses }: Props) {
               onChange={(e) => setCreateForm((s) => ({ ...s, description: e.target.value }))}
               className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             />
+            <button
+              type="button"
+              onClick={() => saveTemplate(createForm.courseType, createForm.description)}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-2.5 text-xs font-semibold normal-case tracking-normal text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md transition hover:border-[#ff7a00]/45 hover:bg-white/60 hover:shadow-[0_0_0_1px_rgba(255,122,0,0.15)]"
+            >
+              💾 Enregistrer comme description par défaut pour ce type
+            </button>
           </label>
           <div className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Format
@@ -305,7 +349,7 @@ export function AdminCoursesManager({ courses }: Props) {
                 onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'online', capacityMax: '' }))}
                 className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
                   createForm.courseFormat === 'online'
-                    ? 'bg-white text-luxury-ink shadow-[0_6px_14px_rgba(29,29,31,0.1)]'
+                    ? 'bg-gradient-to-br from-[#ff7a00] to-orange-600 text-white shadow-[0_4px_16px_rgba(255,122,0,0.42)]'
                     : 'text-luxury-muted'
                 }`}
               >
@@ -316,7 +360,7 @@ export function AdminCoursesManager({ courses }: Props) {
                 onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'onsite' }))}
                 className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
                   createForm.courseFormat === 'onsite'
-                    ? 'bg-white text-luxury-ink shadow-[0_6px_14px_rgba(29,29,31,0.1)]'
+                    ? 'bg-gradient-to-br from-[#ff7a00] to-orange-600 text-white shadow-[0_4px_16px_rgba(255,122,0,0.42)]'
                     : 'text-luxury-muted'
                 }`}
               >
@@ -392,13 +436,13 @@ export function AdminCoursesManager({ courses }: Props) {
       </section>
 
       <section className="glass-card overflow-hidden">
-        <div className="border-b border-white/35 px-6 py-4">
-          <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-brand-ink/50">Toutes les séances</h3>
+        <div className="border-b border-white/10 bg-[rgba(29,29,31,0.78)] px-6 py-4 backdrop-blur-md">
+          <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-white/90">Toutes les séances</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-white/30 bg-white/25 text-[10px] uppercase tracking-wider text-luxury-soft backdrop-blur-sm">
+              <tr className={ADMIN_TABLE_HEAD_ROW}>
                 <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Début</th>
                 <th className="px-4 py-3">Format</th>
@@ -530,21 +574,12 @@ export function AdminCoursesManager({ courses }: Props) {
             </div>
             <form onSubmit={handleUpdate} className="grid gap-4">
               <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-                Titre *
-                <input
-                  required
-                  value={editForm.title}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, title: e.target.value } : s))}
-                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
-                />
-              </label>
-              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                 Type de cours
                 <select
                   value={editForm.courseType}
                   onChange={(e) => {
                     const selected = e.target.value as FormState['courseType'];
-                    setEditForm((s) => (s ? { ...s, courseType: selected, description: DESCRIPTION_TEMPLATES[selected] } : s));
+                    setEditForm((s) => (s ? { ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) } : s));
                   }}
                   className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                 >
@@ -563,6 +598,13 @@ export function AdminCoursesManager({ courses }: Props) {
                   onChange={(e) => setEditForm((s) => (s ? { ...s, description: e.target.value } : s))}
                   className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                 />
+                <button
+                  type="button"
+                  onClick={() => saveTemplate(editForm.courseType, editForm.description)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-2.5 text-xs font-semibold normal-case tracking-normal text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md transition hover:border-[#ff7a00]/45 hover:bg-white/60 hover:shadow-[0_0_0_1px_rgba(255,122,0,0.15)]"
+                >
+                  💾 Enregistrer comme description par défaut pour ce type
+                </button>
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">

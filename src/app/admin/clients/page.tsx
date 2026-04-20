@@ -92,7 +92,7 @@ export default async function AdminClientsPage({
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-white/40 text-[10px] uppercase tracking-wider text-luxury-soft">
+              <tr className="border-b border-white/10 bg-[rgba(29,29,31,0.78)] text-[10px] uppercase tracking-wider text-white/80 backdrop-blur-md">
                 <th className="px-2 py-3">Client</th>
                 <th className="px-2 py-3">Health</th>
                 <th className="px-2 py-3">Dernière activité</th>

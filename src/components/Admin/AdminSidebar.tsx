@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarDays, Clapperboard, LayoutDashboard, TicketPercent } from 'lucide-react';
+import { Clapperboard, LayoutDashboard, TicketPercent } from 'lucide-react';
 
 const links = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
-  { href: '/admin/planning', label: 'Planning', icon: CalendarDays },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
 ];
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronDown, Clapperboard, Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
+import { Clapperboard, Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
@@ -192,7 +192,6 @@ export default async function AdminPage() {
 
   const firstName = me?.first_name?.trim() || 'Alejandra';
   const avatarUrl = me?.avatar_url?.trim() || null;
-  const displayAvatar = avatarUrl || '/api/admin/avatar';
   const mrrLabel =
     kpis.mrrEur != null
       ? `${kpis.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
@@ -217,21 +216,25 @@ export default async function AdminPage() {
     : '—';
 
   return (
-    <div className="mx-auto max-w-[1280px] space-y-7 xl:space-y-8">
-      <GlassCard className="relative z-50 overflow-visible p-5 md:p-6">
-        <div className="flex items-start justify-between gap-6">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">¡Hola {firstName}!</h1>
-            <p className="mt-2 text-sm text-luxury-muted md:text-base">Un nuevo día para hacer crecer tu imperio.</p>
+    <div className="mx-auto max-w-[1280px] space-y-5 xl:space-y-6 pt-3 md:pt-4">
+      <div className="relative z-50 overflow-visible border-b border-white/10 bg-transparent pb-2 pt-3 backdrop-blur-[20px] md:pb-2.5 md:pt-4">
+        {/* Sur xl : même grille 4 cols que les KPI pour centrer le texte au-dessus des colonnes Churn + Abonnés */}
+        <div className="hidden items-center gap-5 xl:grid xl:grid-cols-4">
+          <div className="col-start-2 col-span-2 min-w-0 text-center">
+            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">Hola {firstName}</h1>
+            <p className="mt-1 text-sm text-luxury-muted md:text-base">
+              Un nuevo día para hacer crecer tu imperio.
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="relative inline-flex h-20 w-20 overflow-hidden rounded-[28px] border border-white/80 bg-white/65">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={displayAvatar} alt="Avatar Alejandra" className="h-full w-full object-cover" />
-            </span>
+          <div className="flex justify-end">
             <details className="relative z-[120]">
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink [&::-webkit-details-marker]:hidden">
-                <ChevronDown size={16} />
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/alejandra.png?v=2"
+                  alt="Alejandra"
+                  className="w-[100px] h-auto max-h-[200px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer"
+                />
               </summary>
               <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
                 <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
@@ -252,7 +255,43 @@ export default async function AdminPage() {
             </details>
           </div>
         </div>
-      </GlassCard>
+
+        {/* < xl : layout simple */}
+        <div className="flex items-center justify-between gap-6 xl:hidden">
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">Hola {firstName}</h1>
+            <p className="mt-1 text-sm text-luxury-muted md:text-base">
+              Un nuevo día para hacer crecer tu imperio.
+            </p>
+          </div>
+          <details className="relative z-[120] shrink-0">
+            <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/alejandra.png?v=2"
+                alt="Alejandra"
+                className="w-[100px] h-auto max-h-[200px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer"
+              />
+            </summary>
+            <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
+              <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                Retour site
+              </Link>
+              <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                Mon profil
+              </Link>
+              <a href="/api/demo-mode/enable" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                Démo élève
+              </a>
+              <form action="/auth/signout" method="post" className="mt-1">
+                <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
+                  Déconnexion
+                </button>
+              </form>
+            </div>
+          </details>
+        </div>
+      </div>
 
       <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <GlassCard className="p-5 md:p-6">
@@ -316,86 +355,6 @@ export default async function AdminPage() {
             <span className="kpi-icon-wrap kpi-icon-wrap--green">
               <HeartPulse size={20} aria-hidden strokeWidth={2} />
             </span>
-          </div>
-        </GlassCard>
-      </section>
-
-      <section className="relative z-10 grid gap-5 xl:grid-cols-[2fr_1fr]">
-        <GlassCard className="p-5 md:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Tendance MRR</h2>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-luxury-soft">Dernière valeur</p>
-              <p className="mt-1 text-base font-semibold tabular-nums text-luxury-ink">{lastMrrLabel}</p>
-            </div>
-          </div>
-          <div className="mt-5">
-            {trendPath ? (
-              <div>
-                <svg viewBox="0 0 100 100" className="h-44 w-full">
-                  <defs>
-                    <linearGradient id="mrrAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ff7a00" stopOpacity="0.34" />
-                      <stop offset="100%" stopColor="#ff7a00" stopOpacity="0" />
-                    </linearGradient>
-                    <linearGradient id="mrrLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#ff9a3d" />
-                      <stop offset="100%" stopColor="#ff7a00" />
-                    </linearGradient>
-                    <filter id="mrrGlow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.4" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <path d={trendArea} fill="url(#mrrAreaGrad)" />
-                  <path
-                    d={trendPath}
-                    fill="none"
-                    stroke="url(#mrrLineGrad)"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#mrrGlow)"
-                  />
-                  <circle
-                    cx="100"
-                    cy={trendPoints[trendPoints.length - 1]?.y ?? 90}
-                    r="2.8"
-                    fill="#ff7a00"
-                    stroke="rgba(255,255,255,0.9)"
-                    strokeWidth="1.1"
-                  />
-                </svg>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-luxury-soft">
-                  <span>{firstLabel}</span>
-                  <span>{lastLabel}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-white/70 bg-white/35 px-4 py-16 text-center text-sm text-luxury-muted">
-                Les snapshots quotidiens seront visibles dès demain.
-              </div>
-            )}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-5 md:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Engagement</p>
-          <div className="mt-6 space-y-4">
-            <RingGauge value={kpis.replayCompletionRate30d} color="#ff7a00" label="Completion rate replay" />
-            <div className="h-px bg-white/60" />
-            <RingGauge value={kpis.liveShowUpRate30d} color="#10b981" label="Show-up rate live" />
-            <div className="h-px bg-white/60" />
-            <div>
-              <p className="text-xs text-luxury-muted">Occupation live collectif</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-luxury-ink">{occupancyLabel}</p>
-            </div>
           </div>
         </GlassCard>
       </section>
@@ -535,6 +494,86 @@ export default async function AdminPage() {
               ) : null}
             </tbody>
             </table>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="relative z-10 grid gap-5 xl:grid-cols-[2fr_1fr]">
+        <GlassCard className="p-5 md:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Tendance MRR</h2>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-luxury-soft">Dernière valeur</p>
+              <p className="mt-1 text-base font-semibold tabular-nums text-luxury-ink">{lastMrrLabel}</p>
+            </div>
+          </div>
+          <div className="mt-5">
+            {trendPath ? (
+              <div>
+                <svg viewBox="0 0 100 100" className="h-44 w-full">
+                  <defs>
+                    <linearGradient id="mrrAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ff7a00" stopOpacity="0.34" />
+                      <stop offset="100%" stopColor="#ff7a00" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="mrrLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ff9a3d" />
+                      <stop offset="100%" stopColor="#ff7a00" />
+                    </linearGradient>
+                    <filter id="mrrGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.4" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <path d={trendArea} fill="url(#mrrAreaGrad)" />
+                  <path
+                    d={trendPath}
+                    fill="none"
+                    stroke="url(#mrrLineGrad)"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#mrrGlow)"
+                  />
+                  <circle
+                    cx="100"
+                    cy={trendPoints[trendPoints.length - 1]?.y ?? 90}
+                    r="2.8"
+                    fill="#ff7a00"
+                    stroke="rgba(255,255,255,0.9)"
+                    strokeWidth="1.1"
+                  />
+                </svg>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-luxury-soft">
+                  <span>{firstLabel}</span>
+                  <span>{lastLabel}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/70 bg-white/35 px-4 py-16 text-center text-sm text-luxury-muted">
+                Les snapshots quotidiens seront visibles dès demain.
+              </div>
+            )}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Engagement</p>
+          <div className="mt-6 space-y-4">
+            <RingGauge value={kpis.replayCompletionRate30d} color="#ff7a00" label="Completion rate replay" />
+            <div className="h-px bg-white/60" />
+            <RingGauge value={kpis.liveShowUpRate30d} color="#10b981" label="Show-up rate live" />
+            <div className="h-px bg-white/60" />
+            <div>
+              <p className="text-xs text-luxury-muted">Occupation live collectif</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-luxury-ink">{occupancyLabel}</p>
+            </div>
           </div>
         </GlassCard>
       </section>
