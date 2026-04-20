@@ -37,8 +37,8 @@ export async function CompteTopBar() {
   const points = (profile as { gamification_points?: number | null })?.gamification_points;
 
   return (
-    <GlassCard className="mx-4 mb-6 mt-4 px-4 py-4 md:mx-auto md:max-w-5xl md:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto mb-8 mt-4 grid max-w-5xl gap-8 px-4 md:grid-cols-2 md:px-8">
+      <GlassCard className="px-5 py-4 md:px-6">
         <Link href="/compte" className="flex min-w-0 items-start gap-3">
           <AvatarWithRibbon
             avatarUrl={avatarUrl}
@@ -49,18 +49,18 @@ export async function CompteTopBar() {
             points={points ?? 0}
           />
           <div className="min-w-0 pt-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Espace client</p>
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Espace client</p>
             <p className="truncate text-lg font-semibold tracking-tight text-luxury-ink">{display}</p>
           </div>
         </Link>
+      </GlassCard>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <NotificationBell items={(notifications ?? []) as NotificationRow[]} />
-          <Link href="/compte/profil" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.16em]">
-            Mon profil
-          </Link>
-        </div>
-      </div>
-    </GlassCard>
+      <GlassCard className="flex flex-wrap items-center justify-end gap-3 px-5 py-4 md:px-6">
+        <NotificationBell items={(notifications ?? []) as NotificationRow[]} />
+        <Link href="/compte/profil" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
+          Mon profil
+        </Link>
+      </GlassCard>
+    </div>
   );
 }

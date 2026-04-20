@@ -22,7 +22,7 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
 
   return (
     <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/45 bg-white/30 px-3 py-2 text-luxury-ink/85 backdrop-blur-md transition hover:bg-white/50 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink shadow-sm backdrop-blur-xl transition hover:bg-white/65 [&::-webkit-details-marker]:hidden">
         <Bell size={18} aria-hidden />
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">Notifications</span>
         {unread > 0 ? (
@@ -31,9 +31,9 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
           </span>
         ) : null}
       </summary>
-      <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] rounded-2xl border border-white/40 bg-white/55 py-2 shadow-[0_24px_56px_rgba(15,23,42,0.14)] backdrop-blur-[20px]">
+      <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
         {items.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-luxury-soft">Aucune notification.</p>
+          <p className="px-4 py-6 text-center text-sm text-luxury-muted">Aucune notification.</p>
         ) : (
           <>
             <div className="flex justify-end border-b border-white/35 px-3 pb-2">

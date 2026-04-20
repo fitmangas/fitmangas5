@@ -58,72 +58,70 @@ export default async function AdminPage() {
     kpis.occupancyPercent != null ? `${kpis.occupancyPercent.toLocaleString('fr-FR')}%` : '—';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 md:space-y-10">
-      <GlassCard className="p-6 md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-luxury-soft">Administration</p>
-        <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Dashboard Fit Mangas</h1>
-            <p className="mt-2 text-sm text-luxury-muted">
-              Connecté avec <span className="font-medium text-luxury-ink">{user.email}</span>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/" className="btn-luxury-ghost">
-              Retour site
-            </Link>
-            <form action="/auth/signout" method="post">
-              <button type="submit" className="btn-luxury-primary">
-                Déconnexion
-              </button>
-            </form>
-          </div>
-        </div>
-      </GlassCard>
+    <div className="mx-auto max-w-5xl space-y-10 md:space-y-12">
+      <div className="grid gap-8 lg:grid-cols-[1fr_min(280px,100%)]">
+        <GlassCard className="p-6 md:p-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Administration</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Dashboard Fit Mangas</h1>
+          <p className="mt-2 text-sm text-luxury-muted">
+            Connecté avec <span className="font-semibold text-luxury-ink">{user.email}</span>
+          </p>
+        </GlassCard>
+        <GlassCard className="flex flex-col justify-center gap-3 p-6 md:p-8">
+          <Link href="/" className="btn-luxury-ghost w-full justify-center">
+            Retour site
+          </Link>
+          <form action="/auth/signout" method="post" className="w-full">
+            <button type="submit" className="btn-luxury-primary w-full">
+              Déconnexion
+            </button>
+          </form>
+        </GlassCard>
+      </div>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        <GlassCard className="p-6">
+      <section className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <GlassCard className="p-6 md:p-7">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">MRR</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{mrrLabel}</p>
               <p className="mt-2 text-xs text-luxury-muted">Source : {mrrHint}</p>
             </div>
-            <span className="kpi-icon-wrap bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-lg shadow-orange-500/25">
-              <Euro size={20} aria-hidden />
+            <span className="kpi-icon-wrap kpi-icon-wrap--orange">
+              <Euro size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="p-6">
+        <GlassCard className="p-6 md:p-7">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Occupation</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Occupation</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{occupancyLabel}</p>
               <p className="mt-2 text-xs text-luxury-muted">Collectifs terminés · résa / places max</p>
             </div>
-            <span className="kpi-icon-wrap bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-lg shadow-rose-500/25">
-              <Percent size={20} aria-hidden />
+            <span className="kpi-icon-wrap kpi-icon-wrap--rose">
+              <Percent size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="p-6">
+        <GlassCard className="p-6 md:p-7 sm:col-span-2 lg:col-span-1">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Replay</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Replay</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
                 {kpis.totalReplayViews.toLocaleString('fr-FR')}
               </p>
               <p className="mt-2 text-xs text-luxury-muted">Vues cumulées</p>
             </div>
-            <span className="kpi-icon-wrap bg-gradient-to-br from-violet-400 to-indigo-600 text-white shadow-lg shadow-violet-500/25">
-              <Eye size={20} aria-hidden />
+            <span className="kpi-icon-wrap kpi-icon-wrap--violet">
+              <Eye size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
       </section>
 
       <GlassCard className="p-6 md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Démo client</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Démo client</p>
         <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-xl">
             <h2 className="text-lg font-semibold tracking-tight text-luxury-ink md:text-xl">Mode démo (vue élève)</h2>
@@ -137,49 +135,49 @@ export default async function AdminPage() {
         </div>
       </GlassCard>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        <GlassCard className="p-6">
+      <section className="grid gap-8 md:grid-cols-3">
+        <GlassCard className="p-6 md:p-7">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Clients</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Clients</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalClients ?? 0}</p>
               <p className="mt-2 text-xs text-luxury-muted">Profils</p>
             </div>
-            <span className="kpi-icon-wrap bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-lg shadow-sky-500/25">
-              <Users size={20} aria-hidden />
+            <span className="kpi-icon-wrap kpi-icon-wrap--blue">
+              <Users size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
         <Link href="/admin/courses" className="group block">
-          <GlassCard className="h-full p-6 transition-all duration-300 hover:border-orange-300/60 hover:shadow-xl">
+          <GlassCard className="h-full p-6 transition-all duration-300 hover:border-white hover:shadow-[0_20px_48px_rgba(29,29,31,0.1)] md:p-7">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Cours</p>
-                <p className="mt-3 text-lg font-semibold tracking-tight text-luxury-ink group-hover:text-orange-600">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Cours</p>
+                <p className="mt-3 text-lg font-semibold tracking-tight text-luxury-ink group-hover:text-[#ff7a00]">
                   Gérer les séances
                 </p>
                 <p className="mt-2 text-xs text-luxury-muted">Création, publication, capacités</p>
               </div>
-              <span className="kpi-icon-wrap bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-lg shadow-amber-500/25">
-                <Clapperboard size={20} aria-hidden />
+              <span className="kpi-icon-wrap kpi-icon-wrap--amber">
+                <Clapperboard size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
           </GlassCard>
         </Link>
-        <GlassCard className="flex flex-col p-6">
+        <GlassCard className="flex flex-col p-6 md:p-7">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Vimeo</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Vimeo</p>
               <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalReplaysReady ?? 0}</p>
               <p className="mt-2 text-xs text-luxury-muted">Replays prêts</p>
             </div>
-            <span className="kpi-icon-wrap bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-500/25">
-              <Video size={20} aria-hidden />
+            <span className="kpi-icon-wrap kpi-icon-wrap--green">
+              <Video size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
           <Link
             href="/admin/courses"
-            className="btn-luxury-ghost mt-6 w-full text-center text-[10px] tracking-[0.18em]"
+            className="btn-luxury-ghost mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
           >
             Vidéos
           </Link>
@@ -187,7 +185,7 @@ export default async function AdminPage() {
       </section>
 
       <GlassCard className="p-6 md:p-8">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-luxury-soft">Derniers clients</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-full text-left">
             <thead>
@@ -198,20 +196,20 @@ export default async function AdminPage() {
                 <th className="px-2 py-3">Mise à jour</th>
               </tr>
             </thead>
-            <tbody className="text-sm text-luxury-ink/85">
+            <tbody className="text-sm text-luxury-ink">
               {(latestProfiles as ProfileRow[] | null)?.map((profile) => (
-                <tr key={profile.id} className="border-b border-white/20">
+                <tr key={profile.id} className="border-b border-white/40">
                   <td className="px-2 py-3">
                     <Link
                       href={`/admin/clients/${profile.id}`}
-                      className="font-medium text-orange-600 underline-offset-4 hover:underline"
+                      className="font-semibold text-[#ff7a00] underline-offset-4 hover:underline"
                     >
                       {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8)}
                     </Link>
                   </td>
-                  <td className="px-2 py-3">{profile.role || 'member'}</td>
-                  <td className="px-2 py-3">{profile.last_checkout_course_id || '—'}</td>
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-3 text-luxury-muted">{profile.role || 'member'}</td>
+                  <td className="px-2 py-3 text-luxury-muted">{profile.last_checkout_course_id || '—'}</td>
+                  <td className="px-2 py-3 text-luxury-muted">
                     {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString('fr-FR') : '—'}
                   </td>
                 </tr>

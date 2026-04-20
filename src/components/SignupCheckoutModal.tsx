@@ -144,7 +144,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
     <AnimatePresence>
       {course && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-brand-ink/40 p-0 sm:items-center sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -156,7 +156,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-md rounded-t-[1.75rem] border border-white/40 bg-white/[0.48] shadow-[0_28px_64px_rgba(15,23,42,0.18)] backdrop-blur-[22px] sm:rounded-[1.75rem]"
+            className="relative w-full max-w-md rounded-t-[32px] border border-brand-ink/[0.06] bg-white shadow-2xl sm:rounded-[32px]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -165,26 +165,26 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 rounded-full border border-white/35 bg-white/30 p-2 text-luxury-soft transition hover:bg-white/50 hover:text-luxury-ink"
+              className="absolute right-4 top-4 rounded-full p-2 text-brand-ink/40 transition hover:bg-brand-sand/40 hover:text-brand-ink"
               aria-label={labels.close}
             >
               <X size={18} />
             </button>
 
-            <div className="border-b border-white/35 px-8 pb-6 pt-8">
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.28em] text-luxury-orange">
+            <div className="border-b border-brand-ink/[0.06] px-8 pb-6 pt-8">
+              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">
                 {segment === 'VISIO'
                   ? lang === 'FR'
                     ? 'Visio'
                     : 'Online'
                   : 'Nantes'}
               </p>
-              <h2 id="signup-title" className="text-2xl font-semibold tracking-tight text-luxury-ink">
+              <h2 id="signup-title" className="font-serif text-2xl italic tracking-tight text-brand-ink">
                 {labels.title}
               </h2>
-              <p className="mt-2 text-xs leading-relaxed text-luxury-muted">{labels.subtitle}</p>
-              <p className="mt-3 font-medium text-luxury-ink">{course.title}</p>
-              <p className="text-sm font-semibold text-luxury-orange">{course.price}</p>
+              <p className="mt-2 text-xs leading-relaxed text-brand-ink/50">{labels.subtitle}</p>
+              <p className="mt-3 font-medium text-brand-ink">{course.title}</p>
+              <p className="text-sm text-brand-accent">{course.price}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 px-8 py-8">

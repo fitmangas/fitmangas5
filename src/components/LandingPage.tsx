@@ -13,6 +13,7 @@ import {
   Mail,
   Star,
   LockKeyhole,
+  UserCircle2,
 } from 'lucide-react';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import type { Course } from '@/types';
@@ -29,6 +30,7 @@ const WhatsAppIcon = ({ size = 20 }: { size?: number }) => (
 export function LandingPage() {
   const [lang, setLang] = useState<Language>('FR');
   const [segment, setSegment] = useState<Segment>('VISIO');
+  const [onsiteCity, setOnsiteCity] = useState<'NANTES' | 'MEXICO'>('NANTES');
   const [showTooltip, setShowTooltip] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [count, setCount] = useState(2496);
@@ -80,7 +82,12 @@ export function LandingPage() {
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
   };
 
-  const activeCourses = segment === 'VISIO' ? t.courses.visio : t.courses.nantes;
+  const activeCourses =
+    segment === 'VISIO'
+      ? t.courses.visio
+      : onsiteCity === 'NANTES'
+        ? t.courses.nantes
+        : t.courses.mexico;
 
   const formattedDate = new Date().toLocaleDateString(lang === 'ES' ? 'es-ES' : 'fr-FR', {
     day: 'numeric',
@@ -89,9 +96,9 @@ export function LandingPage() {
   });
 
   return (
-    <div className="min-h-screen font-sans text-luxury-ink selection:bg-luxury-orange/15">
+    <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       {/* Top Stats Bar */}
-      <div className="sticky top-0 z-50 mx-3 mt-3 rounded-[1.75rem] border border-white/35 bg-white/45 shadow-[0_8px_32px_rgba(15,23,42,0.06)] backdrop-blur-[20px] md:mx-auto md:max-w-2xl">
+      <div className="bg-white/90 backdrop-blur-md border-b border-brand-ink/[0.03] sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-3 md:py-4">
           {/* Desktop Layout */}
           <div className="hidden md:flex justify-between items-center">
@@ -112,6 +119,13 @@ export function LandingPage() {
                 <span className="text-2xl font-sans font-semibold leading-none tracking-tight">180</span>
                 <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none font-medium">{t.proofPeople}</span>
               </div>
+              <Link
+                href="/compte"
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/70 transition hover:border-brand-accent/40 hover:text-brand-accent"
+              >
+                <UserCircle2 size={14} />
+                Se connecter
+              </Link>
               <div className="relative">
                 <button 
                   onClick={() => setShowTooltip(!showTooltip)}
@@ -148,6 +162,14 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Link
+                href="/compte"
+                className="w-6 h-6 flex items-center justify-center rounded-full border border-brand-ink/10 bg-white text-brand-ink/55"
+                aria-label="Se connecter"
+                title="Se connecter"
+              >
+                <UserCircle2 size={11} />
+              </Link>
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-lg font-sans font-semibold leading-none tracking-tight">180</span>
                 <span className="text-[7px] tracking-[0.1em] uppercase text-brand-ink/40 leading-none font-medium text-center whitespace-nowrap">{t.proofPeople}</span>
@@ -186,7 +208,7 @@ export function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8 md:mb-12 px-2 sm:px-4"
         >
-          <p className="mx-auto max-w-md text-[16.5px] font-normal leading-snug tracking-tight text-luxury-muted sm:text-lg md:text-xl md:leading-relaxed">
+          <p className="text-[16.5px] sm:text-lg md:text-xl font-serif leading-snug md:leading-relaxed text-brand-ink/80 max-w-md mx-auto tracking-tight">
             {t.accroche}
           </p>
         </motion.div>
@@ -196,7 +218,7 @@ export function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-card mb-16 overflow-hidden rounded-[40px]"
+          className="bg-white rounded-[40px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-brand-ink/[0.03] mb-16"
         >
           <div className="aspect-[4/5] relative overflow-hidden">
             <img 
@@ -207,7 +229,7 @@ export function LandingPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-10 text-center">
-              <h1 className="mb-3 text-6xl font-semibold leading-none tracking-tighter md:text-7xl">{t.title}</h1>
+              <h1 className="text-6xl md:text-7xl font-serif italic mb-3 tracking-tighter leading-none">{t.title}</h1>
               <p className="text-[10px] tracking-[0.4em] uppercase text-brand-accent font-bold">{t.subtitle}</p>
             </div>
           </div>
@@ -236,7 +258,7 @@ export function LandingPage() {
         </motion.section>
 
         {/* Segment Toggle */}
-        <div className="mb-12 flex rounded-full border border-white/35 bg-white/25 p-1 backdrop-blur-md">
+        <div className="mb-4 flex bg-brand-sand/30 p-1 rounded-full">
           <button 
             onClick={() => setSegment('VISIO')}
             className={`flex-1 py-3 rounded-full text-[10px] tracking-widest uppercase transition-all ${segment === 'VISIO' ? 'bg-white text-brand-ink shadow-sm' : 'text-brand-ink/40 hover:text-brand-ink'}`}
@@ -247,9 +269,35 @@ export function LandingPage() {
             onClick={() => setSegment('NANTES')}
             className={`flex-1 py-3 rounded-full text-[10px] tracking-widest uppercase transition-all ${segment === 'NANTES' ? 'bg-white text-brand-ink shadow-sm' : 'text-brand-ink/40 hover:text-brand-ink'}`}
           >
-            {t.segNantes}
+            {lang === 'FR' ? 'Présentiel' : 'Presencial'}
           </button>
         </div>
+        {segment === 'NANTES' ? (
+          <div className="mb-12 flex justify-center gap-2">
+            <button
+              onClick={() => setOnsiteCity('NANTES')}
+              className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
+                onsiteCity === 'NANTES'
+                  ? 'bg-brand-accent text-white shadow-sm'
+                  : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
+              }`}
+            >
+              Nantes
+            </button>
+            <button
+              onClick={() => setOnsiteCity('MEXICO')}
+              className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
+                onsiteCity === 'MEXICO'
+                  ? 'bg-brand-accent text-white shadow-sm'
+                  : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
+              }`}
+            >
+              Mexico
+            </button>
+          </div>
+        ) : (
+          <div className="mb-12" />
+        )}
 
         {/* Offers Grid */}
         <div className="space-y-12 mb-20">
@@ -273,7 +321,7 @@ export function LandingPage() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
-                className="glass-card group flex cursor-pointer flex-col overflow-hidden rounded-[40px] transition-all duration-500 hover:border-white/55 hover:shadow-[0_24px_56px_rgba(15,23,42,0.1)] md:flex-row"
+                className="group cursor-pointer bg-white rounded-[40px] border border-brand-ink/[0.03] hover:border-brand-accent/20 transition-all duration-500 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.02)] flex flex-col md:flex-row"
               >
                 {/* Image Section */}
                 <div className="md:w-64 h-64 md:h-auto relative overflow-hidden">
@@ -296,20 +344,16 @@ export function LandingPage() {
                 </div>
 
                 {/* Content Section */}
-                <div className="relative flex flex-1 flex-col justify-between bg-white/20 p-6 backdrop-blur-sm md:p-10">
+                <div className="flex-1 p-6 md:p-10 flex flex-col justify-between bg-white relative">
                   <div>
                     <div className="flex justify-between items-start mb-4 md:mb-8">
                       <div className="space-y-1 md:space-y-2">
                         <span className="text-[10px] tracking-[0.3em] uppercase text-brand-accent font-bold opacity-80">
-                          {segment === 'VISIO' ? t.visioLabel : t.nantesLabel}
+                          {segment === 'VISIO' ? t.visioLabel : `${lang === 'FR' ? 'Studio' : 'Studio'} ${onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}`}
                         </span>
-                        <h3 className="text-2xl font-semibold leading-none tracking-tight text-brand-ink transition-colors duration-300 group-hover:text-brand-accent md:text-4xl">
+                        <h3 className="text-2xl md:text-4xl font-serif tracking-tight text-brand-ink group-hover:text-brand-accent transition-colors duration-300 leading-none">
                           {course.title}
                         </h3>
-                      </div>
-                      {/* Round CTA - Hidden on mobile, moved to bottom */}
-                      <div className="hidden md:flex w-14 h-14 rounded-full border border-brand-ink/5 items-center justify-center group-hover:bg-brand-accent group-hover:text-white group-hover:border-brand-accent transition-all duration-500 shadow-sm">
-                        <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                     
@@ -318,15 +362,23 @@ export function LandingPage() {
                       <div className="p-3 md:p-4 rounded-[20px] md:rounded-3xl bg-brand-sand/10 border border-brand-ink/[0.02] flex flex-col gap-1.5 md:gap-2">
                         <ShieldCheck size={16} className="text-brand-accent/60 md:w-[18px] md:h-[18px]" />
                         <div>
-                          <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">Direct et Replay</p>
-                          <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">Disponible</p>
+                          <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">
+                            {segment === 'VISIO' ? 'Direct et Replay' : lang === 'FR' ? 'Cours en studio' : 'Clase en estudio'}
+                          </p>
+                          <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">
+                            {segment === 'VISIO' ? 'Disponible' : lang === 'FR' ? 'Présence sur place' : 'Presencial'}
+                          </p>
                         </div>
                       </div>
                       <div className="p-3 md:p-4 rounded-[20px] md:rounded-3xl bg-brand-sand/10 border border-brand-ink/[0.02] flex flex-col gap-1.5 md:gap-2">
                         <CheckCircle2 size={16} className="text-brand-accent/60 md:w-[18px] md:h-[18px]" />
                         <div>
-                          <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">Bibliothèque</p>
-                          <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">+ de 25h disponible</p>
+                          <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">
+                            {segment === 'VISIO' ? 'Bibliothèque' : lang === 'FR' ? 'Places limitées' : 'Plazas limitadas'}
+                          </p>
+                          <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">
+                            {segment === 'VISIO' ? '+ de 25h disponible' : lang === 'FR' ? 'Réservation requise' : 'Reserva requerida'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -346,14 +398,10 @@ export function LandingPage() {
                       </div>
                     </div>
                     
-                    {/* CTA - Round button on mobile, Text on desktop */}
+                    {/* CTA unique */}
                     <div className="flex items-center">
-                      <div className="md:hidden w-12 h-12 rounded-full bg-brand-accent text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                      <div className="w-12 h-12 rounded-full bg-brand-accent text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform">
                         <ArrowRight size={20} />
-                      </div>
-                      <div className="hidden md:flex items-center gap-2 text-[10px] tracking-[0.3em] uppercase font-bold text-brand-accent group-hover:gap-4 transition-all duration-300">
-                        <span>{lang === 'FR' ? 'Réserver' : 'Reservar'}</span>
-                        <ArrowRight size={14} />
                       </div>
                     </div>
                   </div>
@@ -368,13 +416,13 @@ export function LandingPage() {
           href={getWaLink(t.waMsg)}
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-card mb-24 flex flex-col items-center gap-6 rounded-[40px] p-10 text-center transition-all hover:border-white/50 hover:shadow-[0_24px_56px_rgba(15,23,42,0.12)] group"
+          className="bg-white p-10 rounded-[40px] flex flex-col items-center text-center gap-6 mb-24 hover:shadow-xl transition-all border border-brand-ink/[0.03] group"
         >
           <div className="w-16 h-16 rounded-full bg-brand-sand/30 text-brand-accent flex items-center justify-center group-hover:bg-brand-accent group-hover:text-white transition-all">
             <WhatsAppIcon size={28} />
           </div>
           <div>
-            <h4 className="mb-2 text-2xl font-semibold tracking-tight text-brand-ink md:text-3xl">{t.helpTitle}</h4>
+            <h4 className="text-2xl md:text-3xl font-serif tracking-tight text-brand-ink mb-2">{t.helpTitle}</h4>
             <p className="text-xs text-brand-ink/40 tracking-wide leading-relaxed max-w-[240px] mx-auto">{t.helpSub}</p>
           </div>
           <div className="flex items-center gap-3 text-[10px] tracking-[0.2em] uppercase font-bold text-brand-accent">
@@ -387,9 +435,7 @@ export function LandingPage() {
         <section className="mb-32">
           <div className="text-center mb-12">
             <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">Les adhérentes alias Mangitas</span>
-            <h2 className="mb-10 text-4xl font-semibold tracking-tight">
-              {lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}
-            </h2>
+            <h2 className="text-4xl font-serif italic tracking-tight mb-10">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
             
             {/* Grouped Avatars Row - Structural inspiration from Canva */}
             <div className="flex justify-center -space-x-5 mb-6">
@@ -431,7 +477,7 @@ export function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="glass-card flex h-full flex-col rounded-[32px] p-8 transition-shadow hover:border-white/50 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]"
+                  className="bg-white p-8 rounded-[32px] border border-brand-ink/[0.03] shadow-sm flex flex-col h-full hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex flex-col">
@@ -445,7 +491,7 @@ export function LandingPage() {
                     </div>
                   </div>
                   
-                  <p className="text-base font-light leading-relaxed tracking-tight text-luxury-muted md:text-lg">
+                  <p className="text-base md:text-lg font-serif italic leading-relaxed text-brand-ink/80 tracking-tight">
                     {testimonial.text}
                   </p>
                 </motion.div>
@@ -492,7 +538,7 @@ export function LandingPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-8 right-8 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/45 bg-white/50 text-luxury-ink shadow-[0_8px_28px_rgba(15,23,42,0.12)] backdrop-blur-md transition hover:bg-white/70"
+            className="fixed bottom-8 right-8 w-12 h-12 bg-white shadow-lg rounded-full flex items-center justify-center text-brand-ink z-50 hover:bg-brand-sand transition-colors"
           >
             <ChevronUp size={20} />
           </motion.button>

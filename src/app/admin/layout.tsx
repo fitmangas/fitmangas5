@@ -5,7 +5,10 @@ import { AdminSidebar } from '@/components/Admin/AdminSidebar';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen">
-      <AdminSidebar />
+      <div className="luxury-bg-orbs" aria-hidden />
+      <div className="luxury-grain" aria-hidden />
+      <div className="relative z-10">
+        <AdminSidebar />
       {/* Navigation mobile + marge pour barre latérale fixe */}
       <nav className="glass-card mx-4 mb-4 mt-4 px-4 py-3 md:ml-24 md:rounded-2xl md:border md:border-white/35 md:bg-white/25 md:backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
@@ -29,6 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </nav>
       <div className="px-4 pb-16 md:pl-24">{children}</div>
+      </div>
     </div>
   );
 }

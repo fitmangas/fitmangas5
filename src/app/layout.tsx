@@ -18,8 +18,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="relative min-h-screen">
-        <div className="luxury-grain" aria-hidden />
-        <div className="relative z-10 min-h-screen">
+        <div className="relative min-h-screen">
           <DemoModeBanner />
           {children}
           <FloatingWhatsApp />

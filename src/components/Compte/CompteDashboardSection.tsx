@@ -10,15 +10,15 @@ import { MonthlyProgressRing } from './MonthlyProgressRing';
 function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) {
   if (!appointment) {
     return (
-      <GlassCard className="p-8">
+      <GlassCard className="p-8 md:p-9">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Prochain rendez-vous</p>
-            <p className="mt-4 text-lg font-semibold tracking-tight text-luxury-ink/70">Aucune réservation à venir</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Prochain rendez-vous</p>
+            <p className="mt-4 text-lg font-semibold tracking-tight text-luxury-ink">Aucune réservation à venir</p>
             <p className="mt-2 text-sm text-luxury-muted">Réserve une séance depuis le calendrier ci-dessous.</p>
           </div>
-          <span className="kpi-icon-wrap bg-gradient-to-br from-violet-400 to-violet-600 text-white shadow-lg shadow-violet-500/30">
-            <Calendar size={20} aria-hidden />
+          <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
+            <Calendar size={20} aria-hidden strokeWidth={2} />
           </span>
         </div>
       </GlassCard>
@@ -31,16 +31,16 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
   const liveWindow = now >= start.getTime() && now <= end.getTime();
 
   return (
-    <GlassCard className="p-8">
+    <GlassCard className="p-8 md:p-9">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Prochain rendez-vous</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Prochain rendez-vous</p>
           <h2 className="mt-3 text-xl font-semibold leading-snug tracking-tight text-luxury-ink">{appointment.title}</h2>
           <p className="mt-3 text-sm text-luxury-muted">
             {start.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
           </p>
           {liveWindow ? (
-            <p className="mt-2 inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+            <p className="mt-2 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-900">
               En direct maintenant
             </p>
           ) : null}
@@ -50,8 +50,8 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
             </Link>
           </div>
         </div>
-        <span className="kpi-icon-wrap shrink-0 bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-500/35">
-          <Sparkles size={20} aria-hidden />
+        <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
+          <Sparkles size={20} aria-hidden strokeWidth={2} />
         </span>
       </div>
     </GlassCard>
@@ -60,21 +60,21 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
 
 function MonthlyProgressCard({ progress }: { progress: MonthlyProgress }) {
   return (
-    <GlassCard className="flex flex-col p-8">
+    <GlassCard className="flex flex-col p-8 md:p-9">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Progression mensuelle</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Progression mensuelle</p>
           <p className="mt-2 text-sm text-luxury-muted">Cours suivis ce mois-ci (séances terminées)</p>
         </div>
-        <span className="kpi-icon-wrap bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-500/30">
-          <Activity size={20} aria-hidden />
+        <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
+          <Activity size={20} aria-hidden strokeWidth={2} />
         </span>
       </div>
       <div className="mt-4 flex flex-1 flex-col items-center justify-center">
         <MonthlyProgressRing followedCount={progress.followedCount} goal={progress.goal} />
       </div>
-      <p className="mt-4 text-center text-[11px] text-luxury-soft">
-        Objectif modifiable via <span className="font-mono text-[10px]">NEXT_PUBLIC_MONTHLY_SESSION_GOAL</span>
+      <p className="mt-4 text-center text-[11px] text-luxury-muted">
+        Objectif modifiable via <span className="font-mono text-[10px] text-luxury-soft">NEXT_PUBLIC_MONTHLY_SESSION_GOAL</span>
       </p>
     </GlassCard>
   );
@@ -88,7 +88,7 @@ export async function CompteDashboardSection({ userId }: { userId: string }) {
   ]);
 
   return (
-    <section className="grid gap-6 md:grid-cols-2">
+    <section className="grid gap-8 md:grid-cols-2">
       <NextAppointmentCard appointment={appointment} />
       <MonthlyProgressCard progress={monthly} />
     </section>

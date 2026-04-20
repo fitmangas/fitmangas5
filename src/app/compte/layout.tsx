@@ -15,8 +15,12 @@ export default async function CompteLayout({ children }: { children: React.React
 
   return (
     <div className="relative min-h-screen">
-      <CompteTopBar />
-      {children}
+      <div className="luxury-bg-orbs" aria-hidden />
+      <div className="luxury-grain" aria-hidden />
+      <div className="relative z-10">
+        <CompteTopBar />
+        {children}
+      </div>
     </div>
   );
 }

@@ -40,6 +40,7 @@ export interface Content {
   courses: {
     visio: Course[];
     nantes: Course[];
+    mexico: Course[];
   };
 }
 
@@ -59,7 +60,7 @@ export const translations: Record<Language, Content> = {
     accroche: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
     microline: "Réserve en 30 secondes.",
     segVisio: "Visio",
-    segNantes: "Nantes",
+    segNantes: "Présentiel",
     visioLabel: "5 cours par mois",
     nantesLabel: "Studio Nantes",
     sectionTitle: "Choisis ton cours",
@@ -97,6 +98,10 @@ export const translations: Record<Language, Content> = {
       nantes: [
         { id: 'n-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
         { id: 'n-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+      ],
+      mexico: [
+        { id: 'm-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'm-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   },
@@ -106,7 +111,7 @@ export const translations: Record<Language, Content> = {
     accroche: "Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.",
     microline: "Reserva en 30 segundos.",
     segVisio: "Online",
-    segNantes: "Nantes",
+    segNantes: "Presencial",
     visioLabel: "5 clases al mes",
     nantesLabel: "Studio Nantes",
     sectionTitle: "Elige tu clase",
@@ -144,6 +149,10 @@ export const translations: Record<Language, Content> = {
       nantes: [
         { id: 'n-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
         { id: 'n-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+      ],
+      mexico: [
+        { id: 'm-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'm-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   }
