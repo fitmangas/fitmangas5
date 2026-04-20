@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Play, Plus, Pencil, Trash2, UserCheck, X } from 'lucide-react';
+import { Eye, Play, Pencil, Trash2, UserCheck, X } from 'lucide-react';
 import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/app/admin/courses/actions';
 
 export type AdminCourseRow = {
@@ -48,6 +48,7 @@ function isoFromDatetimeLocal(value: string) {
 type FormState = {
   title: string;
   description: string;
+  courseType: 'pilates-mat' | 'yoga-flow' | 'postural' | 'renfo-core';
   startsLocal: string;
   endsLocal: string;
   courseFormat: 'online' | 'onsite';
@@ -56,10 +57,46 @@ type FormState = {
   isPublished: boolean;
   location: string;
   liveUrl: string;
+  city: 'Nantes' | 'Mexico';
   jitsiLink: string;
   replayUrl: string;
   spotifyPlaylistUrl: string;
 };
+
+const COURSE_TYPE_OPTIONS: Array<{ value: FormState['courseType']; label: string }> = [
+  { value: 'pilates-mat', label: 'Pilates Mat' },
+  { value: 'yoga-flow', label: 'Yoga Flow' },
+  { value: 'postural', label: 'Postural' },
+  { value: 'renfo-core', label: 'Renfo Core' },
+];
+
+const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
+  'pilates-mat':
+    'Session Pilates Mat axee sur le centre, la posture et la fluidite des mouvements. Travail progressif pour renforcer en profondeur et gagner en stabilite.',
+  'yoga-flow':
+    'Yoga Flow dynamique, respiration guidee et enchainements fluides pour relacher les tensions, retrouver de la mobilite et renforcer tout le corps.',
+  postural:
+    'Cours postural focalise sur l alignement, la mobilite articulaire et le renforcement doux. Ideal pour corriger les compensations et prevenir les douleurs.',
+  'renfo-core':
+    'Renforcement du core avec sequences ciblees sur sangle abdominale, dos et bassin. Intensite adaptable, priorite a la technique et au controle.',
+};
+
+function computeDefaultPoints(courseFormat: FormState['courseFormat']): number {
+  return courseFormat === 'onsite' ? 30 : 15;
+}
+
+function buildAutoJitsiLink(title: string, startsLocal: string): string | null {
+  const cleanTitle = title
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 42);
+  if (!cleanTitle) return null;
+  const date = startsLocal.replace(/[^0-9]/g, '').slice(0, 12);
+  return `https://meet.jit.si/FitMangas-${cleanTitle}-${date || 'session'}`;
+}
 
 function emptyCreateForm(): FormState {
   const start = new Date();
@@ -67,15 +104,17 @@ function emptyCreateForm(): FormState {
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return {
     title: '',
-    description: '',
+    description: DESCRIPTION_TEMPLATES['pilates-mat'],
+    courseType: 'pilates-mat',
     startsLocal: toDatetimeLocalValue(start.toISOString()),
     endsLocal: toDatetimeLocalValue(end.toISOString()),
     courseFormat: 'online',
     courseCategory: 'group',
     capacityMax: '',
-    isPublished: false,
+    isPublished: true,
     location: '',
     liveUrl: '',
+    city: 'Nantes',
     jitsiLink: '',
     replayUrl: '',
     spotifyPlaylistUrl: '',
@@ -86,6 +125,7 @@ function courseToFormState(c: AdminCourseRow): FormState {
   return {
     title: c.title,
     description: c.description ?? '',
+    courseType: 'pilates-mat',
     startsLocal: toDatetimeLocalValue(c.starts_at),
     endsLocal: toDatetimeLocalValue(c.ends_at),
     courseFormat: c.course_format,
@@ -94,6 +134,7 @@ function courseToFormState(c: AdminCourseRow): FormState {
     isPublished: c.is_published,
     location: c.location ?? '',
     liveUrl: c.live_url ?? '',
+    city: c.location?.toLowerCase().includes('mex') ? 'Mexico' : 'Nantes',
     jitsiLink: c.jitsi_link ?? '',
     replayUrl: c.replay_url ?? '',
     spotifyPlaylistUrl: c.spotify_playlist_url ?? '',
@@ -108,20 +149,23 @@ function parseCapacity(cap: string): number | null {
 }
 
 function formToPayload(f: FormState) {
+  const autoPoints = computeDefaultPoints(f.courseFormat);
+  const pointsPrefix = `[${autoPoints} pts]`;
+  const normalizedDescription = f.description.trim();
   return {
     title: f.title,
-    description: f.description.trim() || null,
+    description: `${pointsPrefix} ${normalizedDescription}`.trim() || pointsPrefix,
     startsAt: isoFromDatetimeLocal(f.startsLocal),
     endsAt: isoFromDatetimeLocal(f.endsLocal),
     courseFormat: f.courseFormat,
     courseCategory: f.courseCategory,
-    capacityMax: parseCapacity(f.capacityMax),
+    capacityMax: f.courseFormat === 'onsite' ? parseCapacity(f.capacityMax) : null,
     isPublished: f.isPublished,
-    location: f.location.trim() || null,
-    liveUrl: f.liveUrl.trim() || null,
-    jitsiLink: f.jitsiLink.trim() || null,
-    replayUrl: f.replayUrl.trim() || null,
-    spotifyPlaylistUrl: f.spotifyPlaylistUrl.trim() || null,
+    location: f.courseFormat === 'onsite' ? f.city : null,
+    liveUrl: f.courseFormat === 'online' ? buildAutoJitsiLink(f.title, f.startsLocal) : null,
+    jitsiLink: f.courseFormat === 'online' ? buildAutoJitsiLink(f.title, f.startsLocal) : null,
+    replayUrl: null,
+    spotifyPlaylistUrl: null,
     timezone: 'Europe/Paris',
   };
 }
@@ -195,9 +239,6 @@ export function AdminCoursesManager({ courses }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-luxury-ink">Séances</h2>
-          <p className="mt-1 text-sm text-luxury-muted">
-            Seuls les cours <strong>publiés</strong> apparaissent sur le calendrier client (/compte).
-          </p>
         </div>
         <Link
           href="/admin"
@@ -219,148 +260,130 @@ export function AdminCoursesManager({ courses }: Props) {
         </div>
       ) : null}
 
-      <section className="glass-card p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-brand-ink/50">
-          <Plus size={16} className="text-brand-accent" />
-          Nouvelle séance
-        </h3>
+      <section className="glass-card border-white/80 bg-white/45 p-5 backdrop-blur-2xl">
         <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
-          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+          <label className="md:col-span-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Titre *
             <input
               required
               value={createForm.title}
               onChange={(e) => setCreateForm((s) => ({ ...s, title: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             />
           </label>
-          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+            Type de cours
+            <select
+              value={createForm.courseType}
+              onChange={(e) => {
+                const selected = e.target.value as FormState['courseType'];
+                setCreateForm((s) => ({ ...s, courseType: selected, description: DESCRIPTION_TEMPLATES[selected] }));
+              }}
+              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+            >
+              {COURSE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="md:col-span-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Description
             <textarea
               rows={3}
               value={createForm.description}
               onChange={(e) => setCreateForm((s) => ({ ...s, description: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             />
           </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+          <div className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+            Format
+            <div className="mt-2 inline-flex rounded-full border border-white/80 bg-white/45 p-1">
+              <button
+                type="button"
+                onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'online', capacityMax: '' }))}
+                className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
+                  createForm.courseFormat === 'online'
+                    ? 'bg-white text-luxury-ink shadow-[0_6px_14px_rgba(29,29,31,0.1)]'
+                    : 'text-luxury-muted'
+                }`}
+              >
+                Visio
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'onsite' }))}
+                className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
+                  createForm.courseFormat === 'onsite'
+                    ? 'bg-white text-luxury-ink shadow-[0_6px_14px_rgba(29,29,31,0.1)]'
+                    : 'text-luxury-muted'
+                }`}
+              >
+                Présentiel
+              </button>
+            </div>
+          </div>
+          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Début *
             <input
               type="datetime-local"
               required
               value={createForm.startsLocal}
               onChange={(e) => setCreateForm((s) => ({ ...s, startsLocal: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             />
           </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Fin *
             <input
               type="datetime-local"
               required
               value={createForm.endsLocal}
               onChange={(e) => setCreateForm((s) => ({ ...s, endsLocal: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
             />
           </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Format
-            <select
-              value={createForm.courseFormat}
-              onChange={(e) =>
-                setCreateForm((s) => ({ ...s, courseFormat: e.target.value as 'online' | 'onsite' }))
-              }
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-            >
-              <option value="online">En ligne</option>
-              <option value="onsite">Présentiel</option>
-            </select>
-          </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Catégorie
-            <select
-              value={createForm.courseCategory}
-              onChange={(e) =>
-                setCreateForm((s) => ({ ...s, courseCategory: e.target.value as 'individual' | 'group' }))
-              }
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-            >
-              <option value="group">Collectif</option>
-              <option value="individual">Individuel</option>
-            </select>
-          </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Capacité max (places)
-            <input
-              type="number"
-              min={1}
-              value={createForm.capacityMax}
-              onChange={(e) => setCreateForm((s) => ({ ...s, capacityMax: e.target.value }))}
-              placeholder="Illimité si vide"
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="flex items-center gap-2 pt-6 text-sm text-brand-ink/70">
+          {createForm.courseFormat === 'onsite' ? (
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Ville
+              <select
+                value={createForm.city}
+                onChange={(e) => setCreateForm((s) => ({ ...s, city: e.target.value as 'Nantes' | 'Mexico' }))}
+                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              >
+                <option value="Nantes">Nantes</option>
+                <option value="Mexico">Mexico</option>
+              </select>
+            </label>
+          ) : null}
+          {createForm.courseFormat === 'onsite' ? (
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Capacité (places)
+              <input
+                type="number"
+                min={1}
+                value={createForm.capacityMax}
+                onChange={(e) => setCreateForm((s) => ({ ...s, capacityMax: e.target.value }))}
+                placeholder="Illimité si vide"
+                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              />
+            </label>
+          ) : null}
+          <label className="md:col-span-2 flex items-center gap-2 text-sm text-brand-ink/70">
             <input
               type="checkbox"
-              checked={createForm.isPublished}
-              onChange={(e) => setCreateForm((s) => ({ ...s, isPublished: e.target.checked }))}
+              checked={!createForm.isPublished}
+              onChange={(e) => setCreateForm((s) => ({ ...s, isPublished: !e.target.checked }))}
               className="rounded border-brand-ink/20"
             />
-            Publié (visible calendrier client)
-          </label>
-          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Lieu (présentiel)
-            <input
-              value={createForm.location}
-              onChange={(e) => setCreateForm((s) => ({ ...s, location: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-              placeholder="Studio Nantes…"
-            />
-          </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            URL live
-            <input
-              value={createForm.liveUrl}
-              onChange={(e) => setCreateForm((s) => ({ ...s, liveUrl: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-              placeholder="https://…"
-            />
-          </label>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            URL replay
-            <input
-              value={createForm.replayUrl}
-              onChange={(e) => setCreateForm((s) => ({ ...s, replayUrl: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-              placeholder="https://…"
-            />
-          </label>
-          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Lien Jitsi
-            <input
-              type="url"
-              value={createForm.jitsiLink}
-              onChange={(e) => setCreateForm((s) => ({ ...s, jitsiLink: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-              placeholder="https://meet.jit.si/NomDuCours-ID"
-            />
-          </label>
-          <label className="md:col-span-2 block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-            Playlist Spotify (replay / live)
-            <input
-              type="url"
-              value={createForm.spotifyPlaylistUrl}
-              onChange={(e) => setCreateForm((s) => ({ ...s, spotifyPlaylistUrl: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-2 text-sm"
-              placeholder="https://open.spotify.com/playlist/…"
-            />
+            Enregistrer comme Brouillon
           </label>
           <div className="md:col-span-2">
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white disabled:opacity-50"
+              className="rounded-full bg-[#ff7a00] px-7 py-3 text-[10px] font-bold uppercase tracking-widest text-white shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_8px_26px_rgba(255,122,0,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_12px_32px_rgba(255,122,0,0.58)] disabled:opacity-50"
             >
               Créer la séance
             </button>
@@ -506,63 +529,86 @@ export function AdminCoursesManager({ courses }: Props) {
               </div>
             </div>
             <form onSubmit={handleUpdate} className="grid gap-4">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                 Titre *
                 <input
                   required
                   value={editForm.title}
                   onChange={(e) => setEditForm((s) => (s ? { ...s, title: e.target.value } : s))}
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                 />
               </label>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                Type de cours
+                <select
+                  value={editForm.courseType}
+                  onChange={(e) => {
+                    const selected = e.target.value as FormState['courseType'];
+                    setEditForm((s) => (s ? { ...s, courseType: selected, description: DESCRIPTION_TEMPLATES[selected] } : s));
+                  }}
+                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+                >
+                  {COURSE_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                 Description
                 <textarea
                   rows={3}
                   value={editForm.description}
                   onChange={(e) => setEditForm((s) => (s ? { ...s, description: e.target.value } : s))}
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                 />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Début *
                   <input
                     type="datetime-local"
                     required
                     value={editForm.startsLocal}
                     onChange={(e) => setEditForm((s) => (s ? { ...s, startsLocal: e.target.value } : s))}
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                   />
                 </label>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Fin *
                   <input
                     type="datetime-local"
                     required
                     value={editForm.endsLocal}
                     onChange={(e) => setEditForm((s) => (s ? { ...s, endsLocal: e.target.value } : s))}
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                   />
                 </label>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Format
                   <select
                     value={editForm.courseFormat}
                     onChange={(e) =>
                       setEditForm((s) =>
-                        s ? { ...s, courseFormat: e.target.value as 'online' | 'onsite' } : s,
+                        s
+                          ? {
+                              ...s,
+                              courseFormat: e.target.value as 'online' | 'onsite',
+                              capacityMax: e.target.value === 'online' ? '' : s.capacityMax,
+                            }
+                          : s,
                       )
                     }
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                   >
                     <option value="online">En ligne</option>
                     <option value="onsite">Présentiel</option>
                   </select>
                 </label>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Catégorie
                   <select
                     value={editForm.courseCategory}
@@ -571,83 +617,52 @@ export function AdminCoursesManager({ courses }: Props) {
                         s ? { ...s, courseCategory: e.target.value as 'individual' | 'group' } : s,
                       )
                     }
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                   >
                     <option value="group">Collectif</option>
                     <option value="individual">Individuel</option>
                   </select>
                 </label>
               </div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                Capacité max
-                <input
-                  type="number"
-                  min={1}
-                  value={editForm.capacityMax}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, capacityMax: e.target.value } : s))}
-                  placeholder="Illimité si vide"
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                />
-              </label>
+              {editForm.courseFormat === 'onsite' ? (
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                  Ville
+                  <select
+                    value={editForm.city}
+                    onChange={(e) => setEditForm((s) => (s ? { ...s, city: e.target.value as 'Nantes' | 'Mexico' } : s))}
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+                  >
+                    <option value="Nantes">Nantes</option>
+                    <option value="Mexico">Mexico</option>
+                  </select>
+                </label>
+              ) : null}
+              {editForm.courseFormat === 'onsite' ? (
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                  Capacité (places)
+                  <input
+                    type="number"
+                    min={1}
+                    value={editForm.capacityMax}
+                    onChange={(e) => setEditForm((s) => (s ? { ...s, capacityMax: e.target.value } : s))}
+                    placeholder="Illimité si vide"
+                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+                  />
+                </label>
+              ) : null}
               <label className="flex items-center gap-2 text-sm text-brand-ink/70">
                 <input
                   type="checkbox"
-                  checked={editForm.isPublished}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, isPublished: e.target.checked } : s))}
+                  checked={!editForm.isPublished}
+                  onChange={(e) => setEditForm((s) => (s ? { ...s, isPublished: !e.target.checked } : s))}
                   className="rounded border-brand-ink/20"
                 />
-                Publié (visible calendrier client)
-              </label>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                Lieu
-                <input
-                  value={editForm.location}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, location: e.target.value } : s))}
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                  URL live
-                  <input
-                    value={editForm.liveUrl}
-                    onChange={(e) => setEditForm((s) => (s ? { ...s, liveUrl: e.target.value } : s))}
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                  URL replay
-                  <input
-                    value={editForm.replayUrl}
-                    onChange={(e) => setEditForm((s) => (s ? { ...s, replayUrl: e.target.value } : s))}
-                    className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                Lien Jitsi
-                <input
-                  type="url"
-                  value={editForm.jitsiLink}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, jitsiLink: e.target.value } : s))}
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                  placeholder="https://meet.jit.si/NomDuCours-ID"
-                />
-              </label>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-brand-ink/45">
-                Playlist Spotify (replay / live)
-                <input
-                  type="url"
-                  value={editForm.spotifyPlaylistUrl}
-                  onChange={(e) => setEditForm((s) => (s ? { ...s, spotifyPlaylistUrl: e.target.value } : s))}
-                  className="mt-1 w-full rounded-xl border border-brand-ink/[0.08] px-3 py-2 text-sm"
-                  placeholder="https://open.spotify.com/playlist/…"
-                />
+                Enregistrer comme Brouillon
               </label>
               <button
                 type="submit"
                 disabled={isPending}
-                className="rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white disabled:opacity-50"
+                className="rounded-full bg-[#ff7a00] px-7 py-3 text-[10px] font-bold uppercase tracking-widest text-white shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_8px_26px_rgba(255,122,0,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_12px_32px_rgba(255,122,0,0.58)] disabled:opacity-50"
               >
                 Enregistrer
               </button>

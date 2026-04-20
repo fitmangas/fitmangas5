@@ -16,6 +16,7 @@ import {
   UserCircle2,
 } from 'lucide-react';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
+import { ClientLoginModal } from './ClientLoginModal';
 import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 
@@ -35,6 +36,7 @@ export function LandingPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [count, setCount] = useState(2496);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const t = translations[lang];
 
@@ -119,13 +121,14 @@ export function LandingPage() {
                 <span className="text-2xl font-sans font-semibold leading-none tracking-tight">180</span>
                 <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none font-medium">{t.proofPeople}</span>
               </div>
-              <Link
-                href="/compte"
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/70 transition hover:border-brand-accent/40 hover:text-brand-accent"
               >
                 <UserCircle2 size={14} />
                 Se connecter
-              </Link>
+              </button>
               <div className="relative">
                 <button 
                   onClick={() => setShowTooltip(!showTooltip)}
@@ -162,14 +165,15 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link
-                href="/compte"
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
                 className="w-6 h-6 flex items-center justify-center rounded-full border border-brand-ink/10 bg-white text-brand-ink/55"
                 aria-label="Se connecter"
                 title="Se connecter"
               >
                 <UserCircle2 size={11} />
-              </Link>
+              </button>
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-lg font-sans font-semibold leading-none tracking-tight">180</span>
                 <span className="text-[7px] tracking-[0.1em] uppercase text-brand-ink/40 leading-none font-medium text-center whitespace-nowrap">{t.proofPeople}</span>
@@ -529,6 +533,7 @@ export function LandingPage() {
         lang={lang}
         onClose={() => setSelectedCourse(null)}
       />
+      <ClientLoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
 
       {/* Scroll to Top */}
       <AnimatePresence>

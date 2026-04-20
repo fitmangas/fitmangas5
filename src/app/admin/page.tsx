@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Clapperboard, Euro, Eye, Percent, Users, Video } from 'lucide-react';
+import { ChevronDown, Clapperboard, Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
+
+import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getAdminKpis } from '@/lib/admin/kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { GlassCard } from '@/components/ui/GlassCard';
 
 type ProfileRow = {
   id: string;
@@ -15,6 +16,130 @@ type ProfileRow = {
   last_checkout_course_id: string | null;
   updated_at: string | null;
 };
+
+type UpcomingCourseRow = {
+  id: string;
+  title: string;
+  starts_at: string;
+};
+
+type Point = { x: number; y: number };
+
+function pctLabel(value: number | null): string {
+  if (value == null) return '—';
+  return `${value.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}%`;
+}
+
+function sparkPoints(values: number[]): Point[] {
+  if (!values.length) return [];
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
+  return values.map((v, i) => {
+    const x = (i / Math.max(values.length - 1, 1)) * 100;
+    const y = 90 - ((v - min) / range) * 70;
+    return { x, y };
+  });
+}
+
+function sparkSmoothPath(points: Point[]): string {
+  if (!points.length) return '';
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+  let d = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const cx1 = p0.x + (p1.x - p0.x) * 0.4;
+    const cy1 = p0.y;
+    const cx2 = p0.x + (p1.x - p0.x) * 0.6;
+    const cy2 = p1.y;
+    d += ` C ${cx1},${cy1} ${cx2},${cy2} ${p1.x},${p1.y}`;
+  }
+  return d;
+}
+
+function sparkAreaPath(points: Point[]): string {
+  if (!points.length) return '';
+  const linePath = sparkSmoothPath(points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `${linePath} L ${last.x},90 L ${first.x},90 Z`;
+}
+
+function trendDayLabel(isoDate: string): string {
+  try {
+    return new Date(isoDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  } catch {
+    return isoDate;
+  }
+}
+
+function RingGauge({
+  value,
+  color,
+  label,
+}: {
+  value: number | null;
+  color: string;
+  label: string;
+}) {
+  const pct = Math.max(0, Math.min(100, value ?? 0));
+  const r = 26;
+  const c = 2 * Math.PI * r;
+  const dash = c - (pct / 100) * c;
+  return (
+    <div className="group flex items-center gap-3">
+      <div className="relative h-[72px] w-[72px] transition-transform duration-300 group-hover:scale-[1.03]">
+        <svg viewBox="0 0 72 72" className="h-[72px] w-[72px] -rotate-90">
+          <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="7" />
+          <circle
+            cx="36"
+            cy="36"
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={dash}
+            className="transition-[filter,stroke-width] duration-300 group-hover:[stroke-width:7.6]"
+            style={{ filter: `drop-shadow(0 0 6px ${color}55)` }}
+          />
+        </svg>
+        <span
+          className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ boxShadow: `0 0 0 1px ${color}33, 0 0 14px ${color}44 inset` }}
+          aria-hidden
+        />
+        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums text-luxury-ink">
+          {pctLabel(value)}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs text-luxury-muted transition-colors duration-300 group-hover:text-luxury-ink">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function monthGrid() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const first = new Date(year, month, 1);
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const startOffset = (first.getDay() + 6) % 7;
+  const days: Array<number | null> = [];
+  for (let i = 0; i < startOffset; i += 1) days.push(null);
+  for (let d = 1; d <= lastDate; d += 1) days.push(d);
+  while (days.length % 7 !== 0) days.push(null);
+  return {
+    label: first.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+    days,
+    year,
+    month,
+  };
+}
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -32,9 +157,9 @@ export default async function AdminPage() {
   }
 
   const adminDb = createAdminClient();
-
-  const [{ count: totalClients }, { data: latestProfiles }, { count: totalReplaysReady }, kpis] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  const nowIso = new Date().toISOString();
+  const [{ data: latestProfiles }, { count: totalReplaysReady }, kpis, { data: me }, { data: upcomingCoursesData }] =
+    await Promise.all([
     supabase
       .from('profiles')
       .select('id, first_name, last_name, role, last_checkout_course_id, updated_at')
@@ -42,8 +167,32 @@ export default async function AdminPage() {
       .limit(10),
     adminDb.from('video_recordings').select('*', { count: 'exact', head: true }).eq('is_ready', true),
     getAdminKpis(),
-  ]);
+    supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle(),
+    adminDb
+      .from('courses')
+      .select('id, title, starts_at')
+      .eq('is_published', true)
+      .gte('starts_at', nowIso)
+      .order('starts_at', { ascending: true })
+      .limit(42),
+    ]);
 
+  const upcomingCourses = (upcomingCoursesData ?? []) as UpcomingCourseRow[];
+  const nextThree = upcomingCourses.slice(0, 3);
+
+  const calendar = monthGrid();
+  const dayCountMap = new Map<number, number>();
+  for (const c of upcomingCourses) {
+    const d = new Date(c.starts_at);
+    if (d.getFullYear() === calendar.year && d.getMonth() === calendar.month) {
+      const day = d.getDate();
+      dayCountMap.set(day, (dayCountMap.get(day) ?? 0) + 1);
+    }
+  }
+
+  const firstName = me?.first_name?.trim() || 'Alejandra';
+  const avatarUrl = me?.avatar_url?.trim() || null;
+  const displayAvatar = avatarUrl || '/api/admin/avatar';
   const mrrLabel =
     kpis.mrrEur != null
       ? `${kpis.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
@@ -54,33 +203,59 @@ export default async function AdminPage() {
       : kpis.mrrSource === 'db'
         ? 'Base (fallback)'
         : 'Non disponible';
-  const occupancyLabel =
-    kpis.occupancyPercent != null ? `${kpis.occupancyPercent.toLocaleString('fr-FR')}%` : '—';
+  const occupancyLabel = pctLabel(kpis.occupancyPercent);
+  const trendValues = kpis.trend.map((p) => p.mrrEur);
+  const trendPoints = sparkPoints(trendValues);
+  const trendPath = sparkSmoothPath(trendPoints);
+  const trendArea = sparkAreaPath(trendPoints);
+  const latestPoint = kpis.trend[kpis.trend.length - 1] ?? null;
+  const firstPoint = kpis.trend[0] ?? null;
+  const firstLabel = firstPoint ? trendDayLabel(firstPoint.date) : '—';
+  const lastLabel = latestPoint ? trendDayLabel(latestPoint.date) : '—';
+  const lastMrrLabel = latestPoint
+    ? `${latestPoint.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
+    : '—';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10 md:space-y-12">
-      <div className="grid gap-8 lg:grid-cols-[1fr_min(280px,100%)]">
-        <GlassCard className="p-6 md:p-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Administration</p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Dashboard Fit Mangas</h1>
-          <p className="mt-2 text-sm text-luxury-muted">
-            Connecté avec <span className="font-semibold text-luxury-ink">{user.email}</span>
-          </p>
-        </GlassCard>
-        <GlassCard className="flex flex-col justify-center gap-3 p-6 md:p-8">
-          <Link href="/" className="btn-luxury-ghost w-full justify-center">
-            Retour site
-          </Link>
-          <form action="/auth/signout" method="post" className="w-full">
-            <button type="submit" className="btn-luxury-primary w-full">
-              Déconnexion
-            </button>
-          </form>
-        </GlassCard>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-7 xl:space-y-8">
+      <GlassCard className="relative z-50 overflow-visible p-5 md:p-6">
+        <div className="flex items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">¡Hola {firstName}!</h1>
+            <p className="mt-2 text-sm text-luxury-muted md:text-base">Un nuevo día para hacer crecer tu imperio.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="relative inline-flex h-20 w-20 overflow-hidden rounded-[28px] border border-white/80 bg-white/65">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={displayAvatar} alt="Avatar Alejandra" className="h-full w-full object-cover" />
+            </span>
+            <details className="relative z-[120]">
+              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink [&::-webkit-details-marker]:hidden">
+                <ChevronDown size={16} />
+              </summary>
+              <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
+                <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                  Retour site
+                </Link>
+                <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                  Mon profil
+                </Link>
+                <a href="/api/demo-mode/enable" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+                  Démo élève
+                </a>
+                <form action="/auth/signout" method="post" className="mt-1">
+                  <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
+                    Déconnexion
+                  </button>
+                </form>
+              </div>
+            </details>
+          </div>
+        </div>
+      </GlassCard>
 
-      <section className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        <GlassCard className="p-6 md:p-7">
+      <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <GlassCard className="p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR</p>
@@ -92,64 +267,203 @@ export default async function AdminPage() {
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="p-6 md:p-7">
+        <GlassCard className="p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Occupation</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{occupancyLabel}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Collectifs terminés · résa / places max</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Churn 30j</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{pctLabel(kpis.churnRate30d)}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Résiliations / abonnés actifs</p>
             </div>
             <span className="kpi-icon-wrap kpi-icon-wrap--rose">
               <Percent size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="p-6 md:p-7 sm:col-span-2 lg:col-span-1">
+        <GlassCard className="p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Replay</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
-                {kpis.totalReplayViews.toLocaleString('fr-FR')}
-              </p>
-              <p className="mt-2 text-xs text-luxury-muted">Vues cumulées</p>
-            </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--violet">
-              <Eye size={20} aria-hidden strokeWidth={2} />
-            </span>
-          </div>
-        </GlassCard>
-      </section>
-
-      <GlassCard className="p-6 md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Démo client</p>
-        <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-xl">
-            <h2 className="text-lg font-semibold tracking-tight text-luxury-ink md:text-xl">Mode démo (vue élève)</h2>
-            <p className="mt-2 text-sm leading-relaxed text-luxury-muted">
-              Simule un compte élève avec abonnement visio collectif : calendrier, réservations, replays — sans compte test.
-            </p>
-          </div>
-          <a href="/api/demo-mode/enable" className="btn-luxury-primary shrink-0 md:min-w-[260px]">
-            Lancer la démo
-          </a>
-        </div>
-      </GlassCard>
-
-      <section className="grid gap-8 md:grid-cols-3">
-        <GlassCard className="p-6 md:p-7">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Clients</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalClients ?? 0}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Profils</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
             </div>
             <span className="kpi-icon-wrap kpi-icon-wrap--blue">
               <Users size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
         </GlassCard>
+        <GlassCard className="p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Health</p>
+              <div className="mt-3 space-y-2">
+                <Link href="/admin/clients?health=green" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <span className="font-medium">{kpis.health.healthy}</span>
+                  <span className="text-luxury-muted">Actifs</span>
+                </Link>
+                <Link href="/admin/clients?health=orange" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  <span className="font-medium">{kpis.health.fragile}</span>
+                  <span className="text-luxury-muted">Fragiles</span>
+                </Link>
+                <Link href="/admin/clients?health=red" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                  <span className="font-medium">{kpis.health.atRisk}</span>
+                  <span className="text-luxury-muted">À risque</span>
+                </Link>
+              </div>
+            </div>
+            <span className="kpi-icon-wrap kpi-icon-wrap--green">
+              <HeartPulse size={20} aria-hidden strokeWidth={2} />
+            </span>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="relative z-10 grid gap-5 xl:grid-cols-[2fr_1fr]">
+        <GlassCard className="p-5 md:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Tendance MRR</h2>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-luxury-soft">Dernière valeur</p>
+              <p className="mt-1 text-base font-semibold tabular-nums text-luxury-ink">{lastMrrLabel}</p>
+            </div>
+          </div>
+          <div className="mt-5">
+            {trendPath ? (
+              <div>
+                <svg viewBox="0 0 100 100" className="h-44 w-full">
+                  <defs>
+                    <linearGradient id="mrrAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ff7a00" stopOpacity="0.34" />
+                      <stop offset="100%" stopColor="#ff7a00" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="mrrLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ff9a3d" />
+                      <stop offset="100%" stopColor="#ff7a00" />
+                    </linearGradient>
+                    <filter id="mrrGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.4" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <path d={trendArea} fill="url(#mrrAreaGrad)" />
+                  <path
+                    d={trendPath}
+                    fill="none"
+                    stroke="url(#mrrLineGrad)"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#mrrGlow)"
+                  />
+                  <circle
+                    cx="100"
+                    cy={trendPoints[trendPoints.length - 1]?.y ?? 90}
+                    r="2.8"
+                    fill="#ff7a00"
+                    stroke="rgba(255,255,255,0.9)"
+                    strokeWidth="1.1"
+                  />
+                </svg>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-luxury-soft">
+                  <span>{firstLabel}</span>
+                  <span>{lastLabel}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/70 bg-white/35 px-4 py-16 text-center text-sm text-luxury-muted">
+                Les snapshots quotidiens seront visibles dès demain.
+              </div>
+            )}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 md:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Engagement</p>
+          <div className="mt-6 space-y-4">
+            <RingGauge value={kpis.replayCompletionRate30d} color="#ff7a00" label="Completion rate replay" />
+            <div className="h-px bg-white/60" />
+            <RingGauge value={kpis.liveShowUpRate30d} color="#10b981" label="Show-up rate live" />
+            <div className="h-px bg-white/60" />
+            <div>
+              <p className="text-xs text-luxury-muted">Occupation live collectif</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-luxury-ink">{occupancyLabel}</p>
+            </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="relative z-10 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
+        <GlassCard variant="dark" className="p-5 md:p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold tracking-wide text-white/90">{calendar.label}</h3>
+            <p className="text-[10px] uppercase tracking-widest text-white/50">Cours à venir</p>
+          </div>
+          <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[10px] text-white/55">
+            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, idx) => (
+              <span key={`${d}-${idx}`}>{d}</span>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-7 gap-2">
+            {calendar.days.map((day, idx) => {
+              if (!day) return <span key={`empty-${idx}`} className="h-8 w-8" />;
+              const count = dayCountMap.get(day) ?? 0;
+              const active = count > 0;
+              return (
+                <div key={`day-${day}-${idx}`} className="flex h-8 w-8 items-center justify-center">
+                  <span
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] ${
+                      active ? 'bg-emerald-500/85 text-white' : 'text-white/70'
+                    }`}
+                    title={active ? `${count} cours` : undefined}
+                  >
+                    {day}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </GlassCard>
+
+        <GlassCard variant="dark" className="p-5 md:p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold tracking-wide text-white/90">3 prochains cours</h3>
+            <Link href="/admin/courses" className="text-[11px] text-white/65 hover:text-white">
+              Voir tout
+            </Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {nextThree.map((course) => (
+              <div key={course.id} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5">
+                <p className="truncate text-sm font-semibold text-white">{course.title}</p>
+                <p className="mt-1 text-xs text-white/70">
+                  {new Date(course.starts_at).toLocaleString('fr-FR', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            ))}
+            {nextThree.length === 0 ? (
+              <p className="text-sm text-white/65">Aucun cours planifié.</p>
+            ) : null}
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_1fr_1.9fr]">
         <Link href="/admin/courses" className="group block">
-          <GlassCard className="h-full p-6 transition-all duration-300 hover:border-white hover:shadow-[0_20px_48px_rgba(29,29,31,0.1)] md:p-7">
+          <GlassCard className="h-full p-5 transition-all duration-300 hover:border-white hover:shadow-[0_20px_48px_rgba(29,29,31,0.1)] md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Cours</p>
@@ -164,7 +478,7 @@ export default async function AdminPage() {
             </div>
           </GlassCard>
         </Link>
-        <GlassCard className="flex flex-col p-6 md:p-7">
+        <GlassCard className="flex flex-col p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Vimeo</p>
@@ -182,12 +496,10 @@ export default async function AdminPage() {
             Vidéos
           </Link>
         </GlassCard>
-      </section>
-
-      <GlassCard className="p-6 md:p-8">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>
-        <div className="mt-5 overflow-x-auto">
-          <table className="min-w-full text-left">
+        <GlassCard className="p-5 md:p-6">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>
+          <div className="mt-3 overflow-x-auto">
+            <table className="min-w-full text-left">
             <thead>
               <tr className="border-b border-luxury-ink/10 text-[10px] uppercase tracking-wider text-luxury-soft">
                 <th className="px-2 py-3">Nom</th>
@@ -222,9 +534,10 @@ export default async function AdminPage() {
                 </tr>
               ) : null}
             </tbody>
-          </table>
-        </div>
-      </GlassCard>
+            </table>
+          </div>
+        </GlassCard>
+      </section>
     </div>
   );
 }
