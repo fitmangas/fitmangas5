@@ -31,6 +31,8 @@ type VimeoVideoMetadataResponse = {
   transcode?: {
     status?: string;
   };
+  /** Dossier Vimeo (album / folder selon type de compte). */
+  parent_folder?: { name?: string | null } | null;
 };
 
 export type VimeoVideoMetadata = {
@@ -45,6 +47,8 @@ export type VimeoVideoMetadata = {
   privacyView: string | null;
   transcodeStatus: string | null;
   isReady: boolean;
+  /** Nom dossier Vimeo brut (API) — peut être null si non classé côté Vimeo. */
+  folderName: string | null;
 };
 
 function requiredEnv(name: 'VIMEO_ACCESS_TOKEN' | 'VIMEO_CLIENT_ID' | 'VIMEO_CLIENT_SECRET'): string {
@@ -76,6 +80,39 @@ function extractEmbedUrl(embedHtml?: string): string | null {
   if (!src) return null;
   return src.replace(/&amp;/g, '&');
 }
+
+function extractApiFolderName(data: VimeoVideoMetadataResponse): string | null {
+  return data.parent_folder?.name?.trim() || null;
+}
+
+/** Champs communs liste / détail vidéo Vimeo. */
+const VIDEO_API_FIELDS =
+  'uri,name,description,link,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name';
+
+export function mapVimeoVideoResponseToMetadata(data: VimeoVideoMetadataResponse): VimeoVideoMetadata {
+  const thumbnailUrl = data.pictures?.sizes?.at(-1)?.link ?? data.pictures?.sizes?.[0]?.link ?? null;
+  const transcodeStatus = data.transcode?.status ?? null;
+  const isReady = transcodeStatus === 'complete' || transcodeStatus === null;
+  return {
+    vimeoId: extractVimeoIdFromUri(data.uri),
+    vimeoUri: data.uri,
+    title: data.name ?? null,
+    description: data.description ?? null,
+    link: data.link ?? null,
+    embedUrl: extractEmbedUrl(data.embed?.html),
+    thumbnailUrl: thumbnailUrl ?? null,
+    durationSeconds: data.duration ?? null,
+    privacyView: data.privacy?.view ?? null,
+    transcodeStatus,
+    isReady,
+    folderName: extractApiFolderName(data),
+  };
+}
+
+type VimeoListApiResponse = {
+  data?: VimeoVideoMetadataResponse[];
+  paging?: { next?: string | null };
+};
 
 /**
  * Vérifie que les variables d'app Vimeo sont présentes.
@@ -187,36 +224,47 @@ export async function getVideoMetadata(vimeoId: string): Promise<VimeoVideoMetad
     throw new Error(`Identifiant Vimeo invalide: ${vimeoId}`);
   }
 
-  const res = await fetch(
-    `${VIMEO_API_BASE}/videos/${safeId}?fields=uri,name,description,link,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status`,
-    {
-      method: 'GET',
-      headers: getVimeoHeaders(),
-    },
-  );
+  const res = await fetch(`${VIMEO_API_BASE}/videos/${safeId}?fields=${VIDEO_API_FIELDS}`, {
+    method: 'GET',
+    headers: getVimeoHeaders(),
+  });
 
   if (!res.ok) {
     throw new Error(`Vimeo metadata failed (${res.status}): ${await res.text()}`);
   }
 
   const data = (await res.json()) as VimeoVideoMetadataResponse;
-  const thumbnailUrl = data.pictures?.sizes?.at(-1)?.link ?? data.pictures?.sizes?.[0]?.link ?? null;
-  const transcodeStatus = data.transcode?.status ?? null;
-  const isReady = transcodeStatus === 'complete' || transcodeStatus === null;
+  return mapVimeoVideoResponseToMetadata(data);
+}
 
-  return {
-    vimeoId: extractVimeoIdFromUri(data.uri),
-    vimeoUri: data.uri,
-    title: data.name ?? null,
-    description: data.description ?? null,
-    link: data.link ?? null,
-    embedUrl: extractEmbedUrl(data.embed?.html),
-    thumbnailUrl: thumbnailUrl ?? null,
-    durationSeconds: data.duration ?? null,
-    privacyView: data.privacy?.view ?? null,
-    transcodeStatus,
-    isReady,
-  };
+/**
+ * Parcourt /me/videos (pagination `paging.next`) et retourne toutes les vidéos du compte du token.
+ */
+export async function listAllMeVideos(): Promise<VimeoVideoMetadata[]> {
+  assertVimeoClientConfig();
+  const out: VimeoVideoMetadata[] = [];
+  const fieldsParam = encodeURIComponent(VIDEO_API_FIELDS);
+  let nextUrl: string | null = `${VIMEO_API_BASE}/me/videos?fields=${fieldsParam}&per_page=50`;
+
+  let guard = 0;
+  while (nextUrl && guard < 200) {
+    guard += 1;
+    const res = await fetch(nextUrl, { method: 'GET', headers: getVimeoHeaders() });
+    if (!res.ok) {
+      throw new Error(`Vimeo list /me/videos failed (${res.status}): ${await res.text()}`);
+    }
+    const json = (await res.json()) as VimeoListApiResponse;
+    for (const item of json.data ?? []) {
+      try {
+        out.push(mapVimeoVideoResponseToMetadata(item));
+      } catch {
+        /* uri invalide — ignoré */
+      }
+    }
+    nextUrl = json.paging?.next?.trim() || null;
+  }
+
+  return out;
 }
 
 /**
