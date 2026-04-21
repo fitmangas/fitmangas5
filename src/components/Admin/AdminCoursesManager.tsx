@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Eye, Play, Pencil, Trash2, UserCheck, X } from 'lucide-react';
 import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/app/admin/courses/actions';
 
+import { ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
+
 export type AdminCourseRow = {
   id: string;
   slug: string;
@@ -83,9 +85,11 @@ const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
 
 const TEMPLATE_STORAGE_KEY = 'admin-course-description-templates-v1';
 
-/** En-têtes tableau : même gris anthracite que la carte calendrier du dashboard. */
-const ADMIN_TABLE_HEAD_ROW =
-  'border-b border-white/10 bg-[rgba(29,29,31,0.78)] text-[10px] uppercase tracking-wider text-white/80 backdrop-blur-md';
+const REFINED_SELECT =
+  'admin-form-refined mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-5 py-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25';
+
+const REFINED_TEXTAREA =
+  'admin-form-refined admin-form-refined--textarea mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-5 py-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25';
 
 function getCourseTypeLabel(courseType: FormState['courseType']): string {
   return COURSE_TYPE_OPTIONS.find((opt) => opt.value === courseType)?.label ?? 'Cours';
@@ -316,7 +320,7 @@ export function AdminCoursesManager({ courses }: Props) {
                 const selected = e.target.value as FormState['courseType'];
                 setCreateForm((s) => ({ ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) }));
               }}
-              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              className={REFINED_SELECT}
             >
               {COURSE_TYPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -331,7 +335,7 @@ export function AdminCoursesManager({ courses }: Props) {
               rows={3}
               value={createForm.description}
               onChange={(e) => setCreateForm((s) => ({ ...s, description: e.target.value }))}
-              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              className={REFINED_TEXTAREA}
             />
             <button
               type="button"
@@ -436,13 +440,13 @@ export function AdminCoursesManager({ courses }: Props) {
       </section>
 
       <section className="glass-card overflow-hidden">
-        <div className="border-b border-white/10 bg-[rgba(29,29,31,0.78)] px-6 py-4 backdrop-blur-md">
+        <div className={`${ADMIN_SURFACE_BAR} px-6 py-4`}>
           <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-white/90">Toutes les séances</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className={ADMIN_TABLE_HEAD_ROW}>
+              <tr className={ADMIN_HEAD_TR}>
                 <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Début</th>
                 <th className="px-4 py-3">Format</th>
@@ -581,7 +585,7 @@ export function AdminCoursesManager({ courses }: Props) {
                     const selected = e.target.value as FormState['courseType'];
                     setEditForm((s) => (s ? { ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) } : s));
                   }}
-                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+                  className={REFINED_SELECT}
                 >
                   {COURSE_TYPE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -596,7 +600,7 @@ export function AdminCoursesManager({ courses }: Props) {
                   rows={3}
                   value={editForm.description}
                   onChange={(e) => setEditForm((s) => (s ? { ...s, description: e.target.value } : s))}
-                  className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+                  className={REFINED_TEXTAREA}
                 />
                 <button
                   type="button"

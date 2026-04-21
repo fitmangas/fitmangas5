@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
 import { AvatarWithRibbon } from '@/components/ui/AvatarWithRibbon';
 import { gradeLabel } from '@/lib/gamification';
 import { requireAdmin } from '@/lib/auth/require-admin';
@@ -108,7 +109,7 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/30 text-xs uppercase text-luxury-soft">
+                  <tr className={ADMIN_HEAD_TR}>
                     <th className="py-2 pr-4">Séance</th>
                     <th className="py-2 pr-4">Date</th>
                     <th className="py-2">Statut</th>

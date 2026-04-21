@@ -46,6 +46,40 @@ async function mrrFromSubscriptionsDb(): Promise<{ mrrEur: number; activeSubscri
   return { mrrEur: cents / 100, activeSubscribers: activeUsers.size };
 }
 
+/** Encaissements bruts EUR (charges réussies, après remboursements) pour le mois civil en cours — ventes ponctuelles + abonnements. */
+export async function stripeCollectedCurrentMonthEur(): Promise<number | null> {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return null;
+  try {
+    const stripe = new Stripe(key);
+    const now = new Date();
+    const startTs = Math.floor(new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000);
+    const endTs = Math.floor(new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime() / 1000);
+
+    let cents = 0;
+    let startingAfter: string | undefined;
+    for (;;) {
+      const charges = await stripe.charges.list({
+        created: { gte: startTs, lt: endTs },
+        limit: 100,
+        starting_after: startingAfter,
+      });
+      for (const ch of charges.data) {
+        if (ch.status !== 'succeeded') continue;
+        if ((ch.currency ?? '').toLowerCase() !== 'eur') continue;
+        const refunded = ch.amount_refunded ?? 0;
+        cents += ch.amount - refunded;
+      }
+      if (!charges.has_more || charges.data.length === 0) break;
+      startingAfter = charges.data[charges.data.length - 1]?.id;
+      if (!startingAfter) break;
+    }
+    return cents / 100;
+  } catch {
+    return null;
+  }
+}
+
 async function mrrFromStripe(): Promise<number | null> {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) return null;

@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Clapperboard, Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
+import { Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
 
+import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
-import { getAdminKpis } from '@/lib/admin/kpis';
+import { getAdminKpis, stripeCollectedCurrentMonthEur } from '@/lib/admin/kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -158,8 +159,14 @@ export default async function AdminPage() {
 
   const adminDb = createAdminClient();
   const nowIso = new Date().toISOString();
-  const [{ data: latestProfiles }, { count: totalReplaysReady }, kpis, { data: me }, { data: upcomingCoursesData }] =
-    await Promise.all([
+  const [
+    { data: latestProfiles },
+    { count: totalReplaysReady },
+    kpis,
+    { data: me },
+    { data: upcomingCoursesData },
+    stripeMonthEur,
+  ] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, first_name, last_name, role, last_checkout_course_id, updated_at')
@@ -175,7 +182,8 @@ export default async function AdminPage() {
       .gte('starts_at', nowIso)
       .order('starts_at', { ascending: true })
       .limit(42),
-    ]);
+    stripeCollectedCurrentMonthEur(),
+  ]);
 
   const upcomingCourses = (upcomingCoursesData ?? []) as UpcomingCourseRow[];
   const nextThree = upcomingCourses.slice(0, 3);
@@ -214,6 +222,11 @@ export default async function AdminPage() {
   const lastMrrLabel = latestPoint
     ? `${latestPoint.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : '—';
+
+  const stripeMonthLabel =
+    stripeMonthEur != null
+      ? `${stripeMonthEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
+      : null;
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-5 xl:space-y-6 pt-3 md:pt-4">
@@ -296,12 +309,20 @@ export default async function AdminPage() {
       <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <GlassCard className="p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{mrrLabel}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Source : {mrrHint}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">
+                Revenus Stripe (mois en cours)
+              </p>
+              <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                {stripeMonthLabel ?? '—'}
+              </p>
+              {stripeMonthEur === null ? (
+                <p className="mt-2 text-[10px] text-luxury-soft">
+                  Indisponible — clé <span className="font-mono">STRIPE_SECRET_KEY</span>
+                </p>
+              ) : null}
             </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--orange">
+            <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
               <Euro size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
@@ -421,22 +442,18 @@ export default async function AdminPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr_1.9fr]">
-        <Link href="/admin/courses" className="group block">
-          <GlassCard className="h-full p-5 transition-all duration-300 hover:border-white hover:shadow-[0_20px_48px_rgba(29,29,31,0.1)] md:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Cours</p>
-                <p className="mt-3 text-lg font-semibold tracking-tight text-luxury-ink group-hover:text-[#ff7a00]">
-                  Gérer les séances
-                </p>
-                <p className="mt-2 text-xs text-luxury-muted">Création, publication, capacités</p>
-              </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--amber">
-                <Clapperboard size={20} aria-hidden strokeWidth={2} />
-              </span>
+        <GlassCard className="h-full p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR Stripe</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{mrrLabel}</p>
+              <p className="mt-2 text-xs text-luxury-muted">Source : {mrrHint}</p>
             </div>
-          </GlassCard>
-        </Link>
+            <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
+              <Euro size={20} aria-hidden strokeWidth={2} />
+            </span>
+          </div>
+        </GlassCard>
         <GlassCard className="flex flex-col p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -449,10 +466,10 @@ export default async function AdminPage() {
             </span>
           </div>
           <Link
-            href="/admin/courses"
+            href="/admin/vimeo"
             className="btn-luxury-ghost mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
           >
-            Vidéos
+            Bibliothèque Vimeo
           </Link>
         </GlassCard>
         <GlassCard className="p-5 md:p-6">
@@ -460,7 +477,7 @@ export default async function AdminPage() {
           <div className="mt-3 overflow-x-auto">
             <table className="min-w-full text-left">
             <thead>
-              <tr className="border-b border-luxury-ink/10 text-[10px] uppercase tracking-wider text-luxury-soft">
+              <tr className={ADMIN_HEAD_TR}>
                 <th className="px-2 py-3">Nom</th>
                 <th className="px-2 py-3">Rôle</th>
                 <th className="px-2 py-3">Dernière offre</th>

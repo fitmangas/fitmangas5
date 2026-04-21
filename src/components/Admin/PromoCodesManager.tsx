@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { createPromoCodeAction, deletePromoCodeAction } from '@/app/admin/promos/actions';
+import { ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
 
 export type PromoRow = {
   id: string;
@@ -16,9 +17,6 @@ export type PromoRow = {
   valid_until: string | null;
   active: boolean;
 };
-
-const ADMIN_TABLE_HEAD_ROW =
-  'border-b border-white/10 bg-[rgba(29,29,31,0.78)] text-[10px] uppercase tracking-wider text-white/80 backdrop-blur-md';
 
 const fieldClass =
   'mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25';
@@ -74,7 +72,11 @@ export function PromoCodesManager({ promos }: { promos: PromoRow[] }) {
 
           <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft md:col-span-2">
             Description
-            <input name="description" placeholder="Usage interne, note…" className={fieldClass} />
+            <input
+              name="description"
+              placeholder="Usage interne, note…"
+              className={`${fieldClass} admin-form-refined`}
+            />
           </label>
 
           <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
@@ -111,14 +113,14 @@ export function PromoCodesManager({ promos }: { promos: PromoRow[] }) {
       </section>
 
       <section className="glass-card glass-card--dark overflow-hidden">
-        <div className="border-b border-white/10 px-6 py-4 backdrop-blur-md">
+        <div className={`${ADMIN_SURFACE_BAR} px-6 py-4`}>
           <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-white/90">Codes existants</h3>
           <p className="mt-1 text-[11px] text-white/50">Récapitulatif — même style que les tableaux premium du dashboard.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className={ADMIN_TABLE_HEAD_ROW}>
+              <tr className={ADMIN_HEAD_TR}>
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">%</th>
                 <th className="px-4 py-3">Utilisations</th>
