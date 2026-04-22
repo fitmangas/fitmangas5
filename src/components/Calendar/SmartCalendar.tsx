@@ -86,7 +86,8 @@ export function SmartCalendar() {
 
   const fortnightDays = getFortnightUtcDays();
 
-  const monthlyTier = useMemo(() => tier === 'online_individual_monthly' || tier === 'online_group_monthly', [tier]);
+  const hasUpcomingEvents = events.length > 0;
+  const canUseMobileSync = Boolean(tier) || hasUpcomingEvents;
 
   const selectedIsPast = selectedCourse
     ? isCoursePast(selectedCourse.ends_at)
@@ -163,47 +164,50 @@ export function SmartCalendar() {
 
   return (
     <section className="glass-card rounded-[1.75rem] p-5 sm:p-7">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Calendrier intelligent</p>
           <p className="mt-2 text-sm leading-relaxed text-luxury-muted">
             Prochains {FORTNIGHT_DAYS} jours · {formatFortnightSubtitle()}
           </p>
         </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
-        {monthlyTier ? (
-          syncEnabled ? (
-            <button
-              type="button"
-              disabled={syncBusy}
-              onClick={() => {
-                const ok = window.confirm(
-                  'Désactiver la synchronisation ? Les nouveaux cours ne seront plus envoyés automatiquement au téléphone.',
-                );
-                if (ok) void setMobileSync(false);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/45 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-muted backdrop-blur-md transition hover:bg-white/60 disabled:opacity-60"
-            >
-              <Smartphone size={14} />
-              Calendrier connecté
-            </button>
+        <div className="flex w-full shrink-0 flex-wrap items-center justify-end sm:w-auto sm:justify-end sm:pt-0.5">
+          {canUseMobileSync ? (
+            syncEnabled ? (
+              <button
+                type="button"
+                disabled={syncBusy}
+                onClick={() => {
+                  const ok = window.confirm(
+                    'Désactiver la synchronisation ? Les nouveaux cours ne seront plus envoyés automatiquement au téléphone.',
+                  );
+                  if (ok) void setMobileSync(false);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/45 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-muted backdrop-blur-md transition hover:bg-white/60 disabled:opacity-60"
+              >
+                <Smartphone size={14} />
+                Calendrier connecté
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={syncBusy}
+                onClick={() => void setMobileSync(true)}
+                className="btn-luxury-primary inline-flex items-center gap-2 px-5 py-2.5 text-[10px] tracking-[0.14em] disabled:opacity-60"
+              >
+                <Smartphone size={14} />
+                Connecter à mon calendrier ?
+              </button>
+            )
           ) : (
-            <button
-              type="button"
-              disabled={syncBusy}
-              onClick={() => void setMobileSync(true)}
-              className="btn-luxury-primary inline-flex items-center gap-2 px-5 py-2.5 text-[10px] tracking-[0.14em] disabled:opacity-60"
-            >
-              <Smartphone size={14} />
-              Connecter mon téléphone
-            </button>
-          )
-        ) : null}
+            <p className="max-w-[220px] text-right text-[11px] leading-snug text-luxury-soft sm:text-right">
+              Connexion téléphone disponible avec un accès actif à au moins un cours.
+            </p>
+          )}
+        </div>
       </div>
 
-      {monthlyTier && syncEnabled && showSyncInfo && syncUrl ? (
+      {canUseMobileSync && syncEnabled && showSyncInfo && syncUrl ? (
         <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
           <p className="font-semibold">Synchronisation active</p>
           <p className="mt-1">

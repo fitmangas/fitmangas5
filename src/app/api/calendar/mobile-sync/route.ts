@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 import { requireAuthenticatedUser } from '@/lib/api-auth';
+import { gateCalendarSyncForUser } from '@/lib/calendar-sync-eligibility';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 function appUrlFromEnv() {
@@ -29,11 +31,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Impossible de lire le statut de synchronisation.' }, { status: 500 });
   }
 
-  const enabled = data?.calendar_sync_enabled === true;
+  let enabled = data?.calendar_sync_enabled === true;
   const token = data?.calendar_sync_token ?? null;
+
+  if (enabled) {
+    const admin = createAdminClient();
+    const gate = await gateCalendarSyncForUser(admin, auth.user.id);
+    enabled = gate.ok;
+  }
+
   return NextResponse.json({
     enabled,
-    webcalUrl: token ? webcalUrlForToken(token) : null,
+    webcalUrl: enabled && token ? webcalUrlForToken(token) : null,
   });
 }
 
@@ -55,6 +64,17 @@ export async function POST(request: Request) {
 
   if (enabled == null) {
     return NextResponse.json({ error: 'Champ "enabled" requis.' }, { status: 400 });
+  }
+
+  if (enabled) {
+    const admin = createAdminClient();
+    const gate = await gateCalendarSyncForUser(admin, auth.user.id);
+    if (!gate.ok) {
+      return NextResponse.json(
+        { error: 'Synchronisation indisponible : compte inactif, banni ou sans abonnement / accès en cours.' },
+        { status: 403 },
+      );
+    }
   }
 
   const supabase = await createClient();

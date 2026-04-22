@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { gateCalendarSyncForUser } from '@/lib/calendar-sync-eligibility';
 
 function formatIcalUtc(date: Date) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
@@ -47,15 +48,26 @@ export async function GET(request: Request) {
     return new Response('Flux indisponible.', { status: 404 });
   }
 
+  const gate = await gateCalendarSyncForUser(admin, profile.id);
+  if (!gate.ok) {
+    return new Response('Flux indisponible.', { status: 404 });
+  }
+
   const now = new Date();
   const horizon = new Date(now);
   horizon.setMonth(horizon.getMonth() + 6);
 
-  const [{ data: tier }, { data: courses, error: courseError }, { data: enrollments }, { data: policies }] = await Promise.all([
-    admin.rpc('current_customer_tier', { target_user_id: profile.id }),
+  const { data: tier, error: tierError } = await admin.rpc('current_customer_tier', { target_user_id: profile.id });
+  if (tierError) {
+    return new Response('Impossible de vérifier l’accès.', { status: 500 });
+  }
+
+  const [{ data: courses, error: courseError }, { data: enrollments }, { data: policies }] = await Promise.all([
     admin
       .from('courses')
-      .select('id, title, description, starts_at, ends_at, timezone, location, live_url, jitsi_link, is_published')
+      .select(
+        'id, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, is_published',
+      )
       .eq('is_published', true)
       .gte('ends_at', now.toISOString())
       .lte('starts_at', horizon.toISOString())
