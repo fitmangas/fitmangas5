@@ -25,3 +25,14 @@ export function sortFolderKeys(keys: string[]): string[] {
   if (keys.includes(unc)) rest.push(unc);
   return rest;
 }
+
+/** Clé de groupement stable : trim, espaces multiples → un seul (évite doublons « Barre flow » / « Barre flow  »). */
+export function normalizeFolderLabelForGroup(name: string | null | undefined): string {
+  const t = name?.trim().replace(/\s+/g, ' ');
+  return t || VIMEO_FOLDER_UNCATEGORIZED;
+}
+
+/** Erreur PostgREST / Postgres quand la colonne dossier n’existe pas encore (migration 011). */
+export function isMissingVimeoFolderColumnError(message: string): boolean {
+  return /vimeo_folder_name|Could not find the .*column|schema cache|PGRST204|42703/i.test(message);
+}

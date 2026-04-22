@@ -11,8 +11,15 @@ async function runSync() {
   if (!gate.ok) return gate.response;
 
   try {
-    const result = await syncAllStandaloneVimeoFromAccount();
-    return NextResponse.json({ ok: true, ...result });
+    const result = await syncAllStandaloneVimeoFromAccount(gate.userId);
+    return NextResponse.json({
+      ok: true,
+      scanned: result.scanned,
+      written: result.written,
+      skippedRejected: result.skippedRejected,
+      errors: result.errors,
+      folderColumnSkipped: result.folderColumnSkipped,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erreur synchronisation.';
     console.error('[vimeo sync-all]', e);

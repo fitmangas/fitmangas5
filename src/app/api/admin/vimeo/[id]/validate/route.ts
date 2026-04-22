@@ -6,9 +6,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-type Body = { action?: 'publish' | 'reject'; rejection_reason?: string | null };
+type Body = {
+  action?: 'approve' | 'reject';
+  rejection_reason?: string | null;
+};
 
-/** Alias historique — préférez `/api/admin/vimeo/[id]/validate`. */
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdminApi();
   if (!gate.ok) return gate.response;
@@ -26,13 +28,13 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   }
 
   const action = body.action;
-  if (action !== 'publish' && action !== 'reject') {
-    return NextResponse.json({ error: 'action attendue : publish | reject.' }, { status: 400 });
+  if (action !== 'approve' && action !== 'reject') {
+    return NextResponse.json({ error: 'action attendue : approve | reject.' }, { status: 400 });
   }
 
   const admin = createAdminClient();
 
-  if (action === 'publish') {
+  if (action === 'approve') {
     const res = await approveStandaloneVideo(admin, id);
     if (!res.ok) {
       return NextResponse.json({ error: res.error }, { status: res.status });

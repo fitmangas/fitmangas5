@@ -14,7 +14,7 @@ export async function GET() {
     const { count, error } = await admin
       .from('standalone_vimeo_videos')
       .select('*', { count: 'exact', head: true })
-      .eq('validation_status', 'pending');
+      .in('validation_status', ['pending', 'scheduled']);
 
     if (error) {
       return NextResponse.json({ pending: 0, error: error.message }, { status: 500 });

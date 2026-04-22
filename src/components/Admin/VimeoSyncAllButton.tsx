@@ -20,17 +20,26 @@ export function VimeoSyncAllButton() {
         skippedRejected?: number;
         errors?: string[];
         error?: string;
+        folderColumnSkipped?: boolean;
       };
       if (!res.ok || !json.ok) {
         setLastMsg(json.error ?? 'Échec de la synchronisation.');
         return;
       }
+      const samples =
+        json.errors?.length && json.errors.length > 0
+          ? ` Détail : ${json.errors.slice(0, 3).join(' · ')}${json.errors.length > 3 ? '…' : ''}`
+          : '';
+      const migrationHint =
+        json.folderColumnSkipped === true
+          ? ' Note : dossiers désactivés tant que la migration SQL 011 (`vimeo_folder_name`) n’est pas appliquée.'
+          : '';
       const errHint =
         json.errors?.length && json.errors.length > 0
-          ? ` — ${json.errors.length} erreur(s) partielle(s).`
+          ? ` — ${json.errors.length} erreur(s).${samples}`
           : '';
       setLastMsg(
-        `OK : ${json.scanned ?? 0} vidéo(s) scannée(s), ${json.written ?? 0} ligne(s) écrite(s), ${json.skippedRejected ?? 0} rejetée(s) ignorée(s).${errHint}`,
+        `OK : ${json.scanned ?? 0} vidéo(s) scannée(s), ${json.written ?? 0} ligne(s) écrite(s), ${json.skippedRejected ?? 0} rejetée(s) ignorée(s).${errHint}${migrationHint}`,
       );
       router.refresh();
     } catch {

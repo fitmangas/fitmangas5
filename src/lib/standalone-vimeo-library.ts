@@ -15,19 +15,22 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('standalone_vimeo_videos')
-    .select('id, title, thumbnail_url, duration_seconds, embed_url, vimeo_video_id, vimeo_folder_name')
+    .select('*')
     .eq('validation_status', 'published')
     .order('published_at', { ascending: false });
 
   if (error || !data?.length) return [];
 
-  return data.map((row) => ({
-    id: row.id,
-    title: row.title,
-    thumbnailUrl: row.thumbnail_url,
-    durationSeconds: row.duration_seconds,
-    embedUrl: row.embed_url,
-    vimeoVideoId: row.vimeo_video_id,
-    folderName: row.vimeo_folder_name,
-  }));
+  return data.map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      id: String(r.id),
+      title: (r.title as string | null) ?? null,
+      thumbnailUrl: (r.thumbnail_url as string | null) ?? null,
+      durationSeconds: (r.duration_seconds as number | null) ?? null,
+      embedUrl: (r.embed_url as string | null) ?? null,
+      vimeoVideoId: String(r.vimeo_video_id),
+      folderName: typeof r.vimeo_folder_name === 'string' ? r.vimeo_folder_name : null,
+    };
+  });
 }

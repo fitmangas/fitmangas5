@@ -44,15 +44,20 @@ export function AdminSidebar() {
 
         const badge =
           href === '/admin/vimeo' && vimeoPending != null && vimeoPending > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4500] px-[5px] text-[10px] font-bold leading-none text-white shadow-md ring-2 ring-white">
+            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FF9F0A] px-[5px] text-[10px] font-bold leading-none text-white shadow-md ring-2 ring-white">
               {vimeoPending > 9 ? '9+' : vimeoPending}
             </span>
           ) : null;
 
+        const vimeoHref =
+          href === '/admin/vimeo' && vimeoPending != null && vimeoPending > 0
+            ? '/admin/vimeo#vimeo-pending-section'
+            : href;
+
         return (
           <Link
             key={href}
-            href={href}
+            href={vimeoHref}
             title={label}
             className={`relative flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
               isActive
