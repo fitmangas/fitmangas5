@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarPlus2, Lock, Unlock, X, RefreshCw } from 'lucide-react';
+import { CalendarPlus2, Lock, Unlock, X } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
 import { FORTNIGHT_DAYS, getUtcFortnightWindow, isCoursePast } from '@/lib/calendar-window';
 
@@ -75,7 +75,6 @@ function formatFortnightSubtitle() {
 
 export function SmartCalendar() {
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [events, setEvents] = useState<SmartCourse[]>([]);
   const [tier, setTier] = useState<string | null>(null);
@@ -92,9 +91,8 @@ export function SmartCalendar() {
     ? isCoursePast(selectedCourse.ends_at)
     : false;
 
-  async function fetchEvents(isRefresh = false) {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  async function fetchEvents() {
+    setLoading(true);
     setError('');
 
     try {
@@ -110,7 +108,6 @@ export function SmartCalendar() {
       setError('Erreur réseau. Réessaie dans un instant.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }
 
@@ -134,24 +131,13 @@ export function SmartCalendar() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Calendrier intelligent</p>
-          <h2 className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.65rem]">Tes cours</h2>
-          <p className="mt-2 text-xs leading-relaxed text-luxury-muted">
+          <p className="mt-2 text-sm leading-relaxed text-luxury-muted">
             Prochains {FORTNIGHT_DAYS} jours · {formatFortnightSubtitle()}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void fetchEvents(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/45 bg-white/30 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-luxury-ink/80 backdrop-blur-md transition hover:bg-white/50"
-          >
-            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> Actualiser
-          </button>
-        </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-luxury-muted">Seules les séances à venir dans cette fenêtre sont affichées.</p>
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
         {monthlyTier ? (
           <a
             href="/api/calendar/export-ical"
@@ -160,9 +146,7 @@ export function SmartCalendar() {
             <CalendarPlus2 size={14} />
             Ajouter à Google Calendar
           </a>
-        ) : (
-          <p className="text-xs text-luxury-soft">Export Google Calendar réservé aux abonnements mensuels.</p>
-        )}
+        ) : null}
       </div>
 
       {error ? (

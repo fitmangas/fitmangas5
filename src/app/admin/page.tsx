@@ -232,8 +232,8 @@ export default async function AdminPage() {
         {/* Sur xl : même grille 4 cols que les KPI pour centrer le texte au-dessus des colonnes Churn + Abonnés */}
         <div className="hidden items-center gap-5 xl:grid xl:grid-cols-4">
           <div className="col-start-2 col-span-2 min-w-0 text-center">
-            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">Hola {firstName}</h1>
-            <p className="mt-1 text-sm text-luxury-muted md:text-base">
+            <h1 className="hero-signature-title text-6xl text-luxury-ink">Hola {firstName}</h1>
+            <p className="hero-signature-subtitle mt-1 text-sm md:text-base">
               Un nuevo día para hacer crecer tu imperio.
             </p>
           </div>
@@ -270,8 +270,8 @@ export default async function AdminPage() {
         {/* < xl : layout simple */}
         <div className="flex items-center justify-between gap-6 xl:hidden">
           <div className="min-w-0 flex-1 text-center">
-            <h1 className="text-4xl font-semibold tracking-tight text-luxury-ink">Hola {firstName}</h1>
-            <p className="mt-1 text-sm text-luxury-muted md:text-base">
+            <h1 className="hero-signature-title text-5xl text-luxury-ink md:text-6xl">Hola {firstName}</h1>
+            <p className="hero-signature-subtitle mt-1 text-sm md:text-base">
               Un nuevo día para hacer crecer tu imperio.
             </p>
           </div>

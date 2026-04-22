@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
-import { CompteTopBar } from '@/components/Compte/CompteTopBar';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function CompteLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +36,6 @@ export default async function CompteLayout({ children }: { children: React.React
             </Link>
           </div>
         </nav>
-        <CompteTopBar />
         <div className="px-4 pb-16 md:pl-24">{children}</div>
       </div>
     </div>

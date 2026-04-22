@@ -44,13 +44,12 @@ export function AdminKpiCardsInteractive({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">Revenus Stripe</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-luxury-soft/80">
+                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">
                   (mois en cours)
                 </p>
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
                   {stripeMonthEur != null ? fmtEur(stripeMonthEur) : '—'}
                 </p>
-                <p className="mt-2 text-[11px] text-luxury-muted">Cliquer pour le détail par offre</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
                 <Euro size={20} aria-hidden strokeWidth={2} />
@@ -66,7 +65,6 @@ export function AdminKpiCardsInteractive({
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Churn 30j</p>
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{fmtPct(kpis.churnRate30d)}</p>
                 <p className="mt-2 text-xs text-luxury-muted">Résiliations / abonnés actifs</p>
-                <p className="mt-1 text-[11px] text-luxury-muted">Cliquer pour les résiliations détaillées</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--rose">
                 <Percent size={20} aria-hidden strokeWidth={2} />
@@ -82,7 +80,6 @@ export function AdminKpiCardsInteractive({
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
                 <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
-                <p className="mt-1 text-[11px] text-luxury-muted">Cliquer pour la ventilation</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--blue">
                 <Users size={20} aria-hidden strokeWidth={2} />
@@ -137,7 +134,6 @@ export function AdminKpiCardsInteractive({
                     <span className="text-luxury-muted">À risque</span>
                   </Link>
                 </div>
-                <p className="mt-3 text-[11px] text-luxury-muted">Cliquer la carte pour voir tous les profils</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--green">
                 <HeartPulse size={20} aria-hidden strokeWidth={2} />
