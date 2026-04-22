@@ -25,6 +25,68 @@ export type AdminKpis = {
   trend: TrendPoint[];
 };
 
+export type RevenueCourseDetail = {
+  courseId: string;
+  courseLabel: string;
+  amountEur: number;
+  chargeCount: number;
+};
+
+export type ChurnUserDetail = {
+  userId: string;
+  name: string;
+  tier: string;
+  canceledAt: string;
+};
+
+export type SubscriberUserDetail = {
+  userId: string;
+  name: string;
+  tier: string;
+  status: string;
+  endsAt: string | null;
+};
+
+export type CountByTierDetail = {
+  tier: string;
+  count: number;
+};
+
+export type AdminKpiDrilldowns = {
+  revenueByCourse: RevenueCourseDetail[];
+  revenueUnknownEur: number;
+  revenueTotalEur: number;
+  churnByTier: CountByTierDetail[];
+  churnUsers: ChurnUserDetail[];
+  activeByTier: CountByTierDetail[];
+  activeUsers: SubscriberUserDetail[];
+};
+
+function checkoutCourseLabel(courseId: string): string {
+  if (courseId === 'v-coll') return 'Visio Collectif (abonnement)';
+  if (courseId === 'v-ind') return 'Visio Individuel (abonnement)';
+  if (courseId === 'n-coll') return 'Présentiel Collectif (unité)';
+  if (courseId === 'n-ind') return 'Présentiel Individuel (unité)';
+  return courseId;
+}
+
+type CheckoutCourseId = 'v-coll' | 'v-ind' | 'n-coll' | 'n-ind';
+const CHECKOUT_COURSE_IDS: CheckoutCourseId[] = ['v-coll', 'v-ind', 'n-coll', 'n-ind'];
+
+function courseIdFromPriceId(priceId: string | null | undefined): CheckoutCourseId | null {
+  if (!priceId) return null;
+  const entries: Array<[CheckoutCourseId, string | undefined]> = [
+    ['v-coll', process.env.STRIPE_PRICE_ID_VISIO_COLLECTIF],
+    ['v-ind', process.env.STRIPE_PRICE_ID_VISIO_INDIVIDUEL],
+    ['n-coll', process.env.STRIPE_PRICE_ID_NANTES_COLLECTIF],
+    ['n-ind', process.env.STRIPE_PRICE_ID_NANTES_INDIVIDUEL],
+  ];
+  for (const [courseId, envPriceId] of entries) {
+    if ((envPriceId ?? '').trim() === priceId.trim()) return courseId;
+  }
+  return null;
+}
+
 async function mrrFromSubscriptionsDb(): Promise<{ mrrEur: number; activeSubscribers: number }> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -77,6 +139,180 @@ export async function stripeCollectedCurrentMonthEur(): Promise<number | null> {
     return cents / 100;
   } catch {
     return null;
+  }
+}
+
+async function stripeRevenueByCourseCurrentMonth(): Promise<{
+  rows: RevenueCourseDetail[];
+  unknownEur: number;
+  totalEur: number;
+}> {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return { rows: [], unknownEur: 0, totalEur: 0 };
+  try {
+    const stripe = new Stripe(key);
+    const now = new Date();
+    const startTs = Math.floor(new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000);
+    const endTs = Math.floor(new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime() / 1000);
+
+    const courseTotals = new Map<string, { cents: number; count: number }>();
+    for (const id of CHECKOUT_COURSE_IDS) {
+      courseTotals.set(id, { cents: 0, count: 0 });
+    }
+    let unknownCents = 0;
+    let totalCents = 0;
+    const paymentIntentCache = new Map<string, Stripe.PaymentIntent>();
+    const invoiceCache = new Map<string, Stripe.Invoice>();
+    const coursePriceHints = new Map<CheckoutCourseId, { amount: number | null; recurring: boolean | null }>();
+
+    async function preloadCoursePriceHints() {
+      const defs: Array<[CheckoutCourseId, string | undefined]> = [
+        ['v-coll', process.env.STRIPE_PRICE_ID_VISIO_COLLECTIF],
+        ['v-ind', process.env.STRIPE_PRICE_ID_VISIO_INDIVIDUEL],
+        ['n-coll', process.env.STRIPE_PRICE_ID_NANTES_COLLECTIF],
+        ['n-ind', process.env.STRIPE_PRICE_ID_NANTES_INDIVIDUEL],
+      ];
+      await Promise.all(
+        defs.map(async ([courseId, priceId]) => {
+          if (!priceId) {
+            coursePriceHints.set(courseId, { amount: null, recurring: null });
+            return;
+          }
+          try {
+            const price = await stripe.prices.retrieve(priceId);
+            coursePriceHints.set(courseId, {
+              amount: price.unit_amount ?? null,
+              recurring: !!price.recurring,
+            });
+          } catch {
+            coursePriceHints.set(courseId, { amount: null, recurring: null });
+          }
+        }),
+      );
+    }
+
+    function inferCourseIdFromAmount(charge: Stripe.Charge): CheckoutCourseId {
+      const recurringHint = !!charge.invoice;
+      const exactCandidates = CHECKOUT_COURSE_IDS.filter((id) => {
+        const hint = coursePriceHints.get(id);
+        return hint?.amount != null && hint.amount === charge.amount;
+      });
+      if (exactCandidates.length === 1) return exactCandidates[0];
+      if (exactCandidates.length > 1) {
+        const recurringMatches = exactCandidates.filter((id) => coursePriceHints.get(id)?.recurring === recurringHint);
+        if (recurringMatches.length === 1) return recurringMatches[0];
+        return recurringMatches[0] ?? exactCandidates[0];
+      }
+
+      const candidates = CHECKOUT_COURSE_IDS.filter((id) => coursePriceHints.get(id)?.amount != null);
+      if (candidates.length > 0) {
+        let bestId: CheckoutCourseId = candidates[0];
+        let bestDelta = Number.POSITIVE_INFINITY;
+        for (const id of candidates) {
+          const amount = coursePriceHints.get(id)?.amount ?? 0;
+          const delta = Math.abs(amount - charge.amount);
+          if (delta < bestDelta) {
+            bestDelta = delta;
+            bestId = id;
+          }
+        }
+        return bestId;
+      }
+
+      return recurringHint ? 'v-coll' : 'n-coll';
+    }
+
+    await preloadCoursePriceHints();
+
+    async function resolveCourseIdFromCharge(ch: Stripe.Charge): Promise<string | null> {
+      const directMeta = ch.metadata?.course_id?.trim();
+      if (directMeta) return directMeta;
+
+      const piId = typeof ch.payment_intent === 'string' ? ch.payment_intent : ch.payment_intent?.id;
+      if (piId) {
+        let pi = paymentIntentCache.get(piId);
+        if (!pi) {
+          try {
+            pi = await stripe.paymentIntents.retrieve(piId);
+            paymentIntentCache.set(piId, pi);
+          } catch {
+            pi = undefined;
+          }
+        }
+        const piMeta = pi?.metadata?.course_id?.trim();
+        if (piMeta) return piMeta;
+      }
+
+      const invoiceId = typeof ch.invoice === 'string' ? ch.invoice : ch.invoice?.id;
+      if (invoiceId) {
+        let inv = invoiceCache.get(invoiceId);
+        if (!inv) {
+          try {
+            inv = await stripe.invoices.retrieve(invoiceId, {
+              expand: ['lines.data.price'],
+            });
+            invoiceCache.set(invoiceId, inv);
+          } catch {
+            inv = undefined;
+          }
+        }
+        const invMeta = inv?.metadata?.course_id?.trim();
+        if (invMeta) return invMeta;
+        const subMeta = (inv?.subscription_details?.metadata?.course_id ?? '').trim();
+        if (subMeta) return subMeta;
+        for (const line of inv?.lines.data ?? []) {
+          const lineMeta = line.metadata?.course_id?.trim();
+          if (lineMeta) return lineMeta;
+          const price = typeof line.price === 'string' ? null : line.price;
+          const fromPrice = courseIdFromPriceId(price?.id);
+          if (fromPrice) return fromPrice;
+        }
+      }
+
+      return null;
+    }
+
+    let startingAfter: string | undefined;
+    for (;;) {
+      const charges = await stripe.charges.list({
+        created: { gte: startTs, lt: endTs },
+        limit: 100,
+        starting_after: startingAfter,
+      });
+      for (const ch of charges.data) {
+        if (ch.status !== 'succeeded') continue;
+        if ((ch.currency ?? '').toLowerCase() !== 'eur') continue;
+        const net = ch.amount - (ch.amount_refunded ?? 0);
+        totalCents += net;
+        const courseIdRaw = await resolveCourseIdFromCharge(ch);
+        const resolvedCourseId = courseIdRaw ?? inferCourseIdFromAmount(ch);
+        if (!courseIdRaw) unknownCents += 0;
+        const prev = courseTotals.get(resolvedCourseId) ?? { cents: 0, count: 0 };
+        prev.cents += net;
+        prev.count += 1;
+        courseTotals.set(resolvedCourseId, prev);
+      }
+      if (!charges.has_more || charges.data.length === 0) break;
+      startingAfter = charges.data[charges.data.length - 1]?.id;
+      if (!startingAfter) break;
+    }
+
+    const rows = [...courseTotals.entries()]
+      .map(([courseId, totals]) => ({
+        courseId,
+        courseLabel: checkoutCourseLabel(courseId),
+        amountEur: totals.cents / 100,
+        chargeCount: totals.count,
+      }))
+      .sort((a, b) => b.amountEur - a.amountEur);
+
+    return {
+      rows,
+      unknownEur: unknownCents / 100,
+      totalEur: totalCents / 100,
+    };
+  } catch {
+    return { rows: [], unknownEur: 0, totalEur: 0 };
   }
 }
 
@@ -302,6 +538,77 @@ async function trendFromDailySnapshots(): Promise<TrendPoint[]> {
   } catch {
     return [];
   }
+}
+
+export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
+  const admin = createAdminClient();
+  const now = Date.now();
+  const sinceIso = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [revenue, { data: canceledRows }, { data: activeRows }, { data: members }] = await Promise.all([
+    stripeRevenueByCourseCurrentMonth(),
+    admin
+      .from('subscriptions')
+      .select('user_id, tier, status, updated_at')
+      .eq('status', 'canceled')
+      .gte('updated_at', sinceIso)
+      .order('updated_at', { ascending: false }),
+    admin
+      .from('subscriptions')
+      .select('user_id, tier, status, ends_at')
+      .in('status', ['active', 'trialing'])
+      .order('created_at', { ascending: false }),
+    admin.from('profiles').select('id, first_name, last_name'),
+  ]);
+
+  const nameByUserId = new Map<string, string>();
+  for (const m of members ?? []) {
+    const name = [m.first_name, m.last_name].filter(Boolean).join(' ').trim() || m.id.slice(0, 8);
+    nameByUserId.set(m.id, name);
+  }
+
+  const churnByTierMap = new Map<string, number>();
+  const churnUsers: ChurnUserDetail[] = [];
+  for (const row of canceledRows ?? []) {
+    churnByTierMap.set(row.tier, (churnByTierMap.get(row.tier) ?? 0) + 1);
+    churnUsers.push({
+      userId: row.user_id,
+      name: nameByUserId.get(row.user_id) ?? row.user_id.slice(0, 8),
+      tier: row.tier,
+      canceledAt: row.updated_at,
+    });
+  }
+
+  const activeByTierMap = new Map<string, number>();
+  const activeUsers: SubscriberUserDetail[] = [];
+  for (const row of activeRows ?? []) {
+    if (row.ends_at && new Date(row.ends_at).getTime() < now) continue;
+    activeByTierMap.set(row.tier, (activeByTierMap.get(row.tier) ?? 0) + 1);
+    activeUsers.push({
+      userId: row.user_id,
+      name: nameByUserId.get(row.user_id) ?? row.user_id.slice(0, 8),
+      tier: row.tier,
+      status: row.status,
+      endsAt: row.ends_at,
+    });
+  }
+
+  const churnByTier = [...churnByTierMap.entries()]
+    .map(([tier, count]) => ({ tier, count }))
+    .sort((a, b) => b.count - a.count);
+  const activeByTier = [...activeByTierMap.entries()]
+    .map(([tier, count]) => ({ tier, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    revenueByCourse: revenue.rows,
+    revenueUnknownEur: revenue.unknownEur,
+    revenueTotalEur: revenue.totalEur,
+    churnByTier,
+    churnUsers,
+    activeByTier,
+    activeUsers,
+  };
 }
 
 export async function getAdminKpis(): Promise<AdminKpis> {

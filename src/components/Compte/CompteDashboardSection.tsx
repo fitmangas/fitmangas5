@@ -10,11 +10,11 @@ import { MonthlyProgressRing } from './MonthlyProgressRing';
 function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) {
   if (!appointment) {
     return (
-      <GlassCard className="p-8 md:p-9">
+      <GlassCard className="p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Prochain rendez-vous</p>
-            <p className="mt-4 text-lg font-semibold tracking-tight text-luxury-ink">Aucune réservation à venir</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain rendez-vous</p>
+            <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">Aucune réservation à venir</p>
             <p className="mt-2 text-sm text-luxury-muted">Réserve une séance depuis le calendrier ci-dessous.</p>
           </div>
           <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
@@ -31,11 +31,11 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
   const liveWindow = now >= start.getTime() && now <= end.getTime();
 
   return (
-    <GlassCard className="p-8 md:p-9">
+    <GlassCard className="p-5 md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Prochain rendez-vous</p>
-          <h2 className="mt-3 text-xl font-semibold leading-snug tracking-tight text-luxury-ink">{appointment.title}</h2>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain rendez-vous</p>
+          <h2 className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-luxury-ink">{appointment.title}</h2>
           <p className="mt-3 text-sm text-luxury-muted">
             {start.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
           </p>
@@ -44,8 +44,8 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
               En direct maintenant
             </p>
           ) : null}
-          <div className="mt-8">
-            <Link href={`/live/${appointment.courseId}`} className="btn-luxury-primary min-h-[48px] min-w-[160px]">
+          <div className="mt-6">
+            <Link href={`/live/${appointment.courseId}`} className="btn-luxury-primary min-h-[46px] min-w-[160px]">
               Rejoindre
             </Link>
           </div>
@@ -60,10 +60,10 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
 
 function MonthlyProgressCard({ progress }: { progress: MonthlyProgress }) {
   return (
-    <GlassCard className="flex flex-col p-8 md:p-9">
+    <GlassCard className="flex flex-col p-5 md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-luxury-soft">Progression mensuelle</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Progression mensuelle</p>
           <p className="mt-2 text-sm text-luxury-muted">Cours suivis ce mois-ci (séances terminées)</p>
         </div>
         <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
@@ -88,7 +88,7 @@ export async function CompteDashboardSection({ userId }: { userId: string }) {
   ]);
 
   return (
-    <section className="grid gap-8 md:grid-cols-2">
+    <section className="grid gap-5 xl:grid-cols-2">
       <NextAppointmentCard appointment={appointment} />
       <MonthlyProgressCard progress={monthly} />
     </section>

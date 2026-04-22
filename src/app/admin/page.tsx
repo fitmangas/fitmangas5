@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Euro, HeartPulse, Percent, Users, Video } from 'lucide-react';
+import { Euro, Video } from 'lucide-react';
 
-import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
+import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
-import { getAdminKpis, stripeCollectedCurrentMonthEur } from '@/lib/admin/kpis';
+import { getAdminKpiDrilldowns, getAdminKpis, stripeCollectedCurrentMonthEur } from '@/lib/admin/kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -166,6 +166,7 @@ export default async function AdminPage() {
     { data: me },
     { data: upcomingCoursesData },
     stripeMonthEur,
+    kpiDrilldowns,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -183,6 +184,7 @@ export default async function AdminPage() {
       .order('starts_at', { ascending: true })
       .limit(42),
     stripeCollectedCurrentMonthEur(),
+    getAdminKpiDrilldowns(),
   ]);
 
   const upcomingCourses = (upcomingCoursesData ?? []) as UpcomingCourseRow[];
@@ -222,11 +224,7 @@ export default async function AdminPage() {
   const lastMrrLabel = latestPoint
     ? `${latestPoint.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : '—';
-
-  const stripeMonthLabel =
-    stripeMonthEur != null
-      ? `${stripeMonthEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-      : null;
+  const clientsHeadTr = 'bg-white/85 text-[10px] uppercase tracking-wider text-luxury-ink/65 backdrop-blur';
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-5 xl:space-y-6 pt-3 md:pt-4">
@@ -306,79 +304,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <GlassCard className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">
-                Revenus Stripe (mois en cours)
-              </p>
-              <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
-                {stripeMonthLabel ?? '—'}
-              </p>
-              {stripeMonthEur === null ? (
-                <p className="mt-2 text-[10px] text-luxury-soft">
-                  Indisponible — clé <span className="font-mono">STRIPE_SECRET_KEY</span>
-                </p>
-              ) : null}
-            </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
-              <Euro size={20} aria-hidden strokeWidth={2} />
-            </span>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Churn 30j</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{pctLabel(kpis.churnRate30d)}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Résiliations / abonnés actifs</p>
-            </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--rose">
-              <Percent size={20} aria-hidden strokeWidth={2} />
-            </span>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
-            </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--blue">
-              <Users size={20} aria-hidden strokeWidth={2} />
-            </span>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Health</p>
-              <div className="mt-3 space-y-2">
-                <Link href="/admin/clients?health=green" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  <span className="font-medium">{kpis.health.healthy}</span>
-                  <span className="text-luxury-muted">Actifs</span>
-                </Link>
-                <Link href="/admin/clients?health=orange" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                  <span className="font-medium">{kpis.health.fragile}</span>
-                  <span className="text-luxury-muted">Fragiles</span>
-                </Link>
-                <Link href="/admin/clients?health=red" className="flex items-center gap-2 text-sm text-luxury-ink hover:underline">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                  <span className="font-medium">{kpis.health.atRisk}</span>
-                  <span className="text-luxury-muted">À risque</span>
-                </Link>
-              </div>
-            </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--green">
-              <HeartPulse size={20} aria-hidden strokeWidth={2} />
-            </span>
-          </div>
-        </GlassCard>
-      </section>
+      <AdminKpiCardsInteractive stripeMonthEur={stripeMonthEur} kpis={kpis} drilldowns={kpiDrilldowns} />
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
         <GlassCard variant="dark" className="p-5 md:p-6">
@@ -477,11 +403,11 @@ export default async function AdminPage() {
           <div className="mt-3 overflow-x-auto">
             <table className="min-w-full text-left">
             <thead>
-              <tr className={ADMIN_HEAD_TR}>
-                <th className="px-2 py-3">Nom</th>
-                <th className="px-2 py-3">Rôle</th>
-                <th className="px-2 py-3">Dernière offre</th>
-                <th className="px-2 py-3">Mise à jour</th>
+              <tr className={clientsHeadTr}>
+                <th className="rounded-l-full border-b border-t border-l border-[#ece8e0] px-3 py-3">Nom</th>
+                <th className="border-y border-[#ece8e0] px-3 py-3">Rôle</th>
+                <th className="border-y border-[#ece8e0] px-3 py-3">Dernière offre</th>
+                <th className="rounded-r-full border-b border-t border-r border-[#ece8e0] px-3 py-3">Mise à jour</th>
               </tr>
             </thead>
             <tbody className="text-sm text-luxury-ink">
