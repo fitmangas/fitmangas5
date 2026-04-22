@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Clapperboard, LayoutDashboard, TicketPercent, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, LayoutDashboard, TicketPercent, Video } from 'lucide-react';
 
 const links = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
+  { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
 ];

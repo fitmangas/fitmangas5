@@ -117,6 +117,12 @@ export function LandingPage() {
             </div>
             
             <div className="flex items-center gap-8">
+              <Link
+                href="/blog"
+                className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-ink/45 transition hover:text-brand-accent"
+              >
+                Blog
+              </Link>
               <div className="flex flex-col items-end gap-0.5">
                 <span className="text-2xl font-sans font-semibold leading-none tracking-tight">180</span>
                 <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none font-medium">{t.proofPeople}</span>
@@ -165,6 +171,12 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Link
+                href="/blog"
+                className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-ink/45"
+              >
+                Blog
+              </Link>
               <button
                 type="button"
                 onClick={() => setShowLoginModal(true)}
