@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarPlus2, Lock, Unlock, X } from 'lucide-react';
+import { Lock, Smartphone, Unlock, X } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
 import { FORTNIGHT_DAYS, getUtcFortnightWindow, isCoursePast } from '@/lib/calendar-window';
 
@@ -79,13 +79,14 @@ export function SmartCalendar() {
   const [events, setEvents] = useState<SmartCourse[]>([]);
   const [tier, setTier] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<SmartCourse | null>(null);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncUrl, setSyncUrl] = useState<string | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [showSyncInfo, setShowSyncInfo] = useState(false);
 
   const fortnightDays = getFortnightUtcDays();
 
-  const monthlyTier = useMemo(
-    () => tier === 'online_individual_monthly' || tier === 'online_group_monthly',
-    [tier],
-  );
+  const monthlyTier = useMemo(() => tier === 'online_individual_monthly' || tier === 'online_group_monthly', [tier]);
 
   const selectedIsPast = selectedCourse
     ? isCoursePast(selectedCourse.ends_at)
@@ -113,7 +114,41 @@ export function SmartCalendar() {
 
   useEffect(() => {
     void fetchEvents();
+    void (async () => {
+      try {
+        const res = await fetch('/api/calendar/mobile-sync');
+        if (!res.ok) return;
+        const json = (await res.json()) as { enabled?: boolean; webcalUrl?: string | null };
+        setSyncEnabled(json.enabled === true);
+        setSyncUrl(typeof json.webcalUrl === 'string' ? json.webcalUrl : null);
+      } catch {
+        // ignore
+      }
+    })();
   }, []);
+
+  async function setMobileSync(enabled: boolean) {
+    setSyncBusy(true);
+    try {
+      const res = await fetch('/api/calendar/mobile-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { enabled?: boolean; webcalUrl?: string | null };
+      if (!res.ok) return;
+      setSyncEnabled(json.enabled === true);
+      setSyncUrl(typeof json.webcalUrl === 'string' ? json.webcalUrl : null);
+      if (enabled) {
+        setShowSyncInfo(true);
+        if (json.webcalUrl) {
+          window.location.href = json.webcalUrl;
+        }
+      }
+    } finally {
+      setSyncBusy(false);
+    }
+  }
 
   const groupedByDay = useMemo(() => {
     const map = new Map<string, SmartCourse[]>();
@@ -139,15 +174,46 @@ export function SmartCalendar() {
 
       <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
         {monthlyTier ? (
-          <a
-            href="/api/calendar/export-ical"
-            className="btn-luxury-primary inline-flex items-center gap-2 px-5 py-2.5 text-[10px] tracking-[0.14em]"
-          >
-            <CalendarPlus2 size={14} />
-            Ajouter à Google Calendar
-          </a>
+          syncEnabled ? (
+            <button
+              type="button"
+              disabled={syncBusy}
+              onClick={() => {
+                const ok = window.confirm(
+                  'Désactiver la synchronisation ? Les nouveaux cours ne seront plus envoyés automatiquement au téléphone.',
+                );
+                if (ok) void setMobileSync(false);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/45 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-muted backdrop-blur-md transition hover:bg-white/60 disabled:opacity-60"
+            >
+              <Smartphone size={14} />
+              Calendrier connecté
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={syncBusy}
+              onClick={() => void setMobileSync(true)}
+              className="btn-luxury-primary inline-flex items-center gap-2 px-5 py-2.5 text-[10px] tracking-[0.14em] disabled:opacity-60"
+            >
+              <Smartphone size={14} />
+              Connecter mon téléphone
+            </button>
+          )
         ) : null}
       </div>
+
+      {monthlyTier && syncEnabled && showSyncInfo && syncUrl ? (
+        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+          <p className="font-semibold">Synchronisation active</p>
+          <p className="mt-1">
+            Les cours sont envoyés automatiquement sur ton téléphone. Si besoin, ouvre ce lien une fois sur iPhone/Android:
+          </p>
+          <a href={syncUrl} className="mt-1 block break-all text-emerald-800 underline underline-offset-2">
+            {syncUrl}
+          </a>
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
