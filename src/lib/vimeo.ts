@@ -33,6 +33,7 @@ type VimeoVideoMetadataResponse = {
   };
   /** Dossier Vimeo (album / folder selon type de compte). */
   parent_folder?: { name?: string | null } | null;
+  folder?: { name?: string | null } | null;
 };
 
 export type VimeoVideoMetadata = {
@@ -82,12 +83,12 @@ function extractEmbedUrl(embedHtml?: string): string | null {
 }
 
 function extractApiFolderName(data: VimeoVideoMetadataResponse): string | null {
-  return data.parent_folder?.name?.trim() || null;
+  return data.parent_folder?.name?.trim() || data.folder?.name?.trim() || null;
 }
 
 /** Champs communs liste / détail vidéo Vimeo. */
 const VIDEO_API_FIELDS =
-  'uri,name,description,link,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name';
+  'uri,name,description,link,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name,folder.name';
 
 export function mapVimeoVideoResponseToMetadata(data: VimeoVideoMetadataResponse): VimeoVideoMetadata {
   const thumbnailUrl = data.pictures?.sizes?.at(-1)?.link ?? data.pictures?.sizes?.[0]?.link ?? null;

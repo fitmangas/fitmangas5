@@ -1,5 +1,6 @@
-/** Nom affiché quand la vidéo est un replay live (table video_recordings) sans dossier Vimeo. */
-export const VIMEO_FOLDER_REPLAYS_LIVES = 'Replays Lives';
+/** Nom canonique affiché pour les replays live côté Vimeo. */
+export const VIMEO_FOLDER_REPLAYS_LIVES = 'Replay du live';
+const VIMEO_FOLDER_REPLAYS_LIVES_ALIASES = new Set(['Replay du live', 'Replays Lives']);
 
 /** Vidéos hors dossier Vimeo et hors replay Jitsi enregistré. */
 export const VIMEO_FOLDER_UNCATEGORIZED = 'Non classé';
@@ -29,6 +30,7 @@ export function sortFolderKeys(keys: string[]): string[] {
 /** Clé de groupement stable : trim, espaces multiples → un seul (évite doublons « Barre flow » / « Barre flow  »). */
 export function normalizeFolderLabelForGroup(name: string | null | undefined): string {
   const t = name?.trim().replace(/\s+/g, ' ');
+  if (t && VIMEO_FOLDER_REPLAYS_LIVES_ALIASES.has(t)) return VIMEO_FOLDER_REPLAYS_LIVES;
   return t || VIMEO_FOLDER_UNCATEGORIZED;
 }
 

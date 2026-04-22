@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { VideoModal } from '@/components/Admin/VideoModal';
@@ -31,8 +32,10 @@ export function AdminVimeoLibraryClient({
   rejected,
   fetchError,
 }: AdminVimeoLibraryPayload) {
+  const router = useRouter();
   const [preview, setPreview] = useState<AdminVimeoVideoCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
   const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -68,6 +71,26 @@ export function AdminVimeoLibraryClient({
     (acc, k) => acc + (publishedByFolder[k]?.length ?? 0),
     0,
   );
+
+  async function removeFromClient(videoId: string) {
+    const ok = window.confirm('Retirer cette vidéo de l’espace client ?');
+    if (!ok) return;
+    setBusyRemoveId(videoId);
+    try {
+      const res = await fetch(`/api/admin/vimeo/${videoId}/remove`, {
+        method: 'PATCH',
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        window.alert(json.error ?? 'Suppression impossible.');
+        return;
+      }
+      if (preview?.id === videoId) setPreview(null);
+      router.refresh();
+    } finally {
+      setBusyRemoveId(null);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:py-14">
@@ -114,29 +137,39 @@ export function AdminVimeoLibraryClient({
               <GroupCollapse key={folder} groupKey={folder} title={folder} count={publishedByFolder[folder]?.length ?? 0}>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {(publishedByFolder[folder] ?? []).map((v) => (
-                    <button
+                    <div
                       key={v.id}
-                      type="button"
-                      onClick={() => setPreview(v)}
                       className="glass-card overflow-hidden border border-white/75 bg-white/45 text-left shadow-[0_8px_30px_rgba(29,29,31,0.06)] backdrop-blur-[20px] transition hover:border-white hover:shadow-[0_14px_40px_rgba(29,29,31,0.09)]"
                     >
-                      <div className="relative aspect-video bg-black/10">
-                        {v.thumbnail_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[11px] text-luxury-soft">
-                            Pas d’aperçu
-                          </div>
-                        )}
+                      <button type="button" onClick={() => setPreview(v)} className="w-full text-left">
+                        <div className="relative aspect-video bg-black/10">
+                          {v.thumbnail_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[11px] text-luxury-soft">
+                              Pas d’aperçu
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <p className="line-clamp-2 text-sm font-semibold text-luxury-ink">
+                            {v.title ?? `Vidéo ${v.vimeo_video_id}`}
+                          </p>
+                          <p className="mt-1 text-[11px] text-luxury-muted">{formatDuration(v.duration_seconds)}</p>
+                        </div>
+                      </button>
+                      <div className="border-t border-white/50 px-4 py-3">
+                        <button
+                          type="button"
+                          disabled={busyRemoveId === v.id}
+                          onClick={() => void removeFromClient(v.id)}
+                          className="text-[10px] font-semibold uppercase tracking-widest text-luxury-muted underline-offset-4 hover:text-luxury-ink hover:underline disabled:opacity-50"
+                        >
+                          Retirer de l'espace client
+                        </button>
                       </div>
-                      <div className="p-4">
-                        <p className="line-clamp-2 text-sm font-semibold text-luxury-ink">
-                          {v.title ?? `Vidéo ${v.vimeo_video_id}`}
-                        </p>
-                        <p className="mt-1 text-[11px] text-luxury-muted">{formatDuration(v.duration_seconds)}</p>
-                      </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </GroupCollapse>

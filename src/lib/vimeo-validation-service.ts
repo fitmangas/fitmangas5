@@ -81,3 +81,38 @@ export async function rejectStandaloneVideo(
 
   return { ok: true };
 }
+
+export async function removeStandaloneVideoFromClient(
+  admin: SupabaseClient,
+  rowId: string,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const { data: row, error: fetchErr } = await admin
+    .from('standalone_vimeo_videos')
+    .select('id, validation_status')
+    .eq('id', rowId)
+    .maybeSingle();
+
+  if (fetchErr || !row) {
+    return { ok: false, error: fetchErr?.message ?? 'Vidéo introuvable.', status: 404 };
+  }
+
+  if ((row.validation_status as string) === 'rejected') {
+    return { ok: true };
+  }
+
+  const { error: updateErr } = await admin
+    .from('standalone_vimeo_videos')
+    .update({
+      validation_status: 'rejected',
+      published_at: null,
+      scheduled_publication_at: null,
+      rejection_reason: 'Retirée depuis le dashboard admin.',
+    })
+    .eq('id', rowId);
+
+  if (updateErr) {
+    return { ok: false, error: updateErr.message, status: 500 };
+  }
+
+  return { ok: true };
+}
