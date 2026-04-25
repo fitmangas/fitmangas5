@@ -52,6 +52,28 @@ export default async function AdminBlogStatsPage() {
     .select('*', { count: 'exact', head: true })
     .eq('unsubscribed', false);
 
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const { data: trackingRows } = await admin
+    .from('blog_scroll_tracking')
+    .select('tracked_at,traffic_source,scroll_percentage_max,time_spent_seconds')
+    .gte('tracked_at', since.toISOString());
+
+  const byDay: Record<string, number> = {};
+  const sourceMap: Record<string, number> = {};
+  let bounceCount = 0;
+  let sessions = 0;
+  for (const row of trackingRows ?? []) {
+    sessions += 1;
+    const day = new Date(row.tracked_at).toISOString().slice(0, 10);
+    byDay[day] = (byDay[day] ?? 0) + 1;
+    const source = row.traffic_source?.trim() || 'direct';
+    sourceMap[source] = (sourceMap[source] ?? 0) + 1;
+    if ((row.scroll_percentage_max ?? 0) < 25 && (row.time_spent_seconds ?? 0) < 20) bounceCount += 1;
+  }
+  const bounceRate = sessions > 0 ? Math.round((bounceCount / sessions) * 100) : 0;
+  const timeline = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0]));
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Analytics</p>
@@ -63,6 +85,7 @@ export default async function AdminBlogStatsPage() {
         <Kpi label="Note moyenne" value={avgRating != null ? `${avgRating} / 5` : '—'} />
         <Kpi label="Scroll moyen" value={avgScroll != null ? `${avgScroll} %` : '—'} />
         <Kpi label="Newsletter" value={String(newsletterCount ?? 0)} />
+        <Kpi label="Bounce estimé" value={`${bounceRate} %`} />
       </div>
 
       <section className="mt-14">
@@ -93,6 +116,38 @@ export default async function AdminBlogStatsPage() {
           {(trending ?? []).length === 0 ? (
             <p className="px-4 py-6 text-sm text-luxury-muted">Pas encore de données sur 7 jours.</p>
           ) : null}
+        </div>
+      </section>
+
+      <section className="mt-14 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-white/40 bg-white/40 p-5">
+          <h2 className="text-lg font-semibold text-luxury-ink">Sessions (30 jours)</h2>
+          <div className="mt-4 space-y-2">
+            {timeline.slice(-12).map(([day, value]) => (
+              <div key={day} className="flex items-center gap-3 text-xs">
+                <span className="w-20 text-luxury-muted">{day.slice(5)}</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/60">
+                  <div className="h-full rounded-full bg-orange-500" style={{ width: `${Math.min(100, value)}%` }} />
+                </div>
+                <span className="w-8 text-right text-luxury-ink">{value}</span>
+              </div>
+            ))}
+            {timeline.length === 0 ? <p className="text-sm text-luxury-muted">Aucune session trackée.</p> : null}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/40 bg-white/40 p-5">
+          <h2 className="text-lg font-semibold text-luxury-ink">Sources de trafic</h2>
+          <div className="mt-4 space-y-2">
+            {Object.entries(sourceMap)
+              .sort((a, b) => b[1] - a[1])
+              .map(([source, value]) => (
+                <div key={source} className="flex items-center justify-between rounded-xl border border-white/40 bg-white/55 px-3 py-2 text-sm">
+                  <span className="font-medium text-luxury-ink">{source}</span>
+                  <span className="text-luxury-muted">{value}</span>
+                </div>
+              ))}
+            {Object.keys(sourceMap).length === 0 ? <p className="text-sm text-luxury-muted">Aucune source disponible.</p> : null}
+          </div>
         </div>
       </section>
     </main>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/auth/assert-admin-api';
+import { hasCompleteTranslations } from '@/lib/blog/translation-status';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function PATCH(request: Request, context: { params: Promise<{ validationId: string }> }) {
@@ -28,7 +29,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ valid
 
     const { data: row, error: fetchErr } = await admin
       .from('admin_article_validations')
-      .select('id, article_id, coach_id')
+      .select('id, article_id, coach_id, blog_articles(title_en,title_es,content_en,content_es)')
       .eq('id', validationId)
       .maybeSingle();
 
@@ -39,6 +40,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ valid
     const now = new Date().toISOString();
 
     if (action === 'approve') {
+      const article = Array.isArray(row.blog_articles) ? row.blog_articles[0] : row.blog_articles;
+      if (
+        process.env.BLOG_REQUIRE_TRANSLATIONS !== 'false' &&
+        !hasCompleteTranslations({
+          title_en: article?.title_en ?? null,
+          title_es: article?.title_es ?? null,
+          content_en: article?.content_en ?? null,
+          content_es: article?.content_es ?? null,
+        })
+      ) {
+        return NextResponse.json(
+          { error: 'Traductions EN/ES incomplètes. Lance la traduction avant validation.' },
+          { status: 400 },
+        );
+      }
+
       await admin
         .from('admin_article_validations')
         .update({

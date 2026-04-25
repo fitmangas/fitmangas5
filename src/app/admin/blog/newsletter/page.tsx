@@ -13,13 +13,27 @@ export default async function AdminBlogNewsletterPage() {
     .order('subscribed_at', { ascending: false })
     .limit(100);
 
+  const { count: pendingCount } = await admin
+    .from('newsletter_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('confirmed', false)
+    .eq('unsubscribed', false);
+
+  const { data: publicationEvents } = await admin
+    .from('blog_publication_events')
+    .select('id, article_id, published_at, newsletter_targeted, newsletter_sent, newsletter_provider')
+    .order('published_at', { ascending: false })
+    .limit(8);
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Newsletter</p>
           <h1 className="hero-signature-title mt-2 text-3xl">Abonnés</h1>
-          <p className="mt-2 text-sm text-luxury-muted">Total : {count ?? 0}</p>
+          <p className="mt-2 text-sm text-luxury-muted">
+            Total confirmés : {count ?? 0} · En attente de confirmation : {pendingCount ?? 0}
+          </p>
         </div>
         <Link
           href="/api/admin/blog/newsletter?format=csv"
@@ -48,6 +62,22 @@ export default async function AdminBlogNewsletterPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-white/40 bg-white/40 p-5">
+        <h2 className="text-lg font-semibold text-luxury-ink">Dernières diffusions publication</h2>
+        <div className="mt-4 space-y-2">
+          {(publicationEvents ?? []).map((e) => (
+            <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm">
+              <span className="font-mono text-xs text-luxury-muted">{e.article_id}</span>
+              <span className="text-luxury-muted">{new Date(e.published_at).toLocaleString('fr-FR')}</span>
+              <span className="text-luxury-ink">
+                {e.newsletter_sent}/{e.newsletter_targeted} envoyé(s) · {e.newsletter_provider ?? 'n/a'}
+              </span>
+            </div>
+          ))}
+          {(publicationEvents ?? []).length === 0 ? <p className="text-sm text-luxury-muted">Aucun envoi publication pour le moment.</p> : null}
+        </div>
       </div>
     </main>
   );

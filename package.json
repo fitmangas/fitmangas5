@@ -19,6 +19,7 @@
     "seed:test-data": "tsx scripts/seed-test-data.ts",
     "seed:blog": "tsx scripts/seed-blog-articles.ts",
     "seed:blog:complete": "tsx scripts/seed-blog-articles-complete.ts",
+    "blog:translate:missing": "tsx scripts/blog-translate-missing.ts",
     "blog:cleanup:duplicates": "tsx scripts/cleanup-blog-duplicates.ts",
     "blog:schedule:normalize": "tsx scripts/normalize-blog-monthly-schedule.ts",
     "automation:inactive": "tsx scripts/automation/report-inactive-users.ts",

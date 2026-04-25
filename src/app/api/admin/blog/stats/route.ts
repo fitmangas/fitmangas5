@@ -55,6 +55,27 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .eq('unsubscribed', false);
 
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+    const { data: trackingRows } = await admin
+      .from('blog_scroll_tracking')
+      .select('tracked_at,traffic_source,scroll_percentage_max,time_spent_seconds')
+      .gte('tracked_at', since.toISOString());
+
+    const byDay: Record<string, number> = {};
+    const sourceMap: Record<string, number> = {};
+    let bounceCount = 0;
+    let totalSessions = 0;
+    for (const row of trackingRows ?? []) {
+      totalSessions += 1;
+      const day = new Date(row.tracked_at).toISOString().slice(0, 10);
+      byDay[day] = (byDay[day] ?? 0) + 1;
+      const source = row.traffic_source?.trim() || 'direct';
+      sourceMap[source] = (sourceMap[source] ?? 0) + 1;
+      const isBounce = (row.scroll_percentage_max ?? 0) < 25 && (row.time_spent_seconds ?? 0) < 20;
+      if (isBounce) bounceCount += 1;
+    }
+
     return NextResponse.json({
       totals: {
         publishedArticles: publishedCount ?? 0,
@@ -62,8 +83,13 @@ export async function GET() {
         averageRating: avgRating,
         averageScrollPercentage: avgEngagementPct,
         newsletterSubscribers: newsletterCount ?? 0,
+        bounceRate: totalSessions > 0 ? Math.round((bounceCount / totalSessions) * 100) : 0,
       },
       trending: trending ?? [],
+      timeline30d: Object.entries(byDay)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([day, sessions]) => ({ day, sessions })),
+      trafficSources: sourceMap,
     });
   } catch (e) {
     console.error('[admin blog stats]', e);

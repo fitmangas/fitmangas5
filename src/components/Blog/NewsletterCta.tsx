@@ -5,6 +5,7 @@ import { useState } from 'react';
 export function NewsletterCta({ articleId }: { articleId?: string }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,6 +20,8 @@ export function NewsletterCta({ articleId }: { articleId?: string }) {
         setStatus('error');
         return;
       }
+      const payload = (await r.json()) as { confirmUrl?: string };
+      setConfirmUrl(payload.confirmUrl ?? null);
       setStatus('done');
       setEmail('');
     } catch {
@@ -48,7 +51,15 @@ export function NewsletterCta({ articleId }: { articleId?: string }) {
         </button>
       </form>
       {status === 'done' ? (
-        <p className="mt-3 text-xs text-emerald-800">Merci ! Tu es bien inscrite.</p>
+        <p className="mt-3 text-xs text-emerald-800">
+          Merci ! Vérifie tes emails pour confirmer ton inscription.
+          {confirmUrl ? (
+            <>
+              {' '}
+              (mode dev : <a href={confirmUrl} className="underline">confirmer ici</a>)
+            </>
+          ) : null}
+        </p>
       ) : null}
       {status === 'error' ? (
         <p className="mt-3 text-xs text-red-700">Une erreur est survenue. Réessaie plus tard.</p>

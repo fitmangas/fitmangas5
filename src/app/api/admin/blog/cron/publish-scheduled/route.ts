@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
+import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -31,6 +32,9 @@ async function handlePublish(request: Request) {
     }
 
     const publishedIds: string[] = [];
+    let notificationsSent = 0;
+    let newsletterTargeted = 0;
+    let newsletterSent = 0;
 
     for (const row of due ?? []) {
       const { error: upErr } = await admin
@@ -50,12 +54,40 @@ async function handlePublish(request: Request) {
           title: row.title_fr,
           slugFr: row.slug_fr,
         });
+        notificationsSent += 1;
+
+        const newsletter = await sendPublicationNewsletter({
+          articleId: row.id,
+          title: row.title_fr,
+          slugFr: row.slug_fr,
+        });
+        newsletterTargeted += newsletter.targeted;
+        newsletterSent += newsletter.sent;
       }
     }
 
-    return NextResponse.json({ published: publishedIds.length, articleIds: publishedIds });
+    await admin.from('blog_cron_logs').insert({
+      cron_name: 'blog_publish_scheduled',
+      status: 'ok',
+      message: `published=${publishedIds.length}`,
+      meta: { articleIds: publishedIds, notificationsSent, newsletterTargeted, newsletterSent },
+    });
+
+    return NextResponse.json({
+      published: publishedIds.length,
+      articleIds: publishedIds,
+      notificationsSent,
+      newsletterTargeted,
+      newsletterSent,
+    });
   } catch (e) {
     console.error('[cron publish]', e);
+    const admin = createAdminClient();
+    await admin.from('blog_cron_logs').insert({
+      cron_name: 'blog_publish_scheduled',
+      status: 'error',
+      message: e instanceof Error ? e.message : 'Erreur serveur',
+    });
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

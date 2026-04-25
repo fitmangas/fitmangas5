@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createNewsletterConfirmationToken, sendNewsletterConfirmationEmail } from '@/lib/blog/newsletter-double-optin';
 
 /** Inscription newsletter — confirmation email : brancher Resend/Sendgrid plus tard. */
 export async function POST(request: Request) {
@@ -31,24 +32,40 @@ export async function POST(request: Request) {
     const articleId =
       typeof body.articleId === 'string' && body.articleId.length > 0 ? body.articleId : null;
 
-    const { error } = await admin.from('newsletter_subscriptions').upsert(
+    const { data: row, error } = await admin
+      .from('newsletter_subscriptions')
+      .upsert(
       {
         email,
         coach_id: coachId,
         subscribed_from_article_id: articleId,
-        confirmed: true,
-        confirmed_at: new Date().toISOString(),
+        confirmed: false,
+        confirmed_at: null,
         unsubscribed: false,
       },
       { onConflict: 'email,coach_id' },
-    );
+      )
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       console.error('[newsletter]', error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
+    if (!row?.id) {
+      return NextResponse.json({ error: 'Impossible de créer l’inscription.' }, { status: 500 });
+    }
+
+    const token = await createNewsletterConfirmationToken(row.id);
+    const emailResult = await sendNewsletterConfirmationEmail(email, token);
+
+    return NextResponse.json({
+      ok: true,
+      pendingConfirmation: true,
+      emailSent: emailResult.sent,
+      confirmUrl: emailResult.sent ? undefined : emailResult.confirmUrl,
+    });
   } catch (e) {
     console.error('[newsletter]', e);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

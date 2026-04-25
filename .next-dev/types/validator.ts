@@ -281,6 +281,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/admin/blog/cron/prepare-monthly-validation/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/blog/cron/prepare-monthly-validation">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/blog/cron/prepare-monthly-validation/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/admin/blog/cron/publish-scheduled/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/blog/cron/publish-scheduled">> = Specific
@@ -510,6 +519,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/client/blog/favorites">> = Specific
   const handler = {} as typeof import("../../src/app/api/client/blog/favorites/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/client/newsletter/confirm/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/client/newsletter/confirm">> = Specific
+  const handler = {} as typeof import("../../src/app/api/client/newsletter/confirm/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

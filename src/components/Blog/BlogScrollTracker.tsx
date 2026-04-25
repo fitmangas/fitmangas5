@@ -29,6 +29,16 @@ export function BlogScrollTracker({ articleId, readTimeMs = 30_000 }: Props) {
       lastSend.current = now;
       const timeSpent = Math.round((now - start.current) / 1000);
       const w = typeof window !== 'undefined' && window.innerWidth < 768 ? 'mobile' : 'desktop';
+      const params = new URLSearchParams(window.location.search);
+      const utmSource = params.get('utm_source')?.trim();
+      const referrer = document.referrer || '';
+      let trafficSource = 'direct';
+      if (utmSource) trafficSource = utmSource;
+      else if (referrer.includes('google.')) trafficSource = 'google';
+      else if (referrer.includes('instagram.')) trafficSource = 'instagram';
+      else if (referrer.includes('facebook.')) trafficSource = 'facebook';
+      else if (referrer) trafficSource = 'referral';
+
       void fetch(`/api/client/blog/articles/id/${articleId}/scroll-event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +46,7 @@ export function BlogScrollTracker({ articleId, readTimeMs = 30_000 }: Props) {
           scrollPercentage: maxScroll.current,
           timeSpentSeconds: timeSpent,
           deviceType: w,
-          trafficSource: 'direct',
+          trafficSource,
         }),
       }).catch(() => {});
     }, readTimeMs);

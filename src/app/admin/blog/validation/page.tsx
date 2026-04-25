@@ -1,7 +1,10 @@
 import Link from 'next/link';
+import { BulkValidationActions } from '@/components/Admin/blog/BulkValidationActions';
+import { TranslateArticleButton } from '@/components/Admin/blog/TranslateArticleButton';
 import { ValidationActions } from '@/components/Admin/blog/ValidationActions';
 import { ValidationPreviewModal } from '@/components/Admin/blog/ValidationPreviewModal';
 import { formatMonthYear } from '@/lib/blog/month';
+import { hasCompleteTranslations } from '@/lib/blog/translation-status';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -35,6 +38,10 @@ export default async function AdminBlogValidationPage() {
         title_fr,
         description_fr,
         content_fr,
+        title_en,
+        title_es,
+        content_en,
+        content_es,
         slug_fr,
         status,
         scheduled_publication_at,
@@ -116,6 +123,7 @@ export default async function AdminBlogValidationPage() {
       <p className="mt-2 text-sm text-luxury-muted">
         {month_year} · {pending.length} en attente sur {rows.length} ligne(s) de batch.
       </p>
+      <BulkValidationActions pendingValidationIds={pending.map((r) => r.id)} />
 
       <div className="mt-10 space-y-6">
         {rows.map((row) => {
@@ -129,6 +137,10 @@ export default async function AdminBlogValidationPage() {
             scheduled_publication_at: string;
             coach_notes: string | null;
             featured_image_url: string | null;
+            title_en: string | null;
+            title_es: string | null;
+            content_en: string | null;
+            content_es: string | null;
             blog_categories: { label_fr: string } | null;
           } | null;
 
@@ -153,6 +165,12 @@ export default async function AdminBlogValidationPage() {
             hour: '2-digit',
             minute: '2-digit',
           });
+          const translationReady = hasCompleteTranslations({
+            title_en: article.title_en,
+            title_es: article.title_es,
+            content_en: article.content_en,
+            content_es: article.content_es,
+          });
 
           return (
             <section key={row.id} className="glass-card rounded-2xl border border-white/40 p-6">
@@ -174,6 +192,16 @@ export default async function AdminBlogValidationPage() {
                     <span className="font-semibold">{displayArticle.status}</span> · Validation :{' '}
                     <span className="font-semibold">{row.status}</span>
                   </p>
+                  <p className="mt-2 text-xs text-luxury-muted">
+                    Traductions :{' '}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                        translationReady ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {translationReady ? 'EN/ES prêtes' : 'EN/ES manquantes'}
+                    </span>
+                  </p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     <ValidationPreviewModal
                       title={displayArticle.title_fr}
@@ -187,6 +215,7 @@ export default async function AdminBlogValidationPage() {
                     >
                       Stats
                     </Link>
+                    {!translationReady ? <TranslateArticleButton articleId={article.id} /> : null}
                   </div>
                   {row.status === 'pending' ? (
                     <ValidationActions validationId={row.id} articleTitle={article.title_fr} />
