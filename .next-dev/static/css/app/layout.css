@@ -1396,6 +1396,9 @@
       border-color: color-mix(in oklab, var(--color-orange-200) 80%, transparent);
     }
   }
+  .border-orange-300 {
+    border-color: var(--color-orange-300);
+  }
   .border-orange-300\/40 {
     border-color: color-mix(in srgb, oklch(83.7% 0.128 66.29) 40%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2068,6 +2071,9 @@
       --tw-gradient-to: color-mix(in oklab, var(--color-white) 70%, transparent);
     }
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+  .fill-current {
+    fill: currentcolor;
   }
   .fill-rose-400 {
     fill: var(--color-rose-400);
@@ -4301,6 +4307,11 @@
   .xl\:grid-cols-2 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .xl\:grid-cols-3 {
+    @media (width >= 80rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
   .xl\:grid-cols-4 {

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarCheck2, PlayCircle, Target } from 'lucide-react';
+import { BookOpenText, CalendarCheck2, PlayCircle, Target } from 'lucide-react';
 
 import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
@@ -188,19 +188,19 @@ export default async function ComptePage({
           <GlassCard className="p-5 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">À suivre</p>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{remainingToGoal}</p>
-                <p className="mt-2 text-xs text-luxury-muted">Séance{remainingToGoal > 1 ? 's' : ''} restante{remainingToGoal > 1 ? 's' : ''} pour ton objectif</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Mon blog</p>
+                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">Articles</p>
+                <p className="mt-2 text-xs text-luxury-muted">Lis le dernier article, retrouve l’historique et enregistre tes favoris.</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--blue shrink-0">
-                <Bell size={20} aria-hidden strokeWidth={2} />
+                <BookOpenText size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
-            <p className="mt-5 text-xs text-luxury-muted">
-              {unreadNotifications && unreadNotifications > 0
-                ? `${unreadNotifications} notification${unreadNotifications > 1 ? 's' : ''} non lue${unreadNotifications > 1 ? 's' : ''}.`
-                : 'Aucune notification en attente.'}
-            </p>
+            <div className="mt-5">
+              <Link href="/compte/blog" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
+                Ouvrir mon blog
+              </Link>
+            </div>
           </GlassCard>
         </div>
       </section>

@@ -110,6 +110,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/live/[courseId]/page.js"
+    ],
+    "/compte/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/blog/page.js"
     ]
   }
 }
