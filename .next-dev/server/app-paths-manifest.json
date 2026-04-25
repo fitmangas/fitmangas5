@@ -1,11 +1,12 @@
 {
   "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
   "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
-  "/admin/blog/page": "app/admin/blog/page.js",
-  "/admin/blog/validation/page": "app/admin/blog/validation/page.js",
-  "/admin/blog/calendar/page": "app/admin/blog/calendar/page.js",
+  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
+  "/api/calendar/events/route": "app/api/calendar/events/route.js",
+  "/live/[courseId]/page": "app/live/[courseId]/page.js",
   "/compte/profil/page": "app/compte/profil/page.js",
-  "/admin/blog/stats/page": "app/admin/blog/stats/page.js",
   "/compte/page": "app/compte/page.js",
-  "/admin/page": "app/admin/page.js"
+  "/admin/page": "app/admin/page.js",
+  "/admin/vimeo/page": "app/admin/vimeo/page.js",
+  "/admin/promos/page": "app/admin/promos/page.js"
 }

@@ -76,21 +76,18 @@ export default async function ProfilPage() {
   } | null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10 px-5 pb-16 md:px-8">
-      <div className="flex flex-wrap items-center gap-4">
-        <Link
-          href="/compte"
-          className="text-sm font-semibold text-luxury-orange underline-offset-4 transition hover:underline"
-        >
+    <div className="mx-auto max-w-5xl space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
+      <div className="flex items-center justify-between gap-4 pt-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Mon profil</p>
+          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">Paramètres du compte</h1>
+        </div>
+        <Link href="/compte" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
           ← Espace client
         </Link>
       </div>
 
       <GlassCard className="p-8 md:p-10">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-luxury-soft">Mon profil</p>
-        <h1 className="mt-3 text-[2rem] font-semibold leading-tight tracking-tight text-luxury-ink">
-          Paramètres du compte
-        </h1>
         <p className="mt-4 text-sm text-luxury-muted">
           E-mail : <span className="font-medium text-luxury-ink">{user.email}</span>
         </p>
@@ -105,37 +102,40 @@ export default async function ProfilPage() {
         </p>
       </GlassCard>
 
-      <ProfileAvatarForm avatarUrl={p?.avatar_url} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ProfileAvatarForm avatarUrl={p?.avatar_url} />
+        <ProfileBirthDateForm defaultIsoDate={p?.birth_date ?? null} />
+      </div>
 
-      <ProfileBirthDateForm defaultIsoDate={p?.birth_date ?? null} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <GlassCard className="p-8">
+          <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Parcours & progression</h2>
+          <ul className="mt-4 space-y-2 text-sm text-luxury-muted">
+            <li>
+              Présences studio (pointage) :{' '}
+              <strong className="text-luxury-ink">{p?.onsite_presence_count ?? 0}</strong>
+            </li>
+            <li>
+              Temps replay cumulé :{' '}
+              <strong className="text-luxury-ink">{Math.round((p?.total_replay_watch_seconds ?? 0) / 60)} min</strong>
+            </li>
+            <li>
+              Participations live (jours distincts) :{' '}
+              <strong className="text-luxury-ink">{p?.live_visit_count ?? 0}</strong>
+            </li>
+          </ul>
+        </GlassCard>
 
-      <GlassCard className="p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Parcours & progression</h2>
-        <ul className="mt-4 space-y-2 text-sm text-luxury-muted">
-          <li>
-            Présences studio (pointage) :{' '}
-            <strong className="text-luxury-ink">{p?.onsite_presence_count ?? 0}</strong>
-          </li>
-          <li>
-            Temps replay cumulé :{' '}
-            <strong className="text-luxury-ink">{Math.round((p?.total_replay_watch_seconds ?? 0) / 60)} min</strong>
-          </li>
-          <li>
-            Participations live (jours distincts) :{' '}
-            <strong className="text-luxury-ink">{p?.live_visit_count ?? 0}</strong>
-          </li>
-        </ul>
-      </GlassCard>
-
-      <GlassCard className="p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Abonnement & facturation</h2>
-        <p className="mt-3 text-sm leading-relaxed text-luxury-muted">
-          Modifie ton moyen de paiement, consulte les renouvellements et résilie depuis le portail sécurisé Stripe.
-        </p>
-        <div className="mt-6">
-          <BillingPortalButton disabled={!customerId} />
-        </div>
-      </GlassCard>
+        <GlassCard className="p-8">
+          <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Abonnement & facturation</h2>
+          <p className="mt-3 text-sm leading-relaxed text-luxury-muted">
+            Modifie ton moyen de paiement, consulte les renouvellements et résilie depuis le portail sécurisé Stripe.
+          </p>
+          <div className="mt-6">
+            <BillingPortalButton disabled={!customerId} />
+          </div>
+        </GlassCard>
+      </div>
 
       <GlassCard className="p-8">
         <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Abonnements enregistrés</h2>
