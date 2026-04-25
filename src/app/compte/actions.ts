@@ -17,6 +17,7 @@ export async function toggleReplayFavoriteAction(recordingId: string): Promise<C
   if (error) return { ok: false, message: error.message };
 
   revalidatePath('/compte');
+  revalidatePath('/compte/replays');
   return { ok: true };
 }
 

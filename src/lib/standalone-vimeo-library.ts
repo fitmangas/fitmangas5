@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type StandaloneVimeoLibraryItem = {
   id: string;
@@ -13,11 +14,37 @@ export type StandaloneVimeoLibraryItem = {
 /** Vidéos Vimeo « hors cours » publiées — RLS : abonnés Collectif/Individuel online uniquement. */
 export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVimeoLibraryItem[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('standalone_vimeo_videos')
-    .select('*')
-    .eq('validation_status', 'published')
-    .order('published_at', { ascending: false });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let data: Record<string, unknown>[] | null = null;
+  let error: { message: string } | null = null;
+
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role === 'admin') {
+      const admin = createAdminClient();
+      const res = await admin
+        .from('standalone_vimeo_videos')
+        .select('*')
+        .eq('validation_status', 'published')
+        .order('published_at', { ascending: false });
+      data = res.data as unknown as Record<string, unknown>[] | null;
+      error = res.error ? { message: res.error.message } : null;
+    }
+  }
+
+  if (!data) {
+    const res = await supabase
+      .from('standalone_vimeo_videos')
+      .select('*')
+      .eq('validation_status', 'published')
+      .order('published_at', { ascending: false });
+    data = res.data as unknown as Record<string, unknown>[] | null;
+    error = res.error ? { message: res.error.message } : null;
+  }
 
   if (error || !data?.length) return [];
 

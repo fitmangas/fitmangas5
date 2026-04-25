@@ -67,6 +67,13 @@ export default async function LiveCoursePage({
     return <AccessDenied subtitle="Connexion requise." />;
   }
 
+  await supabase
+    .from('user_notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .in('kind', ['live_course', 'planning_live'])
+    .is('read_at', null);
+
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
   const globalDemo = (await getDemoClientMode()) && realAdmin;
   const effectiveStudentPreview = studentPreview || globalDemo;

@@ -43,12 +43,30 @@ export default async function ComptePage({
   const checkoutOk = params.checkout === 'success';
   const goal = getMonthlySessionGoal();
 
-  const [{ data: profile }, monthly, nextAppointment, replayItems, { count: unreadNotifications }] = await Promise.all([
+  const [{ data: profile }, monthly, nextAppointment, replayItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
     supabase.from('profiles').select('first_name, last_name').eq('id', user.id).maybeSingle(),
     getMonthlyProgress(user.id, goal),
     getNextAppointment(user.id),
     getReplayLibraryForUser(user.id),
     supabase.from('user_notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null),
+    supabase
+      .from('user_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('kind', 'replay_video')
+      .is('read_at', null),
+    supabase
+      .from('user_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('kind', 'blog_article')
+      .is('read_at', null),
+    supabase
+      .from('user_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .in('kind', ['live_course', 'planning_live'])
+      .is('read_at', null),
   ]);
 
   const firstName = profile?.first_name?.trim() || 'Alejandra';
@@ -116,7 +134,7 @@ export default async function ComptePage({
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">Ton suivi en direct</h2>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <GlassCard className="p-5 md:p-6">
+          <GlassCard className="relative p-5 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Progression mensuelle</p>
@@ -131,7 +149,8 @@ export default async function ComptePage({
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 md:p-6">
+          <GlassCard className="relative p-5 md:p-6">
+            <Link href="/compte/planning" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mon planning" />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain live</p>
@@ -154,20 +173,26 @@ export default async function ComptePage({
                 <CalendarCheck2 size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
+            {liveUnread && liveUnread > 0 ? (
+              <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
+                {liveUnread > 99 ? '99+' : liveUnread}
+              </span>
+            ) : null}
             <div className="mt-5">
               {hasUpcomingLive ? (
-                <Link href={`/live/${nextAppointment.courseId}`} className="btn-luxury-primary min-h-[46px] min-w-[160px]">
+                <Link href={`/live/${nextAppointment.courseId}`} className="btn-luxury-primary relative z-20 min-h-[46px] min-w-[160px]">
                   Rejoindre
                 </Link>
               ) : (
-                <Link href="#planning" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
+                <Link href="/compte/planning" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
                   Voir planning
                 </Link>
               )}
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 md:p-6">
+          <GlassCard className="relative p-5 md:p-6">
+            <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mes replays" />
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Replay</p>
@@ -178,14 +203,19 @@ export default async function ComptePage({
                 <PlayCircle size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
+            {replayUnread && replayUnread > 0 ? (
+              <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
+                {replayUnread > 99 ? '99+' : replayUnread}
+              </span>
+            ) : null}
             <div className="mt-5">
-              <Link href="#replays" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
+              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
                 Voir mes replays
               </Link>
             </div>
           </GlassCard>
 
-          <GlassCard className="p-5 md:p-6">
+          <GlassCard className="relative p-5 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Mon blog</p>
@@ -196,6 +226,11 @@ export default async function ComptePage({
                 <BookOpenText size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
+            {blogUnread && blogUnread > 0 ? (
+              <span className="absolute right-3 top-3 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
+                {blogUnread > 99 ? '99+' : blogUnread}
+              </span>
+            ) : null}
             <div className="mt-5">
               <Link href="/compte/blog" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
                 Ouvrir mon blog

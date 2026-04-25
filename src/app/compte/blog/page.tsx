@@ -13,6 +13,13 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
 
+  await supabase
+    .from('user_notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('kind', 'blog_article')
+    .is('read_at', null);
+
   const sp = await searchParams;
   const q = (sp.q ?? '').trim().slice(0, 80);
   const category = (sp.category ?? '').trim();

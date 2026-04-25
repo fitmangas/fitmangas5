@@ -1,8 +1,10 @@
 {
+  "/api/calendar/events/route": "app/api/calendar/events/route.js",
   "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
+  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
   "/live/[courseId]/page": "app/live/[courseId]/page.js",
-  "/compte/page": "app/compte/page.js",
   "/compte/profil/page": "app/compte/profil/page.js",
-  "/admin/page": "app/admin/page.js",
+  "/compte/page": "app/compte/page.js",
+  "/compte/replays/page": "app/compte/replays/page.js",
   "/compte/blog/page": "app/compte/blog/page.js"
 }

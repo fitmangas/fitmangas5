@@ -36,12 +36,12 @@ function getFortnightUtcDays() {
 
 function classForAccess(access: AccessType) {
   if (access === 'full') {
-    return 'border-emerald-400/45 bg-white/55 text-luxury-ink shadow-[0_4px_14px_rgba(16,185,129,0.12)] backdrop-blur-sm';
+    return 'border-emerald-400/45 bg-emerald-500/20 text-white shadow-[0_4px_14px_rgba(16,185,129,0.2)] backdrop-blur-sm';
   }
   if (access === 'preview') {
-    return 'border-orange-300/40 bg-orange-50/40 text-luxury-muted backdrop-blur-sm';
+    return 'border-orange-300/40 bg-orange-500/15 text-white/85 backdrop-blur-sm';
   }
-  return 'border-white/25 bg-slate-900/[0.06] text-luxury-soft blur-[0.5px]';
+  return 'border-white/20 bg-white/[0.08] text-white/70 blur-[0.5px]';
 }
 
 function badgeForAccess(access: AccessType) {
@@ -163,11 +163,11 @@ export function SmartCalendar() {
   }, [events]);
 
   return (
-    <section className="glass-card rounded-[1.75rem] p-5 sm:p-7">
+    <section className="rounded-[1.75rem] border border-white/15 bg-[#2f3338] p-5 text-white shadow-[0_18px_42px_rgba(17,24,39,0.32)] sm:p-7">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Calendrier intelligent</p>
-          <p className="mt-2 text-sm leading-relaxed text-luxury-muted">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-white/60">Calendrier intelligent</p>
+          <p className="mt-2 text-sm leading-relaxed text-white/80">
             Prochains {FORTNIGHT_DAYS} jours · {formatFortnightSubtitle()}
           </p>
         </div>
@@ -183,7 +183,7 @@ export function SmartCalendar() {
                   );
                   if (ok) void setMobileSync(false);
                 }}
-                className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/45 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-muted backdrop-blur-md transition hover:bg-white/60 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 backdrop-blur-md transition hover:bg-white/20 disabled:opacity-60"
               >
                 <Smartphone size={14} />
                 Calendrier connecté
@@ -200,7 +200,7 @@ export function SmartCalendar() {
               </button>
             )
           ) : (
-            <p className="max-w-[220px] text-right text-[11px] leading-snug text-luxury-soft sm:text-right">
+            <p className="max-w-[220px] text-right text-[11px] leading-snug text-white/60 sm:text-right">
               Connexion téléphone disponible avec un accès actif à au moins un cours.
             </p>
           )}
@@ -208,7 +208,7 @@ export function SmartCalendar() {
       </div>
 
       {canUseMobileSync && syncEnabled && showSyncInfo && syncUrl ? (
-        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+        <div className="mb-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-100">
           <p className="font-semibold">Synchronisation active</p>
           <p className="mt-1">
             Les cours sont envoyés automatiquement sur ton téléphone. Si besoin, ouvre ce lien une fois sur iPhone/Android:
@@ -220,11 +220,11 @@ export function SmartCalendar() {
       ) : null}
 
       {error ? (
-        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+        <div className="mb-4 rounded-2xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-100">{error}</div>
       ) : null}
 
       {/* 2 semaines : grille 7 + 7 jours */}
-      <div className="mb-2 grid grid-cols-7 text-center text-[10px] uppercase tracking-widest text-luxury-soft">
+      <div className="mb-2 grid grid-cols-7 text-center text-[10px] uppercase tracking-widest text-white/55">
         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
           <div key={day} className="py-2">
             {day}
@@ -235,7 +235,7 @@ export function SmartCalendar() {
       <div className="grid grid-cols-7 gap-2">
         {loading
           ? Array.from({ length: 14 }, (_, index) => (
-              <div key={index} className="min-h-24 animate-pulse rounded-xl bg-white/35" />
+              <div key={index} className="min-h-24 animate-pulse rounded-xl bg-white/10" />
             ))
           : fortnightDays.map((date) => {
               const key = date.toISOString().slice(0, 10);
@@ -244,9 +244,9 @@ export function SmartCalendar() {
               return (
                 <div
                   key={key}
-                  className="min-h-24 rounded-xl border border-white/35 bg-white/25 p-1.5 backdrop-blur-md"
+                  className="min-h-24 rounded-xl border border-white/15 bg-white/[0.06] p-1.5 backdrop-blur-md"
                 >
-                  <div className="mb-1 text-[11px] font-semibold text-luxury-muted">
+                  <div className="mb-1 text-[11px] font-semibold text-white/75">
                     {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}
                   </div>
                   <div className="space-y-1">
@@ -262,7 +262,7 @@ export function SmartCalendar() {
                       </button>
                     ))}
                     {dayEvents.length > 3 ? (
-                      <p className="px-1 text-[9px] text-luxury-soft">+{dayEvents.length - 3}</p>
+                      <p className="px-1 text-[9px] text-white/60">+{dayEvents.length - 3}</p>
                     ) : null}
                   </div>
                 </div>

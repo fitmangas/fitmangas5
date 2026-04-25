@@ -12,18 +12,25 @@ async function sendEmailViaResend(to: string, subject: string, html: string) {
   const from = process.env.NEWSLETTER_FROM_EMAIL;
   if (!apiKey || !from) return { sent: false as const, reason: 'missing_provider' };
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to, subject, html }),
-  });
-  if (!res.ok) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to, subject, html }),
+    });
+    if (res.ok) {
+      return { sent: true as const, reason: 'provider_sent' };
+    }
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+      continue;
+    }
     return { sent: false as const, reason: `provider_${res.status}` };
   }
-  return { sent: true as const, reason: 'provider_sent' };
+  return { sent: false as const, reason: 'provider_unknown' };
 }
 
 export async function createNewsletterConfirmationToken(subscriptionId: string): Promise<string> {

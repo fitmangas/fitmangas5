@@ -25,6 +25,12 @@ export default async function AdminBlogNewsletterPage() {
     .order('published_at', { ascending: false })
     .limit(8);
 
+  const { data: cronLogs } = await admin
+    .from('blog_cron_logs')
+    .select('id, cron_name, status, message, created_at')
+    .order('created_at', { ascending: false })
+    .limit(12);
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -49,6 +55,7 @@ export default async function AdminBlogNewsletterPage() {
             <tr>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Statut</th>
               <th className="px-4 py-3">Article</th>
             </tr>
           </thead>
@@ -57,6 +64,15 @@ export default async function AdminBlogNewsletterPage() {
               <tr key={s.id} className="border-b border-white/30">
                 <td className="px-4 py-3">{s.email}</td>
                 <td className="px-4 py-3">{new Date(s.subscribed_at).toLocaleString('fr-FR')}</td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                      s.confirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {s.confirmed ? 'confirmé' : 'en attente'}
+                  </span>
+                </td>
                 <td className="px-4 py-3 font-mono text-xs text-luxury-muted">{s.subscribed_from_article_id ?? '—'}</td>
               </tr>
             ))}
@@ -77,6 +93,27 @@ export default async function AdminBlogNewsletterPage() {
             </div>
           ))}
           {(publicationEvents ?? []).length === 0 ? <p className="text-sm text-luxury-muted">Aucun envoi publication pour le moment.</p> : null}
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-white/40 bg-white/40 p-5">
+        <h2 className="text-lg font-semibold text-luxury-ink">Logs automation (cron)</h2>
+        <div className="mt-4 space-y-2">
+          {(cronLogs ?? []).map((log) => (
+            <div key={log.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm">
+              <span className="font-mono text-xs text-luxury-muted">{log.cron_name}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                  log.status === 'ok' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {log.status}
+              </span>
+              <span className="text-luxury-muted">{new Date(log.created_at).toLocaleString('fr-FR')}</span>
+              <span className="text-luxury-ink">{log.message ?? '—'}</span>
+            </div>
+          ))}
+          {(cronLogs ?? []).length === 0 ? <p className="text-sm text-luxury-muted">Aucun log cron pour le moment.</p> : null}
         </div>
       </div>
     </main>
