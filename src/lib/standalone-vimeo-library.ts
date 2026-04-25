@@ -9,6 +9,7 @@ export type StandaloneVimeoLibraryItem = {
   embedUrl: string | null;
   vimeoVideoId: string;
   folderName: string | null;
+  isFavorite?: boolean;
 };
 
 /** Vidéos Vimeo « hors cours » publiées — RLS : abonnés Collectif/Individuel online uniquement. */
@@ -48,7 +49,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
 
   if (error || !data?.length) return [];
 
-  return data.map((row) => {
+  const mapped = data.map((row) => {
     const r = row as Record<string, unknown>;
     return {
       id: String(r.id),
@@ -60,4 +61,17 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
       folderName: typeof r.vimeo_folder_name === 'string' ? r.vimeo_folder_name : null,
     };
   });
+
+  if (!user) return mapped;
+
+  const ids = mapped.map((m) => m.id);
+  const { data: favRows, error: favError } = await supabase
+    .from('standalone_vimeo_favorites')
+    .select('video_id')
+    .eq('user_id', user.id)
+    .in('video_id', ids);
+
+  if (favError) return mapped;
+  const favSet = new Set((favRows ?? []).map((r) => r.video_id));
+  return mapped.map((v) => ({ ...v, isFavorite: favSet.has(v.id) }));
 }

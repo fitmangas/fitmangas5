@@ -28,7 +28,7 @@ export default async function CompteLayout({ children }: { children: React.React
             <Link href="/compte#planning" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               Planning
             </Link>
-            <Link href="/compte#replays" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
+            <Link href="/compte/replays" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               Vidéos
             </Link>
             <Link href="/compte/profil" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">

@@ -66,8 +66,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   };
 
   const favorites = all.filter((i) => i.isFavorite);
+  const filteredStandalone = standalone.filter((v) => {
+    if (tab === 'favorites' && !v.isFavorite) return false;
+    if (!q) return true;
+    const n = normalize(q);
+    return normalize(v.title ?? '').includes(n) || normalize(v.folderName ?? '').includes(n);
+  });
+  const standaloneFavoriteCount = standalone.filter((v) => v.isFavorite).length;
 
-  if (!hero && standalone.length === 0) {
+  if (!hero && filteredStandalone.length === 0) {
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
         <h1 className="hero-signature-title text-4xl">Mes replays</h1>
@@ -108,7 +115,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
               : 'border-white/40 bg-white/35 text-luxury-muted'
           }`}
         >
-          Mes favoris
+          Mes favoris ({favorites.length + standaloneFavoriteCount})
         </Link>
       </div>
 
@@ -190,9 +197,9 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         </section>
       ) : null}
 
-      {standalone.length > 0 ? (
+      {filteredStandalone.length > 0 ? (
         <section className="mt-12">
-          <StandaloneVimeoGrid videos={standalone} />
+          <StandaloneVimeoGrid videos={filteredStandalone} />
         </section>
       ) : null}
     </main>

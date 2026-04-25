@@ -46,8 +46,10 @@ export function MonthlyProgressRing({
         />
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{followedCount}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-muted">/ {goal}</span>
+        <div className="inline-flex items-baseline gap-1">
+          <span className="text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{followedCount}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-muted">/ {goal}</span>
+        </div>
         <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-[#ff7a00]">{pct}%</span>
       </div>
     </div>

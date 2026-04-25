@@ -120,6 +120,46 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/compte/replays/page.js"
+    ],
+    "/api/client/replays/standalone-favorites/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/client/replays/standalone-favorites/route.js"
+    ],
+    "/compte/planning/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/planning/page.js"
+    ],
+    "/api/jitsi/token/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/jitsi/token/route.js"
+    ],
+    "/admin/courses/[courseId]/attendance/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/courses/[courseId]/attendance/page.js"
+    ],
+    "/api/client/blog/articles/id/[articleId]/view/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/client/blog/articles/id/[articleId]/view/route.js"
+    ],
+    "/api/client/blog/articles/id/[articleId]/ratings/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/client/blog/articles/id/[articleId]/ratings/route.js"
+    ],
+    "/api/client/user/preferences/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/client/user/preferences/route.js"
+    ],
+    "/api/demo-mode/disable/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/demo-mode/disable/route.js"
     ]
   }
 }

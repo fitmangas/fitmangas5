@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Euro, Video } from 'lucide-react';
 
 import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
+import { DismissibleDashboardBadge, DismissOnClickLink } from '@/components/Admin/DismissibleDashboardBadge';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getAdminKpiDrilldowns, getAdminKpis, stripeCollectedCurrentMonthEur } from '@/lib/admin/kpis';
@@ -142,6 +143,10 @@ function monthGrid() {
   };
 }
 
+function formatMonthYear(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const {
@@ -165,6 +170,8 @@ export default async function AdminPage() {
     kpis,
     { data: me },
     { data: upcomingCoursesData },
+    { count: pendingStandaloneCount },
+    { count: pendingBlogValidationCount },
     stripeMonthEur,
     kpiDrilldowns,
   ] = await Promise.all([
@@ -183,6 +190,12 @@ export default async function AdminPage() {
       .gte('starts_at', nowIso)
       .order('starts_at', { ascending: true })
       .limit(42),
+    adminDb.from('standalone_vimeo_videos').select('*', { count: 'exact', head: true }).eq('validation_status', 'pending'),
+    adminDb
+      .from('admin_article_validations')
+      .select('*', { count: 'exact', head: true })
+      .eq('month_year', formatMonthYear(new Date()))
+      .eq('status', 'pending'),
     stripeCollectedCurrentMonthEur(),
     getAdminKpiDrilldowns(),
   ]);
@@ -307,7 +320,17 @@ export default async function AdminPage() {
       <AdminKpiCardsInteractive stripeMonthEur={stripeMonthEur} kpis={kpis} drilldowns={kpiDrilldowns} />
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
-        <GlassCard variant="dark" className="p-5 md:p-6">
+        <GlassCard variant="dark" className="relative p-5 md:p-6">
+          <DismissibleDashboardBadge storageKey="admin_badge_blog_validation" count={pendingBlogValidationCount ?? 0} />
+          <DismissOnClickLink
+            href="/admin/blog/validation"
+            storageKey="admin_badge_blog_validation"
+            dismissCount={pendingBlogValidationCount ?? 0}
+            className="absolute inset-0 z-10 rounded-[inherit]"
+            ariaLabel="Ouvrir la validation blog"
+          >
+            <span className="sr-only">Validation blog</span>
+          </DismissOnClickLink>
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold tracking-wide text-white/90">{calendar.label}</h3>
             <p className="text-[10px] uppercase tracking-widest text-white/50">Cours à venir</p>
@@ -338,12 +361,18 @@ export default async function AdminPage() {
           </div>
         </GlassCard>
 
-        <GlassCard variant="dark" className="p-5 md:p-6">
+        <GlassCard variant="dark" className="relative p-5 md:p-6">
+          <DismissibleDashboardBadge storageKey="admin_badge_upcoming_courses" count={upcomingCourses.length} />
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold tracking-wide text-white/90">3 prochains cours</h3>
-            <Link href="/admin/courses" className="text-[11px] text-white/65 hover:text-white">
+            <DismissOnClickLink
+              href="/admin/courses"
+              storageKey="admin_badge_upcoming_courses"
+              dismissCount={upcomingCourses.length}
+              className="relative z-20 text-[11px] text-white/65 hover:text-white"
+            >
               Voir tout
-            </Link>
+            </DismissOnClickLink>
           </div>
           <div className="mt-4 space-y-3">
             {nextThree.map((course) => (
@@ -380,7 +409,8 @@ export default async function AdminPage() {
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="flex flex-col p-5 md:p-6">
+        <GlassCard className="relative flex flex-col p-5 md:p-6">
+          <DismissibleDashboardBadge storageKey="admin_badge_vimeo_pending" count={pendingStandaloneCount ?? 0} />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Vimeo</p>
@@ -391,12 +421,14 @@ export default async function AdminPage() {
               <Video size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
-          <Link
+          <DismissOnClickLink
             href="/admin/vimeo"
-            className="btn-luxury-ghost mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
+            storageKey="admin_badge_vimeo_pending"
+            dismissCount={pendingStandaloneCount ?? 0}
+            className="btn-luxury-ghost relative z-20 mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
           >
             Bibliothèque Vimeo
-          </Link>
+          </DismissOnClickLink>
         </GlassCard>
         <GlassCard className="p-5 md:p-6">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>

@@ -8,7 +8,7 @@ import { Clapperboard, LayoutDashboard, UserRound, Video } from 'lucide-react';
 const links = [
   { href: '/compte', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/compte#planning', label: 'Planning', icon: Clapperboard },
-  { href: '/compte#replays', label: 'Vidéos', icon: Video },
+  { href: '/compte/replays', label: 'Vidéos', icon: Video, exact: true },
   { href: '/compte/profil', label: 'Profil', icon: UserRound, exact: true },
 ];
 
