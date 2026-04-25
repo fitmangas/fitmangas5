@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BookOpenText, CalendarCheck2, PlayCircle, Target } from 'lucide-react';
+import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
 import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
+import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
 import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -73,8 +74,6 @@ export default async function ComptePage({
   const motivation = weeklyMotivation(firstName);
   const replayCount = replayItems.length;
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
-  const hasUpcomingLive = !!nextAppointment;
-
   return (
     <div className="mx-auto max-w-[1280px] space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
       <section className="grid items-center gap-4 pt-2 md:grid-cols-[1fr_auto]">
@@ -149,47 +148,7 @@ export default async function ComptePage({
             </div>
           </GlassCard>
 
-          <GlassCard className="relative p-5 md:p-6">
-            <Link href="/compte/planning" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mon planning" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain live</p>
-                <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">
-                  {hasUpcomingLive ? 'Prête pour ta prochaine séance' : 'Aucun live planifié'}
-                </p>
-                <p className="mt-2 text-xs text-luxury-muted">
-                  {hasUpcomingLive
-                    ? new Date(nextAppointment.startsAt).toLocaleString('fr-FR', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'Réserve une séance depuis le calendrier ci-dessous.'}
-                </p>
-              </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
-                <CalendarCheck2 size={20} aria-hidden strokeWidth={2} />
-              </span>
-            </div>
-            {liveUnread && liveUnread > 0 ? (
-              <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
-                {liveUnread > 99 ? '99+' : liveUnread}
-              </span>
-            ) : null}
-            <div className="mt-5">
-              {hasUpcomingLive ? (
-                <Link href={`/live/${nextAppointment.courseId}`} className="btn-luxury-primary relative z-20 min-h-[46px] min-w-[160px]">
-                  Rejoindre
-                </Link>
-              ) : (
-                <Link href="/compte/planning" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
-                  Voir planning
-                </Link>
-              )}
-            </div>
-          </GlassCard>
+          <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} />
 
           <GlassCard className="relative p-5 md:p-6">
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mes replays" />

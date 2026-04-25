@@ -1,13 +1,13 @@
 {
   "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
-  "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
-  "/api/demo-mode/disable/route": "app/api/demo-mode/disable/route.js",
+  "/api/jitsi/token/route": "app/api/jitsi/token/route.js",
   "/api/calendar/events/route": "app/api/calendar/events/route.js",
-  "/api/demo-mode/enable/route": "app/api/demo-mode/enable/route.js",
   "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
-  "/compte/page": "app/compte/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/blog/page": "app/admin/blog/page.js",
+  "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
+  "/live/[courseId]/page": "app/live/[courseId]/page.js",
   "/compte/profil/page": "app/compte/profil/page.js",
-  "/admin/blog/stats/page": "app/admin/blog/stats/page.js"
+  "/compte/page": "app/compte/page.js",
+  "/admin/blog/stats/page": "app/admin/blog/stats/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/blog/page": "app/admin/blog/page.js"
 }

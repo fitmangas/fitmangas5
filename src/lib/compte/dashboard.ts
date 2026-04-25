@@ -1,4 +1,9 @@
+import { getUtcFortnightWindow, isCoursePast, isWithinFortnight } from '@/lib/calendar-window';
+import { getCoursesForUser } from '@/lib/access-control';
+import type { SmartCourse } from '@/lib/domain/calendar-types';
 import { createClient } from '@/lib/supabase/server';
+
+import { effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
 export type NextAppointment = {
   courseId: string;
@@ -6,6 +11,8 @@ export type NextAppointment = {
   startsAt: string;
   endsAt: string;
   enrollmentStatus: string;
+  /** Données alignées sur le calendrier client (modale, Jitsi, CTA). */
+  smartCourse?: SmartCourse;
 } | null;
 
 export type MonthlyProgress = {
@@ -15,15 +22,23 @@ export type MonthlyProgress = {
 
 export async function getNextAppointment(userId: string): Promise<NextAppointment> {
   const supabase = await createClient();
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const window = getUtcFortnightWindow();
 
-  const { data: rows, error } = await supabase
-    .from('enrollments')
-    .select('status, courses ( id, title, starts_at, ends_at )')
-    .eq('user_id', userId)
-    .in('status', ['booked', 'waitlist']);
+  const [{ data: rows, error }, calendarCourses] = await Promise.all([
+    supabase
+      .from('enrollments')
+      .select('status, courses ( id, title, starts_at, ends_at )')
+      .eq('user_id', userId)
+      .in('status', ['booked', 'waitlist']),
+    getCoursesForUser(userId),
+  ]);
 
-  if (error || !rows?.length) return null;
+  const smartById = new Map<string, SmartCourse>();
+  for (const c of calendarCourses) {
+    smartById.set(c.id, c);
+  }
 
   type Row = {
     status: string;
@@ -31,24 +46,69 @@ export async function getNextAppointment(userId: string): Promise<NextAppointmen
   };
 
   type RowAppt = NonNullable<NextAppointment>;
-  const upcoming: RowAppt[] = [];
-  for (const r of rows as Row[]) {
-    const c = Array.isArray(r.courses) ? r.courses[0] : r.courses;
-    if (!c?.id || !c.ends_at) continue;
-    if (new Date(c.ends_at).toISOString() <= nowIso) continue;
-    upcoming.push({
-      courseId: c.id,
-      title: c.title,
-      startsAt: c.starts_at,
-      endsAt: c.ends_at,
-      enrollmentStatus: r.status,
+  const enrollmentUpcoming: RowAppt[] = [];
+  if (!error && rows?.length) {
+    for (const r of rows as Row[]) {
+      const c = Array.isArray(r.courses) ? r.courses[0] : r.courses;
+      if (!c?.id || !c.ends_at) continue;
+      if (new Date(c.ends_at).toISOString() <= nowIso) continue;
+      enrollmentUpcoming.push({
+        courseId: c.id,
+        title: c.title,
+        startsAt: c.starts_at,
+        endsAt: c.ends_at,
+        enrollmentStatus: r.status,
+        smartCourse: smartById.get(c.id),
+      });
+    }
+  }
+
+  /** Ordre de préférence à date égale : réservation confirmée > liste d’attente > accès abonnement. */
+  function enrollmentRank(status: string): number {
+    if (status === 'booked') return 0;
+    if (status === 'waitlist') return 1;
+    return 2;
+  }
+
+  const calendarCandidates: RowAppt[] = [];
+  for (const course of calendarCourses) {
+    if (isCoursePast(course.ends_at, now)) continue;
+    if (!isWithinFortnight(course.starts_at, window)) continue;
+    const access = effectiveAccessForUi(course);
+    if (access === 'locked') continue;
+    calendarCandidates.push({
+      courseId: course.id,
+      title: course.title,
+      startsAt: course.starts_at,
+      endsAt: course.ends_at,
+      enrollmentStatus: access === 'full' ? 'calendar_full' : 'calendar_preview',
+      smartCourse: course,
     });
   }
 
-  if (!upcoming.length) return null;
+  const pool: RowAppt[] = [...enrollmentUpcoming, ...calendarCandidates];
+  if (!pool.length) return null;
 
-  upcoming.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-  return upcoming[0];
+  pool.sort((a, b) => {
+    const ta = new Date(a.startsAt).getTime();
+    const tb = new Date(b.startsAt).getTime();
+    if (ta !== tb) return ta - tb;
+    const ra =
+      a.enrollmentStatus === 'booked' || a.enrollmentStatus === 'waitlist'
+        ? enrollmentRank(a.enrollmentStatus)
+        : a.enrollmentStatus === 'calendar_full'
+          ? 2
+          : 3;
+    const rb =
+      b.enrollmentStatus === 'booked' || b.enrollmentStatus === 'waitlist'
+        ? enrollmentRank(b.enrollmentStatus)
+        : b.enrollmentStatus === 'calendar_full'
+          ? 2
+          : 3;
+    return ra - rb;
+  });
+
+  return pool[0];
 }
 
 /** Séances terminées dans le mois civil courant (inscription booked ou attended). */

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { Lock, Smartphone, Unlock, X } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
-import { FORTNIGHT_DAYS, getUtcFortnightWindow, isCoursePast } from '@/lib/calendar-window';
+import { FORTNIGHT_DAYS, getUtcFortnightWindow } from '@/lib/calendar-window';
+
+import { CalendarCourseModal } from './CalendarCourseModal';
+import { badgeForAccess, effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
 type ApiResponse = {
   tier: string | null;
@@ -44,20 +46,6 @@ function classForAccess(access: AccessType) {
   return 'border-white/20 bg-white/[0.08] text-white/70 blur-[0.5px]';
 }
 
-function badgeForAccess(access: AccessType) {
-  if (access === 'full') return 'Accès complet';
-  if (access === 'preview') return 'Accès limité';
-  return 'Accès refusé';
-}
-
-/** Admin ou accès complet déclaré. */
-function effectiveAccessForUi(course: SmartCourse): AccessType {
-  if (course.viewer_is_admin === true || course.access_type === 'full') {
-    return 'full';
-  }
-  return course.access_type;
-}
-
 function formatFortnightSubtitle() {
   const days = getFortnightUtcDays();
   const first = days[0];
@@ -88,10 +76,6 @@ export function SmartCalendar() {
 
   const hasUpcomingEvents = events.length > 0;
   const canUseMobileSync = Boolean(tier) || hasUpcomingEvents;
-
-  const selectedIsPast = selectedCourse
-    ? isCoursePast(selectedCourse.ends_at)
-    : false;
 
   async function fetchEvents() {
     setLoading(true);
@@ -270,116 +254,7 @@ export function SmartCalendar() {
             })}
       </div>
 
-      {selectedCourse ? (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-6">
-          <div className="relative z-10 w-full max-w-md rounded-t-[1.75rem] border border-white/35 bg-white/[0.42] p-6 shadow-[0_24px_64px_rgba(15,23,42,0.18)] backdrop-blur-[22px] sm:rounded-[1.75rem]">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">
-                  {selectedCourse.course_format === 'online' ? 'En ligne' : 'Présentiel'} ·{' '}
-                  {selectedCourse.course_category === 'group' ? 'Collectif' : 'Individuel'}
-                </p>
-                <h3 className="mt-1 text-2xl font-semibold tracking-tight text-luxury-ink">{selectedCourse.title}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedCourse(null)}
-                className="rounded-full border border-white/40 bg-white/30 p-2 text-luxury-soft transition hover:bg-white/50"
-                aria-label="Fermer"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            <p className="mb-3 text-sm text-luxury-muted">
-              {new Date(selectedCourse.starts_at).toLocaleString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </p>
-            <p className="mb-4 text-sm text-luxury-muted">{selectedCourse.description || 'Description à venir.'}</p>
-
-            {selectedIsPast ? (
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/30 px-3 py-1 text-xs text-luxury-muted backdrop-blur-sm">
-                  Séance terminée · plus de réservation
-                </div>
-                {effectiveAccessForUi(selectedCourse) === 'full' && selectedCourse.replay_url ? (
-                  <a
-                    href={selectedCourse.replay_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-luxury-ghost rounded-full px-4 py-2 text-[10px] tracking-[0.12em]"
-                  >
-                    Voir le replay
-                  </a>
-                ) : null}
-              </div>
-            ) : effectiveAccessForUi(selectedCourse) === 'full' ? (
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-800">
-                  <Unlock size={12} />
-                  Accès complet
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCourse.jitsi_link ? (
-                    <Link
-                      href={`/live/${selectedCourse.id}`}
-                      className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white shadow-lg shadow-emerald-500/25 transition hover:brightness-105"
-                    >
-                      REJOINDRE LE LIVE
-                    </Link>
-                  ) : selectedCourse.live_url ? (
-                    <a
-                      href={selectedCourse.live_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-luxury-primary px-5 py-2.5 text-[10px] tracking-[0.14em]"
-                    >
-                      Rejoindre le live
-                    </a>
-                  ) : null}
-                  {selectedCourse.replay_url ? (
-                    <a
-                      href={selectedCourse.replay_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-luxury-ghost rounded-full px-4 py-2 text-[10px] tracking-[0.12em]"
-                    >
-                      Voir le replay
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs text-amber-800">
-                  <Lock size={12} />
-                  {selectedCourse.access_type === 'preview' ? 'Accès limité' : 'Accès refusé'}
-                </div>
-                <p className="text-sm text-luxury-muted">
-                  Cet événement est visible pour te guider, mais il n’est pas inclus dans ton plan actuel.
-                </p>
-                <a
-                  href={selectedCourse.cta_url ?? '/#offers'}
-                  className="btn-luxury-primary inline-flex px-5 py-2.5 text-[10px] tracking-[0.14em]"
-                >
-                  {selectedCourse.cta_label ?? 'Débloquer'}
-                </a>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedCourse(null)}
-            className="absolute inset-0"
-            aria-label="Fermer la modale"
-          />
-        </div>
-      ) : null}
+      <CalendarCourseModal course={selectedCourse} onClose={() => setSelectedCourse(null)} />
     </section>
   );
 }
