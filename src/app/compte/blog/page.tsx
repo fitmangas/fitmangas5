@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { BlogFavoriteToggle } from '@/components/Compte/BlogFavoriteToggle';
 
-type SearchParams = Promise<{ q?: string; category?: string }>;
+type SearchParams = Promise<{ q?: string; category?: string; tab?: string; sort?: string; page?: string }>;
+const PAGE_SIZE = 9;
 
 export default async function CompteBlogPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
@@ -15,6 +16,9 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   const sp = await searchParams;
   const q = (sp.q ?? '').trim().slice(0, 80);
   const category = (sp.category ?? '').trim();
+  const tab = sp.tab === 'favorites' ? 'favorites' : 'all';
+  const sort = sp.sort === 'rating' || sp.sort === 'views' ? sp.sort : 'recent';
+  const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
   const { data: cats } = await supabase.from('blog_categories').select('id,slug,label_fr').order('sort_order');
   let categoryId: string | null = null;
@@ -26,7 +30,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     .from('blog_articles')
     .select(
       `
-      id,title_fr,description_fr,slug_fr,featured_image_url,published_at,status,
+      id,title_fr,description_fr,slug_fr,featured_image_url,published_at,status,average_rating,view_count,
       blog_categories ( label_fr, slug )
     `,
     )
@@ -42,18 +46,45 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   const favoriteIds = new Set((favRows ?? []).map((r) => r.article_id));
 
   const list = articles ?? [];
-  const hero = list[0];
-  const rest = list.slice(1);
   const favorites = list.filter((a) => favoriteIds.has(a.id));
+  const sortedBase = [...(tab === 'favorites' ? favorites : list)];
+  sortedBase.sort((a, b) => {
+    if (sort === 'views') return (b.view_count ?? 0) - (a.view_count ?? 0);
+    if (sort === 'rating') return (b.average_rating ?? 0) - (a.average_rating ?? 0);
+    return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
+  });
+  const hero = sortedBase[0];
+  const rest = sortedBase.slice(1);
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRest = rest.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (!hero && rest.length === 0) {
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
         <h1 className="hero-signature-title text-4xl">Mon blog</h1>
-        <p className="mt-4 text-sm text-luxury-muted">Aucun article publié pour le moment.</p>
+        <p className="mt-4 text-sm text-luxury-muted">
+          {tab === 'favorites' ? 'Aucun favori pour le moment.' : 'Aucun article publié pour le moment.'}
+        </p>
       </main>
     );
   }
+
+  const makeHref = (overrides: Partial<{ q: string; category: string; tab: string; sort: string; page: string }> = {}) => {
+    const params = new URLSearchParams();
+    const nextQ = overrides.q ?? q;
+    const nextCategory = overrides.category ?? category;
+    const nextTab = overrides.tab ?? tab;
+    const nextSort = overrides.sort ?? sort;
+    const nextPage = overrides.page ?? String(safePage);
+    if (nextQ) params.set('q', nextQ);
+    if (nextCategory) params.set('category', nextCategory);
+    if (nextTab !== 'all') params.set('tab', nextTab);
+    if (nextSort !== 'recent') params.set('sort', nextSort);
+    if (nextPage !== '1') params.set('page', nextPage);
+    const qs = params.toString();
+    return qs ? `/compte/blog?${qs}` : '/compte/blog';
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-6 md:px-8">
@@ -68,7 +99,29 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
         </Link>
       </header>
 
-      <form method="get" className="mt-8 flex flex-col gap-3 md:flex-row md:items-center">
+      <div className="mt-8 flex flex-wrap gap-2">
+        <Link
+          href={makeHref({ tab: 'all', page: '1' })}
+          className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+            tab === 'all' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-white/40 bg-white/35 text-luxury-muted'
+          }`}
+        >
+          Tous les articles
+        </Link>
+        <Link
+          href={makeHref({ tab: 'favorites', page: '1' })}
+          className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+            tab === 'favorites'
+              ? 'border-orange-400 bg-orange-50 text-orange-900'
+              : 'border-white/40 bg-white/35 text-luxury-muted'
+          }`}
+        >
+          Mes favoris
+        </Link>
+      </div>
+
+      <form method="get" className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+        <input type="hidden" name="tab" value={tab} />
         <input
           name="q"
           defaultValue={q}
@@ -86,6 +139,11 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
               {c.label_fr}
             </option>
           ))}
+        </select>
+        <select name="sort" defaultValue={sort} className="rounded-full border border-white/45 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none">
+          <option value="recent">Plus récents</option>
+          <option value="rating">Mieux notés</option>
+          <option value="views">Plus vus</option>
         </select>
         <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
           Filtrer
@@ -132,9 +190,11 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
       ) : null}
 
       <section className="mt-12">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Historique des articles</h2>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">
+          {tab === 'favorites' ? 'Historique des favoris' : 'Historique des articles'}
+        </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {rest.map((a) => (
+          {paginatedRest.map((a) => (
             <article key={a.id} className="glass-card rounded-2xl border border-white/40 p-4">
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">
                 {a.blog_categories?.[0]?.label_fr ?? 'Blog'}
@@ -153,6 +213,23 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             </article>
           ))}
         </div>
+        {totalPages > 1 ? (
+          <div className="mt-8 flex items-center justify-center gap-4 text-sm">
+            {safePage > 1 ? (
+              <Link href={makeHref({ page: String(safePage - 1) })} className="rounded-full border border-white/40 bg-white/50 px-4 py-2 text-luxury-muted">
+                ← Précédent
+              </Link>
+            ) : null}
+            <span className="text-luxury-muted">
+              Page {safePage} / {totalPages}
+            </span>
+            {safePage < totalPages ? (
+              <Link href={makeHref({ page: String(safePage + 1) })} className="rounded-full border border-white/40 bg-white/50 px-4 py-2 text-luxury-muted">
+                Charger plus →
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </section>
     </main>
   );
