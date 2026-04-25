@@ -1,8 +1,12 @@
 /**
  * Seed 104 articles + validations mensuelles (8 / mois).
- * Usage : npx tsx scripts/seed-blog-articles.ts
+ * Les variables sont lues depuis `.env.local` à la racine (voir `scripts/load-env-local.ts`).
+ *
+ * Usage : npm run seed:blog
  * Prérequis : .env.local avec SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL
  */
+
+import './load-env-local';
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';

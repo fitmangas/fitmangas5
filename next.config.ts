@@ -12,8 +12,10 @@ function supabaseStoragePattern(): { protocol: 'https'; hostname: string; pathna
 }
 
 const supabasePattern = supabaseStoragePattern();
+const distDir = process.env.NEXT_DIST_DIR?.trim() || '.next';
 
 const nextConfig: NextConfig = {
+  distDir,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.dropbox.com', pathname: '/**' },
