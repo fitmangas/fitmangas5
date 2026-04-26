@@ -1,5 +1,15 @@
 {
   "pages": {
+    "/api/client/blog/articles/id/[articleId]/scroll-event/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/client/blog/articles/id/[articleId]/scroll-event/route.js"
+    ],
+    "/api/admin/standalone-videos/pending-count/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/standalone-videos/pending-count/route.js"
+    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -11,155 +21,45 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/layout.js"
     ],
-    "/admin/blog/validation/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/blog/validation/page.js"
-    ],
-    "/blog/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/blog/layout.js"
-    ],
-    "/blog/[slug]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/blog/[slug]/page.js"
-    ],
-    "/api/client/blog/articles/id/[articleId]/scroll-event/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/client/blog/articles/id/[articleId]/scroll-event/route.js"
-    ],
     "/admin/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/page.js"
-    ],
-    "/api/admin/standalone-videos/pending-count/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/standalone-videos/pending-count/route.js"
-    ],
-    "/admin/blog/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/blog/page.js"
-    ],
-    "/admin/blog/calendar/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/blog/calendar/page.js"
-    ],
-    "/api/demo-mode/enable/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/demo-mode/enable/route.js"
     ],
     "/compte/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/compte/layout.js"
     ],
-    "/compte/profil/page": [
+    "/compte/replays/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/compte/profil/page.js"
+      "static/chunks/app/compte/replays/page.js"
     ],
     "/compte/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/compte/page.js"
     ],
-    "/api/calendar/events/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/calendar/events/route.js"
-    ],
     "/api/calendar/mobile-sync/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/calendar/mobile-sync/route.js"
     ],
-    "/admin/blog/stats/page": [
+    "/api/calendar/events/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/blog/stats/page.js"
-    ],
-    "/admin/clients/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/clients/page.js"
-    ],
-    "/admin/courses/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/courses/page.js"
-    ],
-    "/admin/vimeo/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/vimeo/page.js"
-    ],
-    "/admin/promos/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/promos/page.js"
+      "static/chunks/app/api/calendar/events/route.js"
     ],
     "/live/[courseId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/live/[courseId]/page.js"
     ],
-    "/compte/blog/page": [
+    "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/compte/blog/page.js"
-    ],
-    "/compte/replays/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/compte/replays/page.js"
-    ],
-    "/api/client/replays/standalone-favorites/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/client/replays/standalone-favorites/route.js"
-    ],
-    "/compte/planning/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/compte/planning/page.js"
-    ],
-    "/api/jitsi/token/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/jitsi/token/route.js"
-    ],
-    "/admin/courses/[courseId]/attendance/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/courses/[courseId]/attendance/page.js"
-    ],
-    "/api/client/blog/articles/id/[articleId]/view/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/client/blog/articles/id/[articleId]/view/route.js"
-    ],
-    "/api/client/blog/articles/id/[articleId]/ratings/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/client/blog/articles/id/[articleId]/ratings/route.js"
-    ],
-    "/api/client/user/preferences/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/client/user/preferences/route.js"
-    ],
-    "/api/demo-mode/disable/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/demo-mode/disable/route.js"
+      "static/chunks/app/page.js"
     ]
   }
 }
