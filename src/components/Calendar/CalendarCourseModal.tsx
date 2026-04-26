@@ -76,7 +76,7 @@ export function CalendarCourseModal({ course, onClose }: Props) {
               {course.jitsi_link ? (
                 <Link
                   href={`/live/${course.id}`}
-                  className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white shadow-lg shadow-emerald-500/25 transition hover:brightness-105"
+                  className="btn-luxury-primary px-5 py-2.5 text-[10px] tracking-[0.14em]"
                 >
                   REJOINDRE LE LIVE
                 </Link>

@@ -20,7 +20,7 @@ const uuidSchema = z.string().uuid();
 function AccessDenied({ subtitle }: { subtitle: string }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">
-      <div className="max-w-md rounded-[28px] border border-brand-ink/[0.08] bg-white px-8 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+      <div className="glass-card max-w-md px-8 py-10 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-red-700">Accès refusé</p>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-brand-ink">{subtitle}</h1>
         <p className="mt-4 text-sm text-brand-ink/70">
@@ -166,7 +166,7 @@ export default async function LiveCoursePage({
   if (!showVimeoReplay && !hasJitsi && !courseIsPast) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">
-        <div className="max-w-md rounded-[28px] border border-brand-ink/[0.08] bg-white px-8 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+        <div className="glass-card max-w-md px-8 py-10 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-accent">Live</p>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight text-brand-ink">Live non configuré</h1>
           <p className="mt-4 text-sm text-brand-ink/70">
@@ -185,8 +185,10 @@ export default async function LiveCoursePage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-brand-ink/[0.06] bg-white px-4 py-4 shadow-sm sm:px-8">
+    <div className="luxury-shell relative flex min-h-screen flex-col">
+      <div className="luxury-bg-orbs" aria-hidden />
+      <div className="luxury-grain" aria-hidden />
+      <header className="relative z-10 border-b border-white/40 bg-white/45 px-4 py-4 shadow-[0_16px_36px_-24px_rgba(21,18,15,0.28)] backdrop-blur-xl sm:px-8">
         <div className="flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <Link
@@ -200,7 +202,7 @@ export default async function LiveCoursePage({
           </div>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
         {effectiveStudentPreview ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 shadow-sm">
             <strong className="font-semibold">{globalDemo ? 'Mode démo · ' : ''}Aperçu élève</strong> — Rendu comme un
@@ -232,7 +234,7 @@ export default async function LiveCoursePage({
             ) : null}
           </>
         ) : courseIsPast ? (
-          <div className="rounded-2xl border border-brand-ink/10 bg-white px-6 py-10 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+          <div className="glass-card px-6 py-10 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-ink/45">Séance terminée</p>
             <h2 className="mt-3 font-serif text-xl italic text-brand-ink">Replay en préparation</h2>
             <p className="mt-3 text-sm text-brand-ink/70">

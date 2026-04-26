@@ -38,7 +38,7 @@ export function AdminSidebar() {
   }, []);
 
   return (
-    <aside className="fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/35 bg-white/30 p-2 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl md:flex">
+    <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
       {links.map(({ href, label, icon: Icon }) => {
         const isActive =
           href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);

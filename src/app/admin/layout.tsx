@@ -4,7 +4,7 @@ import { AdminSidebar } from '@/components/Admin/AdminSidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen">
+    <div className="luxury-shell relative min-h-screen">
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
