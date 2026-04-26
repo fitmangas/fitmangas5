@@ -2,7 +2,7 @@
   "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
   "/live/[courseId]/page": "app/live/[courseId]/page.js",
   "/page": "app/page.js",
-  "/compte/replays/page": "app/compte/replays/page.js",
   "/compte/page": "app/compte/page.js",
+  "/compte/replays/page": "app/compte/replays/page.js",
   "/admin/page": "app/admin/page.js"
 }

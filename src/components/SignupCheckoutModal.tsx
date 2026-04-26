@@ -2,18 +2,19 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2, ArrowRight, Lock } from 'lucide-react';
+import { X, Loader2, ArrowRight, Lock, ChevronDown } from 'lucide-react';
 import type { Course, Language, Segment } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
 type Props = {
   course: Course | null;
-  segment: Segment;
+  courseOptions: Course[];
+  onSelectCourse: (course: Course) => void;
   lang: Language;
   onClose: () => void;
 };
 
-export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
+export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lang, onClose }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,6 +23,8 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
+  const effectiveSegment: Segment = course?.id.startsWith('v-') ? 'VISIO' : 'NANTES';
 
   const labels =
     lang === 'FR'
@@ -92,7 +95,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             ...(birthDate.trim() ? { birth_date: birthDate.trim() } : {}),
-            segment,
+            segment: effectiveSegment,
             preferred_course_id: course.id,
           },
         },
@@ -173,7 +176,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
 
             <div className="border-b border-brand-ink/[0.06] px-8 pb-6 pt-8">
               <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">
-                {segment === 'VISIO'
+                {effectiveSegment === 'VISIO'
                   ? lang === 'FR'
                     ? 'Visio'
                     : 'Online'
@@ -183,6 +186,56 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
                 {labels.title}
               </h2>
               <p className="mt-2 text-xs leading-relaxed text-brand-ink/50">{labels.subtitle}</p>
+              <div className="mt-4">
+                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">
+                  {lang === 'FR' ? 'Formule' : 'Fórmula'}
+                </p>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setFormulaMenuOpen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/75 transition hover:border-brand-accent/35 hover:text-brand-accent"
+                    aria-haspopup="listbox"
+                    aria-expanded={formulaMenuOpen}
+                  >
+                    {course.title}
+                    <ChevronDown size={13} className={`transition ${formulaMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {formulaMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 6 }}
+                        className="absolute left-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-ink/10 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
+                        role="listbox"
+                      >
+                        {courseOptions.map((option) => {
+                          const isActive = option.id === course.id;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => {
+                                onSelectCourse(option);
+                                setFormulaMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between gap-4 whitespace-nowrap px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] transition ${
+                                isActive
+                                  ? 'bg-brand-accent/10 text-brand-accent'
+                                  : 'text-brand-ink/70 hover:bg-brand-sand/25 hover:text-brand-ink'
+                              }`}
+                            >
+                              <span className="whitespace-nowrap">{option.title}</span>
+                              <span className="whitespace-nowrap text-[10px] normal-case tracking-normal opacity-80">{option.price}</span>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
               <p className="mt-3 font-medium text-brand-ink">{course.title}</p>
               <p className="text-sm text-brand-accent">{course.price}</p>
             </div>
@@ -222,7 +275,7 @@ export function SignupCheckoutModal({ course, segment, lang, onClose }: Props) {
                 />
               </label>
               <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                {lang === 'FR' ? 'Date de naissance (optionnel)' : 'Fecha de nacimiento (opcional)'}
+                {lang === 'FR' ? 'Date de naissance' : 'Fecha de nacimiento'}
                 <input
                   type="date"
                   value={birthDate}
