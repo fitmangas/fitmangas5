@@ -30,6 +30,9 @@ type PrintfulProductDetailResult = {
   };
   sync_variants?: Array<
     PrintfulSyncVariant & {
+      product?: {
+        image?: string | null;
+      };
       files?: Array<{
         preview_url?: string | null;
         thumbnail_url?: string | null;
@@ -200,11 +203,8 @@ export async function getPrintfulProductDetail(productId: number): Promise<Print
   }
 
   for (const variant of result?.sync_variants ?? []) {
-    for (const file of variant.files ?? []) {
-      addUrl(file.preview_url);
-      addUrl(file.thumbnail_url);
-      addUrl(file.url);
-    }
+    // Source principale: mockup par variante (vraie photo produit côté boutique).
+    addUrl(variant.product?.image);
   }
 
   const variants = (result?.sync_variants ?? []).map((v) => ({

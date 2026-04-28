@@ -85,6 +85,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/printful/products/[productId]/route.js"
+    ],
+    "/compte/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/blog/page.js"
     ]
   }
 }
