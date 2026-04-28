@@ -101,6 +101,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/admin/boutique/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/admin/boutique">> = Specific
+  const handler = {} as typeof import("../../src/app/admin/boutique/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/admin/clients/[id]/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/admin/clients/[id]">> = Specific
@@ -182,10 +191,28 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/boutique/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/boutique">> = Specific
+  const handler = {} as typeof import("../../src/app/boutique/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/compte/blog/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/compte/blog">> = Specific
   const handler = {} as typeof import("../../src/app/compte/blog/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/compte/boutique/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/compte/boutique">> = Specific
+  const handler = {} as typeof import("../../src/app/compte/boutique/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -357,6 +384,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/blog/validation">> = Specific
   const handler = {} as typeof import("../../src/app/api/admin/blog/validation/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/printful/overview/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/printful/overview">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/printful/overview/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -618,6 +654,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/jitsi/token">> = Specific
   const handler = {} as typeof import("../../src/app/api/jitsi/token/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/printful/orders/create/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/printful/orders/create">> = Specific
+  const handler = {} as typeof import("../../src/app/api/printful/orders/create/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/printful/orders/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/printful/orders">> = Specific
+  const handler = {} as typeof import("../../src/app/api/printful/orders/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/printful/products/[productId]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/printful/products/[productId]">> = Specific
+  const handler = {} as typeof import("../../src/app/api/printful/products/[productId]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/products/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/products">> = Specific
+  const handler = {} as typeof import("../../src/app/api/products/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

@@ -11,8 +11,10 @@ export default async function HomePage() {
       .select('title, thumbnail_url')
       .eq('validation_status', 'published')
       .not('title', 'is', null)
+      .not('thumbnail_url', 'is', null)
+      .not('thumbnail_url', 'ilike', '%default-live%')
       .order('published_at', { ascending: false })
-      .limit(6);
+      .limit(12);
 
     vimeoShowcase = (data ?? [])
       .map((row) => ({

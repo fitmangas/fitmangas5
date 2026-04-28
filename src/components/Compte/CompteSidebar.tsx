@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clapperboard, LayoutDashboard, UserRound, Video } from 'lucide-react';
+import { Clapperboard, LayoutDashboard, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 const links = [
   { href: '/compte', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/compte#planning', label: 'Planning', icon: Clapperboard },
   { href: '/compte/replays', label: 'Vidéos', icon: Video, exact: true },
+  { href: '/compte/boutique', label: 'Boutique', icon: ShoppingBag, exact: true },
   { href: '/compte/profil', label: 'Profil', icon: UserRound, exact: true },
 ];
 

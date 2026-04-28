@@ -21,6 +21,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/vimeo" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               Vimeo
             </Link>
+            <Link href="/admin/boutique" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
+              Boutique
+            </Link>
             <Link href="/admin/promos" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               Promos
             </Link>

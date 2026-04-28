@@ -9,6 +9,7 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   ChevronUp,
+  Info,
   Mail,
   Star,
   LockKeyhole,
@@ -94,92 +95,95 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
         ? t.courses.nantes
         : t.courses.mexico;
   const onboardingCourses = [...t.courses.visio, ...t.courses.nantes];
-  const fallbackPilatesCards = [
-    { title: 'Muscle Stretch', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL },
-    { title: 'Relaxation Stretch', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL },
-    { title: 'Balance Booster', imageUrl: t.courses.nantes[0]?.imageUrl ?? HERO_IMAGE_URL },
-    { title: 'Flexibility Enhancer', imageUrl: t.courses.nantes[1]?.imageUrl ?? HERO_IMAGE_URL },
-    { title: 'Full-Body Stretch', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL },
-    { title: 'Strength Flow', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL },
+  const fallbackPilatesCards: { title: string; imageUrl: string; level: 'Débutant' | 'Intermédiaire' | 'Expérimenté' }[] = [
+    { title: 'Pilates Mat 1', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Débutant' },
+    { title: 'Pilates Mat 2', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Débutant' },
+    { title: 'Barre Flow Cardio', imageUrl: t.courses.nantes[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Intermédiaire' },
+    { title: 'Booty Power Sculpt', imageUrl: t.courses.nantes[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Intermédiaire' },
+    { title: 'Barre Sculpt', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Expérimenté' },
+    { title: 'Barre Full Body', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Expérimenté' },
   ];
+  const vimeoCardsWithImage = vimeoShowcase
+    .filter(
+      (item) =>
+        typeof item.thumbnailUrl === 'string' &&
+        item.thumbnailUrl.trim().length > 0 &&
+        !item.thumbnailUrl.includes('default-live'),
+    )
+    .map((item) => ({
+      title: item.title,
+      imageUrl: item.thumbnailUrl as string,
+    }));
+  const findByKeywords = (keywords: string[]) =>
+    vimeoCardsWithImage.find((item) => keywords.some((kw) => item.title.toLowerCase().includes(kw)));
+
+  // On verrouille les vidéos au style de miniature que tu préfères (même rendu typo visuel).
+  const referenceBooty = findByKeywords(['booty power sculpt']);
+  const referenceFlow = findByKeywords(['barre flow cardio']);
+  const referenceImages = [referenceBooty?.imageUrl, referenceFlow?.imageUrl].filter(Boolean) as string[];
+
+  const curatedCards = [
+    { level: 'Débutant' as const, video: findByKeywords(['1 mat pilates', 'pilates mat 1', 'mat 1']) },
+    { level: 'Débutant' as const, video: findByKeywords(['pilates mat 2', 'pilates mat']) },
+    { level: 'Intermédiaire' as const, video: findByKeywords(['booty power sculpt']) },
+    { level: 'Intermédiaire' as const, video: findByKeywords(['barre flow cardio']) },
+    { level: 'Expérimenté' as const, video: findByKeywords(['booty sculpt 2', 'booty sculpt']) },
+    { level: 'Expérimenté' as const, video: findByKeywords(['barre/pilates flow', 'barre pilates flow']) },
+  ];
+
   const inspirationPilatesCards =
-    vimeoShowcase.length > 0
-      ? vimeoShowcase.map((item) => ({
-          title: item.title,
-          imageUrl: item.thumbnailUrl ?? HERO_IMAGE_URL,
-        }))
+    vimeoCardsWithImage.length > 0
+      ? curatedCards.map((entry, index) => {
+          const fallback = fallbackPilatesCards[index];
+          const fallbackRefImage =
+            referenceImages.length > 0
+              ? referenceImages[index % referenceImages.length]
+              : fallback.imageUrl;
+          const referenceImage =
+            referenceImages.length > 0
+              ? referenceImages[index % referenceImages.length]
+              : fallback.imageUrl;
+          return {
+            title: entry.video?.title ?? fallback.title,
+            imageUrl: entry.video?.imageUrl ?? referenceImage ?? fallbackRefImage,
+            level: entry.level,
+          };
+        })
       : fallbackPilatesCards;
-
-  const formattedDate = new Date().toLocaleDateString(lang === 'ES' ? 'es-ES' : 'fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
-
+  // Réordonne l'affichage pour obtenir des colonnes par niveau :
+  // col1 = Débutant (haut+bas), col2 = Intermédiaire, col3 = Expérimenté.
+  const levelByColumnCards =
+    inspirationPilatesCards.length >= 6
+      ? [
+          inspirationPilatesCards[0],
+          inspirationPilatesCards[2],
+          inspirationPilatesCards[4],
+          inspirationPilatesCards[1],
+          inspirationPilatesCards[3],
+          inspirationPilatesCards[5],
+        ]
+      : inspirationPilatesCards;
   return (
     <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
-      {/* Top Stats Bar */}
+      {/* Top Bar */}
       <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 md:px-10 py-3 md:py-5">
-          {/* Desktop Layout */}
-          <div className="hidden md:flex justify-between items-center">
-            <div className="flex items-center gap-8">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] tracking-[0.2em] uppercase font-bold text-brand-ink/20 leading-none">Status</span>
-                <span className="text-[9px] tracking-widest uppercase text-brand-accent font-bold leading-none">{lang === 'ES' ? 'al ' : 'au '} {formattedDate}</span>
-              </div>
-              <div className="h-10 w-px bg-brand-ink/[0.06]" />
-              <div className="flex flex-col gap-0.5">
-                <span className="text-2xl font-sans font-semibold leading-none tracking-tight">{count.toLocaleString()}</span>
-                <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none font-medium">{t.proofGiven}</span>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-8">
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="text-2xl font-sans font-semibold leading-none tracking-tight">180</span>
-                <span className="text-[9px] tracking-[0.15em] uppercase text-brand-ink/40 leading-none font-medium">{t.proofPeople}</span>
-                <span className="mt-1 text-[9px] tracking-[0.08em] text-brand-ink/35">Cours collectifs et individuels confondus.</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowLoginModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/70 transition hover:border-brand-accent/40 hover:text-brand-accent"
-              >
-                <UserCircle2 size={14} />
-                Se connecter
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Layout - Refined for balance */}
-          <div className="md:hidden flex justify-between items-center gap-4">
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[7px] tracking-[0.2em] uppercase font-bold text-brand-ink/20 leading-none">Status</span>
-              <span className="text-[8px] tracking-widest uppercase text-brand-accent font-bold leading-none truncate">{lang === 'ES' ? 'al ' : 'au '} {formattedDate}</span>
-            </div>
-            
-            <div className="flex flex-col items-center gap-0.5 px-4 border-x border-brand-ink/[0.06]">
-              <span className="text-lg font-sans font-semibold leading-none tracking-tight">{count.toLocaleString()}</span>
-              <span className="text-[7px] tracking-[0.1em] uppercase text-brand-ink/40 leading-none font-medium text-center whitespace-nowrap">{t.proofGiven}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowLoginModal(true)}
-                className="w-6 h-6 flex items-center justify-center rounded-full border border-brand-ink/10 bg-white text-brand-ink/55"
-                aria-label="Se connecter"
-                title="Se connecter"
-              >
-                <UserCircle2 size={11} />
-              </button>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg font-sans font-semibold leading-none tracking-tight">180</span>
-                <span className="text-[7px] tracking-[0.1em] uppercase text-brand-ink/40 leading-none font-medium text-center whitespace-nowrap">{t.proofPeople}</span>
-                <span className="text-[6.5px] leading-tight text-brand-ink/35 text-center max-w-[78px]">Collectif + individuel</span>
-              </div>
-            </div>
+        <div className="max-w-6xl mx-auto px-4 md:px-10 py-3 md:py-4">
+          <div className="flex items-center justify-center gap-4 md:gap-5">
+            <button
+              type="button"
+              onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
+              className="inline-flex items-center rounded-full border border-brand-accent/35 bg-brand-accent px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(156,146,132,0.32)] transition hover:brightness-95"
+            >
+              Devenir membre
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-brand-accent/40 hover:text-brand-accent"
+            >
+              <UserCircle2 size={14} />
+              Se connecter
+            </button>
           </div>
         </div>
       </div>
@@ -202,7 +206,7 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
         </div>
 
         {/* Hero: texte gauche + carte droite */}
-        <section className="mb-16 grid grid-cols-1 items-center gap-8 md:grid-cols-[0.9fr_1.1fr] md:gap-12">
+        <section className="mb-28 grid grid-cols-1 items-center gap-10 md:grid-cols-[0.9fr_1.1fr] md:gap-16">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -213,10 +217,10 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
               <br />
               is your therapy
             </h1>
-            <p className="mt-5 text-[1.35rem] md:text-[1.65rem] font-serif leading-snug md:leading-relaxed text-brand-ink/80 max-w-xl tracking-tight">
+            <p className="mt-6 text-[1.35rem] md:text-[1.65rem] font-serif leading-[1.35] md:leading-[1.45] text-brand-ink/80 max-w-xl tracking-tight">
               J&apos;aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-4">
+            <div className="mt-9 flex flex-wrap items-center gap-6">
               <button
                 type="button"
                 onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
@@ -224,15 +228,15 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
               >
                 On démarre
               </button>
-              <div className="hidden h-12 w-[2px] rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)] md:block" />
+              <div className="hidden h-14 w-[2px] rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)] md:block" />
               <div className="flex flex-col items-center gap-1.5 text-center">
                 <span className="text-[14px] font-medium tracking-[0.04em] text-brand-ink/70">Rejoignez la communauté</span>
-                <div className="flex w-full items-center justify-center gap-2.5">
+                <div className="flex w-full items-center justify-center gap-4">
                   <a
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="WhatsApp"
                   >
                     <WhatsAppIcon size={19} />
@@ -241,19 +245,48 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
                     href="https://www.instagram.com/fit.mangas/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="Instagram"
                   >
                     <Instagram size={19} />
                   </a>
                   <a
                     href="mailto:info@casamangas.fr"
-                    className="text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="Mail"
                   >
                     <Mail size={19} />
                   </a>
                 </div>
+              </div>
+            </div>
+            <div className="mt-11 flex items-start gap-14">
+              <div className="flex flex-col">
+                <span className="text-5xl md:text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                  {count.toLocaleString()}
+                </span>
+                <span className="mt-3 text-[11px] md:text-[12px] uppercase tracking-[0.12em] text-brand-ink/55 font-sans font-medium">
+                  Cours donnés
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-5xl md:text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                  180
+                </span>
+                <span className="mt-3 inline-flex items-center gap-2 text-[11px] md:text-[12px] uppercase tracking-[0.12em] text-brand-ink/55 font-sans font-medium">
+                  Personnes / semaine
+                  <span className="relative group">
+                    <span
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-[11px] text-brand-ink/60"
+                      aria-label="Information"
+                    >
+                      <Info size={11} />
+                    </span>
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                      Cours collectifs et individuels confondus.
+                    </span>
+                  </span>
+                </span>
               </div>
             </div>
           </motion.div>
@@ -282,7 +315,7 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
         </section>
 
         {/* Segment Toggle */}
-        <div className="mb-5 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <div className="mb-8 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <button 
             onClick={() => setSegment('VISIO')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
@@ -473,13 +506,13 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
               <br />
               Pilates idéal
             </h3>
-            <p className="pt-1 text-sm md:text-base text-brand-ink/60 leading-relaxed md:max-w-[340px]">
-              Explore les différents styles de Pilates disponibles en vidéo, selon tes besoins : mobilité, équilibre, relaxation et renforcement.
+            <p className="pt-1 text-sm md:text-base text-brand-ink/60 leading-relaxed md:max-w-[430px]">
+              Explore les styles de Pilates en vidéo selon tes besoins : mobilité, équilibre, relaxation et renforcement.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {inspirationPilatesCards.map((card, index) => (
+            {levelByColumnCards.map((card, index) => (
               <article
                 key={`${card.title}-${index}`}
                 className="group relative overflow-hidden rounded-[28px] border border-white/60 bg-[#f4f4f4] p-4 shadow-[0_10px_28px_rgba(0,0,0,0.08)]"
@@ -495,9 +528,8 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <div className="relative z-10 mt-4 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2 text-xs font-semibold tracking-wide text-brand-ink shadow-[0_5px_14px_rgba(0,0,0,0.12)] backdrop-blur">
-                  <span>{card.title}</span>
-                  <ArrowRight size={14} />
+                <div className="relative z-10 mt-4 inline-flex items-center rounded-full border border-white/80 bg-white/90 px-4 py-2 text-xs font-semibold tracking-wide text-brand-ink shadow-[0_5px_14px_rgba(0,0,0,0.12)] backdrop-blur">
+                  <span>{card.level}</span>
                 </div>
               </article>
             ))}

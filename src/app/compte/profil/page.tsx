@@ -6,6 +6,7 @@ import { ProfileAvatarForm } from '@/components/Compte/ProfileAvatarForm';
 import { ProfileBirthDateForm } from '@/components/Compte/ProfileBirthDateForm';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { gradeLabel } from '@/lib/gamification';
+import { getPrintfulOrders } from '@/lib/printful';
 import { createClient } from '@/lib/supabase/server';
 
 function formatTier(t: string | null): string {
@@ -43,6 +44,7 @@ export default async function ProfilPage() {
   };
 
   let invoices: InvoiceRow[] = [];
+  let printfulOrders: Awaited<ReturnType<typeof getPrintfulOrders>> = [];
 
   if (stripeKey && customerId) {
     try {
@@ -59,6 +61,19 @@ export default async function ProfilPage() {
       }));
     } catch {
       invoices = [];
+    }
+  }
+
+  if (user.email) {
+    try {
+      const orders = await getPrintfulOrders(80);
+      const email = user.email.toLowerCase();
+      printfulOrders = orders.filter((o) => {
+        const recipientEmail = o.recipient?.email?.toLowerCase() ?? o.packing_slip?.email?.toLowerCase() ?? '';
+        return recipientEmail === email;
+      });
+    } catch {
+      printfulOrders = [];
     }
   }
 
@@ -187,6 +202,49 @@ export default async function ProfilPage() {
                       {inv.hosted_invoice_url ? (
                         <a
                           href={inv.hosted_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-luxury-orange underline-offset-4 hover:underline"
+                        >
+                          Ouvrir
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
+
+      <GlassCard id="boutique-commandes" className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Commandes & factures boutique</h2>
+        {!printfulOrders.length ? (
+          <p className="mt-4 text-sm text-luxury-soft">Aucune commande boutique liée à ton e-mail.</p>
+        ) : (
+          <div className="mt-6 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/35 text-[10px] uppercase tracking-widest text-luxury-soft">
+                  <th className="py-3 pr-4">Commande</th>
+                  <th className="py-3 pr-4">Statut</th>
+                  <th className="py-3 pr-4">Date</th>
+                  <th className="py-3">Facture</th>
+                </tr>
+              </thead>
+              <tbody className="text-luxury-muted">
+                {printfulOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-white/20">
+                    <td className="py-3 pr-4 font-medium text-luxury-ink">#{order.id}</td>
+                    <td className="py-3 pr-4">{order.status}</td>
+                    <td className="py-3 pr-4">{new Date(order.created).toLocaleDateString('fr-FR')}</td>
+                    <td className="py-3">
+                      {order.invoice_url ? (
+                        <a
+                          href={order.invoice_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-semibold text-luxury-orange underline-offset-4 hover:underline"
