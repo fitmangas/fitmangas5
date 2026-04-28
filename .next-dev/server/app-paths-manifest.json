@@ -2,8 +2,8 @@
   "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
   "/api/printful/products/[productId]/route": "app/api/printful/products/[productId]/route.js",
   "/page": "app/page.js",
+  "/compte/boutique/page": "app/compte/boutique/page.js",
   "/admin/page": "app/admin/page.js",
-  "/admin/courses/page": "app/admin/courses/page.js",
   "/admin/boutique/page": "app/admin/boutique/page.js",
-  "/compte/boutique/page": "app/compte/boutique/page.js"
+  "/compte/page": "app/compte/page.js"
 }

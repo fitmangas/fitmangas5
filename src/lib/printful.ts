@@ -22,8 +22,21 @@ type PrintfulProductDetailResult = {
     id: number;
     name: string;
     thumbnail_url?: string | null;
+    files?: Array<{
+      preview_url?: string | null;
+      thumbnail_url?: string | null;
+      url?: string | null;
+    }>;
   };
-  sync_variants?: PrintfulSyncVariant[];
+  sync_variants?: Array<
+    PrintfulSyncVariant & {
+      files?: Array<{
+        preview_url?: string | null;
+        thumbnail_url?: string | null;
+        url?: string | null;
+      }>;
+    }
+  >;
 };
 
 export type PrintfulProduct = {
@@ -86,6 +99,7 @@ export type PrintfulProductDetail = {
   id: number;
   name: string;
   thumbnailUrl: string | null;
+  galleryUrls: string[];
   variants: PrintfulProductVariant[];
 };
 
@@ -123,7 +137,7 @@ async function printfulFetch<T>(path: string): Promise<T> {
   if (storeId) headers['X-PF-Store-Id'] = storeId;
   const res = await fetch(`https://api.printful.com${path}`, {
     headers,
-    next: { revalidate: 120 },
+    cache: 'no-store',
   });
 
   const json = (await res.json().catch(() => null)) as PrintfulEnvelope<T> | null;
@@ -171,6 +185,28 @@ export async function getPrintfulProductDetail(productId: number): Promise<Print
   const result = await printfulFetch<PrintfulProductDetailResult>(`/store/products/${productId}`);
   const product = result?.sync_product;
   if (!product?.id) return null;
+  const gallerySet = new Set<string>();
+  const addUrl = (value: string | null | undefined) => {
+    const url = value?.trim() ?? '';
+    if (!url) return;
+    gallerySet.add(url);
+  };
+
+  addUrl(product.thumbnail_url);
+  for (const file of product.files ?? []) {
+    addUrl(file.preview_url);
+    addUrl(file.thumbnail_url);
+    addUrl(file.url);
+  }
+
+  for (const variant of result?.sync_variants ?? []) {
+    for (const file of variant.files ?? []) {
+      addUrl(file.preview_url);
+      addUrl(file.thumbnail_url);
+      addUrl(file.url);
+    }
+  }
+
   const variants = (result?.sync_variants ?? []).map((v) => ({
     id: v.id,
     name: v.name,
@@ -182,6 +218,7 @@ export async function getPrintfulProductDetail(productId: number): Promise<Print
     id: product.id,
     name: product.name,
     thumbnailUrl: product.thumbnail_url ?? null,
+    galleryUrls: Array.from(gallerySet),
     variants,
   };
 }
