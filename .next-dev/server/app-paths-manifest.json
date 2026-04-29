@@ -1,14 +1,7 @@
 {
-  "/api/client/blog/articles/id/[articleId]/scroll-event/route": "app/api/client/blog/articles/id/[articleId]/scroll-event/route.js",
-  "/api/printful/products/[productId]/route": "app/api/printful/products/[productId]/route.js",
-  "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
-  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
-  "/api/calendar/events/route": "app/api/calendar/events/route.js",
-  "/page": "app/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/compte/boutique/page": "app/compte/boutique/page.js",
-  "/admin/boutique/page": "app/admin/boutique/page.js",
-  "/compte/page": "app/compte/page.js",
+  "/compte/profil/page": "app/compte/profil/page.js",
   "/compte/blog/page": "app/compte/blog/page.js",
-  "/compte/replays/page": "app/compte/replays/page.js"
+  "/compte/page": "app/compte/page.js",
+  "/compte/replays/page": "app/compte/replays/page.js",
+  "/compte/progression/page": "app/compte/progression/page.js"
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { sortPrintfulProducts } from '@/lib/printful-product-order';
 import { getPrintfulProducts, mapProductImage } from '@/lib/printful';
 
 function formatPrice(value: number): string {
@@ -8,7 +9,8 @@ function formatPrice(value: number): string {
 }
 
 export default async function BoutiquePage() {
-  const products = await getPrintfulProducts().catch(() => []);
+  const productsRaw = await getPrintfulProducts().catch(() => []);
+  const products = await sortPrintfulProducts(productsRaw);
 
   return (
     <main className="mx-auto max-w-7xl px-6 pb-20 pt-10 md:px-10">

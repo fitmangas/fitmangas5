@@ -25,6 +25,17 @@ type ProductDetail = {
   variants: Variant[];
 };
 
+type CartLine = {
+  productId: number;
+  variantId: number;
+  quantity: number;
+  productName: string;
+  variantName: string;
+};
+
+const RECIPIENT_STORAGE_KEY = 'fitmangas.printful.recipient.v1';
+const CART_STORAGE_KEY = 'fitmangas.printful.cart.v1';
+
 function money(value: number, currency: string): string {
   if (!Number.isFinite(value)) return '—';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency || 'EUR' }).format(value);
@@ -90,6 +101,8 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [transparentByUrl, setTransparentByUrl] = useState<Record<string, boolean>>({});
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
+  const [cartItems, setCartItems] = useState<CartLine[]>([]);
+  const [addressLocked, setAddressLocked] = useState(false);
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedProductId) ?? null,
@@ -143,6 +156,54 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
     void loadProductDetail(selectedProductId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProductId]);
+
+  useEffect(() => {
+    try {
+      const rawRecipient = window.localStorage.getItem(RECIPIENT_STORAGE_KEY);
+      if (rawRecipient) {
+        const parsed = JSON.parse(rawRecipient) as {
+          name?: string;
+          address1?: string;
+          city?: string;
+          zip?: string;
+          countryCode?: string;
+          locked?: boolean;
+        };
+        if (parsed.name) setName(parsed.name);
+        if (parsed.address1) setAddress1(parsed.address1);
+        if (parsed.city) setCity(parsed.city);
+        if (parsed.zip) setZip(parsed.zip);
+        if (parsed.countryCode) setCountryCode(parsed.countryCode);
+        setAddressLocked(Boolean(parsed.locked));
+      }
+      const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
+      if (rawCart) {
+        const parsedCart = JSON.parse(rawCart) as CartLine[];
+        if (Array.isArray(parsedCart)) setCartItems(parsedCart);
+      }
+    } catch {
+      // Ignore storage errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        RECIPIENT_STORAGE_KEY,
+        JSON.stringify({ name, address1, city, zip, countryCode, locked: addressLocked }),
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [name, address1, city, zip, countryCode, addressLocked]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [cartItems]);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,23 +276,71 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
     setError(null);
     setMessage(null);
     try {
+      const productName = selectedProduct?.name ?? `Produit #${selectedProductId}`;
+      const variantName = selectedVariant?.name ?? `Variante #${variantId}`;
+
+      if (submitIntent === 'continue') {
+        setCartItems((prev) => {
+          const idx = prev.findIndex((item) => item.variantId === (variantId as number));
+          if (idx < 0) {
+            return [
+              ...prev,
+              {
+                productId: selectedProductId as number,
+                variantId: variantId as number,
+                quantity,
+                productName,
+                variantName,
+              },
+            ];
+          }
+          const next = [...prev];
+          next[idx] = {
+            ...next[idx],
+            quantity: Math.max(1, Math.min(20, next[idx].quantity + quantity)),
+          };
+          return next;
+        });
+        setAddressLocked(true);
+        setMessage('Produit ajouté au panier. Tes informations sont conservées.');
+        setOpenProductModal(false);
+        return;
+      }
+
+      const payloadItems = [...cartItems];
+      const existingIdx = payloadItems.findIndex((item) => item.variantId === (variantId as number));
+      if (existingIdx >= 0) {
+        payloadItems[existingIdx] = {
+          ...payloadItems[existingIdx],
+          quantity: Math.max(1, Math.min(20, payloadItems[existingIdx].quantity + quantity)),
+        };
+      } else {
+        payloadItems.push({
+          productId: selectedProductId as number,
+          variantId: variantId as number,
+          quantity,
+          productName,
+          variantName,
+        });
+      }
+
       const res = await fetch('/api/printful/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId: selectedProductId,
-          variantId,
-          quantity,
+          items: payloadItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+          })),
           recipient: { name, address1, city, zip, countryCode },
         }),
       });
       const json = (await res.json()) as { order?: { id: number }; error?: string };
       if (!res.ok || !json.order) throw new Error(json.error ?? 'Création impossible');
-      if (submitIntent === 'continue') {
-        setMessage(`Ajouté au panier (commande #${json.order.id}). Tu peux continuer tes achats.`);
-      } else {
-        setMessage(`Commande #${json.order.id} créée avec succès.`);
-      }
+      setCartItems([]);
+      setAddressLocked(true);
+      setMessage(`Commande #${json.order.id} créée avec succès.`);
       setOpenProductModal(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inconnue');
@@ -282,6 +391,14 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
 
   return (
     <div className="space-y-12">
+      {cartItems.length > 0 ? (
+        <div className="flex items-center justify-end">
+          <div className="inline-flex items-center gap-2 rounded-full border border-luxury-orange/35 bg-white/85 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-ink shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+            <span className="h-2 w-2 rounded-full bg-luxury-orange" />
+            Panier: {cartItems.length} produit{cartItems.length > 1 ? 's' : ''}
+          </div>
+        </div>
+      ) : null}
       <section className="overflow-hidden rounded-[34px] border border-white/55 bg-white/85 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.12)] md:p-6">
           <div className="grid gap-6 md:grid-cols-[1.08fr_1fr] md:items-stretch">
             <div className="flex flex-col justify-center">
@@ -294,7 +411,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                   </h3>
                 </div>
               </div>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-luxury-muted">
+              <p className="mt-7 max-w-md text-sm leading-relaxed text-luxury-muted">
                 Les pièces FitMangas les plus demandées du moment, sélectionnées pour bouger avec style.
               </p>
             </div>
@@ -508,31 +625,43 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                 <div className="grid gap-3 md:grid-cols-2">
                   <input
                     required
+                    readOnly={addressLocked}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nom complet"
-                    className="rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
+                    className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
+                      addressLocked ? 'cursor-not-allowed opacity-80' : ''
+                    }`}
                   />
                   <input
                     required
+                    readOnly={addressLocked}
                     value={address1}
                     onChange={(e) => setAddress1(e.target.value)}
                     placeholder="Adresse"
-                    className="rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
+                    className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
+                      addressLocked ? 'cursor-not-allowed opacity-80' : ''
+                    }`}
                   />
                   <input
                     required
+                    readOnly={addressLocked}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="Ville"
-                    className="rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
+                    className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
+                      addressLocked ? 'cursor-not-allowed opacity-80' : ''
+                    }`}
                   />
                   <input
                     required
+                    readOnly={addressLocked}
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
                     placeholder="Code postal"
-                    className="rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
+                    className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
+                      addressLocked ? 'cursor-not-allowed opacity-80' : ''
+                    }`}
                   />
                 </div>
 
@@ -540,11 +669,23 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                   <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">Code pays (ISO)</label>
                   <input
                     required
+                    readOnly={addressLocked}
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
                     placeholder="FR"
-                    className="mt-2 w-24 rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
+                    className={`mt-2 w-24 rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
+                      addressLocked ? 'cursor-not-allowed opacity-80' : ''
+                    }`}
                   />
+                  {addressLocked ? (
+                    <button
+                      type="button"
+                      onClick={() => setAddressLocked(false)}
+                      className="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-orange"
+                    >
+                      Modifier
+                    </button>
+                  ) : null}
                   {fieldErrors.countryCode ? <p className="mt-1 text-xs text-red-600">{fieldErrors.countryCode}</p> : null}
                 </div>
 
@@ -557,6 +698,9 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                   </p>
                   <p className="mt-1 text-luxury-muted">
                     Total estimé: <span className="font-semibold text-luxury-ink">{money(estimatedTotal, selectedVariant?.currency ?? 'EUR')}</span>
+                  </p>
+                  <p className="mt-1 text-luxury-muted">
+                    Panier en attente: <span className="font-semibold text-luxury-ink">{cartItems.length} article(s)</span>
                   </p>
                 </div>
                 {message ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
@@ -577,7 +721,9 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     onClick={() => setSubmitIntent('finalize')}
                     className="w-full rounded-full border border-black/15 bg-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-110 disabled:opacity-60"
                   >
-                    {submitting && submitIntent === 'finalize' ? 'Envoi...' : 'Ajouter et commander'}
+                    {submitting && submitIntent === 'finalize'
+                      ? 'Envoi...'
+                      : `Ajouter et commander${cartItems.length > 0 ? ` (${cartItems.length + 1})` : ''}`}
                   </button>
                 </div>
               </div>

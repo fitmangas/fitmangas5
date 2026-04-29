@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation';
 
+import { PrintfulProductsSaleGridEditor } from '@/components/Admin/PrintfulProductsSaleGridEditor';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
+import { sortPrintfulProducts } from '@/lib/printful-product-order';
 import { getPrintfulOrders, getPrintfulProducts, mapProductImage, parseMoney } from '@/lib/printful';
 import { createClient } from '@/lib/supabase/server';
 
@@ -29,10 +31,11 @@ export default async function AdminBoutiquePage() {
   const gate = await checkIsAdmin(supabase, user);
   if (!gate.isAdmin) redirect('/login?error=forbidden');
 
-  const [products, orders] = await Promise.all([
+  const [productsRaw, orders] = await Promise.all([
     getPrintfulProducts().catch(() => []),
     getPrintfulOrders(80).catch(() => []),
   ]);
+  const products = await sortPrintfulProducts(productsRaw);
 
   const inProgressOrders = orders.filter((o) => ACTIVE_ORDER_STATUSES.has((o.status ?? '').toLowerCase()));
 
@@ -60,7 +63,7 @@ export default async function AdminBoutiquePage() {
     <div className="mx-auto max-w-7xl space-y-6 px-4 pb-16 pt-4 md:pl-6 md:pr-8">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Admin boutique</p>
-        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">Printful Store</h1>
+        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">Fit Mangas Store</h1>
       </div>
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -81,37 +84,6 @@ export default async function AdminBoutiquePage() {
           <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{eur(totalGain)}</p>
         </GlassCard>
       </section>
-
-      <GlassCard className="p-6">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Produits en vente</h2>
-        {!products.length ? (
-          <p className="mt-4 text-sm text-luxury-soft">Aucun produit synchronisé via Printful.</p>
-        ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => {
-              const image = mapProductImage(product);
-              return (
-                <article key={product.id} className="overflow-hidden rounded-2xl border border-white/50 bg-white/45">
-                  <div className="aspect-[4/3] bg-[#f5f1eb]">
-                    {image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={image} alt={product.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-luxury-soft">Mockup indisponible</div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <p className="line-clamp-2 font-medium text-luxury-ink">{product.name}</p>
-                    <p className="mt-2 text-xs text-luxury-muted">
-                      Variantes: {product.variants} · Sync: {product.synced}
-                    </p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </GlassCard>
 
       <div className="grid gap-5 xl:grid-cols-2">
         <GlassCard className="p-6">
@@ -174,6 +146,25 @@ export default async function AdminBoutiquePage() {
           )}
         </GlassCard>
       </div>
+
+      <GlassCard className="p-6">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Produits en vente</h2>
+        {!products.length ? (
+          <p className="mt-4 text-sm text-luxury-soft">Aucun produit synchronisé via Printful.</p>
+        ) : (
+          <div className="mt-6">
+            <PrintfulProductsSaleGridEditor
+              products={products.map((product) => ({
+                id: product.id,
+                name: product.name,
+                image: mapProductImage(product),
+                variants: product.variants,
+                synced: product.synced,
+              }))}
+            />
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 }

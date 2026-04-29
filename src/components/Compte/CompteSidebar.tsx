@@ -5,17 +5,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Clapperboard, LayoutDashboard, ShoppingBag, UserRound, Video } from 'lucide-react';
 
-const links = [
-  { href: '/compte', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/compte#planning', label: 'Planning', icon: Clapperboard },
-  { href: '/compte/replays', label: 'Vidéos', icon: Video, exact: true },
-  { href: '/compte/boutique', label: 'Boutique', icon: ShoppingBag, exact: true },
-  { href: '/compte/profil', label: 'Profil', icon: UserRound, exact: true },
-];
+import type { ClientLang } from '@/lib/compte/i18n';
+import { compteNavLabels } from '@/lib/compte/i18n';
 
-export function CompteSidebar() {
+const links = [
+  { href: '/compte', key: 'dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/compte#planning', key: 'planning', icon: Clapperboard },
+  { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
+  { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
+  { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
+] as const;
+
+type NavKey = (typeof links)[number]['key'];
+
+export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
   const pathname = usePathname();
   const [hash, setHash] = useState('');
+  const labels = compteNavLabels[lang];
 
   useEffect(() => {
     const readHash = () => setHash(window.location.hash || '');
@@ -26,7 +32,8 @@ export function CompteSidebar() {
 
   return (
     <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
-      {links.map(({ href, label, icon: Icon, exact }) => {
+      {links.map(({ href, key, icon: Icon, exact }) => {
+        const label = labels[key as NavKey];
         const basePath = href.split('#')[0];
         const hrefHash = href.includes('#') ? `#${href.split('#')[1]}` : '';
         const isProfile = basePath === '/compte/profil';

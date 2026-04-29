@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getPrintfulOrders, parseMoney } from '@/lib/printful';
 
 type TrendPoint = {
   date: string;
@@ -56,6 +57,9 @@ export type AdminKpiDrilldowns = {
   revenueByCourse: RevenueCourseDetail[];
   revenueUnknownEur: number;
   revenueTotalEur: number;
+  boutiqueRevenueEur: number;
+  boutiqueOrderCount: number;
+  revenueGrandTotalEur: number;
   churnByTier: CountByTierDetail[];
   churnUsers: ChurnUserDetail[];
   activeByTier: CountByTierDetail[];
@@ -316,6 +320,26 @@ async function stripeRevenueByCourseCurrentMonth(): Promise<{
   }
 }
 
+async function boutiqueRevenueCurrentMonth(): Promise<{ revenueEur: number; orderCount: number }> {
+  try {
+    const orders = await getPrintfulOrders(100);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    let revenueEur = 0;
+    let orderCount = 0;
+    for (const order of orders) {
+      const createdTs = new Date(order.created).getTime();
+      if (!Number.isFinite(createdTs) || createdTs < monthStart || createdTs >= monthEnd) continue;
+      revenueEur += parseMoney(order.retail_costs?.total);
+      orderCount += 1;
+    }
+    return { revenueEur, orderCount };
+  } catch {
+    return { revenueEur: 0, orderCount: 0 };
+  }
+}
+
 async function mrrFromStripe(): Promise<number | null> {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) return null;
@@ -545,8 +569,9 @@ export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
   const now = Date.now();
   const sinceIso = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [revenue, { data: canceledRows }, { data: activeRows }, { data: members }] = await Promise.all([
+  const [revenue, boutiqueRevenue, { data: canceledRows }, { data: activeRows }, { data: members }] = await Promise.all([
     stripeRevenueByCourseCurrentMonth(),
+    boutiqueRevenueCurrentMonth(),
     admin
       .from('subscriptions')
       .select('user_id, tier, status, updated_at')
@@ -604,6 +629,9 @@ export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
     revenueByCourse: revenue.rows,
     revenueUnknownEur: revenue.unknownEur,
     revenueTotalEur: revenue.totalEur,
+    boutiqueRevenueEur: boutiqueRevenue.revenueEur,
+    boutiqueOrderCount: boutiqueRevenue.orderCount,
+    revenueGrandTotalEur: revenue.totalEur + boutiqueRevenue.revenueEur,
     churnByTier,
     churnUsers,
     activeByTier,

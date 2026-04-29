@@ -238,6 +238,10 @@ export default async function AdminPage() {
     ? `${latestPoint.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
     : '—';
   const clientsHeadTr = 'bg-white/85 text-[10px] uppercase tracking-wider text-luxury-ink/65 backdrop-blur';
+  const combinedRevenueMonthEur =
+    stripeMonthEur == null && kpiDrilldowns.boutiqueRevenueEur <= 0
+      ? null
+      : (stripeMonthEur ?? 0) + kpiDrilldowns.boutiqueRevenueEur;
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-5 xl:space-y-6 pt-3 md:pt-4">
@@ -317,7 +321,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <AdminKpiCardsInteractive stripeMonthEur={stripeMonthEur} kpis={kpis} drilldowns={kpiDrilldowns} />
+      <AdminKpiCardsInteractive stripeMonthEur={combinedRevenueMonthEur} kpis={kpis} drilldowns={kpiDrilldowns} />
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
         <GlassCard variant="dark" className="relative p-5 md:p-6">

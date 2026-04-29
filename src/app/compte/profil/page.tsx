@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { BillingPortalButton } from '@/components/Compte/BillingPortalButton';
 import { ProfileAvatarForm } from '@/components/Compte/ProfileAvatarForm';
 import { ProfileBirthDateForm } from '@/components/Compte/ProfileBirthDateForm';
+import { ProfileLanguageForm } from '@/components/Compte/ProfileLanguageForm';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { gradeLabel } from '@/lib/gamification';
 import { getPrintfulOrders } from '@/lib/printful';
@@ -88,6 +89,7 @@ export default async function ProfilPage() {
     onsite_presence_count?: number | null;
     total_replay_watch_seconds?: number | null;
     live_visit_count?: number | null;
+    preferred_blog_language?: 'fr' | 'en' | 'es' | null;
   } | null;
 
   return (
@@ -121,6 +123,8 @@ export default async function ProfilPage() {
         <ProfileAvatarForm avatarUrl={p?.avatar_url} />
         <ProfileBirthDateForm defaultIsoDate={p?.birth_date ?? null} />
       </div>
+
+      <ProfileLanguageForm defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <GlassCard className="p-8">

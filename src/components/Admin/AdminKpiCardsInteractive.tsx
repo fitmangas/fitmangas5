@@ -160,7 +160,7 @@ export function AdminKpiCardsInteractive({
                 </h2>
                 <p className="mt-1.5 text-xs text-luxury-muted">
                   {modal === 'revenue'
-                    ? 'Ventilation par offre détectée dans les métadonnées Stripe'
+                    ? 'Ventilation des revenus Stripe + boutique'
                     : modal === 'churn'
                       ? 'Résiliations sur les 30 derniers jours'
                       : 'Abonnements en statut active ou trialing'}
@@ -182,7 +182,7 @@ export function AdminKpiCardsInteractive({
                   <div className="grid gap-3 sm:grid-cols-1">
                     <div className="rounded-2xl border border-white/70 bg-gradient-to-r from-white via-orange-50/55 to-white px-5 py-4">
                       <p className="text-[11px] uppercase tracking-[0.14em] text-luxury-soft">Total mois en cours</p>
-                      <p className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink">{fmtEur(drilldowns.revenueTotalEur)}</p>
+                      <p className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink">{fmtEur(drilldowns.revenueGrandTotalEur)}</p>
                     </div>
                   </div>
                   <div className="grid gap-3.5 sm:grid-cols-2">
@@ -194,8 +194,8 @@ export function AdminKpiCardsInteractive({
                         <div className="mb-2 flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold leading-tight text-luxury-ink">{row.courseLabel}</p>
                           <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[10px] font-semibold text-orange-700">
-                            {drilldowns.revenueTotalEur > 0
-                              ? `${((row.amountEur / drilldowns.revenueTotalEur) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
+                            {drilldowns.revenueGrandTotalEur > 0
+                              ? `${((row.amountEur / drilldowns.revenueGrandTotalEur) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
                               : '0%'}
                           </span>
                         </div>
@@ -207,8 +207,8 @@ export function AdminKpiCardsInteractive({
                             className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
                             style={{
                               width: `${
-                                drilldowns.revenueTotalEur > 0
-                                  ? Math.max(4, Math.min(100, (row.amountEur / drilldowns.revenueTotalEur) * 100))
+                                drilldowns.revenueGrandTotalEur > 0
+                                  ? Math.max(4, Math.min(100, (row.amountEur / drilldowns.revenueGrandTotalEur) * 100))
                                   : 4
                               }%`,
                             }}
@@ -216,7 +216,32 @@ export function AdminKpiCardsInteractive({
                         </div>
                       </div>
                     ))}
-                    {drilldowns.revenueByCourse.length === 0 ? (
+                    <div className="rounded-2xl border border-white/75 bg-gradient-to-b from-white/90 to-white/70 px-4 py-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold leading-tight text-luxury-ink">Boutique Printful</p>
+                        <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                          {drilldowns.revenueGrandTotalEur > 0
+                            ? `${((drilldowns.boutiqueRevenueEur / drilldowns.revenueGrandTotalEur) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
+                            : '0%'}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[15px] font-medium text-luxury-ink">
+                        {fmtEur(drilldowns.boutiqueRevenueEur)} · {drilldowns.boutiqueOrderCount} commande(s)
+                      </p>
+                      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-orange-100/90">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
+                          style={{
+                            width: `${
+                              drilldowns.revenueGrandTotalEur > 0
+                                ? Math.max(4, Math.min(100, (drilldowns.boutiqueRevenueEur / drilldowns.revenueGrandTotalEur) * 100))
+                                : 4
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {drilldowns.revenueByCourse.length === 0 && drilldowns.boutiqueRevenueEur <= 0 ? (
                       <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 px-4 py-6 text-sm text-luxury-muted sm:col-span-2">
                         Aucune ligne détaillée disponible sur la période.
                       </p>

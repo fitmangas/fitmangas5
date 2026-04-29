@@ -72,19 +72,40 @@ export type PrintfulOrder = {
     name?: string;
     email?: string;
     country_name?: string;
+    phone?: string;
+    address1?: string;
+    address2?: string;
+    city?: string;
+    state_code?: string;
+    country_code?: string;
+    zip?: string;
   };
+  packing_slip?: {
+    email?: string;
+  };
+  shipments?: Array<{
+    id?: string | number;
+    carrier?: string;
+    service?: string;
+    tracking_number?: string;
+    tracking_url?: string;
+    shipped_at?: string;
+    created?: string;
+  }>;
   retail_costs?: {
     subtotal?: string;
     discount?: string;
     shipping?: string;
     tax?: string;
     total?: string;
+    currency?: string;
   };
   costs?: {
+    subtotal?: string;
+    shipping?: string;
+    tax?: string;
     total?: string;
-  };
-  packing_slip?: {
-    email?: string;
+    currency?: string;
   };
   items?: PrintfulOrderItem[];
   invoice_url?: string | null;
@@ -184,28 +205,32 @@ export async function getPrintfulOrders(limit = 50): Promise<PrintfulOrder[]> {
   return Array.isArray(result) ? result : [];
 }
 
+export async function getPrintfulOrderDetail(orderId: number): Promise<PrintfulOrder | null> {
+  const safeId = Math.trunc(orderId);
+  if (!Number.isFinite(safeId) || safeId <= 0) return null;
+  const result = await printfulFetch<PrintfulOrder>(`/orders/${safeId}`);
+  return result ?? null;
+}
+
 export async function getPrintfulProductDetail(productId: number): Promise<PrintfulProductDetail | null> {
   const result = await printfulFetch<PrintfulProductDetailResult>(`/store/products/${productId}`);
   const product = result?.sync_product;
   if (!product?.id) return null;
-  const gallerySet = new Set<string>();
+  const variantGallerySet = new Set<string>();
+  const fallbackGallerySet = new Set<string>();
   const addUrl = (value: string | null | undefined) => {
     const url = value?.trim() ?? '';
-    if (!url) return;
-    gallerySet.add(url);
+    return url || null;
   };
 
-  addUrl(product.thumbnail_url);
-  for (const file of product.files ?? []) {
-    addUrl(file.preview_url);
-    addUrl(file.thumbnail_url);
-    addUrl(file.url);
-  }
-
+  // Priorité aux mockups réellement choisis côté Printful (images des variantes).
   for (const variant of result?.sync_variants ?? []) {
-    // Source principale: mockup par variante (vraie photo produit côté boutique).
-    addUrl(variant.product?.image);
+    const variantImage = addUrl(variant.product?.image);
+    if (variantImage) variantGallerySet.add(variantImage);
   }
+  // Fallback uniquement si besoin.
+  const thumb = addUrl(product.thumbnail_url);
+  if (thumb) fallbackGallerySet.add(thumb);
 
   const variants = (result?.sync_variants ?? []).map((v) => ({
     id: v.id,
@@ -218,7 +243,7 @@ export async function getPrintfulProductDetail(productId: number): Promise<Print
     id: product.id,
     name: product.name,
     thumbnailUrl: product.thumbnail_url ?? null,
-    galleryUrls: Array.from(gallerySet),
+    galleryUrls: [...variantGallerySet, ...fallbackGallerySet],
     variants,
   };
 }

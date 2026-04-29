@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
+import { compteNavLabels, getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function CompteLayout({ children }: { children: React.ReactNode }) {
@@ -13,26 +14,28 @@ export default async function CompteLayout({ children }: { children: React.React
   if (!user) {
     redirect('/?compte=connexion-requise');
   }
+  const lang = await getClientLang(supabase, user.id);
+  const labels = compteNavLabels[lang];
 
   return (
-    <div className="luxury-shell relative min-h-screen">
+    <div className="luxury-shell relative min-h-screen" lang={lang}>
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
-        <CompteSidebar />
+        <CompteSidebar lang={lang} />
         <nav className="mx-4 mb-4 mt-4 md:hidden">
           <div className="glass-card flex flex-wrap gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted">
             <Link href="/compte" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
-              Dashboard
+              {labels.dashboard}
             </Link>
             <Link href="/compte#planning" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
-              Planning
+              {labels.planning}
             </Link>
             <Link href="/compte/replays" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
-              Vidéos
+              {labels.videos}
             </Link>
             <Link href="/compte/profil" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
-              Profil
+              {labels.profile}
             </Link>
           </div>
         </nav>

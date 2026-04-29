@@ -4,6 +4,7 @@ import { ReplayLibraryCard } from '@/components/Replay/ReplayLibraryCard';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { StandaloneVimeoGrid } from '@/components/Replay/StandaloneVimeoGrid';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
+import { getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
 
 type SearchParams = Promise<{ q?: string; tab?: string; sort?: string; page?: string }>;
@@ -19,6 +20,79 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
+  const lang = await getClientLang(supabase, user.id);
+  const t =
+    lang === 'en'
+      ? {
+          title: 'My replays',
+          emptyFav: 'No favorite replay yet.',
+          emptyAll: 'No replay available right now.',
+          clientArea: 'Client area',
+          subtitle: 'Latest featured replay, favorites and full history.',
+          back: 'Back to dashboard',
+          all: 'All replays',
+          fav: 'My favorites',
+          search: 'Search a replay...',
+          recent: 'Most recent',
+          oldest: 'Oldest first',
+          longest: 'Longest',
+          filter: 'Filter',
+          latest: 'Latest replay',
+          noLive: 'No live replay yet. Standalone videos are available below.',
+          favFolder: 'Favorite replay folder',
+          favHistory: 'Favorites history',
+          history: 'Replay history',
+          prev: 'Previous',
+          next: 'Load more',
+          page: 'Page',
+        }
+      : lang === 'es'
+        ? {
+            title: 'Mis replays',
+            emptyFav: 'Aún no hay replays favoritos.',
+            emptyAll: 'No hay replays disponibles por ahora.',
+            clientArea: 'Área cliente',
+            subtitle: 'Último replay destacado, favoritos e historial completo.',
+            back: 'Volver al panel',
+            all: 'Todos los replays',
+            fav: 'Mis favoritos',
+            search: 'Buscar un replay...',
+            recent: 'Más recientes',
+            oldest: 'Más antiguos',
+            longest: 'Más largos',
+            filter: 'Filtrar',
+            latest: 'Último replay',
+            noLive: 'Aún no hay replay live. Los videos standalone están disponibles abajo.',
+            favFolder: 'Carpeta favoritos replay',
+            favHistory: 'Historial de favoritos',
+            history: 'Historial de replays',
+            prev: 'Anterior',
+            next: 'Cargar más',
+            page: 'Página',
+          }
+        : {
+            title: 'Mes replays',
+            emptyFav: 'Aucun replay favori pour le moment.',
+            emptyAll: 'Aucun replay disponible pour le moment.',
+            clientArea: 'Espace client',
+            subtitle: 'Dernier replay en vedette, favoris et historique complet.',
+            back: 'Retour dashboard',
+            all: 'Tous les replays',
+            fav: 'Mes favoris',
+            search: 'Rechercher un replay...',
+            recent: 'Plus récents',
+            oldest: 'Plus anciens',
+            longest: 'Plus longs',
+            filter: 'Filtrer',
+            latest: 'Dernier replay',
+            noLive: 'Aucun replay live pour le moment. Les vidéos standalone sont disponibles ci-dessous.',
+            favFolder: 'Dossier favoris replay',
+            favHistory: 'Historique des favoris',
+            history: 'Historique des replays',
+            prev: 'Précédent',
+            next: 'Charger plus',
+            page: 'Page',
+          };
 
   const sp = await searchParams;
   const q = (sp.q ?? '').trim().slice(0, 80);
@@ -77,9 +151,9 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   if (!hero && filteredStandalone.length === 0) {
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
-        <h1 className="hero-signature-title text-4xl">Mes replays</h1>
+        <h1 className="hero-signature-title text-4xl">{t.title}</h1>
         <p className="mt-4 text-sm text-luxury-muted">
-          {tab === 'favorites' ? 'Aucun replay favori pour le moment.' : 'Aucun replay disponible pour le moment.'}
+          {tab === 'favorites' ? t.emptyFav : t.emptyAll}
         </p>
       </main>
     );
@@ -89,12 +163,12 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Espace client</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">Mes replays</h1>
-          <p className="mt-2 text-sm text-luxury-muted">Dernier replay en vedette, favoris et historique complet.</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.clientArea}</p>
+          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
+          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
         </div>
         <Link href="/compte" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
-          ← Retour dashboard
+          ← {t.back}
         </Link>
       </header>
 
@@ -105,7 +179,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             tab === 'all' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-white/40 bg-white/35 text-luxury-muted'
           }`}
         >
-          Tous les replays
+          {t.all}
         </Link>
         <Link
           href={makeHref({ tab: 'favorites', page: '1' })}
@@ -115,7 +189,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
               : 'border-white/40 bg-white/35 text-luxury-muted'
           }`}
         >
-          Mes favoris ({favorites.length + standaloneFavoriteCount})
+          {t.fav} ({favorites.length + standaloneFavoriteCount})
         </Link>
       </div>
 
@@ -124,33 +198,33 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         <input
           name="q"
           defaultValue={q}
-          placeholder="Rechercher un replay..."
+          placeholder={t.search}
           className="min-w-0 flex-1 rounded-full border border-white/45 bg-white/55 px-5 py-3 text-sm text-luxury-ink outline-none ring-orange-400/25 focus:ring-2"
         />
         <select name="sort" defaultValue={sort} className="rounded-full border border-white/45 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none">
-          <option value="recent">Plus récents</option>
-          <option value="oldest">Plus anciens</option>
-          <option value="duration">Plus longs</option>
+          <option value="recent">{t.recent}</option>
+          <option value="oldest">{t.oldest}</option>
+          <option value="duration">{t.longest}</option>
         </select>
         <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
-          Filtrer
+          {t.filter}
         </button>
       </form>
 
       <section className="glass-card mt-10 rounded-[2rem] border border-white/40 p-5 md:p-7">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">Dernier replay</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
         {hero ? (
           <div className="mt-4 max-w-xl">
             <ReplayLibraryCard item={hero} />
           </div>
         ) : (
-          <p className="mt-3 text-sm text-luxury-muted">Aucun replay live pour le moment. Les vidéos standalone sont disponibles ci-dessous.</p>
+          <p className="mt-3 text-sm text-luxury-muted">{t.noLive}</p>
         )}
       </section>
 
       {favorites.length > 0 ? (
         <section className="mt-8">
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Dossier favoris replay</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.favFolder}</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             {favorites.map((f) => (
               <Link
@@ -168,7 +242,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
       {hero || paginated.length > 0 ? (
         <section className="mt-12">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">
-          {tab === 'favorites' ? 'Historique des favoris' : 'Historique des replays'}
+          {tab === 'favorites' ? t.favHistory : t.history}
         </h2>
         <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {paginated.map((item) => (
@@ -181,15 +255,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           <div className="mt-8 flex items-center justify-center gap-4 text-sm">
             {safePage > 1 ? (
               <Link href={makeHref({ page: String(safePage - 1) })} className="rounded-full border border-white/40 bg-white/50 px-4 py-2 text-luxury-muted">
-                ← Précédent
+                ← {t.prev}
               </Link>
             ) : null}
             <span className="text-luxury-muted">
-              Page {safePage} / {totalPages}
+              {t.page} {safePage} / {totalPages}
             </span>
             {safePage < totalPages ? (
               <Link href={makeHref({ page: String(safePage + 1) })} className="rounded-full border border-white/40 bg-white/50 px-4 py-2 text-luxury-muted">
-                Charger plus →
+                {t.next} →
               </Link>
             ) : null}
           </div>

@@ -40,12 +40,23 @@ on conflict (slug) do nothing;
 -- Articles
 -- ---------------------------------------------------------------------------
 
-create type public.blog_article_status as enum (
-  'draft',
-  'validated',
-  'published',
-  'archived'
-);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_type t
+    join pg_namespace n on n.oid = t.typnamespace
+    where t.typname = 'blog_article_status'
+      and n.nspname = 'public'
+  ) then
+    create type public.blog_article_status as enum (
+      'draft',
+      'validated',
+      'published',
+      'archived'
+    );
+  end if;
+end $$;
 
 create table if not exists public.blog_articles (
   id uuid primary key default gen_random_uuid(),
@@ -290,6 +301,7 @@ create policy "blog_articles_read_published"
   using (status = 'published'::public.blog_article_status);
 
 drop policy if exists "blog_ratings_read_own_and_published" on public.blog_article_ratings;
+drop policy if exists "blog_ratings_select_own" on public.blog_article_ratings;
 create policy "blog_ratings_select_own"
   on public.blog_article_ratings for select to authenticated
   using (auth.uid() = user_id);

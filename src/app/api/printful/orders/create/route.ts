@@ -4,9 +4,14 @@ import { createPrintfulOrder } from '@/lib/printful';
 import { createClient } from '@/lib/supabase/server';
 
 type CreateOrderBody = {
-  productId: number;
-  variantId: number;
-  quantity: number;
+  productId?: number;
+  variantId?: number;
+  quantity?: number;
+  items?: Array<{
+    productId?: number;
+    variantId: number;
+    quantity: number;
+  }>;
   recipient: {
     name: string;
     address1: string;
@@ -36,16 +41,30 @@ export async function POST(req: Request) {
   const productId = Number(body.productId);
   const recipient = body.recipient;
 
-  if (!Number.isFinite(variantId) || !Number.isFinite(productId)) {
-    return NextResponse.json({ error: 'Produit ou variante invalide.' }, { status: 400 });
+  const hasLegacySingleItem = Number.isFinite(variantId) && Number.isFinite(productId);
+  const normalizedItems = Array.isArray(body.items)
+    ? body.items
+        .map((item) => ({
+          syncVariantId: Number(item.variantId),
+          quantity: Math.max(1, Math.min(20, Number(item.quantity) || 1)),
+        }))
+        .filter((item) => Number.isFinite(item.syncVariantId) && item.syncVariantId > 0)
+    : [];
+
+  if (!hasLegacySingleItem && normalizedItems.length === 0) {
+    return NextResponse.json({ error: 'Aucun produit valide à commander.' }, { status: 400 });
   }
   if (!recipient?.name || !recipient.address1 || !recipient.city || !recipient.zip || !recipient.countryCode) {
     return NextResponse.json({ error: 'Adresse incomplète.' }, { status: 400 });
   }
 
   try {
+    const items =
+      normalizedItems.length > 0
+        ? normalizedItems
+        : [{ syncVariantId: variantId, quantity }];
+
     const order = await createPrintfulOrder({
-      externalId: `fitmangas-${user.id}-${Date.now()}`,
       recipient: {
         name: recipient.name.trim(),
         email: user.email,
@@ -54,7 +73,7 @@ export async function POST(req: Request) {
         zip: recipient.zip.trim(),
         countryCode: recipient.countryCode.trim().toUpperCase(),
       },
-      items: [{ syncVariantId: variantId, quantity }],
+      items,
     });
     return NextResponse.json({ order });
   } catch (error) {
