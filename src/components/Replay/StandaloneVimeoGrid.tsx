@@ -25,8 +25,10 @@ function embedSrc(video: StandaloneVimeoLibraryItem): string {
 
 export function StandaloneVimeoGrid({
   videos,
+  lang = 'fr',
 }: {
   videos: StandaloneVimeoLibraryItem[];
+  lang?: 'fr' | 'en' | 'es';
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<StandaloneVimeoLibraryItem | null>(null);
@@ -34,6 +36,52 @@ export function StandaloneVimeoGrid({
     Object.fromEntries(videos.map((v) => [v.id, v.isFavorite === true])),
   );
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+  const locale = lang === 'en' ? 'en' : lang === 'es' ? 'es' : 'fr';
+  const t =
+    lang === 'en'
+      ? {
+          online: 'Online subscription',
+          exclusive: 'Exclusive videos',
+          unfold: 'Expand all',
+          fold: 'Collapse all',
+          show: 'Show',
+          hide: 'Hide',
+          removeFav: 'Remove from favorites',
+          addFav: 'Add to favorites',
+          vimeo: 'Vimeo',
+          video: 'Video',
+          close: 'Close',
+          favError: 'Unable to update favorite right now.',
+        }
+      : lang === 'es'
+        ? {
+            online: 'Suscripción online',
+            exclusive: 'Videos exclusivos',
+            unfold: 'Desplegar todo',
+            fold: 'Plegar todo',
+            show: 'Mostrar',
+            hide: 'Ocultar',
+            removeFav: 'Quitar de favoritos',
+            addFav: 'Añadir a favoritos',
+            vimeo: 'Vimeo',
+            video: 'Video',
+            close: 'Cerrar',
+            favError: 'No se puede actualizar favorito por ahora.',
+          }
+        : {
+            online: 'Abonnement online',
+            exclusive: 'Vidéos exclusives',
+            unfold: 'Tout déplier',
+            fold: 'Tout replier',
+            show: 'Afficher',
+            hide: 'Masquer',
+            removeFav: 'Retirer des favoris',
+            addFav: 'Ajouter aux favoris',
+            vimeo: 'Vimeo',
+            video: 'Vidéo',
+            close: 'Fermer',
+            favError: "Impossible d'ajouter ce favori pour le moment.",
+          };
 
   async function toggleFavorite(videoId: string) {
     const next = !(favorites[videoId] === true);
@@ -51,7 +99,7 @@ export function StandaloneVimeoGrid({
       router.refresh();
     } catch {
       setFavorites((prev) => ({ ...prev, [videoId]: !next }));
-      alert("Impossible d'ajouter ce favori pour le moment.");
+      alert(t.favError);
     }
   }
 
@@ -63,7 +111,7 @@ export function StandaloneVimeoGrid({
       arr.push(video);
       byFolder.set(key, arr);
     }
-    const keys = [...byFolder.keys()].sort((a, b) => a.localeCompare(b, 'fr'));
+    const keys = [...byFolder.keys()].sort((a, b) => a.localeCompare(b, locale));
     return { byFolder, keys };
   }, [videos]);
   const allCollapsed = grouped.keys.length > 0 && grouped.keys.every((k) => collapsedFolders[k] === true);
@@ -87,15 +135,15 @@ export function StandaloneVimeoGrid({
     <>
       <div className="mb-12 space-y-10">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Abonnement online</p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Vidéos exclusives</h3>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.online}</p>
+          <h3 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">{t.exclusive}</h3>
           {grouped.keys.length > 0 ? (
             <button
               type="button"
               onClick={toggleAllFolders}
               className="mt-3 rounded-full border border-white/45 bg-white/55 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-muted transition hover:bg-white/75"
             >
-              {allCollapsed ? 'Tout déplier' : 'Tout replier'}
+              {allCollapsed ? t.unfold : t.fold}
             </button>
           ) : null}
         </div>
@@ -109,7 +157,7 @@ export function StandaloneVimeoGrid({
             >
               <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-luxury-ink">{folder}</h4>
               <span className="text-xs font-semibold text-luxury-muted">
-                {collapsedFolders[folder] ? 'Afficher' : 'Masquer'}
+                {collapsedFolders[folder] ? t.show : t.hide}
               </span>
             </button>
             {!collapsedFolders[folder] ? (
@@ -125,7 +173,7 @@ export function StandaloneVimeoGrid({
                         void toggleFavorite(video.id);
                       }}
                       className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/45 text-white shadow-lg backdrop-blur-md"
-                      aria-label={favorites[video.id] ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      aria-label={favorites[video.id] ? t.removeFav : t.addFav}
                     >
                       <Heart size={16} className={favorites[video.id] ? 'fill-rose-400 text-rose-400' : 'text-white'} />
                     </button>
@@ -143,11 +191,11 @@ export function StandaloneVimeoGrid({
                           className="h-full w-full object-cover transition group-hover:opacity-95"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-luxury-soft">Vimeo</div>
+                        <div className="flex h-full items-center justify-center text-xs text-luxury-soft">{t.vimeo}</div>
                       )}
                     </div>
                     <div className="p-4">
-                      <p className="line-clamp-2 font-semibold text-luxury-ink">{video.title ?? `Vidéo ${video.vimeoVideoId}`}</p>
+                      <p className="line-clamp-2 font-semibold text-luxury-ink">{video.title ?? `${t.video} ${video.vimeoVideoId}`}</p>
                       {video.durationSeconds != null ? (
                         <p className="mt-1 text-xs tabular-nums text-luxury-muted">{formatStandaloneDuration(video.durationSeconds)}</p>
                       ) : null}
@@ -176,7 +224,7 @@ export function StandaloneVimeoGrid({
             <div className="flex items-start justify-between gap-4 border-b border-black/10 px-5 py-4">
               <div className="min-w-0">
                 <h2 id="standalone-video-title" className="text-lg font-semibold text-luxury-ink">
-                  {selected.title ?? `Vidéo ${selected.vimeoVideoId}`}
+                  {selected.title ?? `${t.video} ${selected.vimeoVideoId}`}
                 </h2>
                 <p className="mt-1 text-xs text-luxury-muted">
                   {formatStandaloneDuration(selected.durationSeconds)} · Vimeo {selected.vimeoVideoId}
@@ -187,7 +235,7 @@ export function StandaloneVimeoGrid({
                 type="button"
                 onClick={() => setSelected(null)}
                 className="shrink-0 rounded-full border border-black/10 bg-white p-2 text-luxury-ink transition hover:bg-black/5"
-                aria-label="Fermer"
+                aria-label={t.close}
               >
                 <X size={20} />
               </button>
@@ -197,7 +245,7 @@ export function StandaloneVimeoGrid({
               <div className="aspect-video w-full overflow-hidden rounded-2xl border border-black/10 bg-black shadow-inner">
                 <iframe
                   src={embedSrc(selected)}
-                  title={selected.title ?? 'Vimeo'}
+                  title={selected.title ?? t.vimeo}
                   className="h-full w-full"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen

@@ -13,12 +13,22 @@
         "app/compte/replays/page": {
           "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
+        },
+        "app/compte/boutique/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/compte/progression/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
         }
       },
       "layer": {
         "app/compte/page": "action-browser",
         "app/compte/profil/page": "action-browser",
-        "app/compte/replays/page": "action-browser"
+        "app/compte/replays/page": "action-browser",
+        "app/compte/boutique/page": "action-browser",
+        "app/compte/progression/page": "action-browser"
       },
       "filename": "app/compte/actions.ts",
       "exportedName": "markAllNotificationsReadAction"
@@ -36,12 +46,22 @@
         "app/compte/replays/page": {
           "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
+        },
+        "app/compte/boutique/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/compte/progression/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
         }
       },
       "layer": {
         "app/compte/page": "action-browser",
         "app/compte/profil/page": "action-browser",
-        "app/compte/replays/page": "action-browser"
+        "app/compte/replays/page": "action-browser",
+        "app/compte/boutique/page": "action-browser",
+        "app/compte/progression/page": "action-browser"
       },
       "filename": "app/compte/actions.ts",
       "exportedName": "toggleReplayFavoriteAction"
@@ -59,12 +79,22 @@
         "app/compte/replays/page": {
           "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
+        },
+        "app/compte/boutique/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/compte/progression/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
         }
       },
       "layer": {
         "app/compte/page": "action-browser",
         "app/compte/profil/page": "action-browser",
-        "app/compte/replays/page": "action-browser"
+        "app/compte/replays/page": "action-browser",
+        "app/compte/boutique/page": "action-browser",
+        "app/compte/progression/page": "action-browser"
       },
       "filename": "app/compte/actions.ts",
       "exportedName": "markNotificationReadAction"
@@ -82,12 +112,22 @@
         "app/compte/replays/page": {
           "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
+        },
+        "app/compte/boutique/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/compte/progression/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
         }
       },
       "layer": {
         "app/compte/page": "action-browser",
         "app/compte/profil/page": "action-browser",
-        "app/compte/replays/page": "action-browser"
+        "app/compte/replays/page": "action-browser",
+        "app/compte/boutique/page": "action-browser",
+        "app/compte/progression/page": "action-browser"
       },
       "filename": "app/compte/actions.ts",
       "exportedName": "updateBirthDateAction"
@@ -105,12 +145,22 @@
         "app/compte/replays/page": {
           "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
+        },
+        "app/compte/boutique/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/compte/progression/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fcompte%2Factions.ts%22%2C%5B%7B%22id%22%3A%22007520f68511d4808b1b0a270f02c535f930771e43%22%2C%22exportedName%22%3A%22markAllNotificationsReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%224009dd202f884a49903d247af1f9d5b250a912b3aa%22%2C%22exportedName%22%3A%22toggleReplayFavoriteAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240100d82fc22a6d2b5b83d892e1f078cf0f0611181%22%2C%22exportedName%22%3A%22markNotificationReadAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240bca48e4ae056f5a6fca0194f01c3e3c90e9cc521%22%2C%22exportedName%22%3A%22updateBirthDateAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240dcf5bd0d3743d5eff9a756783c05d488f0f7f47a%22%2C%22exportedName%22%3A%22updateAvatarAction%22%2C%22filename%22%3A%22app%2Fcompte%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
         }
       },
       "layer": {
         "app/compte/page": "action-browser",
         "app/compte/profil/page": "action-browser",
-        "app/compte/replays/page": "action-browser"
+        "app/compte/replays/page": "action-browser",
+        "app/compte/boutique/page": "action-browser",
+        "app/compte/progression/page": "action-browser"
       },
       "filename": "app/compte/actions.ts",
       "exportedName": "updateAvatarAction"

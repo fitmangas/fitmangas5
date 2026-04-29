@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
 import { AvatarWithRibbon } from '@/components/ui/AvatarWithRibbon';
-import { gradeLabel } from '@/lib/gamification';
+import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -42,7 +42,16 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
     gamification_grade?: string | null;
     gamification_points?: number | null;
     birth_date?: string | null;
+    onsite_presence_count?: number | null;
+    total_replay_watch_seconds?: number | null;
+    live_visit_count?: number | null;
   };
+  const computedGrade = computeGamificationGrade({
+    points: p.gamification_points ?? 0,
+    liveVisits: p.live_visit_count ?? 0,
+    replaySeconds: p.total_replay_watch_seconds ?? 0,
+    onsitePresences: p.onsite_presence_count ?? 0,
+  });
 
   return (
     <div className="min-h-screen px-4 py-10">
@@ -59,7 +68,7 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
             <AvatarWithRibbon
               avatarUrl={p.avatar_url}
               displayName={displayName}
-              grade={p.gamification_grade}
+              grade={p.gamification_grade ?? computedGrade}
               sizePx={80}
               showPoints
               points={p.gamification_points ?? 0}
@@ -69,7 +78,7 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
               <p className="mt-2 text-sm text-luxury-muted">
                 Tier profil : <strong>{formatTier(p.customer_tier ?? null)}</strong> · Rôle :{' '}
                 <strong>{p.role ?? 'member'}</strong> · Grade :{' '}
-                <strong>{gradeLabel(p.gamification_grade)}</strong>
+                <strong>{gradeLabel(p.gamification_grade ?? computedGrade)}</strong>
                 {p.gamification_points != null ? ` (${p.gamification_points} pts)` : ''}
               </p>
               {p.birth_date ? (

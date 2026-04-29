@@ -109,11 +109,40 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>): SmartCours
 type Props = {
   nextAppointment: NextAppointment;
   liveUnread: number | null;
+  lang?: 'fr' | 'en' | 'es';
 };
 
-export function NextLiveCompteCard({ nextAppointment, liveUnread }: Props) {
+export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr' }: Props) {
   const [open, setOpen] = useState(false);
   const hasUpcomingLive = nextAppointment != null;
+  const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
+  const t =
+    lang === 'en'
+      ? {
+          title: 'Next live',
+          none: 'No live scheduled',
+          reserve: 'Book a session from the calendar below.',
+          details: 'Details',
+          join: 'Join',
+          seePlanning: 'See schedule',
+        }
+      : lang === 'es'
+        ? {
+            title: 'Próximo live',
+            none: 'No hay live programado',
+            reserve: 'Reserva una sesión desde el calendario de abajo.',
+            details: 'Detalles',
+            join: 'Unirse',
+            seePlanning: 'Ver planificación',
+          }
+        : {
+            title: 'Prochain live',
+            none: 'Aucun live planifié',
+            reserve: 'Réserve une séance depuis le calendrier ci-dessous.',
+            details: 'Détails',
+            join: 'Rejoindre',
+            seePlanning: 'Voir planning',
+          };
 
   const modalCourse = useMemo(
     () => (nextAppointment ? buildModalCourse(nextAppointment) : null),
@@ -125,20 +154,20 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread }: Props) {
       <GlassCard className="relative p-5 md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain live</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
             <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">
-              {hasUpcomingLive ? nextAppointment.title : 'Aucun live planifié'}
+              {hasUpcomingLive ? nextAppointment.title : t.none}
             </p>
             <p className="mt-2 text-xs text-luxury-muted">
               {hasUpcomingLive
-                ? new Date(nextAppointment.startsAt).toLocaleString('fr-FR', {
+                ? new Date(nextAppointment.startsAt).toLocaleString(locale, {
                     weekday: 'short',
                     day: '2-digit',
                     month: 'short',
                     hour: '2-digit',
                     minute: '2-digit',
                   })
-                : 'Réserve une séance depuis le calendrier ci-dessous.'}
+                : t.reserve}
             </p>
           </div>
           <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
@@ -154,24 +183,24 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread }: Props) {
           {hasUpcomingLive ? (
             <>
               <button type="button" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]" onClick={() => setOpen(true)}>
-                Détails
+                {t.details}
               </button>
               <Link
                 href={`/live/${nextAppointment.courseId}`}
                 className="btn-luxury-primary relative z-20 min-h-[46px] min-w-[160px]"
               >
-                Rejoindre
+                {t.join}
               </Link>
             </>
           ) : (
             <Link href="/compte/planning" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
-              Voir planning
+              {t.seePlanning}
             </Link>
           )}
         </div>
       </GlassCard>
 
-      <CalendarCourseModal course={open ? modalCourse : null} onClose={() => setOpen(false)} />
+      <CalendarCourseModal course={open ? modalCourse : null} onClose={() => setOpen(false)} lang={lang} />
     </>
   );
 }

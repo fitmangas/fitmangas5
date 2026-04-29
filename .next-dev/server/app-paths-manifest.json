@@ -1,7 +1,8 @@
 {
-  "/compte/profil/page": "app/compte/profil/page.js",
-  "/compte/blog/page": "app/compte/blog/page.js",
+  "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
+  "/compte/boutique/page": "app/compte/boutique/page.js",
   "/compte/page": "app/compte/page.js",
+  "/admin/page": "app/admin/page.js",
   "/compte/replays/page": "app/compte/replays/page.js",
   "/compte/progression/page": "app/compte/progression/page.js"
 }

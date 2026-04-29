@@ -7,7 +7,7 @@ import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
 import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { fallbackFirstName } from '@/lib/compte/i18n';
+import { resolveFirstName } from '@/lib/compte/i18n';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
@@ -89,7 +89,7 @@ export default async function ComptePage({
   ]);
 
   const lang = profile?.preferred_blog_language === 'en' || profile?.preferred_blog_language === 'es' ? profile.preferred_blog_language : 'fr';
-  const firstName = profile?.first_name?.trim() || fallbackFirstName(user.email);
+  const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
   const motivation = weeklyMotivation(firstName, lang);
   const t =
     lang === 'en'
@@ -243,7 +243,7 @@ export default async function ComptePage({
             </div>
           </GlassCard>
 
-          <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} />
+          <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} lang={lang} />
 
           <GlassCard className="relative p-5 md:p-6">
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mes replays" />
@@ -302,7 +302,7 @@ export default async function ComptePage({
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.planning}</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.nextSessions}</h2>
         </div>
-        <SmartCalendar />
+        <SmartCalendar lang={lang} />
       </section>
 
       <section id="replays" className="scroll-mt-24 space-y-4">
@@ -310,7 +310,7 @@ export default async function ComptePage({
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.library}</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.onDemand}</h2>
         </div>
-        <MyReplaysSection userId={user.id} />
+        <MyReplaysSection userId={user.id} lang={lang} />
       </section>
     </div>
   );

@@ -215,7 +215,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
         {hero ? (
           <div className="mt-4 max-w-xl">
-            <ReplayLibraryCard item={hero} />
+            <ReplayLibraryCard item={hero} lang={lang} />
           </div>
         ) : (
           <p className="mt-3 text-sm text-luxury-muted">{t.noLive}</p>
@@ -247,7 +247,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {paginated.map((item) => (
             <li key={item.recordingId}>
-              <ReplayLibraryCard item={item} />
+              <ReplayLibraryCard item={item} lang={lang} />
             </li>
           ))}
         </ul>
@@ -273,7 +273,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
 
       {filteredStandalone.length > 0 ? (
         <section className="mt-12">
-          <StandaloneVimeoGrid videos={filteredStandalone} />
+          <StandaloneVimeoGrid videos={filteredStandalone} lang={lang} />
         </section>
       ) : null}
     </main>

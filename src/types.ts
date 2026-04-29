@@ -12,7 +12,6 @@ export interface Course {
   title: string;
   price: string;
   badge?: string;
-  stripeUrl: string;
   isUnitPay?: boolean;
   imageUrl?: string;
 }
@@ -44,14 +43,7 @@ export interface Content {
   };
 }
 
-export const STRIPE_LINKS = {
-  visioCollectif: "https://buy.stripe.com/bJe7sL98Sdzla4af2L9bO00",
-  visioIndividuel: "https://buy.stripe.com/cNicN50Cm9j56RY5sb9bO04",
-  nantesCollectif: "https://buy.stripe.com/28E7sL0CmeDp906bQz9bO05",
-  nantesIndividuel: "https://buy.stripe.com/aFa8wP1Gq7aX3FM9Ir9bO03",
-};
-
-export const WHATSAPP_PHONE = "33784835972";
+export const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_LANDING_WHATSAPP_PHONE || "33784835972";
 
 export const translations: Record<Language, Content> = {
   FR: {
@@ -92,16 +84,16 @@ export const translations: Record<Language, Content> = {
     ],
     courses: {
       visio: [
-        { id: 'v-coll', title: "Visio collectif", price: "39€ / mois", badge: "7 jours gratuits", stripeUrl: STRIPE_LINKS.visioCollectif, imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
-        { id: 'v-ind', title: "Visio individuel", price: "269€ / mois", badge: "7 jours gratuits", stripeUrl: STRIPE_LINKS.visioIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
+        { id: 'v-coll', title: "Visio collectif", price: "39€ / mois", badge: "7 jours gratuits", imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
+        { id: 'v-ind', title: "Visio individuel", price: "269€ / mois", badge: "7 jours gratuits", imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
       ],
       nantes: [
-        { id: 'n-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
-        { id: 'n-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+        { id: 'n-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'n-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ],
       mexico: [
-        { id: 'm-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
-        { id: 'm-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+        { id: 'm-coll', title: "Cours collectif", price: "10€ / séance", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'm-ind', title: "Cours individuel", price: "50€ / séance", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   },
@@ -143,16 +135,16 @@ export const translations: Record<Language, Content> = {
     ],
     courses: {
       visio: [
-        { id: 'v-coll', title: "Online grupal", price: "39€ / mes", badge: "7 días gratis", stripeUrl: STRIPE_LINKS.visioCollectif, imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
-        { id: 'v-ind', title: "Online individual", price: "269€ / mes", badge: "7 días gratis", stripeUrl: STRIPE_LINKS.visioIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
+        { id: 'v-coll', title: "Online grupal", price: "39€ / mes", badge: "7 días gratis", imageUrl: "https://www.dropbox.com/scl/fi/9vvmbi2jvmbah0j4r366u/DSC_3270.PNG?rlkey=99b2xg904ulfsaci6ram80lqe&st=xqmz0ybd&raw=1" },
+        { id: 'v-ind', title: "Online individual", price: "269€ / mes", badge: "7 días gratis", imageUrl: "https://www.dropbox.com/scl/fi/w5md19t7be4f0braotoa1/DSC_3543.PNG?rlkey=4n2herm6py2s705vfz6lom94l&st=44rscama&raw=1" }
       ],
       nantes: [
-        { id: 'n-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
-        { id: 'n-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+        { id: 'n-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'n-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ],
       mexico: [
-        { id: 'm-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesCollectif, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
-        { id: 'm-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, stripeUrl: STRIPE_LINKS.nantesIndividuel, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
+        { id: 'm-coll', title: "Clase grupal", price: "10€ / clase", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/p44ddxmz2cam9r0td9qgh/DSC_3531.PNG?rlkey=v19pwrg7xqmz4u8a4kw3btk61&st=v1weczk2&raw=1" },
+        { id: 'm-ind', title: "Clase individual", price: "50€ / clase", isUnitPay: true, imageUrl: "https://www.dropbox.com/scl/fi/lp7d96yyag2hktokjalox/DSC_3458.PNG?rlkey=uit6ax5wrby3blng29i37iu33&st=y9p2ozj4&raw=1" }
       ]
     }
   }

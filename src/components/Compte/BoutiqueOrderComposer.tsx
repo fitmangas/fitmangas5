@@ -36,9 +36,9 @@ type CartLine = {
 const RECIPIENT_STORAGE_KEY = 'fitmangas.printful.recipient.v1';
 const CART_STORAGE_KEY = 'fitmangas.printful.cart.v1';
 
-function money(value: number, currency: string): string {
+function money(value: number, currency: string, locale = 'fr-FR'): string {
   if (!Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency || 'EUR' }).format(value);
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currency || 'EUR' }).format(value);
 }
 
 const transparencyCache = new Map<string, boolean>();
@@ -82,7 +82,7 @@ async function detectTransparentPixels(imageUrl: string): Promise<boolean> {
   return false;
 }
 
-export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }) {
+export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: ProductInput[]; lang?: 'fr' | 'en' | 'es' }) {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [openProductModal, setOpenProductModal] = useState(false);
   const [detail, setDetail] = useState<ProductDetail | null>(null);
@@ -103,6 +103,13 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartLine[]>([]);
   const [addressLocked, setAddressLocked] = useState(false);
+  const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
+  const t =
+    lang === 'en'
+      ? { cart: 'Cart', products: 'product', detail: 'Product detail', loading: 'Loading...', chooseVariant: 'Choose a variant', variant: 'Variant', quantity: 'Quantity', fullName: 'Full name', address: 'Address', city: 'City', zip: 'Zip code', country: 'Country code (ISO)', edit: 'Edit', product: 'Product', estTotal: 'Estimated total', pending: 'Pending cart', item: 'item(s)', addContinue: 'Add and continue', addOrder: 'Add and checkout', sending: 'Sending...', added: 'Product added to cart. Your info is saved.', created: 'created successfully.', unavailable: 'Mockup unavailable', allShown: 'All products are already displayed as best sellers.', bestSeller: 'Best Seller Collection', topReviews: 'Top reviews', explore: 'Explore best sellers', fullShop: 'Full shop', dropLabel: 'Best Seller Drop', heroTagline: 'The most requested FitMangas pieces of the moment, selected to move in style.', fresh: 'Fresh &', stylish: 'Stylish', unknownError: 'Unknown error', createImpossible: 'Unable to create order', productFallback: 'Product' }
+      : lang === 'es'
+        ? { cart: 'Carrito', products: 'producto', detail: 'Detalle producto', loading: 'Cargando...', chooseVariant: 'Elegir variante', variant: 'Variante', quantity: 'Cantidad', fullName: 'Nombre completo', address: 'Dirección', city: 'Ciudad', zip: 'Código postal', country: 'Código país (ISO)', edit: 'Editar', product: 'Producto', estTotal: 'Total estimado', pending: 'Carrito pendiente', item: 'artículo(s)', addContinue: 'Añadir y continuar', addOrder: 'Añadir y pagar', sending: 'Enviando...', added: 'Producto añadido al carrito. Tu información está guardada.', created: 'creado con éxito.', unavailable: 'Mockup no disponible', allShown: 'Todos los productos ya se muestran en best sellers.', bestSeller: 'Colección best seller', topReviews: 'Reseñas top', explore: 'Explorar best sellers', fullShop: 'Tienda completa', dropLabel: 'Drop Best Seller', heroTagline: 'Las piezas FitMangas más solicitadas del momento, seleccionadas para moverte con estilo.', fresh: 'Fresh &', stylish: 'Stylish', unknownError: 'Error desconocido', createImpossible: 'No se puede crear', productFallback: 'Producto' }
+        : { cart: 'Panier', products: 'produit', detail: 'Détail produit', loading: 'Chargement...', chooseVariant: 'Choisir une variante', variant: 'Variante', quantity: 'Quantité', fullName: 'Nom complet', address: 'Adresse', city: 'Ville', zip: 'Code postal', country: 'Code pays (ISO)', edit: 'Modifier', product: 'Produit', estTotal: 'Total estimé', pending: 'Panier en attente', item: 'article(s)', addContinue: 'Ajouter et continuer', addOrder: 'Ajouter et commander', sending: 'Envoi...', added: 'Produit ajouté au panier. Tes informations sont conservées.', created: 'créée avec succès.', unavailable: 'Mockup indisponible', allShown: 'Tous les produits sont déjà affichés en best sellers.', bestSeller: 'Collection best seller', topReviews: 'Meilleures notes', explore: 'Explorer les best sellers', fullShop: 'Boutique complète', dropLabel: 'Drop best seller', heroTagline: 'Les pièces FitMangas les plus demandées du moment, sélectionnées pour bouger avec style.', fresh: 'Fresh &', stylish: 'Stylish', unknownError: 'Erreur inconnue', createImpossible: 'Création impossible', productFallback: 'Produit' };
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedProductId) ?? null,
@@ -252,7 +259,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
     } catch (e) {
       setDetail(null);
       setVariantId(null);
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      setError(e instanceof Error ? e.message : t.unknownError);
     } finally {
       setLoadingDetail(false);
     }
@@ -262,13 +269,13 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (!selectedProductId || !variantId) {
-      nextErrors.variant = 'Choisis une variante.';
+      nextErrors.variant = t.chooseVariant;
     }
-    if (!name.trim()) nextErrors.name = 'Nom requis.';
-    if (!address1.trim()) nextErrors.address1 = 'Adresse requise.';
-    if (!city.trim()) nextErrors.city = 'Ville requise.';
-    if (!zip.trim()) nextErrors.zip = 'Code postal requis.';
-    if (!countryCode.trim()) nextErrors.countryCode = 'Code pays requis.';
+    if (!name.trim()) nextErrors.name = `${t.fullName} requis.`;
+    if (!address1.trim()) nextErrors.address1 = `${t.address} requise.`;
+    if (!city.trim()) nextErrors.city = `${t.city} requise.`;
+    if (!zip.trim()) nextErrors.zip = `${t.zip} requis.`;
+    if (!countryCode.trim()) nextErrors.countryCode = `${t.country} requis.`;
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -276,8 +283,8 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
     setError(null);
     setMessage(null);
     try {
-      const productName = selectedProduct?.name ?? `Produit #${selectedProductId}`;
-      const variantName = selectedVariant?.name ?? `Variante #${variantId}`;
+      const productName = selectedProduct?.name ?? `${t.productFallback} #${selectedProductId}`;
+      const variantName = selectedVariant?.name ?? `${t.variant} #${variantId}`;
 
       if (submitIntent === 'continue') {
         setCartItems((prev) => {
@@ -302,7 +309,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
           return next;
         });
         setAddressLocked(true);
-        setMessage('Produit ajouté au panier. Tes informations sont conservées.');
+        setMessage(t.added);
         setOpenProductModal(false);
         return;
       }
@@ -337,13 +344,13 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
         }),
       });
       const json = (await res.json()) as { order?: { id: number }; error?: string };
-      if (!res.ok || !json.order) throw new Error(json.error ?? 'Création impossible');
+      if (!res.ok || !json.order) throw new Error(json.error ?? t.createImpossible);
       setCartItems([]);
       setAddressLocked(true);
-      setMessage(`Commande #${json.order.id} créée avec succès.`);
+      setMessage(`Commande #${json.order.id} ${t.created}`);
       setOpenProductModal(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      setError(e instanceof Error ? e.message : t.unknownError);
     } finally {
       setSubmitting(false);
     }
@@ -378,7 +385,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
               } ${isCopperVacuum ? 'scale-[0.9]' : ''}`}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-xs text-luxury-soft">Mockup indisponible</div>
+            <div className="flex h-full items-center justify-center text-xs text-luxury-soft">{t.unavailable}</div>
           )}
         </div>
         <div className="space-y-1 p-3">
@@ -395,24 +402,24 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
         <div className="flex items-center justify-end">
           <div className="inline-flex items-center gap-2 rounded-full border border-luxury-orange/35 bg-white/85 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-ink shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
             <span className="h-2 w-2 rounded-full bg-luxury-orange" />
-            Panier: {cartItems.length} produit{cartItems.length > 1 ? 's' : ''}
+            {t.cart}: {cartItems.length} {t.products}{cartItems.length > 1 ? 's' : ''}
           </div>
         </div>
       ) : null}
       <section className="overflow-hidden rounded-[34px] border border-white/55 bg-white/85 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.12)] md:p-6">
           <div className="grid gap-6 md:grid-cols-[1.08fr_1fr] md:items-stretch">
             <div className="flex flex-col justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Best Seller Drop</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.dropLabel}</p>
               <div className="mt-3">
-                <h3 className="text-[4.8rem] font-black leading-[0.82] tracking-[-0.03em] text-luxury-ink md:text-[6.4rem]">Fresh &amp;</h3>
+                <h3 className="text-[4.8rem] font-black leading-[0.82] tracking-[-0.03em] text-luxury-ink md:text-[6.4rem]">{t.fresh}</h3>
                 <div className="mt-1 flex items-end">
                   <h3 className="translate-y-1 text-[4.8rem] font-semibold leading-[0.82] tracking-[-0.02em] text-[#606066] md:translate-y-2 md:text-[6.4rem]">
-                    Stylish
+                    {t.stylish}
                   </h3>
                 </div>
               </div>
               <p className="mt-7 max-w-md text-sm leading-relaxed text-luxury-muted">
-                Les pièces FitMangas les plus demandées du moment, sélectionnées pour bouger avec style.
+                {t.heroTagline}
               </p>
             </div>
 
@@ -446,7 +453,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                 }}
                 className="inline-flex items-center gap-2 rounded-full bg-[#131313] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-110"
               >
-                Explorer les best sellers
+                {t.explore}
                 <ArrowDownRight size={14} />
               </button>
             </div>
@@ -484,7 +491,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                 </div>
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-[1.9rem] font-semibold leading-[0.88] tracking-tight text-luxury-ink">{p.name}</p>
-                  <p className="mt-2 text-sm text-luxury-muted">Best Seller Collection</p>
+                  <p className="mt-2 text-sm text-luxury-muted">{t.bestSeller}</p>
                   <p className="mt-1 text-[11px] tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
                 </div>
                 <ArrowUpRight size={16} className="ml-auto shrink-0 text-luxury-ink/70 transition group-hover:text-luxury-ink" />
@@ -495,10 +502,10 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
 
       <section>
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-[2.35rem] font-semibold tracking-tight text-luxury-ink">Boutique complète</h3>
+          <h3 className="text-[2.35rem] font-semibold tracking-tight text-luxury-ink">{t.fullShop}</h3>
         </div>
         {fullBoutiqueProducts.length === 0 ? (
-          <p className="text-sm text-luxury-muted">Tous les produits sont déjà affichés en best sellers.</p>
+          <p className="text-sm text-luxury-muted">{t.allShown}</p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {fullBoutiqueProducts.map((p) => renderProductCard(p))}
@@ -515,7 +522,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
         >
           <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-white/60 bg-white p-5 shadow-[0_24px_64px_rgba(0,0,0,0.25)] md:p-7">
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-luxury-soft">Détail produit</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-luxury-soft">{t.detail}</p>
               <button
                 type="button"
                 onClick={() => setOpenProductModal(false)}
@@ -549,7 +556,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                         className={`h-full w-full ${isTransparentImage(mainPreview) ? 'object-contain p-2' : 'object-cover'}`}
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-luxury-soft">Mockup indisponible</div>
+                      <div className="flex h-full items-center justify-center text-sm text-luxury-soft">{t.unavailable}</div>
                     )}
                   </div>
                 </div>
@@ -583,13 +590,13 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
 
               <div className="space-y-4">
                 <h4 className="text-3xl font-semibold tracking-tight text-luxury-ink">{selectedProduct.name}</h4>
-                <p className="text-sm text-luxury-muted">★★★★★ • Top reviews</p>
+                <p className="text-sm text-luxury-muted">★★★★★ • {t.topReviews}</p>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">Variante</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.variant}</label>
                   {loadingDetail ? (
                     <div className="mt-2 flex items-center gap-2 text-sm text-luxury-muted">
-                      <Loader2 size={14} className="animate-spin" /> Chargement...
+                      <Loader2 size={14} className="animate-spin" /> {t.loading}
                     </div>
                   ) : (
                     <select
@@ -598,11 +605,11 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                       className="mt-2 w-full rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none"
                     >
                       <option value="" disabled>
-                        Choisir une variante
+                        {t.chooseVariant}
                       </option>
                       {(detail?.variants ?? []).map((v) => (
                         <option key={v.id} value={v.id}>
-                          {v.name} · {money(v.retailPrice, v.currency)}
+                          {v.name} · {money(v.retailPrice, v.currency, locale)}
                         </option>
                       ))}
                     </select>
@@ -611,7 +618,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">Quantité</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.quantity}</label>
                   <input
                     type="number"
                     min={1}
@@ -628,7 +635,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     readOnly={addressLocked}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nom complet"
+                    placeholder={t.fullName}
                     className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
                       addressLocked ? 'cursor-not-allowed opacity-80' : ''
                     }`}
@@ -638,7 +645,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     readOnly={addressLocked}
                     value={address1}
                     onChange={(e) => setAddress1(e.target.value)}
-                    placeholder="Adresse"
+                    placeholder={t.address}
                     className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
                       addressLocked ? 'cursor-not-allowed opacity-80' : ''
                     }`}
@@ -648,7 +655,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     readOnly={addressLocked}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="Ville"
+                    placeholder={t.city}
                     className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
                       addressLocked ? 'cursor-not-allowed opacity-80' : ''
                     }`}
@@ -658,7 +665,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     readOnly={addressLocked}
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
-                    placeholder="Code postal"
+                    placeholder={t.zip}
                     className={`rounded-xl border border-white/50 bg-white/90 px-3 py-2 text-sm text-luxury-ink transition focus:border-luxury-orange/40 focus:outline-none ${
                       addressLocked ? 'cursor-not-allowed opacity-80' : ''
                     }`}
@@ -666,7 +673,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">Code pays (ISO)</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.country}</label>
                   <input
                     required
                     readOnly={addressLocked}
@@ -683,7 +690,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                       onClick={() => setAddressLocked(false)}
                       className="ml-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-orange"
                     >
-                      Modifier
+                      {t.edit}
                     </button>
                   ) : null}
                   {fieldErrors.countryCode ? <p className="mt-1 text-xs text-red-600">{fieldErrors.countryCode}</p> : null}
@@ -691,16 +698,16 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
 
                 <div className="rounded-2xl border border-white/60 bg-white/75 px-4 py-3 text-sm">
                   <p className="text-luxury-muted">
-                    Produit: <span className="font-medium text-luxury-ink">{selectedProduct?.name ?? '—'}</span>
+                    {t.product}: <span className="font-medium text-luxury-ink">{selectedProduct?.name ?? '—'}</span>
                   </p>
                   <p className="mt-1 text-luxury-muted">
-                    Variante: <span className="font-medium text-luxury-ink">{selectedVariant?.name ?? '—'}</span>
+                    {t.variant}: <span className="font-medium text-luxury-ink">{selectedVariant?.name ?? '—'}</span>
                   </p>
                   <p className="mt-1 text-luxury-muted">
-                    Total estimé: <span className="font-semibold text-luxury-ink">{money(estimatedTotal, selectedVariant?.currency ?? 'EUR')}</span>
+                    {t.estTotal}: <span className="font-semibold text-luxury-ink">{money(estimatedTotal, selectedVariant?.currency ?? 'EUR', locale)}</span>
                   </p>
                   <p className="mt-1 text-luxury-muted">
-                    Panier en attente: <span className="font-semibold text-luxury-ink">{cartItems.length} article(s)</span>
+                    {t.pending}: <span className="font-semibold text-luxury-ink">{cartItems.length} {t.item}</span>
                   </p>
                 </div>
                 {message ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
@@ -713,7 +720,7 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     onClick={() => setSubmitIntent('continue')}
                     className="w-full rounded-full border border-luxury-orange/35 bg-luxury-orange px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-95 disabled:opacity-60"
                   >
-                    {submitting && submitIntent === 'continue' ? 'Envoi...' : 'Ajouter et continuer'}
+                    {submitting && submitIntent === 'continue' ? t.sending : t.addContinue}
                   </button>
                   <button
                     type="submit"
@@ -722,8 +729,8 @@ export function BoutiqueOrderComposer({ products }: { products: ProductInput[] }
                     className="w-full rounded-full border border-black/15 bg-black px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-110 disabled:opacity-60"
                   >
                     {submitting && submitIntent === 'finalize'
-                      ? 'Envoi...'
-                      : `Ajouter et commander${cartItems.length > 0 ? ` (${cartItems.length + 1})` : ''}`}
+                      ? t.sending
+                      : `${t.addOrder}${cartItems.length > 0 ? ` (${cartItems.length + 1})` : ''}`}
                   </button>
                 </div>
               </div>

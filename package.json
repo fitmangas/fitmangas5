@@ -23,7 +23,8 @@
     "blog:cleanup:duplicates": "tsx scripts/cleanup-blog-duplicates.ts",
     "blog:schedule:normalize": "tsx scripts/normalize-blog-monthly-schedule.ts",
     "automation:inactive": "tsx scripts/automation/report-inactive-users.ts",
-    "automation:birthdays": "tsx scripts/automation/run-birthday-day.ts"
+    "automation:birthdays": "tsx scripts/automation/run-birthday-day.ts",
+    "test:integration": "tsx scripts/test-integration-i18n-checkout.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

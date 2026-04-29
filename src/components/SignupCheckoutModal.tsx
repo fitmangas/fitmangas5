@@ -37,9 +37,9 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           password: 'Mot de passe',
           cta: 'Continuer vers le paiement',
           close: 'Fermer',
-          fallbackPay: 'Payer avec le lien Stripe (secours)',
           needConfirm:
             'Compte créé. Confirme ton e-mail pour activer la session, puis reconnecte-toi et clique à nouveau sur Réserver pour payer.',
+          missingSupabase: 'Configuration incomplète. Paiement indisponible pour le moment.',
         }
       : {
           title: 'Reservar',
@@ -50,9 +50,9 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           password: 'Contraseña',
           cta: 'Continuar al pago',
           close: 'Cerrar',
-          fallbackPay: 'Pagar con enlace Stripe (respaldo)',
           needConfirm:
             'Cuenta creada. Confirma tu correo para activar la sesión; luego vuelve a iniciar sesión y pulsa Reservar para pagar.',
+          missingSupabase: 'Configuración incompleta. Pago no disponible por ahora.',
         };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -74,12 +74,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!supabaseConfigured) {
-        window.open(course.stripeUrl, '_blank', 'noopener,noreferrer');
-        setInfo(
-          lang === 'FR'
-            ? 'Supabase n’est pas configuré : ouverture du lien de paiement Stripe direct.'
-            : 'Supabase no configurado: abriendo el enlace de pago Stripe.',
-        );
+        setError(labels.missingSupabase);
         return;
       }
 
@@ -134,12 +129,6 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
       setError(lang === 'FR' ? 'Une erreur est survenue.' : 'Ha ocurrido un error.');
     } finally {
       setLoading(false);
-    }
-  }
-
-  function openFallbackStripe() {
-    if (course?.stripeUrl) {
-      window.open(course.stripeUrl, '_blank', 'noopener,noreferrer');
     }
   }
 
@@ -317,13 +306,6 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                 {labels.cta}
               </button>
 
-              <button
-                type="button"
-                onClick={openFallbackStripe}
-                className="w-full text-center text-[10px] uppercase tracking-widest text-brand-ink/35 underline-offset-4 hover:text-brand-accent hover:underline"
-              >
-                {labels.fallbackPay}
-              </button>
             </form>
           </motion.div>
         </motion.div>

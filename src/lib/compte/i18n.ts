@@ -22,18 +22,41 @@ export function localeFromClientLang(lang: ClientLang): string {
   return 'fr-FR';
 }
 
-export function fallbackFirstName(email: string | null | undefined): string {
-  const raw = (email ?? '').split('@')[0]?.trim();
-  if (!raw) return 'Client';
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+function normalizeFirstName(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const token = trimmed.split(/\s+/)[0]?.trim();
+  if (!token) return null;
+  return token.charAt(0).toUpperCase() + token.slice(1);
 }
 
-export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: string; videos: string; shop: string; profile: string }> = {
+export function resolveFirstName(profileFirstName: unknown, userMetadata?: unknown): string {
+  const fromProfile = normalizeFirstName(profileFirstName);
+  if (fromProfile) return fromProfile;
+
+  const meta = (userMetadata ?? {}) as {
+    first_name?: unknown;
+    given_name?: unknown;
+    name?: unknown;
+    full_name?: unknown;
+  };
+  return (
+    normalizeFirstName(meta.first_name) ??
+    normalizeFirstName(meta.given_name) ??
+    normalizeFirstName(meta.name) ??
+    normalizeFirstName(meta.full_name) ??
+    'Alejandra'
+  );
+}
+
+export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: string; videos: string; shop: string; invoices: string; profile: string }> = {
   fr: {
     dashboard: 'Tableau de bord',
     planning: 'Planning',
     videos: 'Vidéos',
     shop: 'Boutique',
+    invoices: 'Factures',
     profile: 'Profil',
   },
   en: {
@@ -41,6 +64,7 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     planning: 'Schedule',
     videos: 'Videos',
     shop: 'Shop',
+    invoices: 'Invoices',
     profile: 'Profile',
   },
   es: {
@@ -48,6 +72,7 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     planning: 'Planificación',
     videos: 'Videos',
     shop: 'Tienda',
+    invoices: 'Facturas',
     profile: 'Perfil',
   },
 };

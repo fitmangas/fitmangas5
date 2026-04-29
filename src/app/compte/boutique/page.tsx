@@ -93,6 +93,7 @@ export default async function CompteBoutiquePage() {
         </GlassCard>
       ) : (
         <BoutiqueOrderComposer
+          lang={lang}
           products={products.map((p) => ({
             id: p.id,
             name: p.name,

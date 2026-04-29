@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Activity, Droplets, Flame, MoonStar, Target, Utensils, Video } from 'lucide-react';
 
-import { fallbackFirstName } from '@/lib/compte/i18n';
+import { resolveFirstName } from '@/lib/compte/i18n';
 import { getMonthlyProgress, getNextAppointment } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { createClient } from '@/lib/supabase/server';
@@ -80,7 +80,7 @@ export default async function CompteProgressionPage() {
 
   const completionRatio = clamp01(monthly.goal > 0 ? monthly.followedCount / monthly.goal : 0);
   const percent = Math.round(completionRatio * 100);
-  const firstName = profile?.first_name?.trim() || fallbackFirstName(user.email);
+  const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
   const lang = profile?.preferred_blog_language === 'en' || profile?.preferred_blog_language === 'es' ? profile.preferred_blog_language : 'fr';
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';

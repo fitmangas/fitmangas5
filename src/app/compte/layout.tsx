@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { CompteTopBar } from '@/components/Compte/CompteTopBar';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { compteNavLabels, getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
@@ -34,12 +35,18 @@ export default async function CompteLayout({ children }: { children: React.React
             <Link href="/compte/replays" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               {labels.videos}
             </Link>
+            <Link href="/compte/factures" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
+              {labels.invoices}
+            </Link>
             <Link href="/compte/profil" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               {labels.profile}
             </Link>
           </div>
         </nav>
-        <div className="px-4 pb-16 md:pl-24">{children}</div>
+        <div className="px-4 pb-16 md:pl-24">
+          <CompteTopBar showNotifications={false} />
+          {children}
+        </div>
       </div>
     </div>
   );

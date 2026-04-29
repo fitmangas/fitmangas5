@@ -20,7 +20,11 @@ import { ClientLoginModal } from './ClientLoginModal';
 import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 
-const HERO_IMAGE_URL = "https://www.dropbox.com/scl/fi/vmq043zpcjkehh6rsyn7n/DSC_3488.PNG?rlkey=gladkol1foebum7jcagsz1mf3&st=awo05ygo&raw=1";
+const HERO_IMAGE_URL =
+  process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL ||
+  "https://www.dropbox.com/scl/fi/vmq043zpcjkehh6rsyn7n/DSC_3488.PNG?rlkey=gladkol1foebum7jcagsz1mf3&st=awo05ygo&raw=1";
+const LANDING_INSTAGRAM_URL = process.env.NEXT_PUBLIC_LANDING_INSTAGRAM_URL || 'https://www.instagram.com/fit.mangas/';
+const LANDING_CONTACT_EMAIL = process.env.NEXT_PUBLIC_LANDING_CONTACT_EMAIL || 'info@casamangas.fr';
 
 type VimeoShowcaseItem = {
   title: string;
@@ -242,7 +246,7 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
                     <WhatsAppIcon size={19} />
                   </a>
                   <a
-                    href="https://www.instagram.com/fit.mangas/"
+                    href={LANDING_INSTAGRAM_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
@@ -251,7 +255,7 @@ export function LandingPage({ vimeoShowcase = [] }: { vimeoShowcase?: VimeoShowc
                     <Instagram size={19} />
                   </a>
                   <a
-                    href="mailto:info@casamangas.fr"
+                    href={`mailto:${LANDING_CONTACT_EMAIL}`}
                     className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="Mail"
                   >

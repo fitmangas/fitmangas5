@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clapperboard, LayoutDashboard, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Clapperboard, FileText, LayoutDashboard, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -13,6 +13,7 @@ const links = [
   { href: '/compte#planning', key: 'planning', icon: Clapperboard },
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
+  { href: '/compte/factures', key: 'invoices', icon: FileText, exact: true },
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
 ] as const;
 
