@@ -67,7 +67,7 @@ export default async function ComptePage({
   const [{ data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('first_name, last_name, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
+      .select('first_name, last_name, avatar_url, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
       .eq('id', user.id)
       .maybeSingle(),
     getMonthlyProgress(user.id, goal),
@@ -96,6 +96,7 @@ export default async function ComptePage({
   ]);
 
   const lang = profile?.preferred_blog_language === 'en' || profile?.preferred_blog_language === 'es' ? profile.preferred_blog_language : 'fr';
+  const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
   const grade = profile?.gamification_grade ??
     computeGamificationGrade({
@@ -216,7 +217,7 @@ export default async function ComptePage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <div className="flex flex-col items-center">
               <img
-                src="/client-contact-photo.png"
+                src={avatarUrl}
                 alt="Coach IA"
                 className="h-[88px] w-[88px] rounded-full object-cover object-top ring-1 ring-white/70"
               />

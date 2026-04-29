@@ -3,8 +3,8 @@ import Stripe from 'stripe';
 
 import { BillingPortalButton } from '@/components/Compte/BillingPortalButton';
 import { ProfileAvatarForm } from '@/components/Compte/ProfileAvatarForm';
-import { ProfileBirthDateForm } from '@/components/Compte/ProfileBirthDateForm';
-import { ProfileLanguageForm } from '@/components/Compte/ProfileLanguageForm';
+import { ProfileBirthDateFormEmbedded } from '@/components/Compte/ProfileBirthDateForm';
+import { ProfileLanguageFormEmbedded } from '@/components/Compte/ProfileLanguageForm';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getClientLang, localeFromClientLang } from '@/lib/compte/i18n';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
@@ -207,26 +207,23 @@ export default async function ProfilPage() {
       </div>
 
       <GlassCard className="p-8 md:p-10">
-        <p className="mt-4 text-sm text-luxury-muted">
-          {t.email} : <span className="font-medium text-luxury-ink">{user.email}</span>
-        </p>
-        <p className="mt-2 text-sm text-luxury-muted">
-          {t.offer} : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
-        </p>
-        <p className="mt-3 text-sm text-luxury-muted">
-          {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade)}</span>
-          {p?.gamification_points != null ? (
-            <span className="text-luxury-soft"> · {p.gamification_points} pts</span>
-          ) : null}
-        </p>
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="rounded-2xl border border-white/35 bg-white/20 p-6 lg:col-span-3">
+            <p className="text-sm text-luxury-muted">
+              {t.email} : <span className="font-medium text-luxury-ink">{user.email}</span>
+            </p>
+            <p className="mt-2 text-sm text-luxury-muted">
+              {t.offer} : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
+            </p>
+            <p className="mt-2 text-sm text-luxury-muted">
+              {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade)}</span>
+            </p>
+          </div>
+          <ProfileAvatarForm avatarUrl={p?.avatar_url} embedded />
+          <ProfileBirthDateFormEmbedded defaultIsoDate={p?.birth_date ?? null} />
+          <ProfileLanguageFormEmbedded defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
+        </div>
       </GlassCard>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ProfileAvatarForm avatarUrl={p?.avatar_url} />
-        <ProfileBirthDateForm defaultIsoDate={p?.birth_date ?? null} />
-      </div>
-
-      <ProfileLanguageForm defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <GlassCard className="p-8">

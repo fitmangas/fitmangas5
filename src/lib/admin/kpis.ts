@@ -59,6 +59,7 @@ export type AdminKpiDrilldowns = {
   revenueTotalEur: number;
   boutiqueRevenueEur: number;
   boutiqueOrderCount: number;
+  boutiqueItemsSold: number;
   revenueGrandTotalEur: number;
   churnByTier: CountByTierDetail[];
   churnUsers: ChurnUserDetail[];
@@ -320,7 +321,7 @@ async function stripeRevenueByCourseCurrentMonth(): Promise<{
   }
 }
 
-async function boutiqueRevenueCurrentMonth(): Promise<{ revenueEur: number; orderCount: number }> {
+async function boutiqueRevenueCurrentMonth(): Promise<{ revenueEur: number; orderCount: number; itemsSold: number }> {
   try {
     const orders = await getPrintfulOrders(100);
     const now = new Date();
@@ -328,15 +329,17 @@ async function boutiqueRevenueCurrentMonth(): Promise<{ revenueEur: number; orde
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     let revenueEur = 0;
     let orderCount = 0;
+    let itemsSold = 0;
     for (const order of orders) {
       const createdTs = new Date(order.created).getTime();
       if (!Number.isFinite(createdTs) || createdTs < monthStart || createdTs >= monthEnd) continue;
       revenueEur += parseMoney(order.retail_costs?.total);
       orderCount += 1;
+      itemsSold += (order.items ?? []).reduce((sum, item) => sum + Math.max(0, Math.trunc(item.quantity ?? 0)), 0);
     }
-    return { revenueEur, orderCount };
+    return { revenueEur, orderCount, itemsSold };
   } catch {
-    return { revenueEur: 0, orderCount: 0 };
+    return { revenueEur: 0, orderCount: 0, itemsSold: 0 };
   }
 }
 
@@ -631,6 +634,7 @@ export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
     revenueTotalEur: revenue.totalEur,
     boutiqueRevenueEur: boutiqueRevenue.revenueEur,
     boutiqueOrderCount: boutiqueRevenue.orderCount,
+    boutiqueItemsSold: boutiqueRevenue.itemsSold,
     revenueGrandTotalEur: revenue.totalEur + boutiqueRevenue.revenueEur,
     churnByTier,
     churnUsers,

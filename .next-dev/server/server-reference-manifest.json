@@ -203,6 +203,19 @@
       },
       "filename": "app/admin/courses/actions.ts",
       "exportedName": "updateCourseAction"
+    },
+    "40c23d36f0a6746b7b289731974f60dd7d8d15974b": {
+      "workers": {
+        "app/admin/courses/[courseId]/attendance/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fkevinpicard%2FProjets%2Ffitmangas5%2Fsrc%2Fapp%2Fadmin%2Fattendance%2Factions.ts%22%2C%5B%7B%22id%22%3A%2240c23d36f0a6746b7b289731974f60dd7d8d15974b%22%2C%22exportedName%22%3A%22setEnrollmentStatusAction%22%2C%22filename%22%3A%22app%2Fadmin%2Fattendance%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/admin/courses/[courseId]/attendance/page": "action-browser"
+      },
+      "filename": "app/admin/attendance/actions.ts",
+      "exportedName": "setEnrollmentStatusAction"
     }
   },
   "edge": {},

@@ -3,8 +3,6 @@
   "/admin/courses/page": "app/admin/courses/page.js",
   "/compte/page": "app/compte/page.js",
   "/compte/progression/page": "app/compte/progression/page.js",
-  "/admin/blog/page": "app/admin/blog/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/boutique/page": "app/admin/boutique/page.js",
-  "/admin/blog/validation/page": "app/admin/blog/validation/page.js"
+  "/compte/factures/page": "app/compte/factures/page.js",
+  "/compte/profil/page": "app/compte/profil/page.js"
 }

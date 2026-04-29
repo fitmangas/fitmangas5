@@ -47,6 +47,13 @@ function isoFromDatetimeLocal(value: string) {
   return new Date(value).toISOString();
 }
 
+function plusOneHourDatetimeLocal(value: string): string {
+  const start = new Date(value);
+  if (Number.isNaN(start.getTime())) return value;
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  return toDatetimeLocalValue(end.toISOString());
+}
+
 type FormState = {
   title: string;
   description: string;
@@ -347,7 +354,7 @@ export function AdminCoursesManager({ courses }: Props) {
                 onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'online', capacityMax: '' }))}
                 className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
                   createForm.courseFormat === 'online'
-                    ? 'bg-gradient-to-br from-[#ff7a00] to-orange-600 text-white shadow-[0_4px_16px_rgba(255,122,0,0.42)]'
+                    ? 'bg-[#e5e7eb] text-[#111827] shadow-[0_2px_8px_rgba(17,24,39,0.12)]'
                     : 'text-luxury-muted'
                 }`}
               >
@@ -358,7 +365,7 @@ export function AdminCoursesManager({ courses }: Props) {
                 onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'onsite' }))}
                 className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
                   createForm.courseFormat === 'onsite'
-                    ? 'bg-gradient-to-br from-[#ff7a00] to-orange-600 text-white shadow-[0_4px_16px_rgba(255,122,0,0.42)]'
+                    ? 'bg-[#e5e7eb] text-[#111827] shadow-[0_2px_8px_rgba(17,24,39,0.12)]'
                     : 'text-luxury-muted'
                 }`}
               >
@@ -366,26 +373,33 @@ export function AdminCoursesManager({ courses }: Props) {
               </button>
             </div>
           </div>
-          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Début *
-            <input
-              type="datetime-local"
-              required
-              value={createForm.startsLocal}
-              onChange={(e) => setCreateForm((s) => ({ ...s, startsLocal: e.target.value }))}
-              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
-            />
-          </label>
-          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Fin *
-            <input
-              type="datetime-local"
-              required
-              value={createForm.endsLocal}
-              onChange={(e) => setCreateForm((s) => ({ ...s, endsLocal: e.target.value }))}
-              className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
-            />
-          </label>
+          <div className="md:col-span-2 grid gap-4 sm:grid-cols-2">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Début *
+              <input
+                type="datetime-local"
+                required
+                value={createForm.startsLocal}
+                onChange={(e) =>
+                  setCreateForm((s) => {
+                    const startsLocal = e.target.value;
+                    return { ...s, startsLocal, endsLocal: plusOneHourDatetimeLocal(startsLocal) };
+                  })
+                }
+                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              />
+            </label>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Fin *
+              <input
+                type="datetime-local"
+                required
+                value={createForm.endsLocal}
+                onChange={(e) => setCreateForm((s) => ({ ...s, endsLocal: e.target.value }))}
+                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
+              />
+            </label>
+          </div>
           {createForm.courseFormat === 'onsite' ? (
             <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
               Ville
@@ -611,7 +625,13 @@ export function AdminCoursesManager({ courses }: Props) {
                     type="datetime-local"
                     required
                     value={editForm.startsLocal}
-                    onChange={(e) => setEditForm((s) => (s ? { ...s, startsLocal: e.target.value } : s))}
+                    onChange={(e) =>
+                      setEditForm((s) => {
+                        if (!s) return s;
+                        const startsLocal = e.target.value;
+                        return { ...s, startsLocal, endsLocal: plusOneHourDatetimeLocal(startsLocal) };
+                      })
+                    }
                     className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#ff7a00]/25"
                   />
                 </label>

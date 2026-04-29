@@ -11,11 +11,16 @@ function SubmitLabel() {
   return pending ? 'Envoi…' : 'Mettre à jour la photo';
 }
 
-export function ProfileAvatarForm({ avatarUrl }: { avatarUrl: string | null | undefined }) {
+export function ProfileAvatarForm({
+  avatarUrl,
+  embedded = false,
+}: {
+  avatarUrl: string | null | undefined;
+  embedded?: boolean;
+}) {
   const url = avatarUrl?.trim();
-
-  return (
-    <GlassCard className="p-8">
+  const content = (
+    <>
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Photo de profil</h2>
       <p className="mt-2 text-sm text-luxury-muted">JPG, PNG ou WebP — max 4 Mo.</p>
       <div className="mt-6 flex flex-wrap items-end gap-6">
@@ -41,6 +46,9 @@ export function ProfileAvatarForm({ avatarUrl }: { avatarUrl: string | null | un
           </button>
         </form>
       </div>
-    </GlassCard>
+    </>
   );
+
+  if (embedded) return <div className="rounded-2xl border border-white/35 bg-white/20 p-6">{content}</div>;
+  return <GlassCard className="p-8">{content}</GlassCard>;
 }

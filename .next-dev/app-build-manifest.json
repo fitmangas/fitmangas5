@@ -105,6 +105,16 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/blog/page.js"
+    ],
+    "/admin/courses/[courseId]/attendance/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/courses/[courseId]/attendance/page.js"
+    ],
+    "/admin/vimeo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/vimeo/page.js"
     ]
   }
 }

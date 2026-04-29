@@ -12,16 +12,7 @@ function fmtEur(v: number): string {
   return `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
-function fmtPct(v: number | null): string {
-  if (v == null) return '—';
-  return `${v.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}%`;
-}
-
-function fmtDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-type ModalKey = 'revenue' | 'active' | null;
+type ModalKey = 'revenue' | null;
 const HEALTH_ALL_HREF = '/admin/clients?health=all';
 
 export function AdminKpiCardsInteractive({
@@ -82,17 +73,22 @@ export function AdminKpiCardsInteractive({
         </GlassCard>
 
         <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => setModal('active')} className="flex min-h-[138px] w-full flex-col text-left">
+          <button type="button" onClick={() => router.push('/boutique')} className="flex min-h-[138px] w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 pr-2">
-                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
+                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Boutique</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--blue shrink-0">
                 <Users size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
-            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
-            <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{drilldowns.boutiqueItemsSold}</p>
+            <p className="mt-2 text-xs text-luxury-muted">Articles vendus (ce mois)</p>
+            <div className="mt-4 flex justify-center">
+              <span className="inline-flex min-h-[46px] min-w-[240px] items-center justify-center rounded-full border border-white/85 bg-white/60 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-luxury-ink shadow-[0_2px_12px_rgba(29,29,31,0.08)]">
+                Boutique
+              </span>
+            </div>
           </button>
         </GlassCard>
 
@@ -175,12 +171,10 @@ export function AdminKpiCardsInteractive({
             <div className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-5">
               <div className="min-w-0">
                 <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">
-                  {modal === 'revenue' ? 'Détail revenus Stripe' : 'Détail abonnés actifs'}
+                  Détail revenus Stripe
                 </h2>
                 <p className="mt-1.5 text-xs text-luxury-muted">
-                  {modal === 'revenue'
-                    ? 'Ventilation des revenus Stripe + boutique'
-                    : 'Abonnements en statut active ou trialing'}
+                  Ventilation des revenus Stripe + boutique
                 </p>
               </div>
               <button
@@ -267,67 +261,6 @@ export function AdminKpiCardsInteractive({
                 </div>
               ) : null}
 
-              {modal === 'active' ? (
-                <div className="space-y-5">
-                  <div className="rounded-2xl border border-white/60 bg-white/60 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-luxury-soft">Total abonnés actifs</p>
-                    <p className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
-                  </div>
-                  <div className="grid gap-3.5 sm:grid-cols-2">
-                    {drilldowns.activeByTier.map((row) => (
-                      <div
-                        key={row.tier}
-                        className="rounded-2xl border border-white/75 bg-gradient-to-b from-white/90 to-white/70 px-4 py-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
-                      >
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold leading-tight text-luxury-ink">{row.tier}</p>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                            {kpis.activeSubscribers > 0
-                              ? `${((row.count / kpis.activeSubscribers) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
-                              : '0%'}
-                          </span>
-                        </div>
-                        <p className="text-[15px] font-medium text-luxury-ink">{row.count} abonné(s)</p>
-                        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-blue-100/90">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500"
-                            style={{
-                              width: `${
-                                kpis.activeSubscribers > 0
-                                  ? Math.max(4, Math.min(100, (row.count / kpis.activeSubscribers) * 100))
-                                  : 4
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {drilldowns.activeByTier.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 px-4 py-6 text-sm text-luxury-muted sm:col-span-2">
-                        Aucun abonnement actif/trialing.
-                      </p>
-                    ) : null}
-                  </div>
-                  {drilldowns.activeUsers.length > 0 ? (
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-luxury-soft">Profils (aperçu)</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {drilldowns.activeUsers.slice(0, 30).map((u) => (
-                          <div
-                            key={`${u.userId}-${u.tier}-${u.status}`}
-                            className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3 text-sm shadow-[0_6px_16px_rgba(15,23,42,0.04)]"
-                          >
-                            <span className="font-semibold text-luxury-ink">{u.name}</span>
-                            <span className="ml-2 text-luxury-muted">{u.tier}</span>
-                            <span className="ml-2 text-luxury-muted">· {u.status}</span>
-                            {u.endsAt ? <span className="ml-2 text-luxury-muted">· fin {fmtDateShort(u.endsAt)}</span> : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
