@@ -1,12 +1,8 @@
 {
-  "/api/calendar/events/route": "app/api/calendar/events/route.js",
-  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
   "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/compte/boutique/page": "app/compte/boutique/page.js",
-  "/admin/courses/page": "app/admin/courses/page.js",
   "/compte/page": "app/compte/page.js",
-  "/compte/profil/page": "app/compte/profil/page.js",
-  "/admin/boutique/page": "app/admin/boutique/page.js",
-  "/admin/page": "app/admin/page.js"
+  "/admin/page": "app/admin/page.js",
+  "/admin/courses/page": "app/admin/courses/page.js",
+  "/compte/progression/page": "app/compte/progression/page.js",
+  "/compte/boutique/page": "app/compte/boutique/page.js"
 }

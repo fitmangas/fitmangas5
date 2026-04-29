@@ -81,10 +81,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/page.js"
     ],
-    "/_not-found/page": [
+    "/compte/replays/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/compte/replays/page.js"
     ]
   }
 }

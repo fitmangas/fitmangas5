@@ -203,7 +203,7 @@ export default async function ComptePage({
   return (
     <div className="mx-auto max-w-[1280px] space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
       <section className="grid items-center gap-4 pt-2 md:grid-cols-[1fr_auto]">
-        <div className="text-center md:text-center">
+        <div className="text-left">
           <h1 className="hero-signature-title text-5xl text-luxury-ink md:text-6xl">{t.hello} {firstName}</h1>
           <p className="hero-signature-subtitle mt-1 text-sm md:text-base">{motivation}</p>
           {checkoutOk ? (

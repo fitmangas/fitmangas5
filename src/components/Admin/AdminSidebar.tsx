@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, Clapperboard, LayoutDashboard, ShoppingBag, TicketPercent, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, ShoppingBag, TicketPercent, Video } from 'lucide-react';
 
 const links = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
@@ -40,6 +40,21 @@ export function AdminSidebar() {
 
   return (
     <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
+      <Link
+        href="/admin"
+        title="Dashboard"
+        className={`relative flex h-12 w-12 items-center justify-center rounded-full border border-white/55 bg-white/72 shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.16)] ${
+          pathname === '/admin' ? 'ring-2 ring-orange-300/70' : ''
+        }`}
+      >
+        <Image
+          src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+          alt="Logo FitMangas"
+          width={30}
+          height={30}
+          className="h-[30px] w-[30px] object-contain"
+        />
+      </Link>
       {links.map(({ href, label, icon: Icon }) => {
         const isActive =
           href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);
