@@ -206,22 +206,29 @@ export default async function ProfilPage() {
         </Link>
       </div>
 
-      <GlassCard className="p-8 md:p-10">
-        <div className="grid gap-5 lg:grid-cols-3">
-          <div className="rounded-2xl border border-white/35 bg-white/20 p-6 lg:col-span-3">
-            <p className="text-sm text-luxury-muted">
-              {t.email} : <span className="font-medium text-luxury-ink">{user.email}</span>
-            </p>
-            <p className="mt-2 text-sm text-luxury-muted">
-              {t.offer} : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
-            </p>
-            <p className="mt-2 text-sm text-luxury-muted">
-              {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade)}</span>
-            </p>
-          </div>
+      <GlassCard className="p-6 md:p-7">
+        <div className="grid gap-2 text-sm text-luxury-muted sm:grid-cols-3 sm:gap-4">
+          <p>
+            {t.email} : <span className="font-medium text-luxury-ink">{user.email}</span>
+          </p>
+          <p>
+            {t.offer} : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
+          </p>
+          <p>
+            {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade)}</span>
+          </p>
+        </div>
+      </GlassCard>
+
+      <GlassCard className="p-6 md:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_1px_1fr] lg:gap-7">
           <ProfileAvatarForm avatarUrl={p?.avatar_url} embedded />
-          <ProfileBirthDateFormEmbedded defaultIsoDate={p?.birth_date ?? null} />
-          <ProfileLanguageFormEmbedded defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
+          <div className="hidden lg:block w-px self-stretch bg-white/45" />
+          <div className="space-y-8">
+            <ProfileBirthDateFormEmbedded defaultIsoDate={p?.birth_date ?? null} />
+            <div className="h-px bg-white/45" />
+            <ProfileLanguageFormEmbedded defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
+          </div>
         </div>
       </GlassCard>
 

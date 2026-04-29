@@ -93,7 +93,7 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
   }
 
   return (
-    <div className="rounded-2xl border border-white/35 bg-white/20 p-6">
+    <div className="p-0">
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Langue de l’espace client</h2>
       <p className="mt-2 text-sm text-luxury-muted">Choisis une langue unique pour tout ton espace client : navigation, écrans et contenus compatibles.</p>
       <div className="mt-5 flex flex-wrap gap-2">

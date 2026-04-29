@@ -45,7 +45,7 @@ export function ProfileBirthDateFormEmbedded({ defaultIsoDate }: { defaultIsoDat
   const defaultInput = defaultIsoDate ? defaultIsoDate.slice(0, 10) : '';
 
   return (
-    <div className="rounded-2xl border border-white/35 bg-white/20 p-6">
+    <div className="p-0">
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Date de naissance</h2>
       <p className="mt-2 text-sm text-luxury-muted">Pour ton anniversaire (jour et mois uniquement côté surprise).</p>
       <form action={updateBirthDateAction} className="mt-6 flex flex-wrap items-end gap-4">
