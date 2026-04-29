@@ -110,9 +110,10 @@ type Props = {
   nextAppointment: NextAppointment;
   liveUnread: number | null;
   lang?: 'fr' | 'en' | 'es';
+  iconToneClass?: string;
 };
 
-export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr' }: Props) {
+export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', iconToneClass = 'kpi-icon-wrap--orange' }: Props) {
   const [open, setOpen] = useState(false);
   const hasUpcomingLive = nextAppointment != null;
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
@@ -170,7 +171,7 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr' }:
                 : t.reserve}
             </p>
           </div>
-          <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
+          <span className={`kpi-icon-wrap ${iconToneClass} shrink-0`}>
             <CalendarCheck2 size={20} aria-hidden strokeWidth={2} />
           </span>
         </div>

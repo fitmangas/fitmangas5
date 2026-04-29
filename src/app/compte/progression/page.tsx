@@ -316,15 +316,15 @@ export default async function CompteProgressionPage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-[32px] border border-white/70 bg-gradient-to-b from-[#edf3ff] via-[#e7f0ff] to-[#e2edff] p-5 shadow-[0_16px_36px_rgba(20,20,30,0.14)] md:p-7">
+      <section className="glass-card mt-6 p-5 md:p-7">
         <div className="mb-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#50638e]">Progression badge</p>
-          <h2 className="mt-2 text-4xl font-extrabold leading-[0.95] tracking-tight text-[#111827] md:text-5xl">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Progression badge</p>
+          <h2 className="mt-2 text-4xl font-extrabold leading-[0.95] tracking-tight text-luxury-ink md:text-5xl">
             Un badge à chaque étape
             <br />
             de votre progression
           </h2>
-          <p className="mt-3 text-sm text-[#34425f]">
+          <p className="mt-3 text-sm text-luxury-muted">
             Niveau actuel : <span className="font-semibold text-[#0f172a]">{currentTier.label}</span>
             {nextTier ? ` · prochain palier : ${nextTier.label}` : ' · palier maximum atteint'}
           </p>

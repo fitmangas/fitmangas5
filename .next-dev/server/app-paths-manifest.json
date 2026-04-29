@@ -1,8 +1,9 @@
 {
-  "/api/admin/standalone-videos/pending-count/route": "app/api/admin/standalone-videos/pending-count/route.js",
+  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
+  "/api/calendar/events/route": "app/api/calendar/events/route.js",
+  "/page": "app/page.js",
   "/compte/page": "app/compte/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/courses/page": "app/admin/courses/page.js",
   "/compte/progression/page": "app/compte/progression/page.js",
-  "/compte/boutique/page": "app/compte/boutique/page.js"
+  "/compte/boutique/page": "app/compte/boutique/page.js",
+  "/compte/replays/page": "app/compte/replays/page.js"
 }

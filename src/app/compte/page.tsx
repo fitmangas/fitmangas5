@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
@@ -174,7 +175,7 @@ export default async function ComptePage({
             backSite: 'Retour au site',
             signout: 'Déconnexion',
             dashboard: 'Tableau de bord',
-            liveTracking: 'Ton suivi en direct',
+            liveTracking: 'Le tableau de bord',
             monthlyProgress: 'Progression mensuelle',
             coursesMonth: 'Cours suivis ce mois-ci',
             replay: 'Replay',
@@ -267,9 +268,17 @@ export default async function ComptePage({
       </section>
 
       <section className="space-y-4">
-        <div className="px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.dashboard}</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
+        <div className="flex items-center gap-3 px-1">
+          <Image
+            src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+            alt="Logo FitMangas"
+            width={56}
+            height={56}
+            className="h-[46px] w-[46px] shrink-0 object-contain md:h-[56px] md:w-[56px]"
+          />
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
+          </div>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <GlassCard className="relative p-5 md:p-6">
@@ -279,7 +288,7 @@ export default async function ComptePage({
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
                 <p className="mt-2 text-xs text-luxury-muted">{t.coursesMonth}</p>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
+              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0">
                 <Target size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
@@ -288,7 +297,7 @@ export default async function ComptePage({
             </div>
           </GlassCard>
 
-          <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} lang={lang} />
+          <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} lang={lang} iconToneClass="kpi-icon-wrap--logo" />
 
           <GlassCard className="relative p-5 md:p-6">
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mes replays" />
@@ -306,7 +315,7 @@ export default async function ComptePage({
                   </p>
                 </div>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
+              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0">
                 <PlayCircle size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
@@ -329,7 +338,7 @@ export default async function ComptePage({
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{t.articles}</p>
                 <p className="mt-2 text-xs text-luxury-muted">{t.blogHint}</p>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--blue shrink-0">
+              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0">
                 <BookOpenText size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
