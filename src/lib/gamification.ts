@@ -12,9 +12,9 @@ export function gradeLabel(grade: string | null | undefined): string {
     case 'debutant':
       return 'Débutant';
     case 'confirme':
-      return 'Confirmé';
+      return 'Confirmée';
     case 'expert':
-      return 'Expert';
+      return 'Experte';
     default:
       return 'Débutant';
   }
@@ -23,11 +23,11 @@ export function gradeLabel(grade: string | null | undefined): string {
 export function gradeRibbonClass(grade: string | null | undefined): string {
   switch (grade) {
     case 'expert':
-      return 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white ring-violet-300/50';
+      return 'bg-gradient-to-r from-blue-700/65 to-blue-900/60 text-white ring-blue-200/45 backdrop-blur-md';
     case 'confirme':
-      return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white ring-amber-200/60';
+      return 'bg-gradient-to-r from-sky-400/60 to-blue-500/55 text-[#0f172a] ring-sky-100/55 backdrop-blur-md';
     default:
-      return 'bg-gradient-to-r from-neutral-400 to-neutral-600 text-white ring-neutral-300/40';
+      return 'bg-gradient-to-r from-amber-200/75 to-yellow-300/65 text-[#1f2937] ring-amber-100/70 backdrop-blur-md';
   }
 }
 

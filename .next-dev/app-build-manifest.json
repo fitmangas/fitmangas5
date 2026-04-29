@@ -70,6 +70,41 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/compte/progression/page.js"
+    ],
+    "/compte/factures/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/factures/page.js"
+    ],
+    "/compte/boutique/en-cours/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/boutique/en-cours/page.js"
+    ],
+    "/compte/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/compte/blog/page.js"
+    ],
+    "/admin/clients/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/clients/page.js"
+    ],
+    "/admin/courses/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/courses/page.js"
+    ],
+    "/admin/blog/validation/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/blog/validation/page.js"
+    ],
+    "/admin/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/blog/page.js"
     ]
   }
 }

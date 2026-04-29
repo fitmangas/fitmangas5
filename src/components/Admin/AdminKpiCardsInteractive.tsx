@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Euro, HeartPulse, Percent, Users, X } from 'lucide-react';
+import { Euro, FileText, HeartPulse, Users, X } from 'lucide-react';
 
 import type { AdminKpiDrilldowns, AdminKpis } from '@/lib/admin/kpis';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -21,17 +21,19 @@ function fmtDateShort(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-type ModalKey = 'revenue' | 'churn' | 'active' | null;
+type ModalKey = 'revenue' | 'active' | null;
 const HEALTH_ALL_HREF = '/admin/clients?health=all';
 
 export function AdminKpiCardsInteractive({
   stripeMonthEur,
   kpis,
   drilldowns,
+  pendingBlogValidationCount,
 }: {
   stripeMonthEur: number | null;
   kpis: AdminKpis;
   drilldowns: AdminKpiDrilldowns;
+  pendingBlogValidationCount: number;
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<ModalKey>(null);
@@ -40,51 +42,57 @@ export function AdminKpiCardsInteractive({
     <>
       <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => setModal('revenue')} className="w-full min-h-[138px] text-left">
+          <button type="button" onClick={() => setModal('revenue')} className="flex min-h-[138px] w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">Revenus Stripe</p>
-                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft leading-snug">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft leading-snug">
+                  Revenus Stripe
+                  <br />
                   (mois en cours)
-                </p>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
-                  {stripeMonthEur != null ? fmtEur(stripeMonthEur) : '—'}
                 </p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
                 <Euro size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+              {stripeMonthEur != null ? fmtEur(stripeMonthEur) : '—'}
+            </p>
           </button>
         </GlassCard>
 
         <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => setModal('churn')} className="w-full min-h-[138px] text-left">
+          <button type="button" onClick={() => router.push('/admin/blog/validation')} className="flex min-h-[138px] w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Churn 30j</p>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{fmtPct(kpis.churnRate30d)}</p>
-                <p className="mt-2 text-xs text-luxury-muted">Résiliations / abonnés actifs</p>
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Blog</p>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--rose">
-                <Percent size={20} aria-hidden strokeWidth={2} />
+              <span className="relative kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
+                <FileText size={20} aria-hidden strokeWidth={2} />
+                {pendingBlogValidationCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_4px_10px_rgba(255,59,48,0.45)] ring-2 ring-white">
+                    {pendingBlogValidationCount > 99 ? '99+' : pendingBlogValidationCount}
+                  </span>
+                ) : null}
               </span>
             </div>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{pendingBlogValidationCount}</p>
+            <p className="mt-2 text-xs text-luxury-muted">Validation(s) mensuelle(s) en attente</p>
           </button>
         </GlassCard>
 
         <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => setModal('active')} className="w-full min-h-[138px] text-left">
+          <button type="button" onClick={() => setModal('active')} className="flex min-h-[138px] w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
-                <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Abonnés actifs</p>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--blue">
+              <span className="kpi-icon-wrap kpi-icon-wrap--blue shrink-0">
                 <Users size={20} aria-hidden strokeWidth={2} />
               </span>
             </div>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{kpis.activeSubscribers}</p>
+            <p className="mt-2 text-xs text-luxury-muted">Plans actifs + trialing</p>
           </button>
         </GlassCard>
 
@@ -102,10 +110,25 @@ export function AdminKpiCardsInteractive({
             className="cursor-pointer"
             aria-label="Ouvrir la vue complète Health"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Health</p>
-                <div className="mt-3 space-y-2">
+            <div className="flex min-h-[138px] flex-col">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 pr-2">
+                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Health</p>
+                </div>
+                <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
+                  <HeartPulse size={20} aria-hidden strokeWidth={2} />
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                  <Link
+                    href={HEALTH_ALL_HREF}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
+                    <span className="font-medium">{kpis.health.healthy + kpis.health.fragile + kpis.health.atRisk}</span>
+                    <span className="text-luxury-muted">Total abonnées</span>
+                  </Link>
                   <Link
                     href="/admin/clients?health=green"
                     onClick={(e) => e.stopPropagation()}
@@ -134,10 +157,6 @@ export function AdminKpiCardsInteractive({
                     <span className="text-luxury-muted">À risque</span>
                   </Link>
                 </div>
-              </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--green">
-                <HeartPulse size={20} aria-hidden strokeWidth={2} />
-              </span>
             </div>
           </div>
         </GlassCard>
@@ -156,14 +175,12 @@ export function AdminKpiCardsInteractive({
             <div className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-5">
               <div className="min-w-0">
                 <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">
-                  {modal === 'revenue' ? 'Détail revenus Stripe' : modal === 'churn' ? 'Détail churn 30 jours' : 'Détail abonnés actifs'}
+                  {modal === 'revenue' ? 'Détail revenus Stripe' : 'Détail abonnés actifs'}
                 </h2>
                 <p className="mt-1.5 text-xs text-luxury-muted">
                   {modal === 'revenue'
                     ? 'Ventilation des revenus Stripe + boutique'
-                    : modal === 'churn'
-                      ? 'Résiliations sur les 30 derniers jours'
-                      : 'Abonnements en statut active ou trialing'}
+                    : 'Abonnements en statut active ou trialing'}
                 </p>
               </div>
               <button
@@ -247,67 +264,6 @@ export function AdminKpiCardsInteractive({
                       </p>
                     ) : null}
                   </div>
-                </div>
-              ) : null}
-
-              {modal === 'churn' ? (
-                <div className="space-y-5">
-                  <div className="rounded-2xl border border-white/60 bg-white/60 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-luxury-soft">Taux actuel</p>
-                    <p className="mt-1.5 text-2xl font-semibold tracking-tight text-luxury-ink">{fmtPct(kpis.churnRate30d)}</p>
-                  </div>
-                  <div className="grid gap-3.5 sm:grid-cols-2">
-                    {drilldowns.churnByTier.map((row) => (
-                      <div
-                        key={row.tier}
-                        className="rounded-2xl border border-white/75 bg-gradient-to-b from-white/90 to-white/70 px-4 py-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
-                      >
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold leading-tight text-luxury-ink">{row.tier}</p>
-                          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-semibold text-rose-700">
-                            {drilldowns.churnUsers.length > 0
-                              ? `${((row.count / drilldowns.churnUsers.length) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
-                              : '0%'}
-                          </span>
-                        </div>
-                        <p className="text-[15px] font-medium text-luxury-ink">{row.count} résiliation(s)</p>
-                        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-rose-100/90">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-500"
-                            style={{
-                              width: `${
-                                drilldowns.churnUsers.length > 0
-                                  ? Math.max(4, Math.min(100, (row.count / drilldowns.churnUsers.length) * 100))
-                                  : 4
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {drilldowns.churnByTier.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 px-4 py-6 text-sm text-luxury-muted sm:col-span-2">
-                        Aucune résiliation détectée sur 30 jours.
-                      </p>
-                    ) : null}
-                  </div>
-                  {drilldowns.churnUsers.length > 0 ? (
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-luxury-soft">Derniers profils concernés</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {drilldowns.churnUsers.slice(0, 20).map((u) => (
-                          <div
-                            key={`${u.userId}-${u.canceledAt}`}
-                            className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3 text-sm shadow-[0_6px_16px_rgba(15,23,42,0.04)]"
-                          >
-                            <span className="font-semibold text-luxury-ink">{u.name}</span>
-                            <span className="ml-2 text-luxury-muted">{u.tier}</span>
-                            <span className="ml-2 text-luxury-muted">· {fmtDateShort(u.canceledAt)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
 

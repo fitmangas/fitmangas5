@@ -40,7 +40,7 @@ export function AvatarWithRibbon({
         </span>
       )}
       <span
-        className={`absolute -bottom-1 left-1/2 z-10 max-w-[calc(100%+8px)] -translate-x-1/2 truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider shadow-sm ring-1 ring-inset ${gradeRibbonClass(g)}`}
+        className={`premium-badge absolute -bottom-1 left-1/2 z-10 max-w-[calc(100%+8px)] -translate-x-1/2 truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider shadow-sm ring-1 ring-inset ${gradeRibbonClass(g)}`}
         title={gradeLabel(g)}
       >
         {gradeLabel(g)}

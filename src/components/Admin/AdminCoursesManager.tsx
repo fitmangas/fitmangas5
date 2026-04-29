@@ -103,10 +103,6 @@ function inferCourseTypeFromTitle(title: string): FormState['courseType'] {
   return 'pilates-mat';
 }
 
-function computeDefaultPoints(courseFormat: FormState['courseFormat']): number {
-  return courseFormat === 'onsite' ? 30 : 15;
-}
-
 function buildAutoJitsiLink(title: string, startsLocal: string): string | null {
   const cleanTitle = title
     .trim()
@@ -172,14 +168,12 @@ function parseCapacity(cap: string): number | null {
 }
 
 function formToPayload(f: FormState) {
-  const autoPoints = computeDefaultPoints(f.courseFormat);
-  const pointsPrefix = `[${autoPoints} pts]`;
   const normalizedDescription = f.description.trim();
   const autoTitle = getCourseTypeLabel(f.courseType);
   const autoJitsi = buildAutoJitsiLink(autoTitle, f.startsLocal);
   return {
     title: autoTitle,
-    description: `${pointsPrefix} ${normalizedDescription}`.trim() || pointsPrefix,
+    description: normalizedDescription,
     startsAt: isoFromDatetimeLocal(f.startsLocal),
     endsAt: isoFromDatetimeLocal(f.endsLocal),
     courseFormat: f.courseFormat,

@@ -321,7 +321,12 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <AdminKpiCardsInteractive stripeMonthEur={combinedRevenueMonthEur} kpis={kpis} drilldowns={kpiDrilldowns} />
+      <AdminKpiCardsInteractive
+        stripeMonthEur={combinedRevenueMonthEur}
+        kpis={kpis}
+        drilldowns={kpiDrilldowns}
+        pendingBlogValidationCount={pendingBlogValidationCount ?? 0}
+      />
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
         <GlassCard variant="dark" className="relative p-5 md:p-6">
