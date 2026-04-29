@@ -62,10 +62,6 @@ export default async function CompteBoutiquePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-5 pb-16 pt-3 md:px-8">
-      <header>
-        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-      </header>
-
       <section className="grid gap-4 md:-mx-8 md:grid-cols-3 xl:-mx-12">
         <GlassCard className="p-5">
           <p className="text-xs uppercase tracking-[0.16em] text-luxury-soft">{t.available}</p>

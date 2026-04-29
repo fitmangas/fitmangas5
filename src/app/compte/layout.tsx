@@ -34,9 +34,6 @@ export default async function CompteLayout({ children }: { children: React.React
             <Link href="/compte/replays" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               {labels.videos}
             </Link>
-            <Link href="/compte/factures" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
-              {labels.invoices}
-            </Link>
             <Link href="/compte/profil" className="rounded-full px-3 py-1.5 hover:bg-white/40 hover:text-luxury-ink">
               {labels.profile}
             </Link>

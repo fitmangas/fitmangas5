@@ -242,6 +242,13 @@ export default async function CompteProgressionPage() {
             engagement: 'Engagement',
           };
 
+  const progressHeading =
+    lang === 'en'
+      ? `Your\u00A0progress, ${firstName}`
+      : lang === 'es'
+        ? `Tu\u00A0progreso, ${firstName}`
+        : `Ta\u00A0progression, ${firstName}`;
+
   return (
     <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-2 md:px-8">
       <div className="mb-3">
@@ -287,7 +294,7 @@ export default async function CompteProgressionPage() {
 
           <div className="absolute right-4 top-[130px] z-20 w-[200px] md:right-10 md:w-[225px] lg:right-16 lg:top-[132px] lg:w-[250px]">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#6e7380]">{monthLabel}</p>
-            <h1 className="mt-2 text-[52px] font-semibold leading-[0.9] tracking-tight text-[#14151a] lg:text-[56px]">{t.hello} {firstName}</h1>
+            <h1 className="mt-2 text-[44px] font-semibold leading-[0.95] tracking-tight text-[#14151a] lg:text-[48px]">{progressHeading}</h1>
             <p className="mt-3 text-[15px] text-[#676d7a]">{minutesAgo} {t.minutesAgo}</p>
 
             <div className="mt-12 space-y-8 lg:mt-16">

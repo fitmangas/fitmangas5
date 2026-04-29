@@ -1,14 +1,12 @@
 import Link from 'next/link';
-import Stripe from 'stripe';
 
 import { BillingPortalButton } from '@/components/Compte/BillingPortalButton';
 import { ProfileAvatarForm } from '@/components/Compte/ProfileAvatarForm';
 import { ProfileBirthDateFormEmbedded } from '@/components/Compte/ProfileBirthDateForm';
 import { ProfileLanguageFormEmbedded } from '@/components/Compte/ProfileLanguageForm';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { getClientLang, localeFromClientLang } from '@/lib/compte/i18n';
+import { getClientLang } from '@/lib/compte/i18n';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
-import { getPrintfulOrders } from '@/lib/printful';
 import { createClient } from '@/lib/supabase/server';
 
 function formatTier(t: string | null): string {
@@ -24,7 +22,6 @@ export default async function ProfilPage() {
 
   if (!user) return null;
   const lang = await getClientLang(supabase, user.id);
-  const locale = localeFromClientLang(lang);
   const t =
     lang === 'en'
       ? {
@@ -39,23 +36,17 @@ export default async function ProfilPage() {
           replayTime: 'Total replay time',
           liveDays: 'Live participations (distinct days)',
           subscriptionBilling: 'Subscription & billing',
+          billingHub: 'Billing center',
+          billingHubText: 'Find everything in one place: Stripe subscription, Stripe invoices, and shop invoices.',
+          openStripeSub: 'Stripe subscription',
+          openStripeInvoices: 'Stripe invoices',
+          openShopArea: 'Shop invoices',
+          stripeSection: 'Billing — Stripe & shop',
           billingText: 'Change your payment method, review renewals and cancel from the secure Stripe portal.',
           savedSubs: 'Saved subscriptions',
           noneRows: 'No row in database for now.',
           end: 'end',
           stripeInvoices: 'Stripe invoices',
-          stripeAssoc: 'Available after Stripe customer association.',
-          noRecentInvoice: 'No recent invoice.',
-          date: 'Date',
-          number: 'N°',
-          status: 'Status',
-          amount: 'Amount',
-          pdf: 'PDF',
-          open: 'Open',
-          shopInvoices: 'Shop orders & invoices',
-          noShopOrders: 'No shop order linked to your email.',
-          order: 'Order',
-          invoice: 'Invoice',
         }
       : lang === 'es'
         ? {
@@ -70,23 +61,17 @@ export default async function ProfilPage() {
             replayTime: 'Tiempo total de replay',
             liveDays: 'Participaciones live (días distintos)',
             subscriptionBilling: 'Suscripción y facturación',
+            billingHub: 'Centro de facturación',
+            billingHubText: 'Todo en un solo lugar: suscripción Stripe, facturas Stripe y facturas tienda.',
+            openStripeSub: 'Suscripción Stripe',
+            openStripeInvoices: 'Facturas Stripe',
+            openShopArea: 'Facturas tienda',
+            stripeSection: 'Facturación — Stripe y tienda',
             billingText: 'Modifica tu método de pago, revisa renovaciones y cancela desde el portal seguro de Stripe.',
             savedSubs: 'Suscripciones registradas',
             noneRows: 'No hay filas en base por ahora.',
             end: 'fin',
             stripeInvoices: 'Facturas Stripe',
-            stripeAssoc: 'Disponibles tras asociar un cliente Stripe.',
-            noRecentInvoice: 'No hay facturas recientes.',
-            date: 'Fecha',
-            number: 'N°',
-            status: 'Estado',
-            amount: 'Importe',
-            pdf: 'PDF',
-            open: 'Abrir',
-            shopInvoices: 'Pedidos y facturas tienda',
-            noShopOrders: 'No hay pedidos de tienda vinculados a tu correo.',
-            order: 'Pedido',
-            invoice: 'Factura',
           }
         : {
             overline: 'Mon profil',
@@ -100,79 +85,23 @@ export default async function ProfilPage() {
             replayTime: 'Temps replay cumulé',
             liveDays: 'Participations live (jours distincts)',
             subscriptionBilling: 'Abonnement & facturation',
+            billingHub: 'Centre de facturation',
+            billingHubText: 'Tout est réuni ici : abonnement Stripe, factures Stripe et factures boutique.',
+            openStripeSub: 'Abonnement Stripe',
+            openStripeInvoices: 'Factures Stripe',
+            openShopArea: 'Factures boutique',
+            stripeSection: 'Facturation — Stripe & boutique',
             billingText: 'Modifie ton moyen de paiement, consulte les renouvellements et résilie depuis le portail sécurisé Stripe.',
             savedSubs: 'Abonnements enregistrés',
             noneRows: 'Aucune ligne en base pour l’instant.',
             end: 'fin',
             stripeInvoices: 'Factures Stripe',
-            stripeAssoc: 'Disponibles après association à un client Stripe.',
-            noRecentInvoice: 'Aucune facture récente.',
-            date: 'Date',
-            number: 'N°',
-            status: 'Statut',
-            amount: 'Montant',
-            pdf: 'PDF',
-            open: 'Ouvrir',
-            shopInvoices: 'Commandes & factures boutique',
-            noShopOrders: 'Aucune commande boutique liée à ton e-mail.',
-            order: 'Commande',
-            invoice: 'Facture',
           };
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
 
-  const { data: subs } = await supabase
-    .from('subscriptions')
-    .select('id, tier, status, ends_at, price_cents, interval')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   const customerId = profile?.stripe_customer_id?.trim() ?? null;
-
-  type InvoiceRow = {
-    id: string;
-    number: string | null;
-    status: string | null;
-    created: number;
-    hosted_invoice_url: string | null;
-    amount_paid: number;
-    currency: string;
-  };
-
-  let invoices: InvoiceRow[] = [];
-  let printfulOrders: Awaited<ReturnType<typeof getPrintfulOrders>> = [];
-
-  if (stripeKey && customerId) {
-    try {
-      const stripe = new Stripe(stripeKey);
-      const list = await stripe.invoices.list({ customer: customerId, limit: 24 });
-      invoices = list.data.map((inv) => ({
-        id: inv.id,
-        number: inv.number,
-        status: inv.status,
-        created: inv.created,
-        hosted_invoice_url: inv.hosted_invoice_url ?? null,
-        amount_paid: inv.amount_paid,
-        currency: inv.currency,
-      }));
-    } catch {
-      invoices = [];
-    }
-  }
-
-  if (user.email) {
-    try {
-      const orders = await getPrintfulOrders(80);
-      const email = user.email.toLowerCase();
-      printfulOrders = orders.filter((o) => {
-        const recipientEmail = o.recipient?.email?.toLowerCase() ?? o.packing_slip?.email?.toLowerCase() ?? '';
-        return recipientEmail === email;
-      });
-    } catch {
-      printfulOrders = [];
-    }
-  }
 
   const p = profile as {
     avatar_url?: string | null;
@@ -222,7 +151,9 @@ export default async function ProfilPage() {
 
       <GlassCard className="p-6 md:p-8">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_1px_1fr] lg:gap-7">
-          <ProfileAvatarForm avatarUrl={p?.avatar_url} embedded />
+          <div>
+            <ProfileAvatarForm avatarUrl={p?.avatar_url} embedded />
+          </div>
           <div className="hidden lg:block w-px self-stretch bg-white/45" />
           <div className="space-y-8">
             <ProfileBirthDateFormEmbedded defaultIsoDate={p?.birth_date ?? null} />
@@ -232,145 +163,32 @@ export default async function ProfilPage() {
         </div>
       </GlassCard>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <GlassCard className="p-8">
-          <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.journey}</h2>
-          <ul className="mt-4 space-y-2 text-sm text-luxury-muted">
-            <li>
-              {t.onsite} :{' '}
-              <strong className="text-luxury-ink">{p?.onsite_presence_count ?? 0}</strong>
-            </li>
-            <li>
-              {t.replayTime} :{' '}
-              <strong className="text-luxury-ink">{Math.round((p?.total_replay_watch_seconds ?? 0) / 60)} min</strong>
-            </li>
-            <li>
-              {t.liveDays} :{' '}
-              <strong className="text-luxury-ink">{p?.live_visit_count ?? 0}</strong>
-            </li>
-          </ul>
-        </GlassCard>
-
-        <GlassCard className="p-8">
-          <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.subscriptionBilling}</h2>
-          <p className="mt-3 text-sm leading-relaxed text-luxury-muted">
-            {t.billingText}
-          </p>
-          <div className="mt-6">
-            <BillingPortalButton disabled={!customerId} />
-          </div>
-        </GlassCard>
-      </div>
-
-      <GlassCard className="p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.savedSubs}</h2>
-        {!subs?.length ? (
-          <p className="mt-4 text-sm text-luxury-soft">{t.noneRows}</p>
-        ) : (
-          <ul className="mt-6 space-y-3 text-sm">
-            {subs.map((s) => (
-              <li key={s.id} className="rounded-xl border border-white/35 bg-white/25 px-4 py-3 backdrop-blur-sm">
-                <span className="font-medium text-luxury-ink">{formatTier(s.tier)}</span> · {s.status} ·{' '}
-                {(s.price_cents ?? 0) / 100} € / {s.interval ?? 'month'}
-                {s.ends_at ? ` · ${t.end} ${new Date(s.ends_at).toLocaleDateString(locale)}` : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-      </GlassCard>
-
-      <GlassCard className="p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.stripeInvoices}</h2>
-        {!customerId ? (
-          <p className="mt-4 text-sm text-luxury-soft">{t.stripeAssoc}</p>
-        ) : invoices.length === 0 ? (
-          <p className="mt-4 text-sm text-luxury-soft">{t.noRecentInvoice}</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/35 text-[10px] uppercase tracking-widest text-luxury-soft">
-                  <th className="py-3 pr-4">{t.date}</th>
-                  <th className="py-3 pr-4">{t.number}</th>
-                  <th className="py-3 pr-4">{t.status}</th>
-                  <th className="py-3 pr-4">{t.amount}</th>
-                  <th className="py-3">{t.pdf}</th>
-                </tr>
-              </thead>
-              <tbody className="text-luxury-muted">
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-white/20">
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {new Date(inv.created * 1000).toLocaleDateString(locale)}
-                    </td>
-                    <td className="py-3 pr-4">{inv.number ?? '—'}</td>
-                    <td className="py-3 pr-4">{inv.status ?? '—'}</td>
-                    <td className="py-3 pr-4 tabular-nums">
-                      {(inv.amount_paid / 100).toLocaleString('fr-FR', { style: 'currency', currency: inv.currency || 'eur' })}
-                    </td>
-                    <td className="py-3">
-                      {inv.hosted_invoice_url ? (
-                        <a
-                          href={inv.hosted_invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-luxury-orange underline-offset-4 hover:underline"
-                        >
-                          {t.open}
-                        </a>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </GlassCard>
-
-      <GlassCard id="boutique-commandes" className="p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.shopInvoices}</h2>
-        {!printfulOrders.length ? (
-          <p className="mt-4 text-sm text-luxury-soft">{t.noShopOrders}</p>
-        ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/35 text-[10px] uppercase tracking-widest text-luxury-soft">
-                  <th className="py-3 pr-4">{t.order}</th>
-                  <th className="py-3 pr-4">{t.status}</th>
-                  <th className="py-3 pr-4">{t.date}</th>
-                  <th className="py-3">{t.invoice}</th>
-                </tr>
-              </thead>
-              <tbody className="text-luxury-muted">
-                {printfulOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-white/20">
-                    <td className="py-3 pr-4 font-medium text-luxury-ink">#{order.id}</td>
-                    <td className="py-3 pr-4">{order.status}</td>
-                    <td className="py-3 pr-4">{new Date(order.created).toLocaleDateString(locale)}</td>
-                    <td className="py-3">
-                      {order.invoice_url ? (
-                        <a
-                          href={order.invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-luxury-orange underline-offset-4 hover:underline"
-                        >
-                          {t.open}
-                        </a>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <GlassCard id="stripe-facturation" className="p-8">
+        <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.stripeSection}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-luxury-muted">{t.billingHubText}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <form action="/api/billing/portal" method="post">
+            <button
+              type="submit"
+              disabled={!customerId}
+              className="btn-luxury-ghost min-h-[42px] min-w-[190px] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {t.openStripeSub}
+            </button>
+          </form>
+          <form action="/api/billing/portal" method="post">
+            <button
+              type="submit"
+              disabled={!customerId}
+              className="btn-luxury-ghost min-h-[42px] min-w-[190px] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {t.openStripeInvoices}
+            </button>
+          </form>
+          <Link href="/compte/boutique/commandes" className="btn-luxury-ghost min-h-[42px] min-w-[190px]">
+            {t.openShopArea}
+          </Link>
+        </div>
       </GlassCard>
     </div>
   );

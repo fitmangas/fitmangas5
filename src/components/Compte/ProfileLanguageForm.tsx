@@ -93,7 +93,7 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
   }
 
   return (
-    <div className="p-0">
+    <div className="flex h-full flex-col p-0">
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Langue de l’espace client</h2>
       <p className="mt-2 text-sm text-luxury-muted">Choisis une langue unique pour tout ton espace client : navigation, écrans et contenus compatibles.</p>
       <div className="mt-5 flex flex-wrap gap-2">
@@ -112,8 +112,13 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
           </button>
         ))}
       </div>
-      <div className="mt-5">
-        <button type="button" onClick={onSave} disabled={isPending} className="btn-luxury-ghost min-h-[42px] min-w-[160px]">
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={isPending}
+          className="btn-luxury-ghost inline-flex min-h-[44px] min-w-[220px] items-center justify-center"
+        >
           {isPending ? 'Enregistrement...' : 'Enregistrer'}
         </button>
       </div>

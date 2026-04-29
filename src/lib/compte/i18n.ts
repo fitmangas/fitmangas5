@@ -50,13 +50,12 @@ export function resolveFirstName(profileFirstName: unknown, userMetadata?: unkno
   );
 }
 
-export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: string; videos: string; shop: string; invoices: string; profile: string }> = {
+export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: string; videos: string; shop: string; profile: string }> = {
   fr: {
     dashboard: 'Tableau de bord',
     planning: 'Planning',
     videos: 'Vidéos',
     shop: 'Boutique',
-    invoices: 'Factures',
     profile: 'Profil',
   },
   en: {
@@ -64,7 +63,6 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     planning: 'Schedule',
     videos: 'Videos',
     shop: 'Shop',
-    invoices: 'Invoices',
     profile: 'Profile',
   },
   es: {
@@ -72,7 +70,6 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     planning: 'Planificación',
     videos: 'Videos',
     shop: 'Tienda',
-    invoices: 'Facturas',
     profile: 'Perfil',
   },
 };

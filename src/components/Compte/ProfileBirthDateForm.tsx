@@ -10,7 +10,7 @@ function Submit() {
   return (
     <button
       type="submit"
-      className="btn-luxury-primary px-6 py-2 disabled:opacity-50"
+      className="btn-luxury-primary inline-flex min-h-[44px] min-w-[220px] items-center justify-center px-6 py-2 disabled:opacity-50"
       disabled={pending}
     >
       {pending ? '…' : 'Enregistrer'}
