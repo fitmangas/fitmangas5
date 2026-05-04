@@ -1,0 +1,8 @@
+segment,blog_routes_site,compte_blog,landing_blog_teaser_3,landing_click_goes_checkout_vcoll,boutique,whatsapp,replays_visio,dashboard_progression,dashboard_next_visio,planning_online,live_online,nantes_booking,newsletter_email_full_article,blog_article_published_dispatcher
+v-coll,yes,yes,yes,yes,open,yes,yes,yes,yes,yes,yes,no,yes_if_subscribed,yes_email_and_inapp_if_designed
+v-ind,yes,yes,yes,yes,open,yes,yes,yes,yes,yes,yes,no,yes_if_subscribed,yes_email_and_inapp_if_designed
+n-coll,no,no,yes,yes,open,yes,locked_cta,locked_cta,locked_cta,locked_cta,locked_cta,yes_unit,yes_if_newsletter_only_segment,yes_email_only_no_inapp_blog
+n-ind,no,no,yes,yes,open,yes,locked_cta,locked_cta,locked_cta,locked_cta,locked_cta,yes_unit,yes_if_newsletter_only_segment,yes_email_only_no_inapp_blog
+newsletter_only,no,no,yes,yes,open,no,locked_cta,locked_cta,locked_cta,locked_cta,locked_cta,no,yes_double_optin,yes_email_only
+connected_no_tier,no,no,yes,yes,open,no,locked_cta,locked_cta,locked_cta,locked_cta,locked_cta,no,no,yes_if_subscribed_newsletter
+public_anon,no,no,yes,yes,open,no,no,no,no,no,no,no,no,no

@@ -1,9 +1,1 @@
-{
-  "/api/calendar/mobile-sync/route": "app/api/calendar/mobile-sync/route.js",
-  "/api/calendar/events/route": "app/api/calendar/events/route.js",
-  "/page": "app/page.js",
-  "/compte/page": "app/compte/page.js",
-  "/compte/progression/page": "app/compte/progression/page.js",
-  "/compte/boutique/page": "app/compte/boutique/page.js",
-  "/compte/replays/page": "app/compte/replays/page.js"
-}
+{}
