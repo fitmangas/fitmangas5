@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
+import { COACH_PUBLISH_TIMEZONE, isWithinCoachMorningPublishWindow } from '@/lib/notifications/timezone';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
@@ -17,15 +18,24 @@ async function handlePublish(request: Request) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
+  const now = new Date();
+  if (!isWithinCoachMorningPublishWindow(now, COACH_PUBLISH_TIMEZONE)) {
+    return NextResponse.json({
+      skipped: true,
+      reason: 'outside_coach_publish_window',
+      coachTimeZone: COACH_PUBLISH_TIMEZONE,
+    });
+  }
+
   try {
     const admin = createAdminClient();
-    const now = new Date().toISOString();
+    const nowIso = now.toISOString();
 
     const { data: due, error } = await admin
       .from('blog_articles')
       .select('id, title_fr, slug_fr')
       .eq('status', 'validated')
-      .lte('scheduled_publication_at', now);
+      .lte('scheduled_publication_at', nowIso);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -41,8 +51,8 @@ async function handlePublish(request: Request) {
         .from('blog_articles')
         .update({
           status: 'published',
-          published_at: now,
-          updated_at: now,
+          published_at: nowIso,
+          updated_at: nowIso,
         })
         .eq('id', row.id)
         .eq('status', 'validated');

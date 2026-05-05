@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/admin/blog/cron/publish-scheduled",
-      "schedule": "0 8 * * *"
+      "schedule": "*/2 5-8 * * *"
     },
     {
       "path": "/api/admin/blog/cron/prepare-monthly-validation",
