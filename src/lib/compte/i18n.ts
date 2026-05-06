@@ -9,11 +9,20 @@ export function isClientLang(value: unknown): value is ClientLang {
 export async function getClientLang(supabase: SupabaseClient, userId: string): Promise<ClientLang> {
   const { data } = await supabase
     .from('profiles')
-    .select('preferred_blog_language')
+    .select('preferred_locale, preferred_blog_language')
     .eq('id', userId)
     .maybeSingle();
 
-  return isClientLang(data?.preferred_blog_language) ? data.preferred_blog_language : 'fr';
+  const loc = data?.preferred_locale;
+  if (loc === 'fr' || loc === 'es') {
+    return loc;
+  }
+
+  if (isClientLang(data?.preferred_blog_language)) {
+    return data.preferred_blog_language;
+  }
+
+  return 'fr';
 }
 
 export function localeFromClientLang(lang: ClientLang): string {
@@ -50,13 +59,17 @@ export function resolveFirstName(profileFirstName: unknown, userMetadata?: unkno
   );
 }
 
-export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: string; videos: string; shop: string; profile: string }> = {
+export const compteNavLabels: Record<
+  ClientLang,
+  { dashboard: string; planning: string; videos: string; shop: string; profile: string; preferences: string }
+> = {
   fr: {
     dashboard: 'Tableau de bord',
     planning: 'Planning',
     videos: 'Vidéos',
     shop: 'Boutique',
     profile: 'Profil',
+    preferences: 'Préférences',
   },
   en: {
     dashboard: 'Dashboard',
@@ -64,6 +77,7 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     videos: 'Videos',
     shop: 'Shop',
     profile: 'Profile',
+    preferences: 'Preferences',
   },
   es: {
     dashboard: 'Panel',
@@ -71,5 +85,6 @@ export const compteNavLabels: Record<ClientLang, { dashboard: string; planning: 
     videos: 'Videos',
     shop: 'Tienda',
     profile: 'Perfil',
+    preferences: 'Preferencias',
   },
 };

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clapperboard, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Clapperboard, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -14,6 +14,7 @@ const links = [
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
+  { href: '/compte/preferences', key: 'preferences', icon: Settings, exact: true },
 ] as const;
 
 type NavKey = (typeof links)[number]['key'];
