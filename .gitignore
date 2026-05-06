@@ -11,3 +11,8 @@ coverage/
 # Vidéos de test (upload Vimeo) — le dossier est versionné, pas les fichiers
 recordings-local/*
 !recordings-local/.gitkeep
+
+# Auto-générés (à ne jamais commiter)
+next-env.d.ts
+tsconfig.tsbuildinfo
+supabase/.temp/
