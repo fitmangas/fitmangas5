@@ -56,4 +56,22 @@ Création manuelle après env complet :
 
 ---
 
+## 6. TODO bloquant go-live — contenu légal (mentions & confidentialité)
+
+**Statut :** les brouillons `docs/legal-templates-fr-es-draft.md` restent **conceptuellement validés** pour la Phase 0 ; ils contiennent des **[...]** non publiables en production.
+
+**Avant intégration footer / pages `/mentions-legales` et `/confidentialite` :**
+
+- [ ] **Récupérer auprès du fondateur** les mentions légales complètes : raison sociale, forme juridique, SIREN/SIRET, siège social, représentant légal, contact, **hébergeur** (fact-check Vercel), **médiateur consommation** (France / lien RLL si applicable), et équivalents pour le bloc ES/MX si besoin.
+- [ ] **Phase 3 (semaine 3)** : en **ouverture** de phase, demander explicitement ces informations avant verrouillage du footer.
+
+---
+
+## 7. Phase 3 — Contrôle déploiement (à implémenter avec les pages légales)
+
+**Comportement attendu** : le build **production** échoue si le footer ou les pages `/mentions-legales` et `/confidentialite` contiennent encore des **crochets `[...]`** ou champs placeholder non remplis — message d’erreur explicite listant les champs manquants (script CI et/ou validation `next build`).  
+**À brancher** lors de l’implémentation des pages légales finales (pas avant validation migration Phase 1).
+
+---
+
 *Document généré pour clôture Phase 0 — aucune migration exécutée.*

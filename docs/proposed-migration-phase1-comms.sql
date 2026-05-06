@@ -1,6 +1,6 @@
 -- =============================================================================
--- PROPOSITION Phase 1 — Communications / préférences / logs / caps push
--- STATUT : EN REVUE UNIQUEMENT — NE PAS EXÉCUTER TANT QUE LE FONDATEUR N'A PAS VALIDÉ
+-- Phase 1 — Communications / préférences / logs / caps push (référence doc)
+-- Déployé via : supabase/migrations/20260430143000_phase1_comms_foundation.sql
 -- =============================================================================
 --
 -- RLS & service_role (règle Supabase) :
@@ -17,6 +17,10 @@
 --                                   **pas** de UPDATE (changement d’appareil = delete + insert)
 --   • notification_frequency_cap → aucun accès client ; tout via service_role
 --   • profiles (colonnes ajoutées) → suit les policies existantes sur public.profiles
+--
+-- notification_log.event_type : text libre — **pas** de CHECK SQL ; liste blanche /
+--   évolution gérée par le **dispatcher** applicatif (évolutivité). Inclut les
+--   événements checkout documentés dans docs/communications-matrix.md §9.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -63,6 +67,11 @@ create table if not exists public.notification_log (
   created_at timestamptz not null default now()
 );
 
+comment on column public.notification_log.event_type is
+  'Types validés côté application (dispatcher). Ex. subscription.checkout_initiated, '
+  'subscription.checkout_abandoned_explicit, subscription.checkout_abandoned_timeout, '
+  'subscription.checkout_async_payment_failed, envois email, etc.';
+
 create index if not exists idx_notification_log_user_created
   on public.notification_log (user_id, created_at desc);
 
@@ -73,7 +82,7 @@ create index if not exists idx_notification_log_created
   on public.notification_log (created_at desc);
 
 comment on table public.notification_log is
-  'Journal dispatcher : envois, erreurs, événements (ex. subscription.checkout_abandoned). '
+  'Journal dispatcher : envois, erreurs, événements checkout / analytics. '
   'INSERT/UPDATE/SELECT uniquement côté serveur (service_role). La cliente ne lit pas son log. '
   'Purge recommandée > 24 mois.';
 
@@ -122,17 +131,42 @@ create policy "notification_digest_queue_deny_anon"
   using (false) with check (false);
 
 -- -----------------------------------------------------------------------------
--- D) notification_preferences — la cliente lit / met à jour les siennes
---     INSERT : défaut au signup via trigger (pas d’INSERT direct client)
+-- D) notification_preferences — matrice catégories × canaux (prompt maître §8.2)
+--     INSERT : défaut au signup via trigger ; compte / paiement = non désactivables côté prefs (code)
 -- -----------------------------------------------------------------------------
 create table if not exists public.notification_preferences (
   user_id uuid primary key references public.profiles (id) on delete cascade,
-  digest_email_enabled boolean not null default true,
+
+  courses_inapp_enabled boolean not null default true,
+  courses_email_enabled boolean not null default true,
+  courses_push_enabled boolean not null default false,
+
+  content_inapp_enabled boolean not null default true,
+  content_email_enabled boolean not null default false,
+  content_push_enabled boolean not null default false,
+
+  shop_inapp_enabled boolean not null default true,
+  shop_email_enabled boolean not null default true,
+  shop_push_enabled boolean not null default false,
+
+  community_inapp_enabled boolean not null default true,
+  community_email_enabled boolean not null default true,
+  community_push_enabled boolean not null default false,
+
+  silence_mode_enabled boolean not null default false,
+
+  digest_frequency text not null default 'off'
+    check (digest_frequency in ('off', 'daily', 'weekly')),
+
   updated_at timestamptz not null default now()
 );
 
 comment on table public.notification_preferences is
-  'Préférences notifications non sensibles (digest, etc.). Étendre en colonnes/json si besoin v1.1.';
+  'Préférences notifications par catégorie (cours, contenu, boutique, communauté) × canaux. '
+  'Compte / sécurité / paiement : forcés par le code, pas de colonnes ici.';
+
+comment on column public.notification_preferences.shop_email_enabled is
+  'Emails liés aux commandes boutique (transactionnel côté métier).';
 
 alter table public.notification_preferences enable row level security;
 
@@ -156,15 +190,47 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.notification_preferences (user_id)
-  values (new.id)
+  insert into public.notification_preferences (
+    user_id,
+    courses_inapp_enabled,
+    courses_email_enabled,
+    courses_push_enabled,
+    content_inapp_enabled,
+    content_email_enabled,
+    content_push_enabled,
+    shop_inapp_enabled,
+    shop_email_enabled,
+    shop_push_enabled,
+    community_inapp_enabled,
+    community_email_enabled,
+    community_push_enabled,
+    silence_mode_enabled,
+    digest_frequency
+  )
+  values (
+    new.id,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    'off'
+  )
   on conflict (user_id) do nothing;
   return new;
 end;
 $$;
 
 comment on function public.ensure_notification_preferences_for_profile() is
-  'Crée une ligne notification_preferences à la création du profil (signup).';
+  'Crée une ligne notification_preferences à la création du profil (signup), avec défauts produit.';
 
 drop trigger if exists trg_profiles_ensure_notification_preferences on public.profiles;
 create trigger trg_profiles_ensure_notification_preferences
@@ -242,14 +308,47 @@ create policy "notification_frequency_cap_deny_anon"
   using (false) with check (false);
 
 -- -----------------------------------------------------------------------------
--- G) Optionnel : CHECK sur event_type — après stabilisation du dispatcher
+-- G) notification_log.event_type — pas de CHECK SQL (voir en-tête fichier).
 -- -----------------------------------------------------------------------------
 
 -- -----------------------------------------------------------------------------
--- H) Profils déjà existants avant déploiement de ce script : backfill manuel
---     (à exécuter une fois si besoin, hors transaction idempotente du trigger)
+-- H) Backfill obligatoire : tous les profils existants ont une ligne prefs.
 -- -----------------------------------------------------------------------------
--- insert into public.notification_preferences (user_id)
--- select p.id from public.profiles p
--- where not exists (select 1 from public.notification_preferences np where np.user_id = p.id)
--- on conflict (user_id) do nothing;
+insert into public.notification_preferences (
+  user_id,
+  courses_inapp_enabled,
+  courses_email_enabled,
+  courses_push_enabled,
+  content_inapp_enabled,
+  content_email_enabled,
+  content_push_enabled,
+  shop_inapp_enabled,
+  shop_email_enabled,
+  shop_push_enabled,
+  community_inapp_enabled,
+  community_email_enabled,
+  community_push_enabled,
+  silence_mode_enabled,
+  digest_frequency
+)
+select
+  p.id,
+  true,
+  true,
+  false,
+  true,
+  false,
+  false,
+  true,
+  true,
+  false,
+  true,
+  true,
+  false,
+  false,
+  'off'
+from public.profiles p
+where not exists (
+  select 1 from public.notification_preferences np where np.user_id = p.id
+)
+on conflict (user_id) do nothing;

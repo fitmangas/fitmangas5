@@ -116,10 +116,22 @@ Légende : **✅** accès / envoi prévu · **❌** pas d’accès · **🔒** v
 
 ## 9. Événements à logger (v1 communications / analytics)
 
-| `event_type` (proposition) | Déclencheur |
-|----------------------------|-------------|
-| `subscription.checkout_abandoned` | CTA upsell ou landing blog → Stripe checkout puis abandon / cancel sans succès (détail implémentation Phase 2+). |
-| *(existant / futur)* | Envoi email, digest, push — alignés sur prompt maître une fois `notification_log` créé. |
+### Tunnel checkout / upsell (`notification_log`, `event_type` libre côté SQL — validation dispatcher applicatif)
+
+| `event_type` | Mécanisme | Déclencheur exact |
+|--------------|-----------|-------------------|
+| `subscription.checkout_initiated` | **1 — clic CTA** | Route serveur appelée **avant** redirection Stripe ; utilisatrice connectée (`user_id`) ou anonyme (`user_id` null depuis landing). `payload` : `source` (ex. `dashboard_progression`, `landing_blog`, `replay_card`), `target_offer`, `user_agent_short`, `locale`, etc. |
+| `subscription.checkout_abandoned_explicit` | **2 — cancel_url** | Page `/checkout/abandoned` (ou équivalent) avec `session_id` ; abandon explicite « Retour » depuis Stripe Checkout. |
+| `subscription.checkout_abandoned_timeout` | **3 — webhook Stripe** | `checkout.session.expired` (session non complétée, filet ~24 h). |
+| `subscription.checkout_async_payment_failed` | **3 — webhook Stripe** | `checkout.session.async_payment_failed` lorsque pertinent métier (paiement asynchrone échoué). |
+
+**Usage v1 des logs (pas d’email auto)** : statistiques admin (ex. Phase 3 : initiés / abandons / conversions sur 30 jours par source) ; pas de relance automatique ; activation ultérieure possible via dispatcher si décision business.
+
+### Autres événements
+
+| `event_type` (exemples) | Déclencheur |
+|-------------------------|-------------|
+| *(envois, erreurs dispatch)* | Email, digest, push — alignés sur prompt maître ; insertion via **service_role** uniquement. |
 
 **Rétention** : 24 mois pour les lignes de log d’envoi / événements traceurs RGPD.
 
