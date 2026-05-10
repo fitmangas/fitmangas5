@@ -46,7 +46,6 @@ export type NotificationPreferencesRow = {
 };
 
 export type DispatcherDeps = {
-  /** Lot 8 replaces with Resend. */
   sendEmailPlaceholder?: (args: {
     toProfileId: string;
     event_type: string;

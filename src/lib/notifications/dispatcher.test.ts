@@ -4,9 +4,16 @@ vi.mock('./push', () => ({
   sendPushNotification: vi.fn(async () => ({ sent: 0 })),
 }));
 
+vi.mock('./email', () => ({
+  sendDispatcherEmail: vi.fn(async () => undefined),
+}));
+
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './defaults';
 import { dispatch } from './dispatcher';
+import { sendDispatcherEmail } from './email';
 import type { NotificationPreferencesRow } from './types';
+
+const sendDispatcherEmailMock = vi.mocked(sendDispatcherEmail);
 
 type Scenario =
   | 'default'
@@ -191,6 +198,7 @@ describe('dispatch', () => {
     scenario = 'default';
     prefsOverride = null;
     unreadTodayCount = 0;
+    sendDispatcherEmailMock.mockClear();
   });
 
   it('duplicate idempotency_key → skip tout envoi', async () => {
@@ -504,6 +512,30 @@ describe('dispatch', () => {
       idempotency_key: 'uniq-key',
     });
     expect(second).toMatchObject({ ok: true, skipped: 'duplicate' });
+  });
+
+  it('canal email par défaut → appelle le branchement Resend dispatcher', async () => {
+    prefsOverride = {
+      courses_inapp_enabled: false,
+      courses_email_enabled: true,
+      courses_push_enabled: false,
+    };
+    const m = buildMockSupabase();
+
+    const r = await dispatch(m.client, {
+      event_type: 'course.live.reminder',
+      user_id: 'u1',
+      payload: { title: 'Cours', body: 'Dans 10 minutes' },
+      channel_hints: ['email'],
+    });
+
+    expect(r.ok).toBe(true);
+    expect(sendDispatcherEmailMock).toHaveBeenCalledWith({
+      toProfileId: 'u1',
+      event_type: 'course.live.reminder',
+      payload: { title: 'Cours', body: 'Dans 10 minutes' },
+      locale: 'fr',
+    });
   });
 
   it('push activé + hint push → canal push appelé', async () => {

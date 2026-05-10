@@ -8,10 +8,7 @@ import { calendarDayKeyInTimeZone, startOfDayUtcIsoInTimeZone } from './timezone
 import { sendPushNotification as sendPushNotificationDefault } from './push';
 import { shouldSendNowOrQueue } from './quiet-hours';
 import { DEFAULT_NOTIFICATION_RUNTIME_SETTINGS, getNotificationRuntimeSettings } from './settings';
-
-async function defaultSendEmailPlaceholder(): Promise<void> {
-  /* Lot 8: Resend */
-}
+import { sendDispatcherEmail } from './email';
 
 function hintAllows(channel: 'in_app' | 'email', hints: DispatchInput['channel_hints']): boolean {
   if (!hints?.length) return true;
@@ -28,7 +25,7 @@ export async function dispatch(
   input: DispatchInput,
   deps: DispatcherDeps = {},
 ): Promise<DispatchResult> {
-  const sendEmail = deps.sendEmailPlaceholder ?? defaultSendEmailPlaceholder;
+  const sendEmail = deps.sendEmailPlaceholder ?? sendDispatcherEmail;
   const sendPushNotification =
     deps.sendPushNotification ??
     ((args: { userId: string; title: string; body?: string | null; url?: string }) =>

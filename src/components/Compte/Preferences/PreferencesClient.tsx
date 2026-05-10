@@ -45,6 +45,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
   const [prefs, setPrefs] = useState(initialPrefs);
   const [preferredLocale, setPreferredLocale] = useState(initialProfile.preferred_locale);
   const [displayTimezone, setDisplayTimezone] = useState(initialProfile.display_timezone);
+  const [timezoneManualLocked, setTimezoneManualLocked] = useState(initialProfile.display_timezone_manual_locked);
   const [marketingOptIn, setMarketingOptIn] = useState(initialProfile.marketing_email_opt_in);
 
   const [toastVisible, setToastVisible] = useState(false);
@@ -135,6 +136,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
       try {
         await updateProfilePreferences({ display_timezone: iana });
         setDisplayTimezone(iana);
+        setTimezoneManualLocked(true);
         showFeedback(l.saveSuccess);
       } catch {
         showFeedback(l.saveError);
@@ -333,6 +335,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
           currentTimezone={displayTimezone}
           labels={{
             timezoneLabel: l.timezoneLabel,
+            timezoneStatus: timezoneManualLocked ? l.timezoneManual : l.timezoneAuto,
             timezoneEdit: l.timezoneEdit,
             timezoneSave: l.timezoneSave,
             timezoneCancel: l.timezoneCancel,

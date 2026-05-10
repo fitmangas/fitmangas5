@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Loader2, LogIn, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
+import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -36,6 +38,7 @@ export function ClientLoginModal({ open, onClose }: Props) {
         return;
       }
 
+      await updateDetectedTimezoneOnLogin(detectBrowserTimeZone());
       onClose();
       router.replace('/compte');
       router.refresh();

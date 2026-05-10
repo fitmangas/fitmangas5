@@ -26,6 +26,8 @@ export const preferencesLabels: Record<
     languageFr: string;
     languageEs: string;
     timezoneLabel: string;
+    timezoneAuto: string;
+    timezoneManual: string;
     timezoneEdit: string;
     timezoneSave: string;
     timezoneCancel: string;
@@ -62,6 +64,8 @@ export const preferencesLabels: Record<
     languageFr: 'Français',
     languageEs: 'Español',
     timezoneLabel: 'Fuseau horaire actuel',
+    timezoneAuto: 'détecté automatiquement',
+    timezoneManual: 'défini manuellement',
     timezoneEdit: 'Modifier',
     timezoneSave: 'Enregistrer',
     timezoneCancel: 'Annuler',
@@ -98,6 +102,8 @@ export const preferencesLabels: Record<
     languageFr: 'Francés',
     languageEs: 'Español',
     timezoneLabel: 'Zona horaria actual',
+    timezoneAuto: 'detectada automáticamente',
+    timezoneManual: 'definida manualmente',
     timezoneEdit: 'Modificar',
     timezoneSave: 'Guardar',
     timezoneCancel: 'Cancelar',

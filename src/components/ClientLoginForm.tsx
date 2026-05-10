@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, LogIn } from 'lucide-react';
 
+import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
+import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 
 export function ClientLoginForm() {
@@ -31,6 +33,7 @@ export function ClientLoginForm() {
         return;
       }
 
+      await updateDetectedTimezoneOnLogin(detectBrowserTimeZone());
       router.replace('/compte');
       router.refresh();
     } catch {

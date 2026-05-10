@@ -23,6 +23,7 @@ export const IANA_TIMEZONE_OPTIONS = [
 
 type Labels = {
   timezoneLabel: string;
+  timezoneStatus: string;
   timezoneEdit: string;
   timezoneSave: string;
   timezoneCancel: string;
@@ -72,6 +73,7 @@ export function TimezoneSelector({ currentTimezone, labels, onSave, flushPending
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-sm font-semibold text-luxury-ink">{labels.timezoneLabel}</span>
         <span className="font-mono text-sm text-luxury-muted">{currentTimezone}</span>
+        <span className="text-xs text-luxury-soft">({labels.timezoneStatus})</span>
         {!open ? (
           <button
             type="button"

@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Loader2, ArrowRight, Lock, ChevronDown } from 'lucide-react';
 import type { Course, Language, Segment } from '@/types';
+import {
+  detectBrowserLocale,
+  detectBrowserTimeZone,
+  localeLabel,
+  type DetectedLocale,
+} from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -13,6 +19,21 @@ type Props = {
   lang: Language;
   onClose: () => void;
 };
+
+function formatTimezoneOffset(timeZone: string, locale: DetectedLocale) {
+  try {
+    return (
+      new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'fr-FR', {
+        timeZone,
+        timeZoneName: 'shortOffset',
+      })
+        .formatToParts(new Date())
+        .find((part) => part.type === 'timeZoneName')?.value ?? ''
+    );
+  } catch {
+    return '';
+  }
+}
 
 export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lang, onClose }: Props) {
   const [firstName, setFirstName] = useState('');
@@ -24,7 +45,14 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
+  const [detectedLocale, setDetectedLocale] = useState<DetectedLocale>('fr');
+  const [detectedTimeZone, setDetectedTimeZone] = useState('Europe/Paris');
   const effectiveSegment: Segment = course?.id.startsWith('v-') ? 'VISIO' : 'NANTES';
+
+  useEffect(() => {
+    setDetectedLocale(detectBrowserLocale());
+    setDetectedTimeZone(detectBrowserTimeZone());
+  }, []);
 
   const labels =
     lang === 'FR'
@@ -40,6 +68,8 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           needConfirm:
             'Compte créé. Confirme ton e-mail pour activer la session, puis reconnecte-toi et clique à nouveau sur Réserver pour payer.',
           missingSupabase: 'Configuration incomplète. Paiement indisponible pour le moment.',
+          detectedLanguage: 'Langue détectée',
+          detectedTimezone: 'Fuseau détecté',
         }
       : {
           title: 'Reservar',
@@ -53,7 +83,12 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           needConfirm:
             'Cuenta creada. Confirma tu correo para activar la sesión; luego vuelve a iniciar sesión y pulsa Reservar para pagar.',
           missingSupabase: 'Configuración incompleta. Pago no disponible por ahora.',
+          detectedLanguage: 'Idioma detectado',
+          detectedTimezone: 'Zona horaria detectada',
         };
+  const detectedUiLang = detectedLocale;
+  const timezoneOffsetLabel =
+    typeof Intl === 'undefined' ? '' : formatTimezoneOffset(detectedTimeZone, detectedUiLang);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +125,8 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             ...(birthDate.trim() ? { birth_date: birthDate.trim() } : {}),
+            preferred_locale: detectedLocale,
+            display_timezone: detectedTimeZone,
             segment: effectiveSegment,
             preferred_course_id: course.id,
           },
@@ -272,6 +309,36 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                   className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                 />
               </label>
+              <div className="grid grid-cols-1 gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/25 p-4 text-[11px] text-brand-ink/55 sm:grid-cols-2">
+                <label className="block">
+                  <span className="font-bold uppercase tracking-[0.16em] text-brand-ink/40">
+                    {labels.detectedLanguage}
+                  </span>
+                  <select
+                    value={detectedLocale}
+                    onChange={(e) => setDetectedLocale(e.target.value === 'es' ? 'es' : 'fr')}
+                    className="mt-2 w-full rounded-xl border border-brand-ink/[0.08] bg-white px-3 py-2 text-xs text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                  >
+                    <option value="fr">{localeLabel('fr', detectedUiLang)}</option>
+                    <option value="es">{localeLabel('es', detectedUiLang)}</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="font-bold uppercase tracking-[0.16em] text-brand-ink/40">
+                    {labels.detectedTimezone}
+                  </span>
+                  <input
+                    value={detectedTimeZone}
+                    onChange={(e) => setDetectedTimeZone(e.target.value)}
+                    className="mt-2 w-full rounded-xl border border-brand-ink/[0.08] bg-white px-3 py-2 font-mono text-xs text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                  />
+                  {timezoneOffsetLabel ? (
+                    <span className="mt-1 block font-mono text-[10px] text-brand-ink/45">
+                      {detectedTimeZone} ({timezoneOffsetLabel.replace('UTC', 'UTC')})
+                    </span>
+                  ) : null}
+                </label>
+              </div>
               <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
                 <span className="inline-flex items-center gap-1">
                   <Lock size={10} className="opacity-50" />
