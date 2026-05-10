@@ -3,8 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { categoryFromEventType, isCriticalEventType } from './category';
 import { mergePrefs } from './defaults';
 import type { DispatchInput, DispatchResult, DispatcherDeps } from './types';
-import { isEmailEnabledForCategory, isInAppEnabledForCategory } from './prefs-helpers';
+import { isEmailEnabledForCategory, isInAppEnabledForCategory, isPushEnabledForCategory } from './prefs-helpers';
 import { calendarDayKeyInTimeZone, startOfDayUtcIsoInTimeZone } from './timezone';
+import { sendPushNotification as sendPushNotificationDefault } from './push';
 
 const MAX_EMAILS_PER_DAY = 2;
 const MAX_UNREAD_IN_APP_BLOCK = 5;
@@ -18,12 +19,21 @@ function hintAllows(channel: 'in_app' | 'email', hints: DispatchInput['channel_h
   return hints.includes(channel);
 }
 
+function pushHintAllows(hints: DispatchInput['channel_hints']): boolean {
+  if (!hints?.length) return true;
+  return hints.includes('push');
+}
+
 export async function dispatch(
   supabase: SupabaseClient,
   input: DispatchInput,
   deps: DispatcherDeps = {},
 ): Promise<DispatchResult> {
   const sendEmail = deps.sendEmailPlaceholder ?? defaultSendEmailPlaceholder;
+  const sendPushNotification =
+    deps.sendPushNotification ??
+    ((args: { userId: string; title: string; body?: string | null; url?: string }) =>
+      sendPushNotificationDefault(args.userId, args.title, args.body, args.url));
 
   let pendingIdempotencyKey = input.idempotency_key ?? null;
   const pickIdempotencyKey = (): string | null => {
@@ -98,6 +108,8 @@ export async function dispatch(
     hintAllows('email', hints) && isEmailEnabledForCategory(prefs, category);
   let allowInApp =
     hintAllows('in_app', hints) && isInAppEnabledForCategory(prefs, category);
+  const allowPush =
+    pushHintAllows(hints) && (critical || isPushEnabledForCategory(prefs, category));
 
   const dayKey = calendarDayKeyInTimeZone(tz);
   const emailScopeKey = `email:${dayKey}`;
@@ -115,10 +127,11 @@ export async function dispatch(
     }
   }
 
-  const delivered: { email?: boolean; in_app?: boolean } = {};
+  const delivered: { email?: boolean; in_app?: boolean; push?: boolean } = {};
   const title = String(input.payload.title ?? input.event_type);
   const body = input.payload.body != null ? String(input.payload.body) : null;
   const kind = String(input.payload.kind ?? input.event_type);
+  const url = input.payload.url != null ? String(input.payload.url) : undefined;
 
   if (allowInApp) {
     const { error: nErr } = await supabase.from('user_notifications').insert({
@@ -178,7 +191,34 @@ export async function dispatch(
     }
   }
 
-  if (!delivered.email && !delivered.in_app && logIds.length === 0) {
+  if (allowPush) {
+    const pushResult = await sendPushNotification({
+      userId,
+      title,
+      body,
+      url,
+    });
+
+    if (pushResult.sent > 0) {
+      delivered.push = true;
+
+      const { data: pushLog, error: pErr } = await supabase
+        .from('notification_log')
+        .insert({
+          user_id: userId,
+          event_type: input.event_type,
+          channel: 'push',
+          payload: { ...input.payload, _delivered: 'push' },
+          idempotency_key: pickIdempotencyKey(),
+        })
+        .select('id')
+        .single();
+      if (pErr) throw pErr;
+      if (pushLog?.id) logIds.push(pushLog.id);
+    }
+  }
+
+  if (!delivered.email && !delivered.in_app && !delivered.push && logIds.length === 0) {
     const { data: fallback, error: fErr } = await supabase
       .from('notification_log')
       .insert({

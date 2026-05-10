@@ -35,3 +35,20 @@ export function isEmailEnabledForCategory(prefs: Prefs, category: NotificationCa
       return true;
   }
 }
+
+export function isPushEnabledForCategory(prefs: Prefs, category: NotificationCategory): boolean {
+  switch (category) {
+    case 'account':
+      return true;
+    case 'courses':
+      return prefs.courses_push_enabled;
+    case 'content':
+      return prefs.content_push_enabled;
+    case 'shop':
+      return prefs.shop_push_enabled;
+    case 'community':
+      return prefs.community_push_enabled;
+    default:
+      return true;
+  }
+}

@@ -46,6 +46,7 @@ export default async function PreferencesPage() {
 
   return (
     <PreferencesClient
+      userId={user.id}
       initialPrefs={initialPrefs}
       initialProfile={{
         preferred_locale,

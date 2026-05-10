@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, useTransition, type ReactNode } from 'react';
 
 import { GlassCard } from '@/components/ui/GlassCard';
+import { PushOptIn } from '@/components/Notifications/PushOptIn';
 import type {
   ProfilePreferencesUpdate,
   UpdateNotificationPayload,
@@ -31,12 +32,13 @@ export type PreferencesProfileInitial = {
 };
 
 type Props = {
+  userId: string;
   initialPrefs: Omit<NotificationPreferencesRow, 'user_id'>;
   initialProfile: PreferencesProfileInitial;
   lang: PreferencesLang;
 };
 
-export function PreferencesClient({ initialPrefs, initialProfile, lang }: Props) {
+export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }: Props) {
   const router = useRouter();
   const l = preferencesLabels[lang];
 
@@ -267,6 +269,17 @@ export function PreferencesClient({ initialPrefs, initialProfile, lang }: Props)
           </div>
         </div>
       </GlassCard>
+
+      <PushOptIn
+        userId={userId}
+        lang={lang}
+        initialEnabled={
+          prefs.courses_push_enabled ||
+          prefs.content_push_enabled ||
+          prefs.shop_push_enabled ||
+          prefs.community_push_enabled
+        }
+      />
 
       <GlassCard className="space-y-4 p-6 md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.silenceTitle}</h2>

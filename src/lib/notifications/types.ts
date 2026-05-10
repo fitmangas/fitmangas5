@@ -51,4 +51,10 @@ export type DispatcherDeps = {
     payload: Record<string, unknown>;
     locale: string;
   }) => Promise<void>;
+  sendPushNotification?: (args: {
+    userId: string;
+    title: string;
+    body?: string | null;
+    url?: string;
+  }) => Promise<{ sent: number }>;
 };

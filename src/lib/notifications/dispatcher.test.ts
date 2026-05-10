@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('./push', () => ({
+  sendPushNotification: vi.fn(async () => ({ sent: 0 })),
+}));
+
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './defaults';
 import { dispatch } from './dispatcher';
 import type { NotificationPreferencesRow } from './types';
@@ -476,5 +480,66 @@ describe('dispatch', () => {
       idempotency_key: 'uniq-key',
     });
     expect(second).toMatchObject({ ok: true, skipped: 'duplicate' });
+  });
+
+  it('push activé + hint push → canal push appelé', async () => {
+    prefsOverride = {
+      courses_push_enabled: true,
+      courses_inapp_enabled: false,
+      courses_email_enabled: false,
+      silence_mode_enabled: false,
+    };
+    const m = buildMockSupabase();
+    const sendPush = vi.fn().mockResolvedValue({ sent: 1 });
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'course.live.reminder',
+        user_id: 'u1',
+        payload: { title: 'Cours', body: 'Dans 10 minutes', url: '/compte/planning' },
+        channel_hints: ['push'],
+      },
+      { sendPushNotification: sendPush },
+    );
+
+    expect(sendPush).toHaveBeenCalledWith({
+      userId: 'u1',
+      title: 'Cours',
+      body: 'Dans 10 minutes',
+      url: '/compte/planning',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok && 'delivered' in r && r.delivered) {
+      expect(r.delivered.push).toBe(true);
+    }
+    expect(m.insertedLogs.some((l) => l.channel === 'push')).toBe(true);
+  });
+
+  it('push désactivé + hint push → canal push ignoré', async () => {
+    prefsOverride = {
+      courses_push_enabled: false,
+      courses_inapp_enabled: false,
+      courses_email_enabled: false,
+      silence_mode_enabled: false,
+    };
+    const m = buildMockSupabase();
+    const sendPush = vi.fn().mockResolvedValue({ sent: 1 });
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'course.live.reminder',
+        user_id: 'u1',
+        payload: { title: 'Cours', body: 'Dans 10 minutes' },
+        channel_hints: ['push'],
+      },
+      { sendPushNotification: sendPush },
+    );
+
+    expect(sendPush).not.toHaveBeenCalled();
+    expect(r.ok).toBe(true);
+    if (r.ok && 'delivered' in r && r.delivered) {
+      expect(r.delivered.push).toBeUndefined();
+    }
+    expect(m.insertedLogs.some((l) => l.payload?._no_client_delivery)).toBe(true);
   });
 });
