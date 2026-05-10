@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { dispatchCourseCancelledByCoach } from '@/lib/notifications/phase2';
 
 function slugFromTitle(title: string) {
   const base = title
@@ -127,6 +128,11 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
 
     const d = parsed.data;
     const admin = createAdminClient();
+    const { data: before } = await admin
+      .from('courses')
+      .select('is_published')
+      .eq('id', idParse.data)
+      .maybeSingle();
 
     const { error } = await admin
       .from('courses')
@@ -152,6 +158,10 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
     if (error) {
       console.error('[updateCourse]', error);
       return { ok: false, message: error.message };
+    }
+
+    if (before?.is_published === true && d.isPublished === false) {
+      await dispatchCourseCancelledByCoach(admin, idParse.data);
     }
 
     revalidatePath('/admin/courses');

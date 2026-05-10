@@ -4,6 +4,7 @@ import type { NotificationCategory } from './types';
 export function categoryFromEventType(eventType: string): NotificationCategory {
   if (
     eventType.startsWith('subscription.') ||
+    eventType.startsWith('onboarding.') ||
     eventType.startsWith('account.') ||
     eventType.startsWith('payment.') ||
     eventType.startsWith('auth.security') ||

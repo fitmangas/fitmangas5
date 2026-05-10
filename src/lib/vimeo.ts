@@ -1,5 +1,6 @@
 import { readFile, stat } from 'fs/promises';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { dispatchReplayReady } from '@/lib/notifications/phase2';
 
 const VIMEO_API_BASE = 'https://api.vimeo.com';
 const TUS_VERSION = '1.0.0';
@@ -305,6 +306,10 @@ export async function syncVideoRecording(params: {
 
   if (error) {
     throw new Error(`Sync video_recordings failed: ${error.message}`);
+  }
+
+  if (metadata.isReady) {
+    await dispatchReplayReady(admin, params.courseId);
   }
 
   return metadata;

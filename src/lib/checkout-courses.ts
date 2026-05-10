@@ -16,6 +16,20 @@ export const COURSE_CHECKOUT_MODE: Record<string, 'subscription' | 'payment'> = 
   'n-ind': 'payment',
 };
 
+export const COURSE_CUSTOMER_TIER: Record<string, string> = {
+  'v-coll': 'online_group_monthly',
+  'v-ind': 'online_individual_monthly',
+  'n-coll': 'onsite_group_single',
+  'n-ind': 'onsite_individual_single',
+};
+
+export const COURSE_PRICE_CENTS: Record<string, number> = {
+  'v-coll': 3900,
+  'v-ind': 26900,
+  'n-coll': 1000,
+  'n-ind': 5000,
+};
+
 export function getStripePriceId(courseId: string): string | undefined {
   const envKey = COURSE_STRIPE_PRICE_ENV[courseId];
   if (!envKey) return undefined;

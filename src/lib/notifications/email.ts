@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getEmailTemplate, renderTemplate } from './templates';
 
 export type SendDispatcherEmailArgs = {
   toProfileId: string;
@@ -29,7 +30,7 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
   const admin = createAdminClient();
   const { data: profile, error } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, preferred_locale')
     .eq('id', args.toProfileId)
     .maybeSingle();
   if (error) throw error;
@@ -46,9 +47,12 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
     return;
   }
 
-  const title = String(args.payload.title ?? 'FitMangas');
+  const locale = profile.preferred_locale === 'es' ? 'es' : 'fr';
+  const template = getEmailTemplate(args.event_type);
+  const rendered = template ? renderTemplate(template, locale, args.payload) : null;
+  const title = rendered?.subject ?? String(args.payload.title ?? 'FitMangas');
   const body = args.payload.body != null ? String(args.payload.body) : '';
-  const html = `
+  const html = rendered?.html ?? `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1d1d1f">
       <h1>${escapeHtml(title)}</h1>
       ${body ? `<p>${escapeHtml(body)}</p>` : ''}
