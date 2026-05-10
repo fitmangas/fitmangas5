@@ -71,7 +71,7 @@ export async function CompteTopBar({ showNotifications = false }: { showNotifica
       </GlassCard>
 
       <GlassCard className="flex flex-wrap items-center justify-end gap-3 px-5 py-4 md:px-6">
-        {showNotifications ? <NotificationBell items={(notifications ?? []) as NotificationRow[]} /> : null}
+        {showNotifications ? <NotificationBell userId={user.id} items={(notifications ?? []) as NotificationRow[]} /> : null}
         <Link href="/compte/profil" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
           Mon profil
         </Link>

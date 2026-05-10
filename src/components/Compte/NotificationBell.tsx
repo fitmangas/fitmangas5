@@ -2,9 +2,12 @@
 
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { markAllNotificationsReadAction, markNotificationReadAction } from '@/app/compte/actions';
+import { createClient } from '@/lib/supabase/client';
+
+import { subscribeToUserNotifications } from './notificationRealtime';
 
 export type NotificationRow = {
   id: string;
@@ -15,10 +18,22 @@ export type NotificationRow = {
   created_at: string;
 };
 
-export function NotificationBell({ items }: { items: NotificationRow[] }) {
+export function NotificationBell({ userId, items }: { userId: string; items: NotificationRow[] }) {
   const router = useRouter();
+  const [localItems, setLocalItems] = useState(items);
   const [pending, startTransition] = useTransition();
-  const unread = items.filter((i) => !i.read_at).length;
+  const unread = localItems.filter((i) => !i.read_at).length;
+
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    return subscribeToUserNotifications(supabase, userId, (row) => {
+      setLocalItems((current) => [row, ...current.filter((item) => item.id !== row.id)].slice(0, 25));
+    });
+  }, [userId]);
 
   return (
     <details className="group relative">
@@ -32,7 +47,7 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
         ) : null}
       </summary>
       <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
-        {items.length === 0 ? (
+        {localItems.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-luxury-muted">Aucune notification.</p>
         ) : (
           <>
@@ -43,6 +58,8 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
                 onClick={() =>
                   startTransition(async () => {
                     await markAllNotificationsReadAction();
+                    const now = new Date().toISOString();
+                    setLocalItems((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? now })));
                     router.refresh();
                   })
                 }
@@ -52,7 +69,7 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
               </button>
             </div>
             <ul className="max-h-[min(60vh,22rem)] overflow-y-auto">
-              {items.map((n) => (
+              {localItems.map((n) => (
                 <li key={n.id} className="border-b border-white/25 last:border-0">
                   <button
                     type="button"
@@ -60,6 +77,11 @@ export function NotificationBell({ items }: { items: NotificationRow[] }) {
                     onClick={() =>
                       startTransition(async () => {
                         if (!n.read_at) await markNotificationReadAction(n.id);
+                        setLocalItems((current) =>
+                          current.map((item) =>
+                            item.id === n.id ? { ...item, read_at: item.read_at ?? new Date().toISOString() } : item,
+                          ),
+                        );
                         router.refresh();
                       })
                     }
