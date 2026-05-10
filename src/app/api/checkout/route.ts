@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl.replace(/\/$/, '')}/compte?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl.replace(/\/$/, '')}/?checkout=cancel`,
+      cancel_url: `${appUrl.replace(/\/$/, '')}/checkout/abandoned`,
       metadata: {
         supabase_user_id: user.id,
         course_id: courseId,

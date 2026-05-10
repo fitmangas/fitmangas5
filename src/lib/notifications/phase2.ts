@@ -6,6 +6,7 @@ import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
 import { COACH_PUBLISH_TIMEZONE, calendarDayKeyInTimeZone, formatInUserTimezone, isWithinCoachMorningPublishWindow } from './timezone';
 import { dispatch } from './dispatcher';
+import { runPhase3DailyJobs } from './phase3';
 
 type DispatchFn = typeof dispatch;
 
@@ -282,8 +283,13 @@ export async function runBlogPublishScheduled(client: SupabaseClient, now = new 
   for (const row of (data ?? []) as { id: string; title_fr: string; slug_fr: string }[]) {
     const { error: updateError } = await client.from('blog_articles').update({ status: 'published', published_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', row.id).eq('status', 'validated');
     if (updateError) throw updateError;
-    await notifyMembersNewBlogArticle(client, { articleId: row.id, title: row.title_fr, slugFr: row.slug_fr });
-    await sendPublicationNewsletter({ articleId: row.id, title: row.title_fr, slugFr: row.slug_fr });
+    const memberNotifications = await notifyMembersNewBlogArticle(client, { articleId: row.id, title: row.title_fr, slugFr: row.slug_fr });
+    await sendPublicationNewsletter({
+      articleId: row.id,
+      title: row.title_fr,
+      slugFr: row.slug_fr,
+      excludeUserIds: memberNotifications?.notifiedUserIds ?? [],
+    });
     published += 1;
   }
   return { skipped: false, published };
@@ -291,13 +297,14 @@ export async function runBlogPublishScheduled(client: SupabaseClient, now = new 
 
 export async function runPhase2DailyJobs(client: SupabaseClient, deps: Phase2Deps = {}) {
   const now = deps.now ?? new Date();
-  const [blog, onboarding, winBack, courses] = await Promise.all([
+  const [blog, onboarding, winBack, courses, phase3] = await Promise.all([
     runBlogPublishScheduled(client, now),
     runOnboardingCycle(client, deps),
     runWinBackCycle(client, deps),
     runCourseCycles(client, deps),
+    runPhase3DailyJobs(client, deps),
   ]);
-  return { blog, onboarding, winBack, courses };
+  return { blog, onboarding, winBack, courses, phase3 };
 }
 
 export async function markStripeEventProcessed(client: SupabaseClient, event: Stripe.Event) {

@@ -1,4 +1,4 @@
-# Dispatcher de notifications (Lot 1)
+# Dispatcher de notifications (final Phase 3)
 
 ## Point d’entrée
 
@@ -16,7 +16,7 @@
 | `channel_hints` | Optionnel ; sous-ensemble de canaux à considérer (`in_app`, `email`, `push`, `digest`). Si absent, tous les canaux éligibles selon préférences. |
 | `idempotency_key` | Optionnel ; unique globalement dans `notification_log`. Deuxième appel avec la même clé → `{ skipped: 'duplicate' }` sans effet. |
 
-## Règles métier (v1)
+## Règles métier finales
 
 1. **Doublon** : si `idempotency_key` existe déjà dans `notification_log`, retour immédiat.
 2. **Anonyme** (`user_id === null`) : un insert `notification_log` (`channel: log`), pas de canaux cliente.
@@ -26,8 +26,8 @@
    **Critique** (contourne le silence) : préfixe `subscription.payment_failed`, ou motif `course.<segment>.cancelled`.
 6. **Catégories** × canaux : `category.ts` (`courses` \| `content` \| `shop` \| `community`) × colonnes `*_inapp_enabled` / `*_email_enabled`.
 7. **Caps** : max **2 emails / jour / utilisatrice** (scope `email:YYYY-MM-DD` fuseau cliente dans `notification_frequency_cap`) ; max **5 notifications in-app non lues** (`user_notifications.read_at IS NULL`) avant de bloquer de **nouveaux** inserts in-app.
-8. **Email** : `sendEmailPlaceholder` (Lot 8 : Resend) — noop par défaut.
-9. **Push / digest** : non envoyés au Lot 1 (lots ultérieurs).
+8. **Email** : Resend via `sendDispatcherEmail`, avec templates FR/ES par `event_type` si disponibles.
+9. **Push / digest** : push web actif ; digest queue alimentée pendant les quiet hours et consommée par le cron daily-jobs.
 10. **Journal** : une ligne `notification_log` par livraison effective (`channel`: `email` ou `log` avec `_delivered`), ou ligne `_no_client_delivery` si tout est bloqué par préfs/caps. La clé `idempotency_key` n’est posée que sur **la première** ligne créée pour l’appel (contrainte unique).
 
 ## Tests
@@ -38,11 +38,11 @@ npm run test
 
 Fichier : `src/lib/notifications/dispatcher.test.ts`.
 
-## Évolutions prévues
+## Producteurs branchés
 
-- Lot 4 : push web  
-- Lot 5 : Realtime  
-- Lot 6 : caps admin  
-- Lot 8 : Resend réel + audit expéditeur  
-
-Les producteurs existants (replay, blog, etc.) **ne sont pas** branchés sur ce dispatcher au Lot 1.
+- Stripe abonnements et paiements.
+- Cours visio et présentiel : reminders, annulations, missed, replay ready.
+- Blog : `blog.article_published` remplace l’insert direct in-app.
+- Boutique Printful : order paid/shipped/delivered et product published.
+- Communauté : anniversaire, inactivité 30/60 jours.
+- Digest : `digest.summary`.

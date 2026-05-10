@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { createPrintfulOrder } from '@/lib/printful';
+import { dispatchBoutiqueOrderPaid } from '@/lib/notifications/phase3';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 type CreateOrderBody = {
@@ -74,6 +76,10 @@ export async function POST(req: Request) {
         countryCode: recipient.countryCode.trim().toUpperCase(),
       },
       items,
+    });
+    await dispatchBoutiqueOrderPaid(createAdminClient(), {
+      userId: user.id,
+      orderRef: String(order.id ?? order.external_id ?? 'printful'),
     });
     return NextResponse.json({ order });
   } catch (error) {

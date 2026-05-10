@@ -133,6 +133,17 @@ Légende : **✅** accès / envoi prévu · **❌** pas d’accès · **🔒** v
 |-------------------------|-------------|
 | *(envois, erreurs dispatch)* | Email, digest, push — alignés sur prompt maître ; insertion via **service_role** uniquement. |
 
+## 11. Statut implémentation Phase 3
+
+| Domaine | Événements | Statut |
+| --- | --- | --- |
+| Blog | `blog.article_published` via dispatcher + newsletter-only excluant les membres dispatchés | Implémenté |
+| Boutique | `boutique.product_published`, `boutique.order_paid`, `boutique.order_shipped` | Implémenté |
+| Boutique | `boutique.order_delivered` | Route prête ; dépend de disponibilité webhook Printful delivered |
+| Communauté | `community.birthday`, `community.we_miss_you_30d`, `community.we_miss_you_60d` | Implémenté |
+| Digest | `digest.summary` daily/weekly à 8h locale | Implémenté |
+| Upsell UI | Overlay `VisioLock`, section blog landing, checkout abandonné | Implémenté |
+
 **Rétention** : 24 mois pour les lignes de log d’envoi / événements traceurs RGPD.
 
 ---

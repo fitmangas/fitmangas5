@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   let vimeoShowcase: { title: string; thumbnailUrl: string | null }[] = [];
+  let blogPreviews: { title: string; excerpt: string | null; coverImageUrl: string | null }[] = [];
 
   try {
     const admin = createAdminClient();
@@ -47,8 +48,21 @@ export default async function HomePage() {
         thumbnailUrl: typeof row.thumbnail_url === 'string' ? row.thumbnail_url : null,
       }))
       .filter((item) => item.title.trim().length > 0);
+
+    const { data: articles } = await admin
+      .from('blog_articles')
+      .select('title_fr, description_fr, featured_image_url, published_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(3);
+    blogPreviews = (articles ?? []).map((row) => ({
+      title: String(row.title_fr ?? ''),
+      excerpt: row.description_fr ? String(row.description_fr) : null,
+      coverImageUrl: row.featured_image_url ? String(row.featured_image_url) : null,
+    }));
   } catch {
     vimeoShowcase = [];
+    blogPreviews = [];
   }
 
   const jsonLd = {
@@ -70,7 +84,7 @@ export default async function HomePage() {
   return (
     <>
       <Script id="fitmangas-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <LandingPage vimeoShowcase={vimeoShowcase} />
+      <LandingPage vimeoShowcase={vimeoShowcase} blogPreviews={blogPreviews} />
     </>
   );
 }

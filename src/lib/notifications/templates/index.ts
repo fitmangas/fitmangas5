@@ -14,6 +14,13 @@ import * as courseVisioCancelled from './course-visio-cancelled';
 import * as courseVisioMissed from './course-visio-missed';
 import * as courseVisioReminderJ1 from './course-visio-reminder-j1';
 import * as courseVisioReplayReady from './course-visio-replay-ready';
+import * as blogArticlePublished from './blog-article-published';
+import * as boutiqueOrderPaid from './boutique-order-paid';
+import * as boutiqueOrderShipped from './boutique-order-shipped';
+import * as birthday from './birthday';
+import * as digest from './digest';
+import * as weMissYou30d from './we-miss-you-30d';
+import * as weMissYou60d from './we-miss-you-60d';
 import type { NotificationEmailTemplate, TemplateLocale } from './types';
 
 export const TEMPLATE_REGISTRY = {
@@ -34,6 +41,13 @@ export const TEMPLATE_REGISTRY = {
   'course.presential.reminder_J-1': coursePresentialReminderJ1,
   'course.presential.cancelled_by_coach': coursePresentialCancelled,
   'course.presential.missed': coursePresentialMissed,
+  'blog.article_published': blogArticlePublished,
+  'boutique.order_paid': boutiqueOrderPaid,
+  'boutique.order_shipped': boutiqueOrderShipped,
+  'community.birthday': birthday,
+  'community.we_miss_you_30d': weMissYou30d,
+  'community.we_miss_you_60d': weMissYou60d,
+  'digest.summary': digest,
 } satisfies Record<string, NotificationEmailTemplate>;
 
 export function getEmailTemplate(eventType: string): NotificationEmailTemplate | null {

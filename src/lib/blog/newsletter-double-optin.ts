@@ -58,16 +58,25 @@ export async function sendNewsletterConfirmationEmail(email: string, token: stri
   return { sent: result.sent, confirmUrl };
 }
 
-export async function sendPublicationNewsletter(params: { articleId: string; title: string; slugFr: string }) {
+export async function sendPublicationNewsletter(params: { articleId: string; title: string; slugFr: string; excludeUserIds?: string[] }) {
   const admin = createAdminClient();
   const articleUrl = `${appUrl()}/blog/${params.slugFr}`;
+  const excludedEmails = new Set<string>();
+  for (const userId of params.excludeUserIds ?? []) {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    const email = data.user?.email?.trim().toLowerCase();
+    if (email) excludedEmails.add(email);
+  }
   const { data: subscribers } = await admin
     .from('newsletter_subscriptions')
     .select('email')
     .eq('confirmed', true)
     .eq('unsubscribed', false);
 
-  const list = (subscribers ?? []).map((s) => s.email).filter(Boolean);
+  const list = (subscribers ?? [])
+    .map((s) => s.email)
+    .filter(Boolean)
+    .filter((email) => !excludedEmails.has(String(email).trim().toLowerCase()));
   let sent = 0;
   for (const email of list) {
     const result = await sendEmailViaResend(
