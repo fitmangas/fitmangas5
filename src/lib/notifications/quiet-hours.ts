@@ -11,18 +11,19 @@ export function shouldSendNowOrQueue(
   eventType: string,
   timeZone: string,
   at: Date = new Date(),
+  options: { quietHoursStart?: number; quietHoursEnd?: number } = {},
 ): 'send' | 'queue_digest' {
   if (isCriticalEventType(eventType)) {
     return 'send';
   }
-  if (isInQuietHours(timeZone, at)) {
+  if (isInQuietHours(timeZone, at, options.quietHoursStart ?? 21, options.quietHoursEnd ?? 8)) {
     return 'queue_digest';
   }
   return 'send';
 }
 
 /** Entre 21:00 inclus et 08:00 exclus (heure locale). */
-function isInQuietHours(timeZone: string, at: Date): boolean {
+function isInQuietHours(timeZone: string, at: Date, quietStartHour: number, quietEndHour: number): boolean {
   const dtf = new Intl.DateTimeFormat('en-GB', {
     timeZone,
     hour: '2-digit',
@@ -34,7 +35,7 @@ function isInQuietHours(timeZone: string, at: Date): boolean {
   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? NaN);
   if (Number.isNaN(hour) || Number.isNaN(minute)) return false;
   const mins = hour * 60 + minute;
-  const startQuiet = 21 * 60;
-  const endQuiet = 8 * 60;
+  const startQuiet = quietStartHour * 60;
+  const endQuiet = quietEndHour * 60;
   return mins >= startQuiet || mins < endQuiet;
 }

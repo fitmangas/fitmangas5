@@ -63,6 +63,7 @@ function buildMockSupabase(sharedSlotMap?: Map<string, number>) {
   const insertedLogs: { channel?: string; payload?: Record<string, unknown>; idempotency_key?: string | null }[] =
     [];
   const insertedNotifications: unknown[] = [];
+  const insertedDigestQueue: unknown[] = [];
   let emailPlaceholderCalls = 0;
 
   const slotMap = sharedSlotMap ?? new Map<string, number>();
@@ -147,6 +148,19 @@ function buildMockSupabase(sharedSlotMap?: Map<string, number>) {
       };
     }
 
+    if (table === 'notification_digest_queue') {
+      return {
+        insert: vi.fn().mockImplementation((row: unknown) => {
+          insertedDigestQueue.push(row);
+          return {
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: `digest-${insertedDigestQueue.length}` }, error: null }),
+            }),
+          };
+        }),
+      };
+    }
+
     throw new Error(`unexpected table ${table}`);
   });
 
@@ -157,6 +171,7 @@ function buildMockSupabase(sharedSlotMap?: Map<string, number>) {
     } as unknown as import('@supabase/supabase-js').SupabaseClient,
     insertedLogs,
     insertedNotifications,
+    insertedDigestQueue,
     rpc,
     get emailPlaceholderCalls() {
       return emailPlaceholderCalls;
@@ -459,6 +474,15 @@ describe('dispatch', () => {
           insert: vi.fn().mockResolvedValue({ error: null }),
         };
       }
+      if (table === 'notification_digest_queue') {
+        return {
+          insert: vi.fn().mockImplementation((row: unknown) => ({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: 'D1', row }, error: null }),
+            }),
+          })),
+        };
+      }
       throw new Error(table);
     });
 
@@ -541,5 +565,87 @@ describe('dispatch', () => {
       expect(r.delivered.push).toBeUndefined();
     }
     expect(m.insertedLogs.some((l) => l.payload?._no_client_delivery)).toBe(true);
+  });
+
+  it('événement critique ignore les caps email et in-app', async () => {
+    scenario = 'email_cap';
+    unreadTodayCount = 5;
+    prefsOverride = {
+      silence_mode_enabled: false,
+      courses_inapp_enabled: true,
+      courses_email_enabled: true,
+    };
+    const m = buildMockSupabase();
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'course.live.cancelled',
+        user_id: 'u1',
+        payload: { title: 'Annulé', kind: 'course', body: 'Cours annulé' },
+      },
+      { sendEmailPlaceholder: sendEmail },
+    );
+
+    expect(r.ok).toBe(true);
+    expect(sendEmail).toHaveBeenCalled();
+    expect(m.insertedNotifications.length).toBe(1);
+  });
+
+  it('quiet hours actives + non critique → queue digest', async () => {
+    prefsOverride = {
+      silence_mode_enabled: false,
+      courses_inapp_enabled: true,
+      courses_email_enabled: true,
+    };
+    const m = buildMockSupabase();
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'course.live.reminder',
+        user_id: 'u1',
+        payload: { title: 'Cours', kind: 'course' },
+      },
+      {
+        sendEmailPlaceholder: sendEmail,
+        now: new Date('2026-05-10T21:30:00+02:00'),
+      },
+    );
+
+    expect(r.ok).toBe(true);
+    if (r.ok && 'delivered' in r && r.delivered) {
+      expect(r.delivered.digest).toBe(true);
+    }
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(m.insertedNotifications.length).toBe(0);
+    expect(m.insertedDigestQueue.length).toBe(1);
+  });
+
+  it('quiet hours actives + critique → envoi immédiat', async () => {
+    prefsOverride = {
+      silence_mode_enabled: false,
+      courses_inapp_enabled: true,
+      courses_email_enabled: true,
+    };
+    const m = buildMockSupabase();
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'course.live.cancelled',
+        user_id: 'u1',
+        payload: { title: 'Annulé', kind: 'course' },
+      },
+      {
+        sendEmailPlaceholder: sendEmail,
+        now: new Date('2026-05-10T21:30:00+02:00'),
+      },
+    );
+
+    expect(r.ok).toBe(true);
+    expect(sendEmail).toHaveBeenCalled();
+    expect(m.insertedNotifications.length).toBe(1);
+    expect(m.insertedDigestQueue.length).toBe(0);
   });
 });

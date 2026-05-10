@@ -1,3 +1,5 @@
+import type { NotificationRuntimeSettings } from './settings';
+
 export type DispatchChannelHint = 'in_app' | 'email' | 'push' | 'digest';
 
 export type DispatchInput = {
@@ -57,4 +59,6 @@ export type DispatcherDeps = {
     body?: string | null;
     url?: string;
   }) => Promise<{ sent: number }>;
+  settings?: Partial<NotificationRuntimeSettings>;
+  now?: Date;
 };

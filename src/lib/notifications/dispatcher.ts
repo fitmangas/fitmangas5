@@ -6,9 +6,8 @@ import type { DispatchInput, DispatchResult, DispatcherDeps } from './types';
 import { isEmailEnabledForCategory, isInAppEnabledForCategory, isPushEnabledForCategory } from './prefs-helpers';
 import { calendarDayKeyInTimeZone, startOfDayUtcIsoInTimeZone } from './timezone';
 import { sendPushNotification as sendPushNotificationDefault } from './push';
-
-const MAX_EMAILS_PER_DAY = 2;
-const MAX_UNREAD_IN_APP_BLOCK = 5;
+import { shouldSendNowOrQueue } from './quiet-hours';
+import { DEFAULT_NOTIFICATION_RUNTIME_SETTINGS, getNotificationRuntimeSettings } from './settings';
 
 async function defaultSendEmailPlaceholder(): Promise<void> {
   /* Lot 8: Resend */
@@ -34,6 +33,12 @@ export async function dispatch(
     deps.sendPushNotification ??
     ((args: { userId: string; title: string; body?: string | null; url?: string }) =>
       sendPushNotificationDefault(args.userId, args.title, args.body, args.url));
+  const settings = {
+    ...DEFAULT_NOTIFICATION_RUNTIME_SETTINGS,
+    ...getNotificationRuntimeSettings(),
+    ...(deps.settings ?? {}),
+  };
+  const now = deps.now ?? new Date();
 
   let pendingIdempotencyKey = input.idempotency_key ?? null;
   const pickIdempotencyKey = (): string | null => {
@@ -104,6 +109,49 @@ export async function dispatch(
   const category = categoryFromEventType(input.event_type);
   const hints = input.channel_hints;
 
+  if (
+    !critical &&
+    shouldSendNowOrQueue(userId, input.event_type, tz, now, {
+      quietHoursStart: settings.quietHoursStart,
+      quietHoursEnd: settings.quietHoursEnd,
+    }) === 'queue_digest'
+  ) {
+    const { data: queued, error: qErr } = await supabase
+      .from('notification_digest_queue')
+      .insert({
+        user_id: userId,
+        digest_bucket: category,
+        payload: {
+          event_type: input.event_type,
+          payload: input.payload,
+          _quiet_hours_queue: true,
+        },
+        scheduled_for: now.toISOString(),
+      })
+      .select('id')
+      .single();
+    if (qErr) throw qErr;
+
+    const { data: queueLog, error: lErr } = await supabase
+      .from('notification_log')
+      .insert({
+        user_id: userId,
+        event_type: input.event_type,
+        channel: 'digest',
+        payload: { ...input.payload, _queued: 'quiet_hours', digest_queue_id: queued?.id },
+        idempotency_key: pickIdempotencyKey(),
+      })
+      .select('id')
+      .single();
+    if (lErr) throw lErr;
+
+    return {
+      ok: true,
+      notification_log_ids: queueLog?.id ? [queueLog.id] : [],
+      delivered: { digest: true },
+    };
+  }
+
   let allowEmail =
     hintAllows('email', hints) && isEmailEnabledForCategory(prefs, category);
   let allowInApp =
@@ -111,18 +159,18 @@ export async function dispatch(
   const allowPush =
     pushHintAllows(hints) && (critical || isPushEnabledForCategory(prefs, category));
 
-  const dayKey = calendarDayKeyInTimeZone(tz);
+  const dayKey = calendarDayKeyInTimeZone(tz, now);
   const emailScopeKey = `email:${dayKey}`;
-  const startOfDayUtcIso = startOfDayUtcIsoInTimeZone(tz);
+  const startOfDayUtcIso = startOfDayUtcIsoInTimeZone(tz, now);
 
-  if (allowInApp) {
+  if (allowInApp && !critical) {
     const { count } = await supabase
       .from('user_notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .is('read_at', null)
       .gte('created_at', startOfDayUtcIso);
-    if ((count ?? 0) >= MAX_UNREAD_IN_APP_BLOCK) {
+    if ((count ?? 0) >= settings.inAppUnreadDailyCap) {
       allowInApp = false;
     }
   }
@@ -159,12 +207,16 @@ export async function dispatch(
   }
 
   if (allowEmail) {
-    const { data: reserved, error: reserveErr } = await supabase.rpc('try_reserve_email_slot', {
-      p_user_id: userId,
-      p_scope_key: emailScopeKey,
-      p_max: MAX_EMAILS_PER_DAY,
-    });
-    if (reserveErr) throw reserveErr;
+    let reserved = true;
+    if (!critical) {
+      const { data, error: reserveErr } = await supabase.rpc('try_reserve_email_slot', {
+        p_user_id: userId,
+        p_scope_key: emailScopeKey,
+        p_max: settings.emailDailyCap,
+      });
+      if (reserveErr) throw reserveErr;
+      reserved = Boolean(data);
+    }
 
     if (reserved) {
       await sendEmail({
