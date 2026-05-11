@@ -5,6 +5,12 @@ type AdminCheckResult = {
   source: 'email' | 'role' | 'none';
 };
 
+type AdminSwitchCheckResult = {
+  canSwitch: boolean;
+  role: string | null;
+  emailAllowed: boolean;
+};
+
 function parseAdminEmails() {
   const raw = process.env.ADMIN_EMAILS ?? '';
   return raw
@@ -36,4 +42,18 @@ export async function checkIsAdmin(
   }
 
   return { isAdmin: false, source: 'none' };
+}
+
+export async function canUseAdminViewSwitch(
+  supabase: SupabaseClient,
+  user: { id: string; email?: string | null },
+): Promise<AdminSwitchCheckResult> {
+  const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const role = typeof data?.role === 'string' ? data.role : null;
+  const emailAllowed = isListedAdminEmail(user.email);
+  return {
+    canSwitch: role === 'admin' && emailAllowed,
+    role,
+    emailAllowed,
+  };
 }

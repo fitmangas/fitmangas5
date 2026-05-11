@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { AdminSidebar } from '@/components/Admin/AdminSidebar';
+import { AdminViewSwitch } from '@/components/Admin/AdminViewSwitch';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
         <AdminSidebar />
+        <AdminViewSwitch />
       {/* Navigation mobile seulement */}
       <nav className="mx-4 mb-4 mt-4 md:hidden">
         <div className="glass-card flex flex-wrap gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted">

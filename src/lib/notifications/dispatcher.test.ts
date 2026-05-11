@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('./push', () => ({
   sendPushNotification: vi.fn(async () => ({ sent: 0 })),
@@ -195,10 +195,15 @@ function buildMockSupabase(sharedSlotMap?: Map<string, number>) {
 
 describe('dispatch', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ now: new Date('2026-05-10T12:00:00+02:00') });
     scenario = 'default';
     prefsOverride = null;
     unreadTodayCount = 0;
     sendDispatcherEmailMock.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('duplicate idempotency_key → skip tout envoi', async () => {

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 
+import { AdminViewSwitch } from '@/components/Admin/AdminViewSwitch';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { compteNavLabels, getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
@@ -24,6 +25,7 @@ export default async function CompteLayout({ children }: { children: React.React
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
         <CompteSidebar lang={lang} />
+        <AdminViewSwitch />
         <nav className="mx-4 mb-4 mt-4 md:hidden">
           <div className="glass-card flex flex-wrap gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted">
             <Link
