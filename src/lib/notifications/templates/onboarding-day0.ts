@@ -12,7 +12,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
       'Votre espace membre est prêt : planning, replays et ressources vous attendent.',
     ],
     ctaLabel: 'Accéder à mon espace',
-    ctaUrl: text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte',
+    ctaUrl: text(data, 'appUrl', 'https://fitmangas.com') + '/compte',
   });
 }
 
@@ -25,6 +25,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
       'Tu espacio miembro está listo: calendario, repeticiones y recursos te esperan.',
     ],
     ctaLabel: 'Entrar a mi espacio',
-    ctaUrl: text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte',
+    ctaUrl: text(data, 'appUrl', 'https://fitmangas.com') + '/compte',
   });
 }

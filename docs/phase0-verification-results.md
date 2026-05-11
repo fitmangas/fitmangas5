@@ -37,12 +37,12 @@ Puis redémarrer `next dev` / redéployer Vercel.
 
 ## 3. URL officielle v1 (décision fondateur)
 
-- **URL plateforme :** `https://fitmangas5.vercel.app`
+- **URL plateforme :** `https://fitmangas.com`
 - **À avoir dans `.env.local` (et Vercel Production) :**
 
 ```env
-NEXT_PUBLIC_APP_URL=https://fitmangas5.vercel.app
-APP_URL=https://fitmangas5.vercel.app
+NEXT_PUBLIC_APP_URL=https://fitmangas.com
+APP_URL=https://fitmangas.com
 ```
 
 ## 4. Email expéditeur

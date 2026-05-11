@@ -9,7 +9,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
     title: subject_fr,
     body: [`Suivi : ${text(data, 'trackingUrl', 'lien à venir')}`],
     ctaLabel: 'Suivre ma commande',
-    ctaUrl: text(data, 'trackingUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/boutique/commandes'),
+    ctaUrl: text(data, 'trackingUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/boutique/commandes'),
   });
 }
 
@@ -19,6 +19,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
     title: subject_es,
     body: [`Seguimiento: ${text(data, 'trackingUrl', 'enlace pendiente')}`],
     ctaLabel: 'Seguir mi pedido',
-    ctaUrl: text(data, 'trackingUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/boutique/commandes'),
+    ctaUrl: text(data, 'trackingUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/boutique/commandes'),
   });
 }

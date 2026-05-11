@@ -9,7 +9,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
     title: subject_fr,
     body: [`Le replay de ${text(data, 'courseTitle', 'votre cours')} est disponible dans votre espace.`],
     ctaLabel: 'Voir le replay',
-    ctaUrl: text(data, 'replayUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/replays'),
+    ctaUrl: text(data, 'replayUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/replays'),
   });
 }
 
@@ -19,6 +19,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
     title: subject_es,
     body: [`La repetición de ${text(data, 'courseTitle', 'tu clase')} está disponible en tu espacio.`],
     ctaLabel: 'Ver repetición',
-    ctaUrl: text(data, 'replayUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/replays'),
+    ctaUrl: text(data, 'replayUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/replays'),
   });
 }

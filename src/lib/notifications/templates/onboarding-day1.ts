@@ -12,7 +12,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
       'Vous pouvez aussi activer les notifications push depuis vos préférences.',
     ],
     ctaLabel: 'Voir les prochains cours',
-    ctaUrl: text(data, 'courseUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/planning'),
+    ctaUrl: text(data, 'courseUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/planning'),
   });
 }
 
@@ -25,6 +25,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
       'También puedes activar las notificaciones push desde tus preferencias.',
     ],
     ctaLabel: 'Ver próximas clases',
-    ctaUrl: text(data, 'courseUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + '/compte/planning'),
+    ctaUrl: text(data, 'courseUrl', text(data, 'appUrl', 'https://fitmangas.com') + '/compte/planning'),
   });
 }

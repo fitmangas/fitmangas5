@@ -58,7 +58,7 @@ type Phase2Deps = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas5.vercel.app').replace(/\/$/, '');
+const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
 
 function first<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null;

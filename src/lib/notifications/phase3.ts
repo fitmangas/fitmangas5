@@ -13,7 +13,7 @@ type Phase3Deps = {
 };
 
 function appUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas5.vercel.app').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
 }
 
 function localHour(date: Date, timeZone: string) {

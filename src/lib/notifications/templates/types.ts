@@ -33,7 +33,7 @@ export function renderEmailLayout(params: {
   locale: TemplateLocale;
   critical?: boolean;
 }) {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas5.vercel.app').replace(/\/$/, '');
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
   const preferences =
     params.locale === 'es'
       ? `Gestionar mis preferencias: ${appUrl}/compte/preferences`

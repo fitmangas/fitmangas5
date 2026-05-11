@@ -10,7 +10,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
     title: `Nouvel article : ${title}`,
     body: [text(data, 'excerpt', 'Un nouvel article FitMangas vient de paraître.')],
     ctaLabel: "Lire l'article",
-    ctaUrl: text(data, 'articleUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + `/blog/${text(data, 'slug')}`),
+    ctaUrl: text(data, 'articleUrl', text(data, 'appUrl', 'https://fitmangas.com') + `/blog/${text(data, 'slug')}`),
   });
 }
 
@@ -21,6 +21,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
     title: `Nuevo artículo: ${title}`,
     body: [text(data, 'excerpt', 'Un nuevo artículo FitMangas acaba de publicarse.')],
     ctaLabel: 'Leer el artículo',
-    ctaUrl: text(data, 'articleUrl', text(data, 'appUrl', 'https://fitmangas5.vercel.app') + `/blog/${text(data, 'slug')}`),
+    ctaUrl: text(data, 'articleUrl', text(data, 'appUrl', 'https://fitmangas.com') + `/blog/${text(data, 'slug')}`),
   });
 }

@@ -38,7 +38,7 @@ Document de référence **Phase 0** : intègre les décisions fondateur (périm�
 
 | Usage | Valeur v1 |
 |--------|-----------|
-| Plateforme web (liens emails, notifs, checkout success/cancel) | `https://fitmangas5.vercel.app` |
+| Plateforme web (liens emails, notifs, checkout success/cancel) | `https://fitmangas.com` |
 | Variables env | `NEXT_PUBLIC_APP_URL`, `APP_URL` = URL ci-dessus |
 | Domaine `fitmangas.com` | **Uniquement** expédition email (ex. `alejandra@fitmangas.com` via Resend) — **pas** d’hébergement du site Next en v1 |
 

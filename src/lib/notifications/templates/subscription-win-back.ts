@@ -9,7 +9,7 @@ export function html_fr(data: Record<string, string | number | boolean | null | 
     title: subject_fr,
     body: ['Revenez quand vous voulez : votre abonnement collectif visio est disponible à 39€/mois.'],
     ctaLabel: 'Revenir chez FitMangas',
-    ctaUrl: text(data, 'appUrl', 'https://fitmangas5.vercel.app'),
+    ctaUrl: text(data, 'appUrl', 'https://fitmangas.com'),
   });
 }
 
@@ -19,6 +19,6 @@ export function html_es(data: Record<string, string | number | boolean | null | 
     title: subject_es,
     body: ['Vuelve cuando quieras: la suscripción colectiva online está disponible por 39€/mes.'],
     ctaLabel: 'Volver a FitMangas',
-    ctaUrl: text(data, 'appUrl', 'https://fitmangas5.vercel.app'),
+    ctaUrl: text(data, 'appUrl', 'https://fitmangas.com'),
   });
 }
