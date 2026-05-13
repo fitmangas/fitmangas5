@@ -100,7 +100,7 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
       <div className="py-10">
         {loc.isContentFallback ? (
           <p className="mb-6 inline-flex rounded-full border border-amber-200 bg-amber-50/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
-            Traduction non disponible
+            {lang === 'es' ? 'Traducción no disponible' : 'Traduction non disponible'}
           </p>
         ) : null}
         <ArticleProse text={loc.content} />

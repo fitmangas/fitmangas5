@@ -1,21 +1,33 @@
-/**
- * Traduction automatique optionnelle (Google Cloud Translation v2 REST).
- * Nécessite GOOGLE_TRANSLATE_API_KEY dans l’environnement.
- */
-
 export async function translateText(text: string, target: 'en' | 'es'): Promise<string | null> {
-  const key = process.env.GOOGLE_TRANSLATE_API_KEY;
+  const key = process.env.GEMINI_API_KEY;
   if (!key || !text.trim()) return null;
 
-  const url = `https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(key)}`;
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  const targetLabel = target === 'es' ? 'espagnol' : 'anglais';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      q: text,
-      source: 'fr',
-      target,
-      format: 'text',
+      generationConfig: {
+        temperature: 0.2,
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: [
+                `Traduis ce texte français en ${targetLabel}.`,
+                'Préserve exactement les balises HTML/Markdown, les listes, les backticks et les sauts de paragraphes.',
+                'Ne rajoute aucune explication. Réponds uniquement avec la traduction.',
+                '',
+                text,
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
     }),
   });
 
@@ -25,8 +37,8 @@ export async function translateText(text: string, target: 'en' | 'es'): Promise<
   }
 
   const json = (await res.json()) as {
-    data?: { translations?: Array<{ translatedText?: string }> };
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
-  const out = json.data?.translations?.[0]?.translatedText;
+  const out = json.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('').trim();
   return typeof out === 'string' ? out : null;
 }

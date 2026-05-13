@@ -4,20 +4,6 @@ import { slugifyBlog } from '@/lib/blog/slugify';
 import { translateText } from '@/lib/blog/translate';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-async function chunkTranslate(text: string, target: 'es'): Promise<string | null> {
-  const blocks = text.split(/\n\n+/);
-  const parts: string[] = [];
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
-    const t = await translateText(trimmed, target);
-    if (!t) return null;
-    parts.push(t);
-    await new Promise((r) => setTimeout(r, 120));
-  }
-  return parts.join('\n\n');
-}
-
 export async function POST(_request: Request, context: { params: Promise<{ articleId: string }> }) {
   const gate = await requireAdminApi();
   if (!gate.ok) return gate.response;
@@ -36,11 +22,11 @@ export async function POST(_request: Request, context: { params: Promise<{ artic
     const titleEs = await translateText(article.title_fr, 'es');
     const descFr = article.description_fr?.trim() ?? '';
     const descEs = descFr ? await translateText(descFr, 'es') : null;
-    const contentEs = await chunkTranslate(article.content_fr, 'es');
+    const contentEs = await translateText(article.content_fr, 'es');
 
     if (!titleEs || !contentEs) {
       return NextResponse.json(
-        { error: 'Traduction impossible. Vérifie GOOGLE_TRANSLATE_API_KEY ou réessaie.' },
+        { error: 'Traduction impossible. Vérifie GEMINI_API_KEY ou réessaie.' },
         { status: 503 },
       );
     }
