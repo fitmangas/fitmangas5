@@ -205,10 +205,10 @@ export default async function ComptePage({
   const vimeoHoursRounded = Math.ceil(vimeoLibraryHours);
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
   return (
-    <div className="mx-auto max-w-[1280px] space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
-      <section className="grid items-center gap-4 pt-2 md:grid-cols-[1fr_auto]">
-        <div className="text-left">
-          <h1 className="hero-signature-title text-5xl text-luxury-ink md:text-6xl">{t.hello} {firstName}</h1>
+    <div className="mx-auto max-w-[1280px] space-y-8 px-3 pb-16 md:space-y-10 md:px-8">
+      <section className="grid items-center gap-5 pt-2 text-center md:grid-cols-[1fr_auto] md:text-left">
+        <div>
+          <h1 className="hero-signature-title text-4xl text-luxury-ink md:text-6xl">{t.hello} {firstName}</h1>
           <p className="hero-signature-subtitle mt-1 text-sm md:text-base">{motivation}</p>
           {checkoutOk ? (
             <p className="mx-auto mt-4 max-w-2xl rounded-2xl border border-emerald-300/60 bg-emerald-50/90 px-5 py-3.5 text-sm font-medium leading-relaxed text-emerald-950">
@@ -216,7 +216,7 @@ export default async function ComptePage({
             </p>
           ) : null}
         </div>
-        <details className="relative z-[120]">
+        <details className="relative z-[120] mx-auto w-full max-w-[210px] md:mx-0 md:w-auto md:max-w-none">
           <summary className="relative flex cursor-pointer list-none flex-col items-center gap-2 rounded-[2rem] border border-white/60 bg-white/65 px-4 py-3 shadow-[0_12px_32px_rgba(29,29,31,0.12)] backdrop-blur-xl [&::-webkit-details-marker]:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <div className="flex flex-col items-center">
@@ -246,7 +246,7 @@ export default async function ComptePage({
               +
             </span>
           </summary>
-          <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/90 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
+          <div className="absolute left-1/2 z-[140] mt-2 w-56 -translate-x-1/2 rounded-3xl border border-white/70 bg-white/90 p-2 text-left shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl md:left-auto md:right-0 md:translate-x-0">
             <Link href="/compte/profil" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
               {t.profile}
             </Link>
@@ -314,11 +314,11 @@ export default async function ComptePage({
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
                 <div className="mt-8 space-y-4">
-                  <p className="flex items-baseline gap-2 whitespace-nowrap text-sm text-luxury-muted">
+                <p className="flex flex-wrap items-baseline gap-2 text-sm text-luxury-muted md:whitespace-nowrap">
                     <span className="inline-block w-[64px] text-right text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{replayHoursRounded}h</span>
                     <span>{t.replayHoursAvailable}</span>
                   </p>
-                  <p className="flex items-baseline gap-2 whitespace-nowrap text-sm text-luxury-muted">
+                  <p className="flex flex-wrap items-baseline gap-2 text-sm text-luxury-muted md:whitespace-nowrap">
                     <span className="inline-block w-[64px] text-right text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{vimeoHoursRounded}h</span>
                     <span>{t.vimeoHoursLibrary}</span>
                   </p>

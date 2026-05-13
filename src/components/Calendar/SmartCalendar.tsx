@@ -192,6 +192,24 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
     return map;
   }, [events]);
 
+  const sortedEvents = useMemo(
+    () => [...events].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()),
+    [events],
+  );
+
+  const formatEventDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(locale, {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      timeZone: 'UTC',
+    });
+
+  const formatEventTime = (startIso: string, endIso: string) => {
+    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' };
+    return `${new Date(startIso).toLocaleTimeString(locale, opts)} - ${new Date(endIso).toLocaleTimeString(locale, opts)}`;
+  };
+
   return (
     <section className="rounded-[1.75rem] border border-white/15 bg-[#2f3338] p-5 text-white shadow-[0_18px_42px_rgba(17,24,39,0.32)] sm:p-7">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -253,8 +271,39 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
         <div className="mb-4 rounded-2xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-100">{error}</div>
       ) : null}
 
+      <div className="space-y-3 md:hidden">
+        {loading
+          ? Array.from({ length: 4 }, (_, index) => (
+              <div key={index} className="h-20 animate-pulse rounded-2xl bg-white/10" />
+            ))
+          : sortedEvents.map((event) => {
+              const access = effectiveAccessForUi(event);
+              return (
+                <button
+                  key={event.id}
+                  type="button"
+                  onClick={() => setSelectedCourse(event)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition hover:opacity-95 ${classForAccess(access)}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">
+                        {formatEventDate(event.starts_at)}
+                      </p>
+                      <p className="mt-1 text-base font-semibold leading-tight">{event.title}</p>
+                      <p className="mt-1 text-xs opacity-80">{formatEventTime(event.starts_at, event.ends_at)}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]">
+                      {badgeForAccess(access)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+      </div>
+
       {/* 2 semaines : grille 7 + 7 jours */}
-      <div className="mb-2 grid grid-cols-7 text-center text-[10px] uppercase tracking-widest text-white/55">
+      <div className="mb-2 hidden grid-cols-7 text-center text-[10px] uppercase tracking-widest text-white/55 md:grid">
         {t.weekdays.map((day) => (
           <div key={day} className="py-2">
             {day}
@@ -262,7 +311,7 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="hidden grid-cols-7 gap-2 md:grid">
         {loading
           ? Array.from({ length: 14 }, (_, index) => (
               <div key={index} className="min-h-24 animate-pulse rounded-xl bg-white/10" />

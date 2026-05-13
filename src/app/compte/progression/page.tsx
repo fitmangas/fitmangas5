@@ -334,25 +334,25 @@ export default async function CompteProgressionPage() {
 
       <section className="relative overflow-hidden rounded-[38px] border border-white/70 bg-[#eceef1] p-5 shadow-[0_24px_52px_rgba(20,20,30,0.18)] md:p-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.45),transparent_42%)]" />
-        <div className="absolute right-10 top-9 text-sm text-[#252833]">
+        <div className="absolute right-10 top-9 hidden text-sm text-[#252833] md:block">
           <span className="mr-3">11:10</span>
           <span>22°</span>
         </div>
 
-        <div className="relative min-h-[560px] md:min-h-[580px]">
-          <div className="absolute left-5 top-[136px] z-20 space-y-7 md:left-10 lg:left-12 lg:top-[140px]">
+        <div className="relative space-y-6 md:min-h-[580px] md:space-y-0">
+          <div className="relative z-20 grid gap-3 md:absolute md:left-10 md:top-[136px] md:block md:space-y-7 lg:left-12 lg:top-[140px]">
             <StatPill icon={<Target size={15} />} tone="bg-[#4e63ff] text-white" label={t.summary} value={`${monthly.followedCount}/${monthly.goal} ${t.sessions}`} />
             <StatPill icon={<Activity size={15} />} tone="bg-[#b74dff] text-white" label={t.performance} value={`${percent}% ${t.objective}`} />
             <StatPill icon={<Flame size={15} />} tone="bg-[#2f333f] text-[#6ef2bf]" label={t.body} value={`${fmtHours(monthLiveSeconds / 3600, locale)} ${t.live}`} />
             <StatPill icon={<MoonStar size={15} />} tone="bg-[#2f333f] text-[#d7e5ff]" label={t.rest} value={`${fmtHours(monthReplaySeconds / 3600, locale)} ${t.vimeo}`} />
           </div>
 
-          <div className="absolute bottom-16 left-[49%] z-20 -translate-x-1/2 md:left-[48%] lg:bottom-20 lg:left-[46%]">
+          <div className="relative z-20 mx-auto flex w-full justify-center md:absolute md:bottom-16 md:left-[48%] md:w-auto md:-translate-x-1/2 lg:bottom-20 lg:left-[46%]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatarUrl}
               alt="Coach"
-              className="h-[350px] w-auto rounded-[26px] object-cover shadow-[0_24px_42px_rgba(0,0,0,0.24)] md:h-[420px] lg:h-[400px]"
+              className="h-[260px] w-auto rounded-[26px] object-cover shadow-[0_24px_42px_rgba(0,0,0,0.24)] md:h-[420px] lg:h-[400px]"
             />
             <span
               className={`premium-badge absolute bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] backdrop-blur-md ${
@@ -367,12 +367,12 @@ export default async function CompteProgressionPage() {
             </span>
           </div>
 
-          <div className="absolute right-4 top-[130px] z-20 w-[200px] md:right-10 md:w-[225px] lg:right-16 lg:top-[132px] lg:w-[250px]">
+          <div className="relative z-20 w-full text-center md:absolute md:right-10 md:top-[130px] md:w-[225px] md:text-left lg:right-16 lg:top-[132px] lg:w-[250px]">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#6e7380]">{monthLabel}</p>
-            <h1 className="mt-2 text-[44px] font-semibold leading-[0.95] tracking-tight text-[#14151a] lg:text-[48px]">{progressHeading}</h1>
+            <h1 className="mt-2 text-[36px] font-semibold leading-[0.95] tracking-tight text-[#14151a] md:text-[44px] lg:text-[48px]">{progressHeading}</h1>
             <p className="mt-3 text-[15px] text-[#676d7a]">{minutesAgo} {t.minutesAgo}</p>
 
-            <div className="mt-12 space-y-8 lg:mt-16">
+            <div className="mt-5 grid gap-3 md:mt-12 md:block md:space-y-8 lg:mt-16">
               <MetricDot icon={<Utensils size={14} />} label={t.nutrition} value={`${replayViewedThisMonth} ${t.videosMonth}`} />
               <MetricDot
                 icon={<Droplets size={14} />}
@@ -382,7 +382,7 @@ export default async function CompteProgressionPage() {
             </div>
           </div>
 
-          <div className="absolute bottom-2 left-5 right-5 z-20 grid gap-2 sm:grid-cols-2 md:bottom-3 md:left-4 md:right-4 lg:bottom-4 lg:left-6 lg:right-6 lg:grid-cols-4">
+          <div className="relative z-20 grid gap-2 sm:grid-cols-2 md:absolute md:bottom-3 md:left-4 md:right-4 lg:bottom-4 lg:left-6 lg:right-6 lg:grid-cols-4">
             <BottomChip icon={<Video size={14} />} title={t.liveHoursMonth} value={fmtHours(monthLiveSeconds / 3600, locale)} />
             <BottomChip icon={<Activity size={14} />} title={t.vimeoHoursMonth} value={fmtHours(monthReplaySeconds / 3600, locale)} />
             <BottomChip icon={<Target size={14} />} title={t.monthRhythm} value={`${Math.max(0, monthly.goal - monthly.followedCount)} ${t.sessionsLeft}`} />
