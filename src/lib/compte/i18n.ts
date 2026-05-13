@@ -61,11 +61,12 @@ export function resolveFirstName(profileFirstName: unknown, userMetadata?: unkno
 
 export const compteNavLabels: Record<
   ClientLang,
-  { dashboard: string; planning: string; videos: string; shop: string; profile: string; preferences: string }
+  { dashboard: string; planning: string; blog: string; videos: string; shop: string; profile: string; preferences: string }
 > = {
   fr: {
     dashboard: 'Tableau de bord',
     planning: 'Planning',
+    blog: 'Blog',
     videos: 'Vidéos',
     shop: 'Boutique',
     profile: 'Profil',
@@ -74,6 +75,7 @@ export const compteNavLabels: Record<
   en: {
     dashboard: 'Dashboard',
     planning: 'Schedule',
+    blog: 'Blog',
     videos: 'Videos',
     shop: 'Shop',
     profile: 'Profile',
@@ -82,6 +84,7 @@ export const compteNavLabels: Record<
   es: {
     dashboard: 'Panel',
     planning: 'Planificación',
+    blog: 'Blog',
     videos: 'Videos',
     shop: 'Tienda',
     profile: 'Perfil',

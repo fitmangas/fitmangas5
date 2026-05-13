@@ -17,36 +17,9 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
   const [lang, hasVisioAccess] = await Promise.all([getClientLang(supabase, user.id), hasVisioClientAccess(user.id)]);
-  const field = lang === 'en' ? 'en' : lang === 'es' ? 'es' : 'fr';
+  const field = lang === 'es' ? 'es' : 'fr';
   const t =
-    lang === 'en'
-      ? {
-          title: 'My blog',
-          emptyFav: 'No favorite yet.',
-          emptyAll: 'No published article yet.',
-          area: 'Client area',
-          subtitle: 'Latest featured article + full history.',
-          back: 'Back dashboard',
-          all: 'All articles',
-          fav: 'My favorites',
-          search: 'Search an article...',
-          allCats: 'All categories',
-          recent: 'Most recent',
-          topRated: 'Top rated',
-          mostViewed: 'Most viewed',
-          filter: 'Filter',
-          favFolder: 'Favorite folder',
-          latest: 'Latest article',
-          read: 'Read article',
-          favHistory: 'Favorites history',
-          history: 'Articles history',
-          blog: 'Blog',
-          open: 'Open',
-          prev: 'Previous',
-          next: 'Load more',
-          page: 'Page',
-        }
-      : lang === 'es'
+    lang === 'es'
         ? {
             title: 'Mi blog',
             emptyFav: 'Aún no hay favoritos.',
@@ -140,7 +113,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   const sort = sp.sort === 'rating' || sp.sort === 'views' ? sp.sort : 'recent';
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
-  const { data: cats } = await supabase.from('blog_categories').select('id,slug,label_fr,label_en,label_es').order('sort_order');
+  const { data: cats } = await supabase.from('blog_categories').select('id,slug,label_fr,label_es').order('sort_order');
   let categoryId: string | null = null;
   if (category) {
     categoryId = cats?.find((c) => c.slug === category)?.id ?? null;
@@ -151,7 +124,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     .select(
       `
       id,title_fr,title_en,title_es,description_fr,description_en,description_es,slug_fr,slug_en,slug_es,featured_image_url,published_at,status,average_rating,view_count,
-      blog_categories ( label_fr, label_en, label_es, slug )
+      blog_categories ( label_fr, label_es, slug )
     `,
     )
     .eq('status', 'published')
@@ -183,9 +156,8 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     return (val && val.trim()) || (fallback ?? '');
   }
   function pickCategoryLabel(a: ArticleRow): string {
-    const c = a.blog_categories?.[0] as { label_fr?: string | null; label_en?: string | null; label_es?: string | null } | undefined;
+    const c = a.blog_categories?.[0] as { label_fr?: string | null; label_es?: string | null } | undefined;
     if (!c) return t.blog;
-    if (field === 'en' && c.label_en) return c.label_en;
     if (field === 'es' && c.label_es) return c.label_es;
     return c.label_fr ?? t.blog;
   }
@@ -299,7 +271,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
           <option value="">{t.allCats}</option>
           {(cats ?? []).map((c) => (
             <option key={c.id} value={c.slug}>
-              {(field === 'en' ? c.label_en : field === 'es' ? c.label_es : c.label_fr) ?? c.label_fr ?? c.slug}
+              {(field === 'es' ? c.label_es : c.label_fr) ?? c.label_fr ?? c.slug}
             </option>
           ))}
         </select>

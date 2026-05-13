@@ -16,7 +16,33 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
   const q = (sp.q ?? '').replace(/[%_]/g, '').slice(0, 80);
   const categorySlug = (sp.category ?? '').trim();
-  const lang = (sp.lang === 'en' || sp.lang === 'es' ? sp.lang : 'fr') as BlogLang;
+  const lang = (sp.lang === 'es' ? 'es' : 'fr') as BlogLang;
+  const copy =
+    lang === 'es'
+      ? {
+          title: 'Blog Pilates',
+          intro: 'Artículos, consejos e inspiración — barre y pilates.',
+          search: 'Buscar...',
+          submit: 'Buscar',
+          allCategories: 'Todas',
+          allArticles: 'Todos los artículos',
+          featured: 'Destacado',
+          read: 'Leer artículo',
+          previous: 'Anterior',
+          next: 'Siguiente',
+        }
+      : {
+          title: 'Blog Pilates',
+          intro: 'Articles, conseils et inspiration — barre & pilates.',
+          search: 'Rechercher…',
+          submit: 'Rechercher',
+          allCategories: 'Toutes',
+          allArticles: 'Tous les articles',
+          featured: 'À la une',
+          read: 'Lire l’article',
+          previous: 'Précédent',
+          next: 'Suivant',
+        };
 
   const supabase = await createClient();
   const {
@@ -38,15 +64,15 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
     .select(
       `
       id,
-      title_fr, title_en, title_es,
-      description_fr, description_en, description_es,
-      slug_fr, slug_en, slug_es,
+      title_fr, title_es,
+      description_fr, description_es,
+      slug_fr, slug_es,
       featured_image_url,
       published_at,
       average_rating,
       rating_count,
       view_count,
-      blog_categories ( slug, label_fr, label_en, label_es )
+      blog_categories ( slug, label_fr, label_es )
     `,
       { count: 'exact' },
     )
@@ -57,7 +83,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
 
   if (q) {
     const pattern = `%${q}%`;
-    listQuery = listQuery.or(`title_fr.ilike.${pattern},title_en.ilike.${pattern},title_es.ilike.${pattern}`);
+    listQuery = listQuery.or(`title_fr.ilike.${pattern},title_es.ilike.${pattern}`);
   }
 
   const from = (page - 1) * PAGE;
@@ -92,13 +118,13 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Blog</p>
-          <h1 className="hero-signature-title mt-2 text-4xl text-luxury-ink">Blog Pilates</h1>
+          <h1 className="hero-signature-title mt-2 text-4xl text-luxury-ink">{copy.title}</h1>
           <p className="mt-3 max-w-xl text-sm text-luxury-muted">
-            Articles, conseils et inspiration — barre & pilates.
+            {copy.intro}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(['fr', 'en', 'es'] as const).map((code) => (
+          {(['fr', 'es'] as const).map((code) => (
             <Link
               key={code}
               href={`/blog?lang=${code}${categorySlug ? `&category=${categorySlug}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
@@ -106,7 +132,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                 lang === code ? 'bg-luxury-ink text-white' : 'bg-white/50 text-luxury-muted hover:bg-white/80'
               }`}
             >
-              {code === 'fr' ? 'FR' : code === 'en' ? 'EN' : 'ES'}
+              {code === 'fr' ? 'FR' : 'ES'}
             </Link>
           ))}
         </div>
@@ -118,29 +144,29 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
         <input
           name="q"
           defaultValue={q}
-          placeholder="Rechercher…"
+          placeholder={copy.search}
           className="min-w-0 flex-1 rounded-full border border-white/50 bg-white/60 px-5 py-3 text-sm backdrop-blur-md outline-none ring-orange-400/25 focus:ring-2"
         />
         <button type="submit" className="btn-luxury-primary shrink-0 px-8 py-3 text-[11px] tracking-[0.14em]">
-          Rechercher
+          {copy.submit}
         </button>
       </form>
 
       <div className="mt-6 flex flex-wrap gap-2">
         <FilterChip href={`/blog?lang=${lang}`} active={!categorySlug} lang={lang} q={q}>
-          Toutes
+          {copy.allCategories}
         </FilterChip>
         {(cats ?? []).map((c) => (
           <FilterChip key={c.id} href={`/blog?category=${c.slug}&lang=${lang}`} active={categorySlug === c.slug} lang={lang} q={q}>
-            {lang === 'en' ? c.label_en ?? c.label_fr : lang === 'es' ? c.label_es ?? c.label_fr : c.label_fr}
+            {lang === 'es' ? c.label_es ?? c.label_fr : c.label_fr}
           </FilterChip>
         ))}
       </div>
 
-      {page === 1 && hero ? <HeroArticle article={asListArticle(hero)} lang={lang} /> : null}
+      {page === 1 && hero ? <HeroArticle article={asListArticle(hero)} lang={lang} copy={copy} /> : null}
 
       <section className="mt-14">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Tous les articles</h2>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{copy.allArticles}</h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {displayArticles.slice(page === 1 && hero ? 1 : 0).map((a) => (
             <ArticleCard key={a.id} article={asListArticle(a) as BlogCardArticle & { id: string }} lang={lang} />
@@ -152,12 +178,12 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
         <nav className="mt-12 flex justify-center gap-4 text-sm text-luxury-muted">
           {page > 1 ? (
             <Link href={`/blog?page=${page - 1}&lang=${lang}${categorySlug ? `&category=${categorySlug}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`}>
-              ← Précédent
+              ← {copy.previous}
             </Link>
           ) : null}
           {from + PAGE < total ? (
             <Link href={`/blog?page=${page + 1}&lang=${lang}${categorySlug ? `&category=${categorySlug}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`}>
-              Suivant →
+              {copy.next} →
             </Link>
           ) : null}
         </nav>
@@ -209,14 +235,17 @@ function asListArticle(a: unknown): BlogCardArticle {
   return a as BlogCardArticle;
 }
 
-function HeroArticle({ article, lang }: { article: BlogCardArticle; lang: BlogLang }) {
+function HeroArticle({
+  article,
+  lang,
+  copy,
+}: {
+  article: BlogCardArticle;
+  lang: BlogLang;
+  copy: { featured: string; read: string };
+}) {
   const loc = pickLocalizedArticle(article, lang);
-  const href =
-    lang === 'en'
-      ? `/blog/${article.slug_en ?? article.slug_fr}`
-      : lang === 'es'
-        ? `/blog/${article.slug_es ?? article.slug_fr}`
-        : `/blog/${article.slug_fr}`;
+  const href = lang === 'es' ? `/blog/${article.slug_es ?? article.slug_fr}` : `/blog/${article.slug_fr}`;
   return (
     <article className="glass-card mt-12 grid gap-8 overflow-hidden p-6 lg:grid-cols-2 lg:p-10">
       <div className="relative min-h-[220px] overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 lg:rounded-2xl">
@@ -224,7 +253,7 @@ function HeroArticle({ article, lang }: { article: BlogCardArticle; lang: BlogLa
         <img src={article.displayImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="flex flex-col justify-center">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-orange-600">À la une</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-orange-600">{copy.featured}</p>
         <h2 className="hero-signature-title mt-3 text-3xl">{loc.title}</h2>
         <p className="mt-4 line-clamp-4 text-sm text-luxury-muted">{loc.description ?? ''}</p>
         <div className="mt-6 flex flex-wrap gap-4 text-xs text-luxury-muted">
@@ -236,7 +265,7 @@ function HeroArticle({ article, lang }: { article: BlogCardArticle; lang: BlogLa
           <span>👁 {article.view_count ?? 0}</span>
         </div>
         <Link href={href} className="btn-luxury-primary mt-8 inline-flex w-fit items-center px-8 py-3 text-[11px] tracking-[0.14em]">
-          Lire l’article
+          {copy.read}
         </Link>
       </div>
     </article>
@@ -249,24 +278,15 @@ function ArticleCard({
 }: {
   article: BlogCardArticle & {
     id: string;
-    blog_categories?: { label_fr: string; label_en: string | null; label_es: string | null } | null;
+    blog_categories?: { label_fr: string; label_es: string | null } | null;
   };
   lang: BlogLang;
 }) {
   const loc = pickLocalizedArticle(article, lang);
-  const href =
-    lang === 'en'
-      ? `/blog/${article.slug_en ?? article.slug_fr}`
-      : lang === 'es'
-        ? `/blog/${article.slug_es ?? article.slug_fr}`
-        : `/blog/${article.slug_fr}`;
+  const href = lang === 'es' ? `/blog/${article.slug_es ?? article.slug_fr}` : `/blog/${article.slug_fr}`;
   const cat =
     article.blog_categories &&
-    (lang === 'en'
-      ? article.blog_categories.label_en ?? article.blog_categories.label_fr
-      : lang === 'es'
-        ? article.blog_categories.label_es ?? article.blog_categories.label_fr
-        : article.blog_categories.label_fr);
+    (lang === 'es' ? article.blog_categories.label_es ?? article.blog_categories.label_fr : article.blog_categories.label_fr);
 
   return (
     <Link href={href} className="glass-card group flex flex-col overflow-hidden border border-white/35 transition-all duration-200 hover:scale-[1.02] hover:border-orange-200/80">

@@ -22,21 +22,15 @@ export async function generateMetadata(props: {
   const previewDraft = process.env.NODE_ENV !== 'production' && sp.preview === 'draft';
   const article = previewDraft ? await fetchAnyArticleBySlugParamAdmin(slug) : await fetchPublishedArticleBySlugParam(slug);
   if (!article) return { title: 'Article' };
-  const lang = (sp.lang === 'en' || sp.lang === 'es' ? sp.lang : 'fr') as BlogLang;
+  const lang = (sp.lang === 'es' ? 'es' : 'fr') as BlogLang;
   const title =
-    lang === 'en'
-      ? article.title_en ?? article.title_fr
-      : lang === 'es'
-        ? article.title_es ?? article.title_fr
-        : article.title_fr;
+    lang === 'es' ? article.title_es ?? article.title_fr : article.title_fr;
   return {
     title: `${title} — Blog`,
     description:
-      lang === 'en'
-        ? article.meta_description_en ?? article.description_en ?? article.description_fr
-        : lang === 'es'
-          ? article.meta_description_es ?? article.description_es ?? article.description_fr
-          : article.meta_description_fr ?? article.description_fr ?? undefined,
+      lang === 'es'
+        ? article.meta_description_es ?? article.description_es ?? article.description_fr
+        : article.meta_description_fr ?? article.description_fr ?? undefined,
   };
 }
 
@@ -50,7 +44,7 @@ export default async function BlogArticlePage({
   const { slug } = await params;
   const sp = await searchParams;
   const previewDraft = process.env.NODE_ENV !== 'production' && sp.preview === 'draft';
-  const queryLang = sp.lang === 'en' || sp.lang === 'es' ? sp.lang : null;
+  const queryLang = sp.lang === 'es' ? sp.lang : null;
 
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
@@ -72,7 +66,8 @@ export default async function BlogArticlePage({
 
   let defaultLang: BlogLang = queryLang ?? 'fr';
   if (!queryLang && user) {
-    defaultLang = await getClientLang(supabase, user.id);
+    const clientLang = await getClientLang(supabase, user.id);
+    defaultLang = clientLang === 'es' ? 'es' : 'fr';
   } else if (queryLang) {
     defaultLang = queryLang;
   }

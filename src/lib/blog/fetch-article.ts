@@ -8,10 +8,10 @@ export async function fetchPublishedArticleBySlugParam(slug: string) {
 
   const select = `
       *,
-      blog_categories ( id, slug, label_fr, label_en, label_es )
+      blog_categories ( id, slug, label_fr, label_es )
     `;
 
-  for (const col of ['slug_fr', 'slug_en', 'slug_es'] as const) {
+  for (const col of ['slug_fr', 'slug_es'] as const) {
     const { data } = await supabase
       .from('blog_articles')
       .select(select)
@@ -30,10 +30,10 @@ export async function fetchAnyArticleBySlugParam(slug: string) {
 
   const select = `
       *,
-      blog_categories ( id, slug, label_fr, label_en, label_es )
+      blog_categories ( id, slug, label_fr, label_es )
     `;
 
-  for (const col of ['slug_fr', 'slug_en', 'slug_es'] as const) {
+  for (const col of ['slug_fr', 'slug_es'] as const) {
     const { data } = await supabase.from('blog_articles').select(select).eq(col, decoded).maybeSingle();
     if (data) return data;
   }
@@ -47,10 +47,10 @@ export async function fetchAnyArticleBySlugParamAdmin(slug: string) {
 
   const select = `
       *,
-      blog_categories ( id, slug, label_fr, label_en, label_es )
+      blog_categories ( id, slug, label_fr, label_es )
     `;
 
-  for (const col of ['slug_fr', 'slug_en', 'slug_es'] as const) {
+  for (const col of ['slug_fr', 'slug_es'] as const) {
     const { data } = await supabase.from('blog_articles').select(select).eq(col, decoded).maybeSingle();
     if (data) return data;
   }

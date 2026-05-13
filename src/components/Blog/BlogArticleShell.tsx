@@ -8,6 +8,7 @@ import { BlogRatingBlock } from '@/components/Blog/BlogRatingBlock';
 import { BlogScrollTracker } from '@/components/Blog/BlogScrollTracker';
 import { BlogViewBeacon } from '@/components/Blog/BlogViewBeacon';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
+import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
 import type { BlogLang } from '@/types/blog';
 
@@ -21,7 +22,7 @@ type Props = {
     average_rating: number | null;
     rating_count: number | null;
     view_count: number | null;
-    blog_categories?: { slug: string; label_fr: string; label_en: string | null; label_es: string | null } | null;
+    blog_categories?: { slug: string; label_fr: string; label_es: string | null } | null;
   };
   defaultLang: BlogLang;
   isLoggedIn: boolean;
@@ -39,16 +40,23 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
 
   const catLabel =
     article.blog_categories &&
-    (lang === 'en'
-      ? article.blog_categories.label_en ?? article.blog_categories.label_fr
-      : lang === 'es'
-        ? article.blog_categories.label_es ?? article.blog_categories.label_fr
-        : article.blog_categories.label_fr);
+    (lang === 'es' ? article.blog_categories.label_es ?? article.blog_categories.label_fr : article.blog_categories.label_fr);
+
+  const imageUrl = useMemo(
+    () =>
+      uniqueBlogImageUrl({
+        coverImageUrl: article.featured_image_url,
+        categoryLabel: catLabel,
+        index: 0,
+        used: new Set<string>(),
+      }),
+    [article.featured_image_url, catLabel],
+  );
 
   const date =
     article.published_at != null
       ? new Date(article.published_at).toLocaleDateString(
-          lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
+          lang === 'es' ? 'es-ES' : 'fr-FR',
           {
             day: 'numeric',
             month: 'long',
@@ -72,12 +80,10 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
         </Link>
       </div>
 
-      {article.featured_image_url ? (
-        <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-white/40 shadow-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={article.featured_image_url} alt="" className="h-auto w-full object-cover" />
-        </div>
-      ) : null}
+      <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-white/40 shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" className="h-auto w-full object-cover" />
+      </div>
 
       <header className="border-b border-white/40 pb-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{catLabel ?? 'Blog'}</p>
@@ -92,6 +98,11 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
       </header>
 
       <div className="py-10">
+        {loc.isContentFallback ? (
+          <p className="mb-6 inline-flex rounded-full border border-amber-200 bg-amber-50/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+            Traduction non disponible
+          </p>
+        ) : null}
         <ArticleProse text={loc.content} />
       </div>
 

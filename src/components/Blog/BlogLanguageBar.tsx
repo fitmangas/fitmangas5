@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { BlogLang } from '@/types/blog';
 
-const LABELS: Record<BlogLang, string> = { fr: 'Français', en: 'English', es: 'Español' };
+const BLOG_LANGS = ['fr', 'es'] as const satisfies readonly BlogLang[];
+const LABELS: Record<BlogLang, string> = { fr: 'Français', es: 'Español' };
 
 type Props = {
   value: BlogLang;
@@ -15,7 +16,7 @@ export function BlogLanguageBar({ value, onChange, className = '' }: Props) {
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-muted">Langue</span>
-      {(['fr', 'en', 'es'] as const).map((code) => (
+      {BLOG_LANGS.map((code) => (
         <button
           key={code}
           type="button"
@@ -42,7 +43,8 @@ export function useBlogLanguagePref(
   useEffect(() => {
     try {
       const v = localStorage.getItem('fitmangas_blog_lang');
-      if (v === 'fr' || v === 'en' || v === 'es') setLang(v);
+      if (v === 'fr' || v === 'es') setLang(v);
+      if (v === 'en') localStorage.setItem('fitmangas_blog_lang', 'fr');
     } catch {
       // ignore
     }

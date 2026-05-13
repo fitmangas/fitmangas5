@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clapperboard, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
 
 const links = [
   { href: '/compte#planning', key: 'planning', icon: Clapperboard, exact: false },
+  { href: '/compte/blog', key: 'blog', icon: BookOpen, exact: true },
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },

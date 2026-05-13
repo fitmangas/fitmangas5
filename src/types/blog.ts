@@ -1,4 +1,4 @@
-export type BlogLang = 'fr' | 'en' | 'es';
+export type BlogLang = 'fr' | 'es';
 
 export type BlogArticleStatus = 'draft' | 'validated' | 'published' | 'archived';
 
@@ -8,4 +8,5 @@ export type LocalizedArticleFields = {
   content: string;
   metaDescription: string | null;
   slug: string;
+  isContentFallback: boolean;
 };
