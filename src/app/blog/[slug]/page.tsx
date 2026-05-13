@@ -6,7 +6,7 @@ import {
   fetchAnyArticleBySlugParamAdmin,
   fetchPublishedArticleBySlugParam,
 } from '@/lib/blog/fetch-article';
-import { getUserLivePrivileges } from '@/lib/access-control';
+import { hasVisioClientAccess } from '@/lib/access-control';
 import { getClientLang } from '@/lib/compte/i18n';
 import type { BlogLang } from '@/types/blog';
 
@@ -59,12 +59,7 @@ export default async function BlogArticlePage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
 
-  const privileges = await getUserLivePrivileges(user.id);
-  const hasBlogAccess =
-    privileges.isAdmin ||
-    privileges.tier === 'online_group_monthly' ||
-    privileges.tier === 'online_individual_monthly';
-  if (!hasBlogAccess) redirect('/compte/blog');
+  if (!(await hasVisioClientAccess(user.id))) redirect('/compte/blog');
 
   let article = previewDraft ? await fetchAnyArticleBySlugParamAdmin(slug) : await fetchPublishedArticleBySlugParam(slug);
   if (!article && !previewDraft && user) {

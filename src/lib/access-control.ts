@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isListedAdminEmail } from '@/lib/auth/admin';
+import { canUseAdminViewSwitch, isListedAdminEmail } from '@/lib/auth/admin';
 import { DEMO_SIMULATED_CUSTOMER_TIER, getDemoClientMode } from '@/lib/demo-client-mode';
 import type { AccessPolicy, AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse } from '@/lib/domain/calendar-types';
 
@@ -45,6 +45,24 @@ async function fetchProfileRoleForAccess(safeUserId: string): Promise<string | n
   return fetchProfileRoleViaSession(safeUserId);
 }
 
+export function isOnlineCustomerTier(tier: CustomerTier | null): boolean {
+  return tier === 'online_group_monthly' || tier === 'online_individual_monthly';
+}
+
+async function canBypassClientRestrictionsForAdmin(userId: string): Promise<boolean> {
+  const safeUserId = sanitizeUuid(userId);
+  if (!(await getDemoClientMode())) return false;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== safeUserId) return false;
+
+  const gate = await canUseAdminViewSwitch(supabase, user);
+  return gate.canSwitch;
+}
+
 export type UserLivePrivileges = {
   tier: CustomerTier | null;
   isAdmin: boolean;
@@ -84,7 +102,7 @@ export async function getLivePrivilegesTruthful(userId: string): Promise<UserLiv
  */
 export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
   const truth = await getLivePrivilegesTruthful(userId);
-  if (truth.isAdmin && (await getDemoClientMode())) {
+  if (await canBypassClientRestrictionsForAdmin(userId)) {
     return {
       tier: DEMO_SIMULATED_CUSTOMER_TIER,
       isAdmin: false,
@@ -104,8 +122,7 @@ function sanitizeUuid(value: string): string {
 }
 
 export async function getUserTier(userId: string): Promise<CustomerTier | null> {
-  const truth = await getLivePrivilegesTruthful(userId);
-  if (truth.isAdmin && (await getDemoClientMode())) {
+  if (await canBypassClientRestrictionsForAdmin(userId)) {
     return DEMO_SIMULATED_CUSTOMER_TIER;
   }
   const supabase = await createClient();
@@ -115,9 +132,13 @@ export async function getUserTier(userId: string): Promise<CustomerTier | null> 
   return (data as CustomerTier | null) ?? null;
 }
 
+export async function hasVisioClientAccess(userId: string): Promise<boolean> {
+  if (await canBypassClientRestrictionsForAdmin(userId)) return true;
+  return isOnlineCustomerTier(await getUserTier(userId));
+}
+
 export async function getAccessType(userId: string, courseId: string): Promise<AccessType> {
-  const truth = await getLivePrivilegesTruthful(userId);
-  if (truth.isAdmin && (await getDemoClientMode())) {
+  if (await canBypassClientRestrictionsForAdmin(userId)) {
     return 'full';
   }
   const supabase = await createClient();
@@ -159,8 +180,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
         .eq('is_published', true)
         .order('starts_at', { ascending: true }),
       (async () => {
-        const t = await getLivePrivilegesTruthful(userId);
-        return t.isAdmin && (await getDemoClientMode());
+        return canBypassClientRestrictionsForAdmin(userId);
       })(),
     ]);
 

@@ -13,7 +13,7 @@ import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
 import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
-import { getUserTier } from '@/lib/access-control';
+import { hasVisioClientAccess } from '@/lib/access-control';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { createClient } from '@/lib/supabase/server';
@@ -67,9 +67,9 @@ export default async function ComptePage({
   const checkoutOk = params.checkout === 'success';
   const goal = getMonthlySessionGoal();
 
-  const [lang, tier, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+  const [lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
     getClientLang(supabase, user.id),
-    getUserTier(user.id),
+    hasVisioClientAccess(user.id),
     supabase
       .from('profiles')
       .select('first_name, last_name, avatar_url, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
@@ -204,7 +204,6 @@ export default async function ComptePage({
   const replayHoursRounded = Math.ceil(replayHoursAvailable);
   const vimeoHoursRounded = Math.ceil(vimeoLibraryHours);
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
-  const hasVisioAccess = tier === 'online_group_monthly' || tier === 'online_individual_monthly';
   return (
     <div className="mx-auto max-w-[1280px] space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
       <section className="grid items-center gap-4 pt-2 md:grid-cols-[1fr_auto]">

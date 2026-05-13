@@ -6,7 +6,7 @@ import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { StandaloneVimeoGrid } from '@/components/Replay/StandaloneVimeoGrid';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { getClientLang } from '@/lib/compte/i18n';
-import { getUserTier } from '@/lib/access-control';
+import { hasVisioClientAccess } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
 
 type SearchParams = Promise<{ q?: string; tab?: string; sort?: string; page?: string }>;
@@ -22,7 +22,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
-  const [lang, tier] = await Promise.all([getClientLang(supabase, user.id), getUserTier(user.id)]);
+  const [lang, hasVisioAccess] = await Promise.all([getClientLang(supabase, user.id), hasVisioClientAccess(user.id)]);
   const t =
     lang === 'en'
       ? {
@@ -96,7 +96,6 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             page: 'Page',
           };
 
-  const hasVisioAccess = tier === 'online_group_monthly' || tier === 'online_individual_monthly';
   if (!hasVisioAccess) {
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">

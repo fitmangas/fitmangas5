@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
-import { getUserTier } from '@/lib/access-control';
+import { hasVisioClientAccess } from '@/lib/access-control';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
@@ -23,8 +23,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
-  const tier = await getUserTier(user.id);
-  if (tier !== 'online_group_monthly' && tier !== 'online_individual_monthly') {
+  if (!(await hasVisioClientAccess(user.id))) {
     redirect('/compte/blog');
   }
 
