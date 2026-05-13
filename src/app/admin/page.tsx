@@ -434,7 +434,7 @@ export default async function AdminPage() {
             href="/admin/vimeo"
             storageKey="admin_badge_vimeo_pending"
             dismissCount={pendingStandaloneCount ?? 0}
-            className="btn-luxury-ghost relative z-20 mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
+            className="btn-luxury-gold relative z-20 mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"
           >
             Bibliothèque Vimeo
           </DismissOnClickLink>

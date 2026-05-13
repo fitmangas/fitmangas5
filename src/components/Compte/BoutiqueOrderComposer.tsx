@@ -369,13 +369,13 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
           setSelectedProductId(p.id);
           setOpenProductModal(true);
         }}
-        className={`group overflow-hidden rounded-[22px] border text-left transition duration-300 ${
+        className={`group overflow-hidden rounded-2xl border text-left transition-all duration-200 hover:scale-[1.02] ${
           selected
             ? 'border-luxury-orange/55 bg-white shadow-[0_14px_32px_rgba(255,122,0,0.18)]'
             : 'border-black/8 bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-luxury-orange/35 hover:shadow-[0_12px_26px_rgba(0,0,0,0.12)]'
         }`}
       >
-        <div className={`${compact ? 'aspect-[5/4]' : 'aspect-[4/3]'} ${transparentImage ? 'bg-transparent' : 'bg-[#f5f1eb]'}`}>
+        <div className={`${compact ? 'aspect-[5/4]' : 'aspect-[4/3]'} rounded-t-2xl ${transparentImage ? 'bg-transparent' : 'bg-[#f5f1eb]'}`}>
           {p.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -477,7 +477,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                   setSelectedProductId(p.id);
                   setOpenProductModal(true);
                 }}
-                className={`group flex min-h-[142px] items-center gap-4 rounded-[22px] border p-4 text-left transition ${
+                className={`group flex min-h-[142px] items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
                   selectedProductId === p.id
                     ? 'border-luxury-orange/55 bg-white shadow-[0_10px_24px_rgba(255,122,0,0.16)]'
                     : 'border-black/8 bg-white shadow-[0_7px_16px_rgba(0,0,0,0.08)] hover:border-luxury-orange/35 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,0,0,0.12)]'

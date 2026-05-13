@@ -44,8 +44,8 @@ export function AdminSidebar() {
       <Link
         href="/admin"
         title="Dashboard"
-        className={`relative flex h-12 w-12 items-center justify-center rounded-full border border-white/55 bg-white/72 shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.16)] ${
-          pathname === '/admin' ? 'ring-2 ring-orange-300/70' : ''
+        className={`relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/60 bg-white/72 shadow-[0_6px_18px_rgba(15,23,42,0.1)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-[0_10px_22px_rgba(15,23,42,0.14)] ${
+          pathname === '/admin' ? 'bg-white/95 ring-1 ring-[#C5A572]/70' : ''
         }`}
       >
         <Image
@@ -77,13 +77,13 @@ export function AdminSidebar() {
             key={href}
             href={vimeoHref}
             title={label}
-            className={`relative flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
+            className={`relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-200 hover:-translate-y-0.5 ${
               isActive
-                ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-[0_4px_16px_rgba(249,115,22,0.45)]'
-                : 'text-luxury-muted hover:bg-white/50 hover:text-luxury-ink'
+                ? 'bg-white/82 text-luxury-ink shadow-[0_8px_20px_rgba(15,23,42,0.12)] ring-1 ring-[#C5A572]/55'
+                : 'text-luxury-muted hover:bg-white/62 hover:text-luxury-ink hover:shadow-sm'
             }`}
           >
-            <Icon size={22} strokeWidth={2} aria-hidden />
+            <Icon size={23} strokeWidth={2} aria-hidden />
             {badge}
           </Link>
         );

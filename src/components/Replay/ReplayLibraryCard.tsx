@@ -106,7 +106,7 @@ export function ReplayLibraryCard({ item, lang = 'fr' }: { item: ReplayLibraryIt
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[1.65rem] border border-white/35 bg-white/[0.28] shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-[20px] transition duration-500 ease-out hover:-translate-y-1.5 hover:border-white/50 hover:shadow-[0_28px_56px_rgba(15,23,42,0.14)]">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/35 bg-white/[0.32] shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur-[20px] transition-all duration-200 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-white/55 hover:shadow-[0_16px_34px_rgba(15,23,42,0.13)]">
       <button
         type="button"
         onClick={onFavoriteClick}
@@ -123,7 +123,7 @@ export function ReplayLibraryCard({ item, lang = 'fr' }: { item: ReplayLibraryIt
       </button>
 
       <Link href={`/live/${item.courseId}`} className="flex flex-1 flex-col">
-        <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl bg-gradient-to-br from-slate-800 to-slate-950">
           {thumb ? (
             <Image
               src={thumb}

@@ -37,7 +37,7 @@ export default async function AdminBlogHubPage() {
           <Link
             key={href}
             href={href}
-            className="glass-card flex items-start gap-4 rounded-2xl border border-white/40 p-6 transition hover:border-orange-200/80"
+            className="glass-card flex items-start gap-4 border border-white/40 p-6 transition-all duration-200 hover:scale-[1.02] hover:border-orange-200/80"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-700">
               <Icon size={22} />

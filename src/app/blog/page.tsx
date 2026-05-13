@@ -209,8 +209,8 @@ function HeroArticle({ article, lang }: { article: BlogCardArticle; lang: BlogLa
         ? `/blog/${article.slug_es ?? article.slug_fr}`
         : `/blog/${article.slug_fr}`;
   return (
-    <article className="glass-card mt-12 grid gap-8 overflow-hidden rounded-[2rem] p-6 lg:grid-cols-2 lg:p-10">
-      <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/35 bg-white/25">
+    <article className="glass-card mt-12 grid gap-8 overflow-hidden p-6 lg:grid-cols-2 lg:p-10">
+      <div className="relative min-h-[220px] overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 lg:rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={article.displayImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
       </div>
@@ -260,8 +260,8 @@ function ArticleCard({
         : article.blog_categories.label_fr);
 
   return (
-    <Link href={href} className="glass-card group flex flex-col overflow-hidden rounded-2xl border border-white/35 transition hover:border-orange-200/80">
-      <div className="relative aspect-[16/10] overflow-hidden bg-white/30">
+    <Link href={href} className="glass-card group flex flex-col overflow-hidden border border-white/35 transition-all duration-200 hover:scale-[1.02] hover:border-orange-200/80">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl bg-white/30">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={article.displayImageUrl} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
       </div>

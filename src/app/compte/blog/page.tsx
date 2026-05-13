@@ -299,8 +299,8 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
       ) : null}
 
       {hero ? (
-        <section className="glass-card mt-10 grid gap-6 overflow-hidden rounded-[2rem] p-6 md:grid-cols-2 md:p-8">
-          <div className="overflow-hidden rounded-2xl border border-white/35 bg-white/25">
+        <section className="glass-card mt-10 grid gap-6 overflow-hidden p-6 md:grid-cols-2 md:p-8">
+          <div className="overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 md:rounded-2xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={hero.displayImageUrl} alt="" className="h-full w-full object-cover" />
           </div>
@@ -324,8 +324,8 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedRest.map((a) => (
-            <article key={a.id} className="glass-card overflow-hidden rounded-2xl border border-white/40">
-              <div className="aspect-[16/10] bg-white/30">
+            <article key={a.id} className="glass-card overflow-hidden border border-white/40 transition-all duration-200 hover:scale-[1.02]">
+              <div className="aspect-[16/10] rounded-t-2xl bg-white/30">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.displayImageUrl} alt="" className="h-full w-full object-cover" />
               </div>

@@ -206,7 +206,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         <p className="text-base text-luxury-muted">{l.pageSubtitle}</p>
       </header>
 
-      <GlassCard className="space-y-8 p-6 md:p-8">
+      <GlassCard className="space-y-8 p-6 shadow-sm md:p-8">
         <div>
           <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.notificationsTitle}</h2>
         </div>
@@ -261,7 +261,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
           />
         </CategoryBlock>
 
-        <div className="rounded-xl border border-white/40 bg-white/25 p-4">
+        <div className="rounded-2xl border border-white/55 bg-white/35 p-4 shadow-sm">
           <div className="flex gap-3">
             <Lock className="mt-0.5 h-5 w-5 shrink-0 text-luxury-muted" aria-hidden />
             <div>
@@ -283,7 +283,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         }
       />
 
-      <GlassCard className="space-y-4 p-6 md:p-8">
+      <GlassCard className="space-y-5 p-6 shadow-sm md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.silenceTitle}</h2>
         <Toggle
           id="silence-mode"
@@ -294,7 +294,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         />
       </GlassCard>
 
-      <GlassCard className="space-y-4 p-6 md:p-8">
+      <GlassCard className="space-y-5 p-6 shadow-sm md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.digestTitle}</h2>
         <RadioGroup
           name="digest_frequency"
@@ -308,7 +308,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         />
       </GlassCard>
 
-      <GlassCard className="space-y-6 p-6 md:p-8">
+      <GlassCard className="space-y-7 p-6 shadow-sm md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.languageTimezoneTitle}</h2>
 
         <div>
@@ -319,10 +319,10 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
                 key={code}
                 type="button"
                 onClick={() => setLocale(code)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 ${
                   preferredLocale === code
-                    ? 'border-luxury-emerald/50 bg-luxury-emerald/15 text-luxury-ink'
-                    : 'border-white/50 bg-white/35 text-luxury-muted hover:border-white/70'
+                    ? 'border-luxury-emerald/45 bg-white/80 text-luxury-ink shadow-[0_6px_16px_rgba(16,185,129,0.12)]'
+                    : 'border-white/55 bg-white/35 text-luxury-muted shadow-sm hover:border-white/80 hover:bg-white/60'
                 }`}
               >
                 {code === 'fr' ? l.languageFr : l.languageEs}
@@ -345,7 +345,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         />
       </GlassCard>
 
-      <GlassCard className="space-y-4 p-6 md:p-8">
+      <GlassCard className="space-y-5 p-6 shadow-sm md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.marketingTitle}</h2>
         <Toggle
           id="marketing-email"
@@ -361,8 +361,8 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
 
 function CategoryBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="border-b border-white/30 pb-6 last:border-0 last:pb-0">
-      <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-luxury-muted">{title}</p>
+    <div className="border-b border-white/35 pb-7 last:border-0 last:pb-0">
+      <p className="mb-5 text-sm font-semibold uppercase tracking-[0.14em] text-luxury-muted/90">{title}</p>
       <div className="space-y-5">{children}</div>
     </div>
   );

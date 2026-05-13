@@ -167,7 +167,7 @@ export function StandaloneVimeoGrid({
               <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {(grouped.byFolder.get(folder) ?? []).map((video) => (
                 <li key={video.id}>
-                  <div className="group relative block w-full overflow-hidden rounded-2xl border border-white/50 bg-white/35 text-left shadow-sm backdrop-blur-md transition hover:border-[#ff7a00]/40 hover:shadow-md">
+                  <div className="group relative block w-full overflow-hidden rounded-2xl border border-white/50 bg-white/35 text-left shadow-sm backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:border-[#ff7a00]/40 hover:shadow-md">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -185,7 +185,7 @@ export function StandaloneVimeoGrid({
                       onClick={() => setSelected(video)}
                       className="block w-full text-left"
                     >
-                    <div className="relative aspect-video bg-black/10">
+                    <div className="relative aspect-video rounded-t-2xl bg-black/10">
                       {video.thumbnailUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
