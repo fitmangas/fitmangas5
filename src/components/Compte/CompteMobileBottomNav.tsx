@@ -1,9 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Flame, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -32,8 +33,8 @@ export function CompteMobileBottomNav({ lang = 'fr' }: { lang?: ClientLang }) {
   }, []);
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-[210] md:hidden" aria-label="Navigation mobile">
-      <div className="flex items-center justify-between gap-1 rounded-[1.6rem] border border-white/70 bg-white/88 px-2 py-2 shadow-[0_18px_45px_rgba(15,23,42,0.2)] backdrop-blur-xl">
+    <nav className="fixed inset-x-0 top-0 z-[230] bg-[#fbf7ef]/95 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:hidden" aria-label="Navigation mobile">
+      <div className="flex items-center justify-between gap-1 rounded-[1.45rem] border border-white/75 bg-white/88 px-2 py-2">
         <Link
           href="/compte"
           aria-label={labels.dashboard}
@@ -42,7 +43,13 @@ export function CompteMobileBottomNav({ lang = 'fr' }: { lang?: ClientLang }) {
             pathname === '/compte' && !hash ? 'ring-2 ring-orange-300/70' : ''
           }`}
         >
-          <Flame size={22} strokeWidth={2} aria-hidden />
+          <Image
+            src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+            alt="FitMangas"
+            width={24}
+            height={24}
+            className="h-6 w-6 object-contain"
+          />
         </Link>
         {links.map(({ href, key, icon: Icon }) => {
           const basePath = href.split('#')[0];

@@ -25,7 +25,7 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
             <CompteMobileBottomNav lang={lang} />
           </>
         ) : null}
-        <div className={user ? 'px-4 pb-28 md:pb-16 md:pl-24' : ''}>{children}</div>
+        <div className={user ? 'px-4 pb-16 pt-24 md:pb-16 md:pl-24 md:pt-0' : ''}>{children}</div>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export async function AdminViewSwitch() {
   return (
     <Link
       href={clientView ? '/api/demo-mode/disable' : '/api/demo-mode/enable'}
-      className="fixed bottom-24 right-4 z-[220] rounded-full border border-white/70 bg-white/90 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-luxury-ink shadow-[0_14px_36px_rgba(15,23,42,0.18)] backdrop-blur transition hover:-translate-y-0.5 hover:border-luxury-orange/40 md:bottom-5 md:right-5 md:bg-white/85"
+      className="fixed bottom-5 right-4 z-[220] rounded-full border border-white/70 bg-white/90 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-luxury-ink shadow-[0_14px_36px_rgba(15,23,42,0.18)] backdrop-blur transition hover:-translate-y-0.5 hover:border-luxury-orange/40 md:right-5 md:bg-white/85"
       title={clientView ? 'Revenir au dashboard admin' : 'Voir l’espace client'}
     >
       {clientView ? 'Vue client' : 'Vue admin'}

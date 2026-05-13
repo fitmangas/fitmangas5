@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { Activity, Droplets, Flame, MoonStar, Target, Utensils, Video } from 'lucide-react';
+import { Activity, Flame, MoonStar, Target, Video } from 'lucide-react';
 
 import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
-import { getMonthlyProgress, getNextAppointment } from '@/lib/compte/dashboard';
+import { getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { createClient } from '@/lib/supabase/server';
 
@@ -109,7 +109,7 @@ export default async function CompteProgressionPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
 
-  const [lang, { data: profile }, monthly, nextAppointment, { data: liveRows }, { data: replayRows }] = await Promise.all([
+  const [lang, { data: profile }, monthly, { data: liveRows }, { data: replayRows }] = await Promise.all([
     getClientLang(supabase, user.id),
     supabase
       .from('profiles')
@@ -117,7 +117,6 @@ export default async function CompteProgressionPage() {
       .eq('id', user.id)
       .maybeSingle(),
     getMonthlyProgress(user.id, goal),
-    getNextAppointment(user.id),
     supabase
       .from('enrollments')
       .select('status, courses ( starts_at, ends_at )')
@@ -163,7 +162,6 @@ export default async function CompteProgressionPage() {
 
   const totalReplaySeconds = Array.from(byRecording.values()).reduce((sum, item) => sum + item.all, 0);
   const monthReplaySeconds = Array.from(byRecording.values()).reduce((sum, item) => sum + item.month, 0);
-  const replayViewedThisMonth = Array.from(byRecording.values()).filter((item) => item.month > 0).length;
   const replayHoursTotal = Math.floor(totalReplaySeconds / 3600);
 
   const replayDates = (replayRows ?? [])
@@ -223,10 +221,6 @@ export default async function CompteProgressionPage() {
           vimeo: 'vimeo',
           hello: 'Hello',
           minutesAgo: 'minutes ago',
-          nutrition: 'Nutrition',
-          hydration: 'Hydration',
-          videosMonth: 'videos this month',
-          noLive: 'No live',
           liveHoursMonth: 'Live hours this month',
           vimeoHoursMonth: 'Vimeo hours this month',
           monthRhythm: 'Monthly rhythm',
@@ -259,10 +253,6 @@ export default async function CompteProgressionPage() {
             vimeo: 'vimeo',
             hello: 'Hola',
             minutesAgo: 'minutos',
-            nutrition: 'Nutrición',
-            hydration: 'Hidratación',
-            videosMonth: 'videos este mes',
-            noLive: 'Sin live',
             liveHoursMonth: 'Horas live del mes',
             vimeoHoursMonth: 'Horas Vimeo del mes',
             monthRhythm: 'Ritmo del mes',
@@ -294,10 +284,6 @@ export default async function CompteProgressionPage() {
             vimeo: 'vimeo',
             hello: 'Bonjour',
             minutesAgo: 'minutes',
-            nutrition: 'Nutrition',
-            hydration: 'Hydratation',
-            videosMonth: 'vidéos ce mois',
-            noLive: 'Aucun live',
             liveHoursMonth: 'Heures live ce mois',
             vimeoHoursMonth: 'Heures Vimeo ce mois',
             monthRhythm: 'Rythme du mois',
@@ -355,12 +341,12 @@ export default async function CompteProgressionPage() {
               className="h-[260px] w-auto rounded-[26px] object-cover shadow-[0_24px_42px_rgba(0,0,0,0.24)] md:h-[420px] lg:h-[400px]"
             />
             <span
-              className={`premium-badge absolute bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] backdrop-blur-md ${
+              className={`absolute bottom-3 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_6px_14px_rgba(0,0,0,0.16)] backdrop-blur-md ${
                 currentTier.key === 'debutant'
-                  ? 'border-amber-100/75 bg-gradient-to-r from-amber-200/75 to-yellow-300/65 text-[#1f2937]'
+                  ? 'border-amber-100/75 bg-amber-200/85 text-[#1f2937]'
                   : currentTier.key === 'confirmee'
-                    ? 'border-sky-100/70 bg-gradient-to-r from-sky-400/60 to-blue-500/55 text-[#0f172a]'
-                    : 'border-blue-200/55 bg-gradient-to-r from-blue-700/65 to-blue-900/60 text-white'
+                    ? 'border-sky-100/70 bg-sky-300/85 text-[#0f172a]'
+                    : 'border-blue-200/55 bg-blue-800/85 text-white'
               }`}
             >
               {currentTier.label}
@@ -371,15 +357,6 @@ export default async function CompteProgressionPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#6e7380]">{monthLabel}</p>
             <h1 className="mt-2 text-[36px] font-semibold leading-[0.95] tracking-tight text-[#14151a] md:text-[44px] lg:text-[48px]">{progressHeading}</h1>
             <p className="mt-3 text-[15px] text-[#676d7a]">{minutesAgo} {t.minutesAgo}</p>
-
-            <div className="mt-5 grid gap-3 md:mt-12 md:block md:space-y-8 lg:mt-16">
-              <MetricDot icon={<Utensils size={14} />} label={t.nutrition} value={`${replayViewedThisMonth} ${t.videosMonth}`} />
-              <MetricDot
-                icon={<Droplets size={14} />}
-                label={t.hydration}
-                value={nextAppointment ? new Date(nextAppointment.startsAt).toLocaleDateString(locale, { day: '2-digit', month: 'short' }) : t.noLive}
-              />
-            </div>
           </div>
 
           <div className="relative z-20 grid gap-2 sm:grid-cols-2 md:absolute md:bottom-3 md:left-4 md:right-4 lg:bottom-4 lg:left-6 lg:right-6 lg:grid-cols-4">
@@ -521,26 +498,6 @@ function StatPill({
       <div>
         <p className="text-[15px] font-medium text-[#232733]">{label}</p>
         <p className="text-[11px] text-[#697082]">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function MetricDot({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#f8f9fc] text-[#1f2230] shadow-[0_10px_20px_rgba(0,0,0,0.1)]">{icon}</span>
-      <div>
-        <p className="text-[28px] font-medium leading-none text-[#232733]">{label}</p>
-        <p className="mt-1 text-[11px] text-[#697082]">{value}</p>
       </div>
     </div>
   );

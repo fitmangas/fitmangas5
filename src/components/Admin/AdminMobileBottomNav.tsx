@@ -18,8 +18,8 @@ export function AdminMobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-[210] md:hidden" aria-label="Navigation admin mobile">
-      <div className="flex items-center justify-between gap-1 rounded-[1.6rem] border border-white/70 bg-white/88 px-2 py-2 shadow-[0_18px_45px_rgba(15,23,42,0.2)] backdrop-blur-xl">
+    <nav className="fixed inset-x-0 top-0 z-[230] bg-[#fbf7ef]/95 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:hidden" aria-label="Navigation admin mobile">
+      <div className="flex items-center justify-between gap-1 rounded-[1.45rem] border border-white/75 bg-white/88 px-2 py-2">
         <Link
           href="/admin"
           aria-label="Dashboard"

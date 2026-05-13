@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminSidebar />
         <AdminViewSwitch />
         <AdminMobileBottomNav />
-        <div className="px-4 pb-28 md:pb-16 md:pl-24">{children}</div>
+        <div className="px-4 pb-16 pt-24 md:pb-16 md:pl-24 md:pt-0">{children}</div>
       </div>
     </div>
   );
