@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { BlogFavoriteToggle } from '@/components/Compte/BlogFavoriteToggle';
+import { VisioLock } from '@/components/Premium/VisioLock';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { getClientLang } from '@/lib/compte/i18n';
+import { getUserTier } from '@/lib/access-control';
 
 type SearchParams = Promise<{ q?: string; category?: string; tab?: string; sort?: string; page?: string }>;
 const PAGE_SIZE = 9;
@@ -14,7 +16,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
-  const lang = await getClientLang(supabase, user.id);
+  const [lang, tier] = await Promise.all([getClientLang(supabase, user.id), getUserTier(user.id)]);
   const field = lang === 'en' ? 'en' : lang === 'es' ? 'es' : 'fr';
   const t =
     lang === 'en'
@@ -97,6 +99,33 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             next: 'Charger plus',
             page: 'Page',
           };
+
+  const hasVisioAccess = tier === 'online_group_monthly' || tier === 'online_individual_monthly';
+  if (!hasVisioAccess) {
+    return (
+      <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
+        <header>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.area}</p>
+          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
+          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
+        </header>
+        <div className="mt-8">
+          <VisioLock
+            hasAccess={false}
+            locale={lang === 'es' ? 'es' : 'fr'}
+            featureDescription_fr="Le blog complet est inclus dans l’abonnement Visio collectif à 39€/mois."
+            featureDescription_es="El blog completo está incluido en la suscripción Visio grupal a 39€/mes."
+          >
+            <div className="grid gap-4 md:grid-cols-3">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="h-56 rounded-3xl border border-white/60 bg-white/60" />
+              ))}
+            </div>
+          </VisioLock>
+        </div>
+      </main>
+    );
+  }
 
   await supabase
     .from('user_notifications')

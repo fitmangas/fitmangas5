@@ -8,13 +8,26 @@ Ce fichier recense des problèmes connus à traiter dans un lot dédié, pour ne
 - **Résolution :** l'entrée `/compte#planning` déclare désormais `exact: false`, ce qui homogénéise la forme du tableau `links`.
 - **Vérification :** `npx tsc --noEmit` (projet complet) + `npm run build` passent.
 
-## TODOs restants après Phase 3 communications
+## Audit pré-lancement — classement
+
+### Bloquants corrigés avant lancement
+
+- Mentions légales : pages `/privacy` et `/terms` créées avec les informations publiques Mangas Alejandra EI, SIREN 947964508, 17 Passage Leroy 44300 Nantes.
+- Footer landing : année dynamique et liens légaux réels.
+- Accès serveur blog/replays : routes blog réservées aux membres Visio, overlay VisioLock sur les zones compte pour les autres offres.
+- Sync Vimeo : masquage réversible et synchronisation incrémentale ajoutés.
+- Webhooks / sécurité : Stripe refuse les événements non signés en production, route avatar admin protégée, RLS ajoutée sur tables internes.
+
+### Importants à corriger dans la semaine
+
+- Studio Nantes : compléter les instructions d’accès détaillées et les informations parking.
+- Printful : vérifier la configuration du webhook dans le dashboard Printful en production.
+- `boutique.order_delivered` : dépend de la disponibilité réelle du webhook delivered Printful ; sinon prévoir estimation/polling.
+- Optimisations images : remplacer progressivement les `<img>` marketing par `next/image` dimensionné.
+- Admin i18n complet : traduire l’ensemble des pages internes si Alejandra utilise l’admin en ES.
+
+### Améliorations non bloquantes
 
 - Templates email luxury : remplacer les HTML simples par le design avancé Phase 4.
-- Studio Nantes : compléter les instructions d’accès et les informations parking.
-- Printful : routes webhook prêtes ; configuration à faire dans le dashboard Printful.
-- `boutique.order_delivered` : dépend de la disponibilité réelle du webhook delivered Printful ; sinon prévoir estimation/polling.
-- Mentions légales : compléter les placeholders `[...]` dans les brouillons juridiques.
 - CI footer / vérification continue : ajouter un check de non-régression documentaire et email sender.
 - Présence cours Nantes : le statut `enrollments.status = attended` existe ; prévoir une UX plus robuste si nécessaire.
-- Accès serveur blog/replays : l’overlay UI est livré ; durcir les routes/API si la beta exige un 403 strict hors visio.

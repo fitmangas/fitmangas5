@@ -51,7 +51,10 @@ export async function POST(request: Request) {
   }
 
   const mode = COURSE_CHECKOUT_MODE[courseId];
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://fitmangas.com' : 'http://localhost:3000');
 
   const stripe = new Stripe(stripeSecret);
 
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
       client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl.replace(/\/$/, '')}/compte?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl.replace(/\/$/, '')}/checkout/abandoned`,
+      cancel_url: `${appUrl.replace(/\/$/, '')}/checkout/abandoned?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         supabase_user_id: user.id,
         course_id: courseId,

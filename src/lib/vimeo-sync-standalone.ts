@@ -17,6 +17,8 @@ export type VimeoSyncAllResult = {
   skippedRejected: number;
   errors: string[];
   folderColumnSkipped: boolean;
+  mode: 'all' | 'new';
+  since: string | null;
 };
 
 function clampDurationSeconds(seconds: number | null | undefined): number | null {
@@ -34,10 +36,10 @@ function buildWebhookPayload(
     return {
       ...(existingPayload as Record<string, unknown>),
       synced_at: nowIso,
-      published_via: 'sync-all',
+      published_via: 'vimeo-sync',
     };
   }
-  return { source: 'sync-all', synced_at: nowIso };
+  return { source: 'vimeo-sync', synced_at: nowIso };
 }
 
 /** Payload upsert : uniquement des clés présentes dans le schéma SQL (010 + 011 + coach_id). */
@@ -64,6 +66,22 @@ function buildUpsertRow(
   };
 }
 
+async function readLastSyncAt(admin: ReturnType<typeof createAdminClient>): Promise<string | null> {
+  const { data } = await admin.from('app_sync_state').select('last_success_at').eq('key', 'vimeo_standalone').maybeSingle();
+  return typeof data?.last_success_at === 'string' ? data.last_success_at : null;
+}
+
+async function writeLastSyncAt(admin: ReturnType<typeof createAdminClient>, syncedAt: string): Promise<void> {
+  await admin.from('app_sync_state').upsert(
+    {
+      key: 'vimeo_standalone',
+      last_success_at: syncedAt,
+      updated_at: syncedAt,
+    },
+    { onConflict: 'key' },
+  );
+}
+
 function omitFolderName(row: Record<string, unknown>): Record<string, unknown> {
   const { vimeo_folder_name: _, ...rest } = row;
   return rest;
@@ -77,8 +95,12 @@ function omitFolderName(row: Record<string, unknown>): Record<string, unknown> {
  *
  * Si la migration **011** (`vimeo_folder_name`) n’est pas appliquée, un second upsert sans cette colonne est tenté.
  */
-export async function syncAllStandaloneVimeoFromAccount(coachId: string): Promise<VimeoSyncAllResult> {
+export async function syncAllStandaloneVimeoFromAccount(
+  coachId: string,
+  options: { onlyNew?: boolean } = {},
+): Promise<VimeoSyncAllResult> {
   const admin = createAdminClient();
+  const since = options.onlyNew ? await readLastSyncAt(admin) : null;
 
   const { data: recs } = await admin.from('video_recordings').select('vimeo_video_id');
   const jitsiIds = new Set(
@@ -87,7 +109,14 @@ export async function syncAllStandaloneVimeoFromAccount(coachId: string): Promis
       .filter((id): id is string => typeof id === 'string' && id.length > 0),
   );
 
-  const videos = await listAllMeVideos();
+  const allVideos = await listAllMeVideos();
+  const videos =
+    options.onlyNew && since
+      ? allVideos.filter((video) => {
+          if (!video.createdTime) return false;
+          return new Date(video.createdTime).getTime() > new Date(since).getTime();
+        })
+      : allVideos;
   let written = 0;
   let skippedRejected = 0;
   const errors: string[] = [];
@@ -135,11 +164,22 @@ export async function syncAllStandaloneVimeoFromAccount(coachId: string): Promis
     }
   }
 
-  return {
+  const mode: VimeoSyncAllResult['mode'] = options.onlyNew ? 'new' : 'all';
+  const result: VimeoSyncAllResult = {
     scanned: videos.length,
     written,
     skippedRejected,
     errors,
     folderColumnSkipped,
+    mode,
+    since,
   };
+  if (errors.length === 0) {
+    await writeLastSyncAt(admin, new Date().toISOString());
+  }
+  return result;
+}
+
+export async function syncNewStandaloneVimeoFromAccount(coachId: string): Promise<VimeoSyncAllResult> {
+  return syncAllStandaloneVimeoFromAccount(coachId, { onlyNew: true });
 }

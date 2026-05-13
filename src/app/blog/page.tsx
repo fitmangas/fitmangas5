@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
+import { getUserTier } from '@/lib/access-control';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
@@ -17,6 +19,14 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const lang = (sp.lang === 'en' || sp.lang === 'es' ? sp.lang : 'fr') as BlogLang;
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/?compte=connexion-requise');
+  const tier = await getUserTier(user.id);
+  if (tier !== 'online_group_monthly' && tier !== 'online_individual_monthly') {
+    redirect('/compte/blog');
+  }
 
   let categoryId: string | null = null;
   if (categorySlug) {

@@ -18,6 +18,8 @@ type Row = {
   published_at?: string | null;
   scheduled_publication_at?: string | null;
   rejection_reason?: string | null;
+  is_hidden?: boolean | null;
+  hidden_at?: string | null;
 };
 
 function toCard(r: Row): AdminVimeoVideoCard {
@@ -34,6 +36,8 @@ function toCard(r: Row): AdminVimeoVideoCard {
     published_at: r.published_at ?? null,
     scheduled_publication_at: r.scheduled_publication_at ?? null,
     rejection_reason: r.rejection_reason ?? null,
+    is_hidden: r.is_hidden === true,
+    hidden_at: r.hidden_at ?? null,
     created_at: r.created_at,
   };
 }

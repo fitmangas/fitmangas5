@@ -35,6 +35,8 @@ export async function approveStandaloneVideo(
       validation_status: 'published',
       published_at,
       scheduled_publication_at: null,
+      is_hidden: false,
+      hidden_at: null,
     })
     .eq('id', rowId);
 
@@ -71,6 +73,8 @@ export async function rejectStandaloneVideo(
       validation_status: 'rejected',
       published_at: null,
       scheduled_publication_at: null,
+      is_hidden: false,
+      hidden_at: null,
       rejection_reason: rejectionReason?.trim() || null,
     })
     .eq('id', rowId);

@@ -13,10 +13,6 @@ function authorizeCron(request: Request): boolean {
 
   const auth = request.headers.get('authorization');
   if (auth === `Bearer ${secret}`) return true;
-
-  const url = new URL(request.url);
-  if (url.searchParams.get('secret') === secret) return true;
-
   return false;
 }
 

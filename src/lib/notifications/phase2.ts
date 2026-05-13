@@ -452,6 +452,19 @@ export async function dispatchReplayReady(client: SupabaseClient, courseId: stri
 
 export async function dispatchSubscriptionCancelled(client: SupabaseClient, userId: string, tier: string, accessEndsAt: string | null, deps: Phase2Deps = {}) {
   await client.from('subscriptions').update({ status: 'canceled', ends_at: accessEndsAt ?? new Date().toISOString(), auto_renews: false }).eq('user_id', userId).eq('tier', tier);
+  const { data: activeSubscriptions } = await client
+    .from('subscriptions')
+    .select('tier')
+    .eq('user_id', userId)
+    .in('status', ['active', 'trialing']);
+  const nextActiveTier =
+    ((activeSubscriptions ?? []) as { tier: string }[])
+      .filter((row) => row.tier !== tier)
+      .find((row) => row.tier.startsWith('online_'))?.tier ?? null;
+  await client
+    .from('profiles')
+    .update({ customer_tier: nextActiveTier, updated_at: new Date().toISOString() })
+    .eq('id', userId);
   await send(client, deps.dispatch ?? dispatch, {
     userId,
     eventType: 'subscription.cancelled',

@@ -35,7 +35,8 @@ export function AdminVimeoLibraryClient({
   const router = useRouter();
   const [preview, setPreview] = useState<AdminVimeoVideoCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
+  const [busyVisibilityId, setBusyVisibilityId] = useState<string | null>(null);
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -67,28 +68,39 @@ export function AdminVimeoLibraryClient({
     };
   }, []);
 
-  const publishedCount = publishedFolderKeys.reduce(
-    (acc, k) => acc + (publishedByFolder[k]?.length ?? 0),
+  const filteredByFolder = Object.fromEntries(
+    publishedFolderKeys.map((folder) => [
+      folder,
+      (publishedByFolder[folder] ?? []).filter((video) => {
+        if (visibilityFilter === 'visible') return !video.is_hidden;
+        if (visibilityFilter === 'hidden') return video.is_hidden;
+        return true;
+      }),
+    ]),
+  ) as Record<string, AdminVimeoVideoCard[]>;
+  const filteredFolderKeys = publishedFolderKeys.filter((folder) => (filteredByFolder[folder]?.length ?? 0) > 0);
+  const publishedCount = filteredFolderKeys.reduce((acc, k) => acc + (filteredByFolder[k]?.length ?? 0), 0);
+  const hiddenCount = publishedFolderKeys.reduce(
+    (acc, k) => acc + (publishedByFolder[k] ?? []).filter((video) => video.is_hidden).length,
     0,
   );
 
-  async function removeFromClient(videoId: string) {
-    const ok = window.confirm('Retirer cette vidéo de l’espace client ?');
-    if (!ok) return;
-    setBusyRemoveId(videoId);
+  async function setClientVisibility(videoId: string, hidden: boolean) {
+    setBusyVisibilityId(videoId);
     try {
-      const res = await fetch(`/api/admin/vimeo/${videoId}/remove`, {
+      const res = await fetch(`/api/admin/vimeo/${videoId}/visibility`, {
         method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ hidden }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        window.alert(json.error ?? 'Suppression impossible.');
+        window.alert(json.error ?? 'Changement de visibilité impossible.');
         return;
       }
-      if (preview?.id === videoId) setPreview(null);
       router.refresh();
     } finally {
-      setBusyRemoveId(null);
+      setBusyVisibilityId(null);
     }
   }
 
@@ -126,23 +138,53 @@ export function AdminVimeoLibraryClient({
       <VideoValidationSection videos={awaiting} />
 
       <section className="mt-14">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">
-          Publiées <span className="text-luxury-muted">({publishedCount})</span>
-        </h2>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">
+              Publiées <span className="text-luxury-muted">({publishedCount})</span>
+            </h2>
+            <p className="mt-2 text-xs text-luxury-muted">{hiddenCount} vidéo(s) masquée(s) de l’espace client.</p>
+          </div>
+          <div className="flex rounded-full border border-white/55 bg-white/45 p-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-muted">
+            {[
+              ['all', 'Toutes'],
+              ['visible', 'Visibles'],
+              ['hidden', 'Masquées'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setVisibilityFilter(value as 'all' | 'visible' | 'hidden')}
+                className={`rounded-full px-3 py-2 transition ${
+                  visibilityFilter === value ? 'bg-white text-luxury-ink shadow-sm' : 'hover:text-luxury-ink'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {publishedCount === 0 ? (
           <p className="mt-5 text-center text-sm text-luxury-muted">Aucune vidéo publiée pour l’instant.</p>
         ) : (
           <div className="mt-8 space-y-10">
-            {publishedFolderKeys.map((folder) => (
-              <GroupCollapse key={folder} groupKey={folder} title={folder} count={publishedByFolder[folder]?.length ?? 0}>
+            {filteredFolderKeys.map((folder) => (
+              <GroupCollapse key={folder} groupKey={folder} title={folder} count={filteredByFolder[folder]?.length ?? 0}>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {(publishedByFolder[folder] ?? []).map((v) => (
+                  {(filteredByFolder[folder] ?? []).map((v) => (
                     <div
                       key={v.id}
-                      className="glass-card overflow-hidden border border-white/75 bg-white/45 text-left shadow-[0_8px_30px_rgba(29,29,31,0.06)] backdrop-blur-[20px] transition hover:border-white hover:shadow-[0_14px_40px_rgba(29,29,31,0.09)]"
+                      className={`glass-card overflow-hidden border border-white/75 bg-white/45 text-left shadow-[0_8px_30px_rgba(29,29,31,0.06)] backdrop-blur-[20px] transition hover:border-white hover:shadow-[0_14px_40px_rgba(29,29,31,0.09)] ${
+                        v.is_hidden ? 'opacity-55 grayscale' : ''
+                      }`}
                     >
                       <button type="button" onClick={() => setPreview(v)} className="w-full text-left">
                         <div className="relative aspect-video bg-black/10">
+                          {v.is_hidden ? (
+                            <span className="absolute left-3 top-3 z-10 rounded-full bg-slate-950/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                              Masquée
+                            </span>
+                          ) : null}
                           {v.thumbnail_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
@@ -162,11 +204,11 @@ export function AdminVimeoLibraryClient({
                       <div className="border-t border-white/50 px-4 py-3">
                         <button
                           type="button"
-                          disabled={busyRemoveId === v.id}
-                          onClick={() => void removeFromClient(v.id)}
+                          disabled={busyVisibilityId === v.id}
+                          onClick={() => void setClientVisibility(v.id, !v.is_hidden)}
                           className="text-[10px] font-semibold uppercase tracking-widest text-luxury-muted underline-offset-4 hover:text-luxury-ink hover:underline disabled:opacity-50"
                         >
-                          Retirer de l'espace client
+                          {v.is_hidden ? 'Réafficher' : 'Masquer'}
                         </button>
                       </div>
                     </div>

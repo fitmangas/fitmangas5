@@ -145,6 +145,7 @@ export function LandingPage({
   const goldCtaClass =
     'inline-flex items-center justify-center rounded-full border-2 border-[#F8C890] bg-white/80 text-brand-ink shadow-[0_8px_20px_rgba(248,200,144,0.14)] transition hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]';
   const visibleBlogPreviews = blogPreviews.slice(0, 3);
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     // Stats animation logic
@@ -804,11 +805,11 @@ export function LandingPage({
         <footer className="text-center">
           <div className="h-px w-12 bg-brand-accent/30 mx-auto mb-8" />
           <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-4">
-            © 2024 {t.title} Studio
+            © {currentYear} {t.title} Studio
           </p>
           <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
-            <a href="#" className="hover:text-brand-ink transition-colors">{l.privacy}</a>
-            <a href="#" className="hover:text-brand-ink transition-colors">{l.terms}</a>
+            <Link href="/privacy" className="hover:text-brand-ink transition-colors">{l.privacy}</Link>
+            <Link href="/terms" className="hover:text-brand-ink transition-colors">{l.terms}</Link>
           </div>
           <div className="mt-6 flex justify-center">
             <Link

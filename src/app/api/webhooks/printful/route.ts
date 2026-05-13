@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -23,6 +24,17 @@ type PrintfulWebhookPayload = {
   };
 };
 
+function verifyPrintfulSignature(body: string, signature: string, secret: string): boolean {
+  const normalized = signature.replace(/^sha256=/i, '').trim();
+  const hex = createHmac('sha256', secret).update(body, 'utf8').digest('hex');
+  const base64 = createHmac('sha256', secret).update(body, 'utf8').digest('base64');
+  return [hex, base64].some((candidate) => {
+    const a = Buffer.from(candidate);
+    const b = Buffer.from(normalized);
+    return a.length === b.length && timingSafeEqual(a, b);
+  });
+}
+
 async function userIdFromEmail(email: string | null | undefined) {
   if (!email) return null;
   const admin = createAdminClient();
@@ -33,15 +45,24 @@ async function userIdFromEmail(email: string | null | undefined) {
 
 export async function POST(request: Request) {
   const signatureSecret = process.env.PRINTFUL_WEBHOOK_SECRET;
+  const rawBody = await request.text();
   if (signatureSecret) {
     const signature = request.headers.get('x-pf-signature') ?? request.headers.get('x-printful-signature');
     if (!signature) {
       return NextResponse.json({ error: 'Signature Printful manquante.' }, { status: 401 });
     }
-    // Printful signature formats vary by dashboard setup; presence is enforced when configured.
+    if (!verifyPrintfulSignature(rawBody, signature, signatureSecret)) {
+      return NextResponse.json({ error: 'Signature Printful invalide.' }, { status: 401 });
+    }
   }
 
-  const payload = (await request.json().catch(() => null)) as PrintfulWebhookPayload | null;
+  const payload = (() => {
+    try {
+      return JSON.parse(rawBody || 'null') as PrintfulWebhookPayload | null;
+    } catch {
+      return null;
+    }
+  })();
   if (!payload) return NextResponse.json({ error: 'Payload invalide.' }, { status: 400 });
 
   const order = payload.data?.order;

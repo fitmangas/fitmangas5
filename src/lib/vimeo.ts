@@ -17,6 +17,7 @@ type VimeoVideoMetadataResponse = {
   name: string | null;
   description: string | null;
   link: string | null;
+  created_time?: string | null;
   duration: number | null;
   embed?: {
     html?: string;
@@ -43,6 +44,7 @@ export type VimeoVideoMetadata = {
   title: string | null;
   description: string | null;
   link: string | null;
+  createdTime: string | null;
   embedUrl: string | null;
   thumbnailUrl: string | null;
   durationSeconds: number | null;
@@ -89,7 +91,7 @@ function extractApiFolderName(data: VimeoVideoMetadataResponse): string | null {
 
 /** Champs communs liste / détail vidéo Vimeo. */
 const VIDEO_API_FIELDS =
-  'uri,name,description,link,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name,folder.name';
+  'uri,name,description,link,created_time,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name,folder.name';
 
 export function mapVimeoVideoResponseToMetadata(data: VimeoVideoMetadataResponse): VimeoVideoMetadata {
   const thumbnailUrl = data.pictures?.sizes?.at(-1)?.link ?? data.pictures?.sizes?.[0]?.link ?? null;
@@ -101,6 +103,7 @@ export function mapVimeoVideoResponseToMetadata(data: VimeoVideoMetadataResponse
     title: data.name ?? null,
     description: data.description ?? null,
     link: data.link ?? null,
+    createdTime: data.created_time ?? null,
     embedUrl: extractEmbedUrl(data.embed?.html),
     thumbnailUrl: thumbnailUrl ?? null,
     durationSeconds: data.duration ?? null,

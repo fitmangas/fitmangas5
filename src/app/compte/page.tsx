@@ -6,12 +6,14 @@ import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
 import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
+import { VisioLock } from '@/components/Premium/VisioLock';
 import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
 import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
+import { getUserTier } from '@/lib/access-control';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { createClient } from '@/lib/supabase/server';
@@ -65,8 +67,9 @@ export default async function ComptePage({
   const checkoutOk = params.checkout === 'success';
   const goal = getMonthlySessionGoal();
 
-  const [lang, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+  const [lang, tier, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
     getClientLang(supabase, user.id),
+    getUserTier(user.id),
     supabase
       .from('profiles')
       .select('first_name, last_name, avatar_url, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
@@ -201,6 +204,7 @@ export default async function ComptePage({
   const replayHoursRounded = Math.ceil(replayHoursAvailable);
   const vimeoHoursRounded = Math.ceil(vimeoLibraryHours);
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
+  const hasVisioAccess = tier === 'online_group_monthly' || tier === 'online_individual_monthly';
   return (
     <div className="mx-auto max-w-[1280px] space-y-8 px-5 pb-16 md:space-y-10 md:px-8">
       <section className="grid items-center gap-4 pt-2 md:grid-cols-[1fr_auto]">
@@ -299,8 +303,14 @@ export default async function ComptePage({
 
           <NextLiveCompteCard nextAppointment={nextAppointment} liveUnread={liveUnread} lang={lang} iconToneClass="kpi-icon-wrap--logo" />
 
+          <VisioLock
+            hasAccess={hasVisioAccess}
+            locale={lang === 'es' ? 'es' : 'fr'}
+            featureDescription_fr="Les replays sont inclus dans l’abonnement Visio collectif à 39€/mois."
+            featureDescription_es="Los replays están incluidos en la suscripción Visio grupal a 39€/mes."
+          >
           <GlassCard className="relative p-5 md:p-6">
-            <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label="Ouvrir mes replays" />
+            <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.myLibrary} />
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
@@ -330,7 +340,14 @@ export default async function ComptePage({
               </Link>
             </div>
           </GlassCard>
+          </VisioLock>
 
+          <VisioLock
+            hasAccess={hasVisioAccess}
+            locale={lang === 'es' ? 'es' : 'fr'}
+            featureDescription_fr="Le blog complet est inclus dans l’abonnement Visio collectif à 39€/mois."
+            featureDescription_es="El blog completo está incluido en la suscripción Visio grupal a 39€/mes."
+          >
           <GlassCard className="relative p-5 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -353,6 +370,7 @@ export default async function ComptePage({
               </Link>
             </div>
           </GlassCard>
+          </VisioLock>
         </div>
       </section>
 
@@ -369,7 +387,14 @@ export default async function ComptePage({
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.library}</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.onDemand}</h2>
         </div>
-        <MyReplaysSection userId={user.id} lang={lang} />
+        <VisioLock
+          hasAccess={hasVisioAccess}
+          locale={lang === 'es' ? 'es' : 'fr'}
+          featureDescription_fr="La bibliothèque vidéo est incluse dans l’abonnement Visio collectif à 39€/mois."
+          featureDescription_es="La biblioteca de videos está incluida en la suscripción Visio grupal a 39€/mes."
+        >
+          <MyReplaysSection userId={user.id} lang={lang} />
+        </VisioLock>
       </section>
     </div>
   );

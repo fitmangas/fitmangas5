@@ -31,6 +31,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
         .from('standalone_vimeo_videos')
         .select('*')
         .eq('validation_status', 'published')
+        .eq('is_hidden', false)
         .order('published_at', { ascending: false });
       data = res.data as unknown as Record<string, unknown>[] | null;
       error = res.error ? { message: res.error.message } : null;
@@ -42,6 +43,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
       .from('standalone_vimeo_videos')
       .select('*')
       .eq('validation_status', 'published')
+      .eq('is_hidden', false)
       .order('published_at', { ascending: false });
     data = res.data as unknown as Record<string, unknown>[] | null;
     error = res.error ? { message: res.error.message } : null;

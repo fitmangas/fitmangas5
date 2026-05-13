@@ -62,6 +62,9 @@ export async function POST(request: Request) {
     if (webhookSecret && signature) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } else {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Signature Stripe requise.' }, { status: 401 });
+      }
       console.warn('[stripe webhook] STRIPE_WEBHOOK_SECRET absent — parsing non signé en environnement contrôlé.');
       event = JSON.parse(body) as Stripe.Event;
     }
@@ -130,6 +133,7 @@ export async function POST(request: Request) {
         break;
     }
   } catch (e) {
+    await admin.from('stripe_events').delete().eq('id', event.id);
     console.error('[stripe webhook] handler', e);
     return NextResponse.json({ error: 'Erreur traitement webhook.' }, { status: 500 });
   }

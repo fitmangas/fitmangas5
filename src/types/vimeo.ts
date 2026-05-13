@@ -14,6 +14,8 @@ export type AdminVimeoVideoCard = {
   published_at: string | null;
   scheduled_publication_at: string | null;
   rejection_reason: string | null;
+  is_hidden: boolean;
+  hidden_at: string | null;
   created_at: string;
 };
 

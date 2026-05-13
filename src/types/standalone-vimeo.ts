@@ -18,6 +18,8 @@ export type StandaloneVimeoRow = {
   published_at: string | null;
   scheduled_publication_at: string | null;
   rejection_reason: string | null;
+  is_hidden: boolean;
+  hidden_at: string | null;
   coach_id: string | null;
   webhook_payload: Record<string, unknown>;
   created_at: string;
