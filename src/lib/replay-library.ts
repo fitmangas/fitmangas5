@@ -1,4 +1,4 @@
-import { getLivePrivilegesTruthful } from '@/lib/access-control';
+import { canBypassClientRestrictionsForAdmin } from '@/lib/access-control';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -73,20 +73,19 @@ function mapAndFilter(
  * Replays accessibles pour l’utilisateur (RLS). En mode démo admin, vue élève élargie via service role.
  */
 export async function getReplayLibraryForUser(userId: string): Promise<ReplayLibraryItem[]> {
-  const truth = await getLivePrivilegesTruthful(userId);
-  const demo = await getDemoClientMode();
+  const [adminBypass, demo] = await Promise.all([canBypassClientRestrictionsForAdmin(userId), getDemoClientMode()]);
 
   const selectCols =
     'id, title, thumbnail_url, duration_seconds, courses ( id, title, slug, starts_at, ends_at, is_published )';
 
   let list: ReplayLibraryItem[];
 
-  if (truth.isAdmin && demo) {
+  if (adminBypass) {
     const admin = createAdminClient();
     const { data, error } = await admin.from('video_recordings').select(selectCols).eq('is_ready', true);
     if (error) throw new Error(error.message);
     /* En démo : montrer aussi les replays prêts avant la fin officielle du cours (ex. « Test live » pour présentation). */
-    list = mapAndFilter(data as unknown as RecordingRow[] | null, { demoAdminShowUpcomingWithReplay: true });
+    list = mapAndFilter(data as unknown as RecordingRow[] | null, { demoAdminShowUpcomingWithReplay: demo });
   } else {
     const supabase = await createClient();
     const { data, error } = await supabase.from('video_recordings').select(selectCols).eq('is_ready', true);

@@ -49,10 +49,8 @@ export function isOnlineCustomerTier(tier: CustomerTier | null): boolean {
   return tier === 'online_group_monthly' || tier === 'online_individual_monthly';
 }
 
-async function canBypassClientRestrictionsForAdmin(userId: string): Promise<boolean> {
+export async function canBypassClientRestrictionsForAdmin(userId: string): Promise<boolean> {
   const safeUserId = sanitizeUuid(userId);
-  if (!(await getDemoClientMode())) return false;
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -91,7 +89,7 @@ export async function getLivePrivilegesTruthful(userId: string): Promise<UserLiv
   const roleAdmin = (profileRole ?? '').toLowerCase() === 'admin';
   const emailMatchesSession =
     sessionUser?.id === safeUserId ? isListedAdminEmail(sessionUser.email) : false;
-  const isAdmin = roleAdmin || emailMatchesSession;
+  const isAdmin = roleAdmin && emailMatchesSession;
 
   return { tier, isAdmin, profileRole };
 }
@@ -102,7 +100,7 @@ export async function getLivePrivilegesTruthful(userId: string): Promise<UserLiv
  */
 export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
   const truth = await getLivePrivilegesTruthful(userId);
-  if (await canBypassClientRestrictionsForAdmin(userId)) {
+  if ((await getDemoClientMode()) && (await canBypassClientRestrictionsForAdmin(userId))) {
     return {
       tier: DEMO_SIMULATED_CUSTOMER_TIER,
       isAdmin: false,

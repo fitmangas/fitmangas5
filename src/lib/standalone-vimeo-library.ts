@@ -1,3 +1,4 @@
+import { canBypassClientRestrictionsForAdmin } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -24,8 +25,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
   let error: { message: string } | null = null;
 
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (profile?.role === 'admin') {
+    if (await canBypassClientRestrictionsForAdmin(user.id)) {
       const admin = createAdminClient();
       const res = await admin
         .from('standalone_vimeo_videos')
