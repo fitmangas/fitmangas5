@@ -418,9 +418,9 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                   height={72}
                   className="mb-4 h-[72px] w-[72px] object-contain md:mb-5 md:h-[84px] md:w-[84px]"
                 />
-                <h3 className="text-[4.4rem] font-black leading-[0.82] tracking-[-0.03em] text-luxury-ink md:text-[5.9rem]">{t.fresh}</h3>
+                <h3 className="font-serif text-[4.4rem] font-normal italic leading-[0.9] tracking-tight text-luxury-ink md:text-[5.9rem]">{t.fresh}</h3>
                 <div className="mt-1 flex items-end">
-                  <h3 className="translate-y-1 text-[4.4rem] font-semibold leading-[0.82] tracking-[-0.02em] text-[#606066] md:translate-y-2 md:text-[5.9rem]">
+                  <h3 className="translate-y-1 font-serif text-[4.4rem] font-normal italic leading-[0.9] tracking-tight text-[#606066] md:translate-y-2 md:text-[5.9rem]">
                     {t.stylish}
                   </h3>
                   <span className="ml-4 mb-[0.6rem] font-['Playfair_Display'] text-[1.55rem] italic font-semibold leading-none tracking-[0.01em] text-[#606066] md:mb-[0.78rem] md:text-[1.75rem]">

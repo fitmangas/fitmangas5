@@ -9,7 +9,13 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import type { NextAppointment } from '@/lib/compte/dashboard';
 import type { SmartCourse } from '@/lib/domain/calendar-types';
 
-function buildModalCourse(appointment: NonNullable<NextAppointment>): SmartCourse {
+function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' | 'en' | 'es'): SmartCourse {
+  const copy =
+    lang === 'es'
+      ? { cta: 'Descubrir las suscripciones' }
+      : lang === 'en'
+        ? { cta: 'Discover subscriptions' }
+        : { cta: 'Découvrir les abonnements' };
   const base = appointment.smartCourse;
   if (appointment.enrollmentStatus === 'booked') {
     if (base) {
@@ -38,7 +44,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>): SmartCours
       viewer_is_admin: false,
       access_type: 'full',
       can_purchase_single: false,
-      cta_label: 'Découvrir les abonnements',
+      cta_label: copy.cta,
       cta_url: '/#offers',
       upsell_tier: null,
       status_label: 'Accès complet',
@@ -72,7 +78,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>): SmartCours
       viewer_is_admin: false,
       access_type: 'preview',
       can_purchase_single: false,
-      cta_label: 'Découvrir les abonnements',
+      cta_label: copy.cta,
       cta_url: '/#offers',
       upsell_tier: null,
       status_label: 'Accès limité',
@@ -99,7 +105,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>): SmartCours
     viewer_is_admin: false,
     access_type: appointment.enrollmentStatus === 'calendar_full' ? 'full' : 'preview',
     can_purchase_single: false,
-    cta_label: 'Découvrir les abonnements',
+    cta_label: copy.cta,
     cta_url: '/#offers',
     upsell_tier: null,
     status_label: appointment.enrollmentStatus === 'calendar_full' ? 'Accès complet' : 'Accès limité',
@@ -146,8 +152,8 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
           };
 
   const modalCourse = useMemo(
-    () => (nextAppointment ? buildModalCourse(nextAppointment) : null),
-    [nextAppointment],
+    () => (nextAppointment ? buildModalCourse(nextAppointment, lang) : null),
+    [nextAppointment, lang],
   );
 
   return (

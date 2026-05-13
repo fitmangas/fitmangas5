@@ -30,7 +30,7 @@ export function TranslateArticleButton({ articleId }: { articleId: string }) {
       onClick={() => void run()}
       className="rounded-full border border-white/50 bg-white/60 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-ink disabled:opacity-50"
     >
-      {busy ? 'Traduction…' : 'Traduire EN/ES'}
+      {busy ? 'Traduction…' : 'Traduire ES'}
     </button>
   );
 }

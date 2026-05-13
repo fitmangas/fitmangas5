@@ -36,8 +36,8 @@ export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
       <Link
         href="/compte"
         title={labels.dashboard}
-        className={`relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/60 bg-white/72 shadow-[0_6px_18px_rgba(15,23,42,0.1)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-[0_10px_22px_rgba(15,23,42,0.14)] ${
-          pathname === '/compte' && !hash ? 'bg-white/95 ring-1 ring-[#C5A572]/70' : ''
+        className={`relative flex h-12 w-12 items-center justify-center rounded-full border border-white/55 bg-white/72 shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.16)] ${
+          pathname === '/compte' && !hash ? 'ring-2 ring-orange-300/70' : ''
         }`}
       >
         <Image

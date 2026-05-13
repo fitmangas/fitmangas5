@@ -33,10 +33,13 @@ type VimeoShowcaseItem = {
 };
 
 type BlogPreviewItem = {
-  title: string;
-  excerpt: string | null;
+  titleFr: string;
+  titleEs: string | null;
+  excerptFr: string | null;
+  excerptEs: string | null;
   coverImageUrl: string | null;
-  categoryLabel?: string | null;
+  categoryLabelFr?: string | null;
+  categoryLabelEs?: string | null;
 };
 
 const WhatsAppIcon = ({ size = 20 }: { size?: number }) => (
@@ -48,11 +51,13 @@ const WhatsAppIcon = ({ size = 20 }: { size?: number }) => (
 export function LandingPage({
   vimeoShowcase = [],
   blogPreviews = [],
+  initialLang = 'FR',
 }: {
   vimeoShowcase?: VimeoShowcaseItem[];
   blogPreviews?: BlogPreviewItem[];
+  initialLang?: Language;
 }) {
-  const [lang, setLang] = useState<Language>('FR');
+  const [lang, setLang] = useState<Language>(initialLang);
   const [segment, setSegment] = useState<Segment>('VISIO');
   const [onsiteCity, setOnsiteCity] = useState<'NANTES' | 'MEXICO'>('NANTES');
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -66,7 +71,8 @@ export function LandingPage({
       ? {
           member: 'Devenir membre',
           login: 'Se connecter',
-          heroTitle: 'Visio Pilates est ta thérapie',
+          heroTitleTop: 'Visio Pilates',
+          heroTitleBottom: 'est ta thérapie',
           heroBody: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
           start: 'On démarre',
           community: 'Rejoignez la communauté',
@@ -86,11 +92,24 @@ export function LandingPage({
           blogCta: 'Accédez au blog complet en devenant membre Visio — à partir de 39€/mois',
           privacy: 'Confidentialité',
           terms: 'Conditions',
+          proofGiven: 'Cours donnés',
+          proofPeople: 'Personnes / semaine',
+          proofTooltip: 'Cours collectifs et individuels confondus.',
+          investment: 'Investissement',
+          stylesTitleTop: 'Trouve ton style',
+          stylesTitleBottom: 'Pilates idéal',
+          stylesBody: 'Explore les styles de Pilates en vidéo selon tes besoins : mobilité, équilibre, relaxation et renforcement.',
+          levels: {
+            beginner: 'Débutant',
+            intermediate: 'Intermédiaire',
+            advanced: 'Expérimenté',
+          },
         }
       : {
           member: 'Hacerme miembro',
           login: 'Conectarse',
-          heroTitle: 'Visio Pilates es tu terapia',
+          heroTitleTop: 'Visio Pilates',
+          heroTitleBottom: 'es tu terapia',
           heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.',
           start: 'Empezamos',
           community: 'Únete a la comunidad',
@@ -110,9 +129,21 @@ export function LandingPage({
           blogCta: 'Accede al blog completo como miembro Visio — desde 39€/mes',
           privacy: 'Privacidad',
           terms: 'Condiciones',
+          proofGiven: 'Clases dadas',
+          proofPeople: 'Personas / semana',
+          proofTooltip: 'Clases grupales e individuales combinadas.',
+          investment: 'Inversión',
+          stylesTitleTop: 'Encuentra tu estilo',
+          stylesTitleBottom: 'Pilates ideal',
+          stylesBody: 'Explora los estilos de Pilates en video según tus necesidades: movilidad, equilibrio, relajación y fortalecimiento.',
+          levels: {
+            beginner: 'Principiante',
+            intermediate: 'Intermedio',
+            advanced: 'Avanzado',
+          },
         };
   const goldCtaClass =
-    'inline-flex items-center justify-center rounded-full border border-[#C5A572] bg-white/80 text-brand-ink shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:bg-[#C5A572]/85 hover:text-white hover:shadow-[0_12px_26px_rgba(197,165,114,0.28)]';
+    'inline-flex items-center justify-center rounded-full border-2 border-[#F8C890] bg-white/80 text-brand-ink shadow-[0_8px_20px_rgba(248,200,144,0.14)] transition hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]';
   const visibleBlogPreviews = blogPreviews.slice(0, 3);
 
   useEffect(() => {
@@ -166,13 +197,13 @@ export function LandingPage({
         ? t.courses.nantes
         : t.courses.mexico;
   const onboardingCourses = [...t.courses.visio, ...t.courses.nantes];
-  const fallbackPilatesCards: { title: string; imageUrl: string; level: 'Débutant' | 'Intermédiaire' | 'Expérimenté' }[] = [
-    { title: 'Pilates Mat 1', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Débutant' },
-    { title: 'Pilates Mat 2', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Débutant' },
-    { title: 'Barre Flow Cardio', imageUrl: t.courses.nantes[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Intermédiaire' },
-    { title: 'Booty Power Sculpt', imageUrl: t.courses.nantes[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Intermédiaire' },
-    { title: 'Barre Sculpt', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: 'Expérimenté' },
-    { title: 'Barre Full Body', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: 'Expérimenté' },
+  const fallbackPilatesCards: { title: string; imageUrl: string; level: string }[] = [
+    { title: 'Pilates Mat 1', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.beginner },
+    { title: 'Pilates Mat 2', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.beginner },
+    { title: 'Barre Flow Cardio', imageUrl: t.courses.nantes[0]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.intermediate },
+    { title: 'Booty Power Sculpt', imageUrl: t.courses.nantes[1]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.intermediate },
+    { title: 'Barre Sculpt', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.advanced },
+    { title: 'Barre Full Body', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.advanced },
   ];
   const vimeoCardsWithImage = vimeoShowcase
     .filter(
@@ -194,12 +225,12 @@ export function LandingPage({
   const referenceImages = [referenceBooty?.imageUrl, referenceFlow?.imageUrl].filter(Boolean) as string[];
 
   const curatedCards = [
-    { level: 'Débutant' as const, video: findByKeywords(['1 mat pilates', 'pilates mat 1', 'mat 1']) },
-    { level: 'Débutant' as const, video: findByKeywords(['pilates mat 2', 'pilates mat']) },
-    { level: 'Intermédiaire' as const, video: findByKeywords(['booty power sculpt']) },
-    { level: 'Intermédiaire' as const, video: findByKeywords(['barre flow cardio']) },
-    { level: 'Expérimenté' as const, video: findByKeywords(['booty sculpt 2', 'booty sculpt']) },
-    { level: 'Expérimenté' as const, video: findByKeywords(['barre/pilates flow', 'barre pilates flow']) },
+    { level: l.levels.beginner, video: findByKeywords(['1 mat pilates', 'pilates mat 1', 'mat 1']) },
+    { level: l.levels.beginner, video: findByKeywords(['pilates mat 2', 'pilates mat']) },
+    { level: l.levels.intermediate, video: findByKeywords(['booty power sculpt']) },
+    { level: l.levels.intermediate, video: findByKeywords(['barre flow cardio']) },
+    { level: l.levels.advanced, video: findByKeywords(['booty sculpt 2', 'booty sculpt']) },
+    { level: l.levels.advanced, video: findByKeywords(['barre/pilates flow', 'barre pilates flow']) },
   ];
 
   const inspirationPilatesCards =
@@ -238,7 +269,7 @@ export function LandingPage({
     <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       {/* Top Bar */}
       <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 md:px-10 py-3 md:py-4">
+        <div className="relative max-w-6xl mx-auto px-4 md:px-10 py-3 md:py-4">
           <div className="flex items-center justify-center gap-4 md:gap-5">
             <button
               type="button"
@@ -250,27 +281,50 @@ export function LandingPage({
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#C5A572] hover:bg-[#C5A572]/85 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#F8C890] hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]"
             >
               <UserCircle2 size={14} />
               {l.login}
+            </button>
+          </div>
+          <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-5 md:flex md:right-10">
+            <button
+              type="button"
+              onClick={() => toggleLang('FR')}
+              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
+                lang === 'FR'
+                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
+                  : 'text-brand-ink/30 hover:text-brand-ink'
+              }`}
+            >
+              FR
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleLang('ES')}
+              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
+                lang === 'ES'
+                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
+                  : 'text-brand-ink/30 hover:text-brand-ink'
+              }`}
+            >
+              ES
             </button>
           </div>
         </div>
       </div>
 
       <main className="max-w-2xl md:max-w-6xl mx-auto px-6 md:px-8 pt-6 md:pt-10 pb-24">
-        {/* Language Switcher */}
-        <div className="flex justify-end mb-6 md:mb-12 gap-6">
+        <div className="mb-6 flex justify-end gap-6 md:hidden">
           <button 
             onClick={() => toggleLang('FR')}
-            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'FR' ? 'text-brand-accent font-bold border-b border-brand-accent pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
+            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'FR' ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
           >
             FR
           </button>
           <button 
             onClick={() => toggleLang('ES')}
-            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'ES' ? 'text-brand-accent font-bold border-b border-brand-accent pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
+            className={`text-[10px] tracking-[0.3em] uppercase transition-all ${lang === 'ES' ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1' : 'text-brand-ink/30 hover:text-brand-ink'}`}
           >
             ES
           </button>
@@ -292,7 +346,9 @@ export function LandingPage({
               className="mb-5 h-14 w-14 object-contain"
             />
             <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight leading-[1.02] text-brand-ink">
-              {l.heroTitle}
+              {l.heroTitleTop}
+              <br />
+              {l.heroTitleBottom}
             </h1>
             <p className="mt-6 text-[1.35rem] md:text-[1.65rem] font-serif leading-[1.35] md:leading-[1.45] text-brand-ink/80 max-w-xl tracking-tight">
               {l.heroBody}
@@ -343,7 +399,7 @@ export function LandingPage({
                   {count.toLocaleString()}
                 </span>
                 <span className="mt-3 text-[11px] md:text-[12px] uppercase tracking-[0.12em] text-brand-ink/55 font-sans font-medium">
-                  Cours donnés
+                  {l.proofGiven}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -351,7 +407,7 @@ export function LandingPage({
                   180
                 </span>
                 <span className="mt-3 inline-flex items-center gap-2 text-[11px] md:text-[12px] uppercase tracking-[0.12em] text-brand-ink/55 font-sans font-medium">
-                  Personnes / semaine
+                  {l.proofPeople}
                   <span className="relative group">
                     <span
                       className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-[11px] text-brand-ink/60"
@@ -360,7 +416,7 @@ export function LandingPage({
                       <Info size={11} />
                     </span>
                     <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                      Cours collectifs et individuels confondus.
+                      {l.proofTooltip}
                     </span>
                   </span>
                 </span>
@@ -531,7 +587,7 @@ export function LandingPage({
                   {/* Price & CTA Section */}
                   <div className="mt-6 md:mt-10 pt-4 md:pt-8 border-t border-brand-ink/[0.06] flex justify-between items-end">
                     <div className="flex flex-col">
-                      <span className="text-[8px] md:text-[9px] tracking-[0.3em] uppercase text-brand-ink/30 font-bold mb-1 md:mb-2">Investissement</span>
+                      <span className="text-[8px] md:text-[9px] tracking-[0.3em] uppercase text-brand-ink/30 font-bold mb-1 md:mb-2">{l.investment}</span>
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-3xl md:text-4xl font-sans font-bold tracking-tighter text-brand-ink">
                           {course.price.split(' ')[0]}
@@ -579,12 +635,12 @@ export function LandingPage({
         <section className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10">
           <div className="mb-7 grid grid-cols-1 items-start gap-5 md:grid-cols-[1.2fr_1fr]">
             <h3 className="text-4xl md:text-5xl font-sans font-bold leading-[0.98] tracking-tight text-brand-ink">
-              Trouve ton style
+              {l.stylesTitleTop}
               <br />
-              Pilates idéal
+              {l.stylesTitleBottom}
             </h3>
             <p className="pt-1 text-sm md:text-base text-brand-ink/60 leading-relaxed md:max-w-[430px]">
-              Explore les styles de Pilates en vidéo selon tes besoins : mobilité, équilibre, relaxation et renforcement.
+              {l.stylesBody}
             </p>
           </div>
 
@@ -709,23 +765,28 @@ export function LandingPage({
                     : 'md:grid-cols-3'
               }`}
             >
-              {visibleBlogPreviews.map((article) => (
+              {visibleBlogPreviews.map((article) => {
+                const title = lang === 'ES' ? article.titleEs?.trim() || article.titleFr : article.titleFr;
+                const excerpt = lang === 'ES' ? article.excerptEs?.trim() || article.excerptFr : article.excerptFr;
+                const categoryLabel = lang === 'ES' ? article.categoryLabelEs || article.categoryLabelFr : article.categoryLabelFr;
+                return (
                 <button
-                  key={article.title}
+                  key={article.titleFr}
                   type="button"
                   onClick={() => setSelectedCourse(onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0] ?? null)}
                   className="group overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/70 text-left shadow-[0_18px_50px_rgba(48,35,28,0.08)] transition hover:-translate-y-1"
                 >
                   <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
                   <div className="p-5">
-                    {article.categoryLabel ? (
-                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{article.categoryLabel}</p>
+                    {categoryLabel ? (
+                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{categoryLabel}</p>
                     ) : null}
-                    <h3 className="font-serif text-xl italic text-brand-ink">{article.title}</h3>
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{article.excerpt}</p>
+                    <h3 className="font-serif text-xl italic text-brand-ink">{title}</h3>
+                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{excerpt}</p>
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
             <div className="mt-8 text-center">
               <button
@@ -769,7 +830,7 @@ export function LandingPage({
         lang={lang}
         onClose={() => setSelectedCourse(null)}
       />
-      <ClientLoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <ClientLoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} lang={lang} />
 
       {/* Scroll to Top */}
       <AnimatePresence>

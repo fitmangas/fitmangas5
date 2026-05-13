@@ -9,7 +9,7 @@ import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
 import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
-import { resolveFirstName } from '@/lib/compte/i18n';
+import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
@@ -65,7 +65,8 @@ export default async function ComptePage({
   const checkoutOk = params.checkout === 'success';
   const goal = getMonthlySessionGoal();
 
-  const [{ data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+  const [lang, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+    getClientLang(supabase, user.id),
     supabase
       .from('profiles')
       .select('first_name, last_name, avatar_url, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
@@ -96,7 +97,6 @@ export default async function ComptePage({
       .is('read_at', null),
   ]);
 
-  const lang = profile?.preferred_blog_language === 'en' || profile?.preferred_blog_language === 'es' ? profile.preferred_blog_language : 'fr';
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
   const grade = profile?.gamification_grade ??
@@ -106,7 +106,7 @@ export default async function ComptePage({
       replaySeconds: profile?.total_replay_watch_seconds ?? 0,
       onsitePresences: profile?.onsite_presence_count ?? 0,
     });
-  const level = gradeLabel(grade);
+  const level = gradeLabel(grade, lang);
   const motivation = weeklyMotivation(firstName, lang);
   const t =
     lang === 'en'

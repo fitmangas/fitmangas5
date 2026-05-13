@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Script from 'next/script';
 
 import { LandingPage } from '@/components/LandingPage';
@@ -6,6 +7,14 @@ import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+
+function landingLangFromAcceptLanguage(value: string | null): 'FR' | 'ES' {
+  const firstSupported = (value ?? '')
+    .split(',')
+    .map((part) => part.trim().split(';')[0]?.toLowerCase())
+    .find((lang) => lang?.startsWith('fr') || lang?.startsWith('es'));
+  return firstSupported?.startsWith('es') ? 'ES' : 'FR';
+}
 
 export const metadata: Metadata = {
   title: 'Fit Mangas — Pilates en visio et en studio',
@@ -29,7 +38,16 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   let vimeoShowcase: { title: string; thumbnailUrl: string | null }[] = [];
-  let blogPreviews: { title: string; excerpt: string | null; coverImageUrl: string | null; categoryLabel: string | null }[] = [];
+  let blogPreviews: {
+    titleFr: string;
+    titleEs: string | null;
+    excerptFr: string | null;
+    excerptEs: string | null;
+    coverImageUrl: string | null;
+    categoryLabelFr: string | null;
+    categoryLabelEs: string | null;
+  }[] = [];
+  const initialLang = landingLangFromAcceptLanguage((await headers()).get('accept-language'));
 
   try {
     const admin = createAdminClient();
@@ -52,7 +70,7 @@ export default async function HomePage() {
 
     const { data: articles } = await admin
       .from('blog_articles')
-      .select('title_fr, description_fr, featured_image_url, published_at, blog_categories ( label_fr, slug )')
+      .select('title_fr, title_es, description_fr, description_es, featured_image_url, published_at, blog_categories ( label_fr, label_es, slug )')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(3);
@@ -66,15 +84,18 @@ export default async function HomePage() {
             ? category.slug
             : null;
       return {
-        title: String(row.title_fr ?? ''),
-        excerpt: row.description_fr ? String(row.description_fr) : null,
+        titleFr: String(row.title_fr ?? ''),
+        titleEs: row.title_es ? String(row.title_es) : null,
+        excerptFr: row.description_fr ? String(row.description_fr) : null,
+        excerptEs: row.description_es ? String(row.description_es) : null,
         coverImageUrl: uniqueBlogImageUrl({
           coverImageUrl: row.featured_image_url ? String(row.featured_image_url) : null,
           categoryLabel,
           index,
           used: usedImages,
         }),
-        categoryLabel,
+        categoryLabelFr: categoryLabel,
+        categoryLabelEs: typeof category?.label_es === 'string' ? category.label_es : categoryLabel,
       };
     });
   } catch {
@@ -101,7 +122,7 @@ export default async function HomePage() {
   return (
     <>
       <Script id="fitmangas-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <LandingPage vimeoShowcase={vimeoShowcase} blogPreviews={blogPreviews} />
+      <LandingPage vimeoShowcase={vimeoShowcase} blogPreviews={blogPreviews} initialLang={initialLang} />
     </>
   );
 }

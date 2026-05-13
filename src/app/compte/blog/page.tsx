@@ -131,7 +131,11 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     .limit(200);
 
   if (categoryId) query = query.eq('category_id', categoryId);
-  if (q) query = query.ilike('title_fr', `%${q.replace(/[%_]/g, '')}%`);
+  if (q) {
+    const safe = q.replace(/[%_]/g, '');
+    const pattern = `%${safe}%`;
+    query = query.or(`title_fr.ilike.${pattern},title_es.ilike.${pattern},description_fr.ilike.${pattern},description_es.ilike.${pattern}`);
+  }
   const { data: articles } = await query;
 
   const { data: favRows } = await supabase.from('blog_article_favorites').select('article_id').eq('user_id', user.id);

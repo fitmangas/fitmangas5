@@ -12,10 +12,36 @@ const labels: Record<Lang, string> = {
   es: 'Español',
 };
 
+const copy = {
+  fr: {
+    title: 'Langue de l’espace client',
+    intro: 'Choisis une langue unique pour tout ton espace client : navigation, écrans et contenus compatibles.',
+    save: 'Enregistrer',
+    saving: 'Enregistrement...',
+    error: 'Erreur lors de la sauvegarde.',
+    saved: 'Langue enregistrée. L’espace client utilise désormais cette langue.',
+    network: 'Erreur réseau. Réessaie dans quelques secondes.',
+  },
+  es: {
+    title: 'Idioma del espacio cliente',
+    intro: 'Elige un idioma único para todo tu espacio cliente: navegación, pantallas y contenidos compatibles.',
+    save: 'Guardar',
+    saving: 'Guardando...',
+    error: 'Error al guardar.',
+    saved: 'Idioma guardado. El espacio cliente utiliza ahora este idioma.',
+    network: 'Error de red. Inténtalo de nuevo en unos segundos.',
+  },
+};
+
+function normalizeLang(lang: Lang): 'fr' | 'es' {
+  return lang === 'es' ? 'es' : 'fr';
+}
+
 export function ProfileLanguageForm({ defaultLang }: { defaultLang: Lang }) {
   const [lang, setLang] = useState<Lang>(defaultLang);
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string>('');
+  const t = copy[normalizeLang(lang)];
 
   function onSave() {
     startTransition(async () => {
@@ -27,22 +53,22 @@ export function ProfileLanguageForm({ defaultLang }: { defaultLang: Lang }) {
           body: JSON.stringify({ language: lang }),
         });
         if (!res.ok) {
-          setMessage('Erreur lors de la sauvegarde.');
+          setMessage(t.error);
           return;
         }
-        setMessage('Langue enregistrée. L’espace client utilise désormais cette langue.');
+        setMessage(t.saved);
       } catch {
-        setMessage('Erreur réseau. Réessaie dans quelques secondes.');
+        setMessage(t.network);
       }
     });
   }
 
   return (
     <GlassCard className="p-8">
-      <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Langue de l’espace client</h2>
-      <p className="mt-2 text-sm text-luxury-muted">Choisis une langue unique pour tout ton espace client : navigation, écrans et contenus compatibles.</p>
+      <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.title}</h2>
+      <p className="mt-2 text-sm text-luxury-muted">{t.intro}</p>
       <div className="mt-5 flex flex-wrap gap-2">
-        {(['fr', 'en', 'es'] as const).map((code) => (
+        {(['fr', 'es'] as const).map((code) => (
           <button
             key={code}
             type="button"
@@ -59,7 +85,7 @@ export function ProfileLanguageForm({ defaultLang }: { defaultLang: Lang }) {
       </div>
       <div className="mt-5">
         <button type="button" onClick={onSave} disabled={isPending} className="btn-luxury-ghost min-h-[42px] min-w-[160px]">
-          {isPending ? 'Enregistrement...' : 'Enregistrer'}
+          {isPending ? t.saving : t.save}
         </button>
       </div>
       {message ? <p className="mt-3 text-sm text-luxury-muted">{message}</p> : null}
@@ -71,6 +97,7 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
   const [lang, setLang] = useState<Lang>(defaultLang);
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string>('');
+  const t = copy[normalizeLang(lang)];
 
   function onSave() {
     startTransition(async () => {
@@ -82,22 +109,22 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
           body: JSON.stringify({ language: lang }),
         });
         if (!res.ok) {
-          setMessage('Erreur lors de la sauvegarde.');
+          setMessage(t.error);
           return;
         }
-        setMessage('Langue enregistrée. L’espace client utilise désormais cette langue.');
+        setMessage(t.saved);
       } catch {
-        setMessage('Erreur réseau. Réessaie dans quelques secondes.');
+        setMessage(t.network);
       }
     });
   }
 
   return (
     <div className="flex h-full flex-col p-0">
-      <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Langue de l’espace client</h2>
-      <p className="mt-2 text-sm text-luxury-muted">Choisis une langue unique pour tout ton espace client : navigation, écrans et contenus compatibles.</p>
+      <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">{t.title}</h2>
+      <p className="mt-2 text-sm text-luxury-muted">{t.intro}</p>
       <div className="mt-5 flex flex-wrap gap-2">
-        {(['fr', 'en', 'es'] as const).map((code) => (
+        {(['fr', 'es'] as const).map((code) => (
           <button
             key={code}
             type="button"
@@ -119,7 +146,7 @@ export function ProfileLanguageFormEmbedded({ defaultLang }: { defaultLang: Lang
           disabled={isPending}
           className="btn-luxury-ghost inline-flex min-h-[44px] min-w-[220px] items-center justify-center"
         >
-          {isPending ? 'Enregistrement...' : 'Enregistrer'}
+          {isPending ? t.saving : t.save}
         </button>
       </div>
       {message ? <p className="mt-3 text-sm text-luxury-muted">{message}</p> : null}

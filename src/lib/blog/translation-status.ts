@@ -12,3 +12,7 @@ function hasText(value: string | null): boolean {
 export function hasCompleteTranslations(article: TranslationReadyInput): boolean {
   return hasText(article.title_en) && hasText(article.title_es) && hasText(article.content_en) && hasText(article.content_es);
 }
+
+export function hasCompleteSpanishTranslation(article: Pick<TranslationReadyInput, 'title_es' | 'content_es'>): boolean {
+  return hasText(article.title_es) && hasText(article.content_es);
+}

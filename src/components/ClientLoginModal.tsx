@@ -8,18 +8,40 @@ import { useRouter } from 'next/navigation';
 import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
 import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
+import type { Language } from '@/types';
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  lang?: Language;
 };
 
-export function ClientLoginModal({ open, onClose }: Props) {
+export function ClientLoginModal({ open, onClose, lang = 'FR' }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const t =
+    lang === 'ES'
+      ? {
+          close: 'Cerrar',
+          eyebrow: 'Cuenta cliente',
+          title: 'Conectarse',
+          intro: 'Accede a tu espacio cliente, tu planificación y tus replays.',
+          password: 'Contraseña',
+          fallbackError: 'No se puede conectar por el momento.',
+          submit: 'Conectarse',
+        }
+      : {
+          close: 'Fermer',
+          eyebrow: 'Compte client',
+          title: 'Se connecter',
+          intro: 'Accède à ton espace client, ton planning et tes replays.',
+          password: 'Mot de passe',
+          fallbackError: 'Connexion impossible pour le moment.',
+          submit: 'Se connecter',
+        };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +65,7 @@ export function ClientLoginModal({ open, onClose }: Props) {
       router.replace('/compte');
       router.refresh();
     } catch {
-      setError('Connexion impossible pour le moment.');
+      setError(t.fallbackError);
     } finally {
       setLoading(false);
     }
@@ -75,18 +97,18 @@ export function ClientLoginModal({ open, onClose }: Props) {
               type="button"
               onClick={onClose}
               className="absolute right-4 top-4 rounded-full p-2 text-brand-ink/40 transition hover:bg-brand-sand/40 hover:text-brand-ink"
-              aria-label="Fermer"
+              aria-label={t.close}
             >
               <X size={18} />
             </button>
 
             <div className="border-b border-brand-ink/[0.06] px-8 pb-6 pt-8">
-              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">Compte client</p>
+              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">{t.eyebrow}</p>
               <h2 id="client-login-title" className="font-serif text-2xl italic tracking-tight text-brand-ink">
-                Se connecter
+                {t.title}
               </h2>
               <p className="mt-2 text-xs leading-relaxed text-brand-ink/55">
-                Accède à ton espace client, ton planning et tes replays.
+                {t.intro}
               </p>
             </div>
 
@@ -104,7 +126,7 @@ export function ClientLoginModal({ open, onClose }: Props) {
               </label>
 
               <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                Mot de passe
+                {t.password}
                 <input
                   required
                   type="password"
@@ -125,7 +147,7 @@ export function ClientLoginModal({ open, onClose }: Props) {
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-accent py-4 text-[10px] font-bold uppercase tracking-[0.25em] text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
               >
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={16} />}
-                Se connecter
+                {t.submit}
               </button>
             </form>
           </motion.div>

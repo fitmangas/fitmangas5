@@ -3,13 +3,13 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Activity, Droplets, Flame, MoonStar, Target, Utensils, Video } from 'lucide-react';
 
-import { resolveFirstName } from '@/lib/compte/i18n';
+import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getMonthlyProgress, getNextAppointment } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { createClient } from '@/lib/supabase/server';
 
-function fmtHours(hours: number): string {
-  return `${hours.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h`;
+function fmtHours(hours: number, locale: string): string {
+  return `${hours.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h`;
 }
 
 function clamp01(value: number): number {
@@ -24,37 +24,75 @@ type TierRule = {
   requirements: Array<{ key: string; label: string; min: number }>;
 };
 
-const TIER_RULES: TierRule[] = [
+function tierRules(lang: 'fr' | 'en' | 'es'): TierRule[] {
+  const labels =
+    lang === 'es'
+      ? {
+          beginner: 'Principiante',
+          confirmed: 'Confirmada',
+          expert: 'Experta',
+          lives: 'Lives seguidos',
+          replayHours: 'Horas replay',
+          activeWeeks: 'Semanas activas',
+          activeMonths: 'Meses activos',
+          months70: 'Meses al 70%+',
+          months85: 'Meses al 85%+',
+        }
+      : lang === 'en'
+        ? {
+            beginner: 'Beginner',
+            confirmed: 'Confirmed',
+            expert: 'Expert',
+            lives: 'Lives attended',
+            replayHours: 'Replay hours',
+            activeWeeks: 'Active weeks',
+            activeMonths: 'Active months',
+            months70: 'Months at 70%+',
+            months85: 'Months at 85%+',
+          }
+        : {
+            beginner: 'Débutant',
+            confirmed: 'Confirmée',
+            expert: 'Experte',
+            lives: 'Lives suivis',
+            replayHours: 'Heures replay',
+            activeWeeks: 'Semaines actives',
+            activeMonths: 'Mois actifs',
+            months70: 'Mois à 70%+',
+            months85: 'Mois à 85%+',
+          };
+  return [
   {
     key: 'debutant',
-    label: 'Débutant',
+    label: labels.beginner,
     requirements: [
-      { key: 'lives', label: 'Lives suivis', min: 4 },
-      { key: 'replayHours', label: 'Heures replay', min: 2 },
-      { key: 'activeWeeks', label: 'Semaines actives', min: 2 },
+      { key: 'lives', label: labels.lives, min: 4 },
+      { key: 'replayHours', label: labels.replayHours, min: 2 },
+      { key: 'activeWeeks', label: labels.activeWeeks, min: 2 },
     ],
   },
   {
     key: 'confirmee',
-    label: 'Confirmée',
+    label: labels.confirmed,
     requirements: [
-      { key: 'lives', label: 'Lives suivis', min: 12 },
-      { key: 'replayHours', label: 'Heures replay', min: 10 },
-      { key: 'activeWeeks', label: 'Semaines actives', min: 6 },
-      { key: 'goalMonths70', label: 'Mois à 70%+', min: 2 },
+      { key: 'lives', label: labels.lives, min: 12 },
+      { key: 'replayHours', label: labels.replayHours, min: 10 },
+      { key: 'activeWeeks', label: labels.activeWeeks, min: 6 },
+      { key: 'goalMonths70', label: labels.months70, min: 2 },
     ],
   },
   {
     key: 'experte',
-    label: 'Experte',
+    label: labels.expert,
     requirements: [
-      { key: 'lives', label: 'Lives suivis', min: 30 },
-      { key: 'replayHours', label: 'Heures replay', min: 25 },
-      { key: 'activeMonths', label: 'Mois actifs', min: 4 },
-      { key: 'goalMonths85', label: 'Mois à 85%+', min: 3 },
+      { key: 'lives', label: labels.lives, min: 30 },
+      { key: 'replayHours', label: labels.replayHours, min: 25 },
+      { key: 'activeMonths', label: labels.activeMonths, min: 4 },
+      { key: 'goalMonths85', label: labels.months85, min: 3 },
     ],
   },
-];
+  ];
+}
 
 export default async function CompteProgressionPage() {
   const supabase = await createClient();
@@ -71,7 +109,8 @@ export default async function CompteProgressionPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
 
-  const [{ data: profile }, monthly, nextAppointment, { data: liveRows }, { data: replayRows }] = await Promise.all([
+  const [lang, { data: profile }, monthly, nextAppointment, { data: liveRows }, { data: replayRows }] = await Promise.all([
+    getClientLang(supabase, user.id),
     supabase
       .from('profiles')
       .select('first_name, avatar_url, preferred_blog_language, gamification_grade, gamification_points, live_visit_count, total_replay_watch_seconds, onsite_presence_count')
@@ -157,15 +196,15 @@ export default async function CompteProgressionPage() {
     return rule.requirements.every((req) => (metrics[req.key] ?? 0) >= req.min);
   }
 
-  const unlockedCount = TIER_RULES.filter((rule) => isTierUnlocked(rule)).length;
-  const currentTier = TIER_RULES[Math.max(0, unlockedCount - 1)] ?? TIER_RULES[0];
-  const nextTier = unlockedCount >= TIER_RULES.length ? null : TIER_RULES[unlockedCount];
+  const tiers = tierRules(lang);
+  const unlockedCount = tiers.filter((rule) => isTierUnlocked(rule)).length;
+  const currentTier = tiers[Math.max(0, unlockedCount - 1)] ?? tiers[0];
+  const nextTier = unlockedCount >= tiers.length ? null : tiers[unlockedCount];
 
   const completionRatio = clamp01(monthly.goal > 0 ? monthly.followedCount / monthly.goal : 0);
   const percent = Math.round(completionRatio * 100);
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
-  const lang = profile?.preferred_blog_language === 'en' || profile?.preferred_blog_language === 'es' ? profile.preferred_blog_language : 'fr';
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const monthLabel = now.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
   const minutesAgo = Math.max(1, now.getMinutes());
@@ -193,6 +232,18 @@ export default async function CompteProgressionPage() {
           monthRhythm: 'Monthly rhythm',
           sessionsLeft: 'session(s) left',
           engagement: 'Engagement',
+          badgeEyebrow: 'Progress badge',
+          badgeTitleTop: 'A badge for every step',
+          badgeTitleBottom: 'of your progress',
+          currentLevel: 'Current level',
+          nextTier: 'next milestone',
+          maxTier: 'maximum milestone reached',
+          currentTier: 'Current level',
+          tierCopy: {
+            debutant: 'This badge rewards your first Pilates steps and starting consistency.',
+            confirmee: 'This badge celebrates your weekly consistency and technical progress.',
+            experte: 'This badge rewards your discipline, endurance and Pilates mastery.',
+          },
         }
       : lang === 'es'
         ? {
@@ -217,6 +268,18 @@ export default async function CompteProgressionPage() {
             monthRhythm: 'Ritmo del mes',
             sessionsLeft: 'sesión(es) restantes',
             engagement: 'Compromiso',
+            badgeEyebrow: 'Badge de progreso',
+            badgeTitleTop: 'Un badge en cada etapa',
+            badgeTitleBottom: 'de tu progreso',
+            currentLevel: 'Nivel actual',
+            nextTier: 'próximo nivel',
+            maxTier: 'nivel máximo alcanzado',
+            currentTier: 'Nivel actual',
+            tierCopy: {
+              debutant: 'Este badge premia tus primeros pasos en Pilates y tu regularidad inicial.',
+              confirmee: 'Este badge valora tu constancia semanal y tu progreso técnico.',
+              experte: 'Este badge premia tu disciplina, tu resistencia y tu dominio de Pilates.',
+            },
           }
         : {
             morning: 'Bonjour',
@@ -240,6 +303,18 @@ export default async function CompteProgressionPage() {
             monthRhythm: 'Rythme du mois',
             sessionsLeft: 'séance(s) restantes',
             engagement: 'Engagement',
+            badgeEyebrow: 'Progression badge',
+            badgeTitleTop: 'Un badge à chaque étape',
+            badgeTitleBottom: 'de votre progression',
+            currentLevel: 'Niveau actuel',
+            nextTier: 'prochain palier',
+            maxTier: 'palier maximum atteint',
+            currentTier: 'Niveau actuel',
+            tierCopy: {
+              debutant: 'Ce badge récompense vos premiers pas Pilates et votre régularité de départ.',
+              confirmee: 'Ce badge valorise votre constance hebdomadaire et votre progression technique.',
+              experte: 'Ce badge récompense votre discipline, votre endurance et votre maîtrise Pilates.',
+            },
           };
 
   const progressHeading =
@@ -268,8 +343,8 @@ export default async function CompteProgressionPage() {
           <div className="absolute left-5 top-[136px] z-20 space-y-7 md:left-10 lg:left-12 lg:top-[140px]">
             <StatPill icon={<Target size={15} />} tone="bg-[#4e63ff] text-white" label={t.summary} value={`${monthly.followedCount}/${monthly.goal} ${t.sessions}`} />
             <StatPill icon={<Activity size={15} />} tone="bg-[#b74dff] text-white" label={t.performance} value={`${percent}% ${t.objective}`} />
-            <StatPill icon={<Flame size={15} />} tone="bg-[#2f333f] text-[#6ef2bf]" label={t.body} value={`${fmtHours(monthLiveSeconds / 3600)} ${t.live}`} />
-            <StatPill icon={<MoonStar size={15} />} tone="bg-[#2f333f] text-[#d7e5ff]" label={t.rest} value={`${fmtHours(monthReplaySeconds / 3600)} ${t.vimeo}`} />
+            <StatPill icon={<Flame size={15} />} tone="bg-[#2f333f] text-[#6ef2bf]" label={t.body} value={`${fmtHours(monthLiveSeconds / 3600, locale)} ${t.live}`} />
+            <StatPill icon={<MoonStar size={15} />} tone="bg-[#2f333f] text-[#d7e5ff]" label={t.rest} value={`${fmtHours(monthReplaySeconds / 3600, locale)} ${t.vimeo}`} />
           </div>
 
           <div className="absolute bottom-16 left-[49%] z-20 -translate-x-1/2 md:left-[48%] lg:bottom-20 lg:left-[46%]">
@@ -308,8 +383,8 @@ export default async function CompteProgressionPage() {
           </div>
 
           <div className="absolute bottom-2 left-5 right-5 z-20 grid gap-2 sm:grid-cols-2 md:bottom-3 md:left-4 md:right-4 lg:bottom-4 lg:left-6 lg:right-6 lg:grid-cols-4">
-            <BottomChip icon={<Video size={14} />} title={t.liveHoursMonth} value={fmtHours(monthLiveSeconds / 3600)} />
-            <BottomChip icon={<Activity size={14} />} title={t.vimeoHoursMonth} value={fmtHours(monthReplaySeconds / 3600)} />
+            <BottomChip icon={<Video size={14} />} title={t.liveHoursMonth} value={fmtHours(monthLiveSeconds / 3600, locale)} />
+            <BottomChip icon={<Activity size={14} />} title={t.vimeoHoursMonth} value={fmtHours(monthReplaySeconds / 3600, locale)} />
             <BottomChip icon={<Target size={14} />} title={t.monthRhythm} value={`${Math.max(0, monthly.goal - monthly.followedCount)} ${t.sessionsLeft}`} />
             <BottomChip icon={<Flame size={14} />} title={t.engagement} value={`${percent}%`} />
           </div>
@@ -318,20 +393,20 @@ export default async function CompteProgressionPage() {
 
       <section className="glass-card mt-6 p-5 md:p-7">
         <div className="mb-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Progression badge</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.badgeEyebrow}</p>
           <h2 className="mt-2 text-4xl font-extrabold leading-[0.95] tracking-tight text-luxury-ink md:text-5xl">
-            Un badge à chaque étape
+            {t.badgeTitleTop}
             <br />
-            de votre progression
+            {t.badgeTitleBottom}
           </h2>
           <p className="mt-3 text-sm text-luxury-muted">
-            Niveau actuel : <span className="font-semibold text-[#0f172a]">{currentTier.label}</span>
-            {nextTier ? ` · prochain palier : ${nextTier.label}` : ' · palier maximum atteint'}
+            {t.currentLevel} : <span className="font-semibold text-[#0f172a]">{currentTier.label}</span>
+            {nextTier ? ` · ${t.nextTier} : ${nextTier.label}` : ` · ${t.maxTier}`}
           </p>
         </div>
 
         <div className="space-y-5">
-          {TIER_RULES.map((rule, idx) => {
+          {tiers.map((rule, idx) => {
             const unlocked = isTierUnlocked(rule);
             const isCurrent = currentTier.key === rule.key;
             const tone =
@@ -372,11 +447,7 @@ export default async function CompteProgressionPage() {
                     <div className={textTone}>
                       <h3 className="text-3xl font-black tracking-tight md:text-[2.2rem]">{rule.label}</h3>
                       <p className={`mt-2 text-base md:text-lg ${subTone}`}>
-                        {rule.key === 'debutant'
-                          ? 'Ce badge récompense vos premiers pas Pilates et votre régularité de départ.'
-                          : rule.key === 'confirmee'
-                            ? 'Ce badge valorise votre constance hebdomadaire et votre progression technique.'
-                            : 'Ce badge récompense votre discipline, votre endurance et votre maîtrise Pilates.'}
+                        {t.tierCopy[rule.key]}
                       </p>
                       <ul className={`mt-3 grid gap-1 text-sm ${subTone}`}>
                         {rule.requirements.map((req) => {
@@ -391,13 +462,13 @@ export default async function CompteProgressionPage() {
                       </ul>
                       {isCurrent ? (
                         <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${rule.key === 'experte' ? 'bg-white/25 text-white' : 'bg-white/65 text-[#0f172a]'}`}>
-                          Niveau actuel
+                          {t.currentTier}
                         </p>
                       ) : null}
                     </div>
                   </div>
                 </article>
-                {idx < TIER_RULES.length - 1 ? (
+                {idx < tiers.length - 1 ? (
                   <div className="flex justify-center py-2">
                     <div className="inline-flex h-10 w-14 items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)]">
                       <span className="text-2xl leading-none">⌄</span>

@@ -114,6 +114,7 @@ export default async function ProfilPage() {
     onsite_presence_count?: number | null;
     total_replay_watch_seconds?: number | null;
     live_visit_count?: number | null;
+    preferred_locale?: 'fr' | 'es' | null;
     preferred_blog_language?: 'fr' | 'en' | 'es' | null;
   } | null;
   const computedGrade = computeGamificationGrade({
@@ -144,7 +145,7 @@ export default async function ProfilPage() {
             {t.offer} : <span className="font-medium text-luxury-ink">{formatTier(p?.customer_tier ?? null)}</span>
           </p>
           <p>
-            {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade)}</span>
+            {t.grade} : <span className="font-medium text-luxury-ink">{gradeLabel(p?.gamification_grade ?? computedGrade, lang)}</span>
           </p>
         </div>
       </GlassCard>
@@ -158,7 +159,7 @@ export default async function ProfilPage() {
           <div className="space-y-8">
             <ProfileBirthDateFormEmbedded defaultIsoDate={p?.birth_date ?? null} />
             <div className="h-px bg-white/45" />
-            <ProfileLanguageFormEmbedded defaultLang={p?.preferred_blog_language === 'en' || p?.preferred_blog_language === 'es' ? p.preferred_blog_language : 'fr'} />
+            <ProfileLanguageFormEmbedded defaultLang={p?.preferred_locale === 'es' ? 'es' : 'fr'} />
           </div>
         </div>
       </GlassCard>

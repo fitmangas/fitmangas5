@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/api-auth';
 import { createClient } from '@/lib/supabase/server';
-import type { BlogLang } from '@/types/blog';
 
-function isLang(v: unknown): v is BlogLang {
-  return v === 'fr' || v === 'en' || v === 'es';
+type LocaleLang = 'fr' | 'es';
+
+function isLang(v: unknown): v is LocaleLang {
+  return v === 'fr' || v === 'es';
 }
 
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('profiles')
-    .select('preferred_blog_language')
+    .select('preferred_locale, preferred_blog_language')
     .eq('id', auth.user.id)
     .maybeSingle();
 
@@ -22,7 +23,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Impossible de lire les préférences.' }, { status: 500 });
   }
 
-  const language = isLang(data?.preferred_blog_language) ? data.preferred_blog_language : 'fr';
+  const language = isLang(data?.preferred_locale)
+    ? data.preferred_locale
+    : isLang(data?.preferred_blog_language)
+      ? data.preferred_blog_language
+      : 'fr';
   return NextResponse.json({ language });
 }
 
@@ -43,11 +48,14 @@ export async function PATCH(request: Request) {
       : null;
 
   if (!isLang(lang)) {
-    return NextResponse.json({ error: 'language doit être fr, en ou es.' }, { status: 400 });
+    return NextResponse.json({ error: 'language doit être fr ou es.' }, { status: 400 });
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from('profiles').update({ preferred_blog_language: lang }).eq('id', auth.user.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ preferred_locale: lang, preferred_blog_language: lang })
+    .eq('id', auth.user.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

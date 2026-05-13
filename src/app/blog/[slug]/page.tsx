@@ -6,6 +6,7 @@ import {
   fetchAnyArticleBySlugParamAdmin,
   fetchPublishedArticleBySlugParam,
 } from '@/lib/blog/fetch-article';
+import { getClientLang } from '@/lib/compte/i18n';
 import type { BlogLang } from '@/types/blog';
 
 type SearchParams = Promise<{ lang?: string; preview?: string }>;
@@ -67,14 +68,7 @@ export default async function BlogArticlePage({
 
   let defaultLang: BlogLang = queryLang ?? 'fr';
   if (!queryLang && user) {
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('preferred_blog_language')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (prof?.preferred_blog_language === 'en' || prof?.preferred_blog_language === 'es') {
-      defaultLang = prof.preferred_blog_language;
-    }
+    defaultLang = await getClientLang(supabase, user.id);
   } else if (queryLang) {
     defaultLang = queryLang;
   }

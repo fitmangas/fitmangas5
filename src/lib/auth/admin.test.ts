@@ -16,14 +16,14 @@ function supabaseWithRole(role: string | null) {
 
 describe('admin gates', () => {
   beforeEach(() => {
-    process.env.ADMIN_EMAILS = 'ale.mangas5@gmail.com';
+    process.env.ADMIN_EMAILS = 'admin@fitmangas.com';
   });
 
   it('checkIsAdmin accepte ADMIN_EMAILS ou profiles.role', async () => {
     await expect(
       checkIsAdmin(supabaseWithRole('member') as never, {
         id: 'u1',
-        email: 'ale.mangas5@gmail.com',
+        email: 'admin@fitmangas.com',
       }),
     ).resolves.toEqual({ isAdmin: true, source: 'email' });
 
@@ -39,14 +39,14 @@ describe('admin gates', () => {
     await expect(
       canUseAdminViewSwitch(supabaseWithRole('admin') as never, {
         id: 'u1',
-        email: 'ale.mangas5@gmail.com',
+        email: 'admin@fitmangas.com',
       }),
     ).resolves.toEqual({ canSwitch: true, role: 'admin', emailAllowed: true });
 
     await expect(
       canUseAdminViewSwitch(supabaseWithRole('member') as never, {
         id: 'u1',
-        email: 'ale.mangas5@gmail.com',
+        email: 'admin@fitmangas.com',
       }),
     ).resolves.toMatchObject({ canSwitch: false, role: 'member', emailAllowed: true });
 

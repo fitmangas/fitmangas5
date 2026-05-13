@@ -18,6 +18,10 @@ export default async function CompteLayout({ children }: { children: React.React
   }
   const lang = await getClientLang(supabase, user.id);
   const labels = compteNavLabels[lang];
+  const a11y =
+    lang === 'es'
+      ? { shop: 'Abrir la tienda', shopLogo: 'Logo tienda FitMangas' }
+      : { shop: 'Ouvrir la boutique', shopLogo: 'Logo boutique FitMangas' };
 
   return (
     <div className="luxury-shell relative min-h-screen" lang={lang}>
@@ -31,11 +35,11 @@ export default async function CompteLayout({ children }: { children: React.React
             <Link
               href="/compte/boutique"
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/70 shadow-[0_6px_14px_rgba(15,23,42,0.1)]"
-              aria-label="Ouvrir la boutique"
+              aria-label={a11y.shop}
             >
               <Image
                 src="/Spreadshop Logo (1800 x 1800 px)-2.png"
-                alt="Logo boutique FitMangas"
+                alt={a11y.shopLogo}
                 width={22}
                 height={22}
                 className="h-[22px] w-[22px] object-contain"

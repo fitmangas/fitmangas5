@@ -7,16 +7,22 @@ type GamificationStats = {
   onsitePresences?: number | null;
 };
 
-export function gradeLabel(grade: string | null | undefined): string {
+export function gradeLabel(grade: string | null | undefined, lang: 'fr' | 'en' | 'es' = 'fr'): string {
+  const labels =
+    lang === 'es'
+      ? { debutant: 'Principiante', confirme: 'Confirmada', expert: 'Experta' }
+      : lang === 'en'
+        ? { debutant: 'Beginner', confirme: 'Confirmed', expert: 'Expert' }
+        : { debutant: 'Débutant', confirme: 'Confirmée', expert: 'Experte' };
   switch (grade) {
     case 'debutant':
-      return 'Débutant';
+      return labels.debutant;
     case 'confirme':
-      return 'Confirmée';
+      return labels.confirme;
     case 'expert':
-      return 'Experte';
+      return labels.expert;
     default:
-      return 'Débutant';
+      return labels.debutant;
   }
 }
 

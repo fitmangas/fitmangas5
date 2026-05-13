@@ -4,7 +4,8 @@ import { TranslateArticleButton } from '@/components/Admin/blog/TranslateArticle
 import { ValidationActions } from '@/components/Admin/blog/ValidationActions';
 import { ValidationPreviewModal } from '@/components/Admin/blog/ValidationPreviewModal';
 import { formatMonthYear } from '@/lib/blog/month';
-import { hasCompleteTranslations } from '@/lib/blog/translation-status';
+import { reconcileValidatedBlogArticles } from '@/lib/blog/publish-due';
+import { hasCompleteSpanishTranslation } from '@/lib/blog/translation-status';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -23,6 +24,8 @@ export default async function AdminBlogValidationPage() {
 
   const admin = createAdminClient();
   const month_year = formatMonthYear(new Date());
+
+  await reconcileValidatedBlogArticles(admin, { monthYear: month_year });
 
   const { data: validations, error } = await admin
     .from('admin_article_validations')
@@ -44,6 +47,7 @@ export default async function AdminBlogValidationPage() {
         content_es,
         slug_fr,
         status,
+        published_at,
         scheduled_publication_at,
         coach_notes,
         featured_image_url,
@@ -134,6 +138,7 @@ export default async function AdminBlogValidationPage() {
             content_fr: string;
             slug_fr: string;
             status: string;
+            published_at: string | null;
             scheduled_publication_at: string;
             coach_notes: string | null;
             featured_image_url: string | null;
@@ -165,10 +170,17 @@ export default async function AdminBlogValidationPage() {
             hour: '2-digit',
             minute: '2-digit',
           });
-          const translationReady = hasCompleteTranslations({
-            title_en: article.title_en,
+          const published = displayArticle.published_at
+            ? new Date(displayArticle.published_at).toLocaleString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : null;
+          const translationReady = hasCompleteSpanishTranslation({
             title_es: article.title_es,
-            content_en: article.content_en,
             content_es: article.content_es,
           });
 
@@ -188,7 +200,7 @@ export default async function AdminBlogValidationPage() {
                   <h2 className="mt-1 text-xl font-semibold text-luxury-ink">{displayArticle.title_fr}</h2>
                   <p className="mt-2 line-clamp-3 text-sm text-luxury-muted">{displayArticle.description_fr}</p>
                   <p className="mt-3 text-xs text-luxury-muted">
-                    Publication prévue : {scheduled} · Statut article :{' '}
+                    {displayArticle.status === 'published' && published ? `Publié le ${published}` : `Publication prévue : ${scheduled}`} · Statut article :{' '}
                     <span className="font-semibold">{displayArticle.status}</span> · Validation :{' '}
                     <span className="font-semibold">{row.status}</span>
                   </p>
@@ -199,7 +211,7 @@ export default async function AdminBlogValidationPage() {
                         translationReady ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {translationReady ? 'EN/ES prêtes' : 'EN/ES manquantes'}
+                      {translationReady ? 'ES prête' : 'ES manquante'}
                     </span>
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3">

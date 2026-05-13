@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/auth/assert-admin-api';
 import { formatMonthYear, parseMonthYearParam } from '@/lib/blog/month';
-import { hasCompleteTranslations } from '@/lib/blog/translation-status';
+import { publishDueBlogArticles } from '@/lib/blog/publish-due';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
@@ -97,32 +97,18 @@ export async function PATCH(request: Request) {
     .in('id', ids);
 
   if (action === 'approve') {
-    if (process.env.BLOG_REQUIRE_TRANSLATIONS !== 'false') {
-      const { data: articles } = await admin
-        .from('blog_articles')
-        .select('id,title_en,title_es,content_en,content_es')
-        .in('id', articleIds);
-      const missing = (articles ?? []).filter(
-        (a) =>
-          !hasCompleteTranslations({
-            title_en: a.title_en,
-            title_es: a.title_es,
-            content_en: a.content_en,
-            content_es: a.content_es,
-          }),
-      );
-      if (missing.length > 0) {
-        return NextResponse.json(
-          { error: `${missing.length} article(s) ont des traductions EN/ES incomplètes.` },
-          { status: 400 },
-        );
-      }
-    }
-
     await admin
       .from('blog_articles')
       .update({ status: 'validated', updated_at: now, ...(notes ? { coach_notes: notes } : {}) })
       .in('id', articleIds);
+
+    const published = await publishDueBlogArticles(admin, { articleIds, now: new Date(now), includeDraft: true });
+    return NextResponse.json({
+      ok: true,
+      updated: ids.length,
+      published: published.publishedIds.length,
+      publishedIds: published.publishedIds,
+    });
   }
 
   return NextResponse.json({ ok: true, updated: ids.length });

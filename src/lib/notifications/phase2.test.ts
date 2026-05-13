@@ -11,6 +11,7 @@ import {
   runOnboardingCycle,
   runWinBackCycle,
 } from './phase2';
+import type { DispatchResult } from './types';
 
 type TableData = Record<string, unknown[]>;
 
@@ -77,7 +78,7 @@ function clientWith(data: TableData): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
-const dispatchMock = vi.fn(async () => ({ ok: true as const, notification_log_ids: ['log-1'] }));
+const dispatchMock = vi.fn(async (): Promise<DispatchResult> => ({ ok: true, notification_log_ids: ['log-1'] }));
 
 describe('Phase 2 cycles', () => {
   beforeEach(() => {
