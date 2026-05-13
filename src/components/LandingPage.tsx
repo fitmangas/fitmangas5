@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, 
@@ -35,6 +36,7 @@ type BlogPreviewItem = {
   title: string;
   excerpt: string | null;
   coverImageUrl: string | null;
+  categoryLabel?: string | null;
 };
 
 const WhatsAppIcon = ({ size = 20 }: { size?: number }) => (
@@ -59,6 +61,59 @@ export function LandingPage({
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const t = translations[lang];
+  const l =
+    lang === 'FR'
+      ? {
+          member: 'Devenir membre',
+          login: 'Se connecter',
+          heroTitle: 'Visio Pilates est ta thérapie',
+          heroBody: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
+          start: 'On démarre',
+          community: 'Rejoignez la communauté',
+          liveReplay: 'Direct et Replay',
+          available: 'Disponible',
+          library: 'Bibliothèque',
+          hoursAvailable: '+ de 25h disponible',
+          studioClass: 'Cours en studio',
+          onsite: 'Présence sur place',
+          limitedSpots: 'Places limitées',
+          bookingRequired: 'Réservation requise',
+          testimonialsLabel: 'Les adhérentes alias Mangitas',
+          reviews: 'Vos retours',
+          positiveReviews: 'Plus de 500 avis positifs',
+          blogLabel: 'Le Blog',
+          blogTitle: 'Inspiration Pilates & bien-être',
+          blogCta: 'Accédez au blog complet en devenant membre Visio — à partir de 39€/mois',
+          privacy: 'Confidentialité',
+          terms: 'Conditions',
+        }
+      : {
+          member: 'Hacerme miembro',
+          login: 'Conectarse',
+          heroTitle: 'Visio Pilates es tu terapia',
+          heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.',
+          start: 'Empezamos',
+          community: 'Únete a la comunidad',
+          liveReplay: 'Directo y replay',
+          available: 'Disponible',
+          library: 'Biblioteca',
+          hoursAvailable: '+ de 25h disponibles',
+          studioClass: 'Clase en estudio',
+          onsite: 'Presencial',
+          limitedSpots: 'Plazas limitadas',
+          bookingRequired: 'Reserva requerida',
+          testimonialsLabel: 'Las alumnas alias Mangitas',
+          reviews: 'Vuestras opiniones',
+          positiveReviews: 'Más de 500 opiniones positivas',
+          blogLabel: 'El Blog',
+          blogTitle: 'Inspiración Pilates y bienestar',
+          blogCta: 'Accede al blog completo como miembro Visio — desde 39€/mes',
+          privacy: 'Privacidad',
+          terms: 'Condiciones',
+        };
+  const goldCtaClass =
+    'inline-flex items-center justify-center rounded-full border border-[#C5A572] bg-white/80 text-brand-ink shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:bg-[#C5A572]/85 hover:text-white hover:shadow-[0_12px_26px_rgba(197,165,114,0.28)]';
+  const visibleBlogPreviews = blogPreviews.slice(0, 3);
 
   useEffect(() => {
     // Stats animation logic
@@ -188,17 +243,17 @@ export function LandingPage({
             <button
               type="button"
               onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
-              className="inline-flex items-center rounded-full border border-brand-accent/35 bg-brand-accent px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_22px_rgba(156,146,132,0.32)] transition hover:brightness-95"
+              className={`${goldCtaClass} px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
             >
-              Devenir membre
+              {l.member}
             </button>
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-brand-accent/40 hover:text-brand-accent"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#C5A572] hover:bg-[#C5A572]/85 hover:text-white"
             >
               <UserCircle2 size={14} />
-              Se connecter
+              {l.login}
             </button>
           </div>
         </div>
@@ -228,25 +283,31 @@ export function LandingPage({
             animate={{ opacity: 1, y: 0 }}
             className="px-1 sm:px-2"
           >
+            <Image
+              src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+              alt="Logo FitMangas"
+              width={58}
+              height={58}
+              priority
+              className="mb-5 h-14 w-14 object-contain"
+            />
             <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight leading-[1.02] text-brand-ink">
-              Visio Pilates
-              <br />
-              is your therapy
+              {l.heroTitle}
             </h1>
             <p className="mt-6 text-[1.35rem] md:text-[1.65rem] font-serif leading-[1.35] md:leading-[1.45] text-brand-ink/80 max-w-xl tracking-tight">
-              J&apos;aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.
+              {l.heroBody}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-6">
               <button
                 type="button"
                 onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
-                className="inline-flex items-center justify-center rounded-full border border-brand-accent/35 bg-brand-accent px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-white shadow-[0_10px_22px_rgba(156,146,132,0.35)] transition hover:brightness-95"
+                className={`${goldCtaClass} px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
               >
-                On démarre
+                {l.start}
               </button>
               <div className="hidden h-14 w-[2px] rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)] md:block" />
               <div className="flex flex-col items-center gap-1.5 text-center">
-                <span className="text-[14px] font-medium tracking-[0.04em] text-brand-ink/70">Rejoignez la communauté</span>
+                <span className="text-[14px] font-medium tracking-[0.04em] text-brand-ink/70">{l.community}</span>
                 <div className="flex w-full items-center justify-center gap-4">
                   <a
                     href={getWaLink(t.waMsg)}
@@ -446,10 +507,10 @@ export function LandingPage({
                         <ShieldCheck size={16} className="text-brand-accent/60 md:w-[18px] md:h-[18px]" />
                         <div>
                           <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">
-                            {segment === 'VISIO' ? 'Direct et Replay' : lang === 'FR' ? 'Cours en studio' : 'Clase en estudio'}
+                            {segment === 'VISIO' ? l.liveReplay : l.studioClass}
                           </p>
                           <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">
-                            {segment === 'VISIO' ? 'Disponible' : lang === 'FR' ? 'Présence sur place' : 'Presencial'}
+                            {segment === 'VISIO' ? l.available : l.onsite}
                           </p>
                         </div>
                       </div>
@@ -457,10 +518,10 @@ export function LandingPage({
                         <CheckCircle2 size={16} className="text-brand-accent/60 md:w-[18px] md:h-[18px]" />
                         <div>
                           <p className="text-[9px] md:text-[10px] tracking-wider uppercase font-bold text-brand-ink/70">
-                            {segment === 'VISIO' ? 'Bibliothèque' : lang === 'FR' ? 'Places limitées' : 'Plazas limitadas'}
+                            {segment === 'VISIO' ? l.library : l.limitedSpots}
                           </p>
                           <p className="text-[8px] md:text-[9px] text-brand-ink/30 uppercase tracking-widest font-medium">
-                            {segment === 'VISIO' ? '+ de 25h disponible' : lang === 'FR' ? 'Réservation requise' : 'Reserva requerida'}
+                            {segment === 'VISIO' ? l.hoursAvailable : l.bookingRequired}
                           </p>
                         </div>
                       </div>
@@ -555,9 +616,9 @@ export function LandingPage({
             <button
               type="button"
               onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
-              className="inline-flex items-center justify-center rounded-full border border-brand-accent/35 bg-brand-accent px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-white shadow-[0_12px_24px_rgba(156,146,132,0.35)] transition hover:brightness-95"
+              className={`${goldCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
             >
-              On démarre
+              {l.start}
             </button>
           </div>
         </section>
@@ -565,8 +626,8 @@ export function LandingPage({
         {/* Testimonials */}
         <section className="mb-32">
           <div className="text-center mb-12">
-            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">Les adhérentes alias Mangitas</span>
-            <h2 className="text-4xl font-serif font-normal italic tracking-tight mb-10">{lang === 'FR' ? 'Vos retours' : 'Vuestras opiniones'}</h2>
+            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">{l.testimonialsLabel}</span>
+            <h2 className="text-4xl font-serif font-normal italic tracking-tight mb-10">{l.reviews}</h2>
             
             {/* Grouped Avatars Row - Structural inspiration from Canva */}
             <div className="flex justify-center -space-x-5 mb-6">
@@ -593,7 +654,7 @@ export function LandingPage({
               <div className="flex gap-0.5 text-brand-accent">
                 {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="currentColor" strokeWidth={0} />)}
               </div>
-              <span className="text-[8px] tracking-[0.2em] uppercase text-brand-ink/30 font-bold">Plus de 500 avis positifs</span>
+              <span className="text-[8px] tracking-[0.2em] uppercase text-brand-ink/30 font-bold">{l.positiveReviews}</span>
             </div>
           </div>
 
@@ -631,28 +692,35 @@ export function LandingPage({
           </div>
         </section>
 
-        {blogPreviews.length > 0 ? (
+        {visibleBlogPreviews.length > 0 ? (
           <section className="py-16 md:py-24">
             <div className="mb-10 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">Le Blog</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">{l.blogLabel}</p>
               <h2 className="mt-3 font-serif text-4xl italic text-brand-ink">
-                {lang === 'FR' ? 'Inspiration Pilates & bien-être' : 'Inspiración Pilates y bienestar'}
+                {l.blogTitle}
               </h2>
             </div>
-            <div className="grid gap-5 md:grid-cols-3">
-              {blogPreviews.map((article) => (
+            <div
+              className={`grid gap-5 ${
+                visibleBlogPreviews.length === 1
+                  ? 'mx-auto max-w-sm'
+                  : visibleBlogPreviews.length === 2
+                    ? 'mx-auto max-w-3xl md:grid-cols-2'
+                    : 'md:grid-cols-3'
+              }`}
+            >
+              {visibleBlogPreviews.map((article) => (
                 <button
                   key={article.title}
                   type="button"
                   onClick={() => setSelectedCourse(onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0] ?? null)}
                   className="group overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/70 text-left shadow-[0_18px_50px_rgba(48,35,28,0.08)] transition hover:-translate-y-1"
                 >
-                  {article.coverImageUrl ? (
-                    <img src={article.coverImageUrl} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
-                  ) : (
-                    <div className="h-40 bg-brand-sand/40" />
-                  )}
+                  <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
                   <div className="p-5">
+                    {article.categoryLabel ? (
+                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{article.categoryLabel}</p>
+                    ) : null}
                     <h3 className="font-serif text-xl italic text-brand-ink">{article.title}</h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{article.excerpt}</p>
                   </div>
@@ -663,11 +731,9 @@ export function LandingPage({
               <button
                 type="button"
                 onClick={() => setSelectedCourse(onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0] ?? null)}
-                className="rounded-full bg-brand-accent px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em] text-white shadow-lg"
+                className={`${goldCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
               >
-                {lang === 'FR'
-                  ? 'Accédez au blog complet en devenant membre Visio — à partir de 39€/mois'
-                  : 'Accede al blog completo como miembro Visio — desde 39€/mes'}
+                {l.blogCta}
               </button>
             </div>
           </section>
@@ -680,8 +746,8 @@ export function LandingPage({
             © 2024 {t.title} Studio
           </p>
           <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
-            <a href="#" className="hover:text-brand-ink transition-colors">Privacy</a>
-            <a href="#" className="hover:text-brand-ink transition-colors">Terms</a>
+            <a href="#" className="hover:text-brand-ink transition-colors">{l.privacy}</a>
+            <a href="#" className="hover:text-brand-ink transition-colors">{l.terms}</a>
           </div>
           <div className="mt-6 flex justify-center">
             <Link

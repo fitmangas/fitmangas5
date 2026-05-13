@@ -20,7 +20,6 @@ export default async function CompteBoutiquePage() {
     lang === 'en'
       ? {
           title: 'FitMangas Shop',
-          available: 'Available products',
           inProgress: 'In progress',
           orders: 'My orders',
           seeTracking: 'See tracking',
@@ -30,7 +29,6 @@ export default async function CompteBoutiquePage() {
       : lang === 'es'
         ? {
             title: 'Tienda FitMangas',
-            available: 'Productos disponibles',
             inProgress: 'En curso',
             orders: 'Mis pedidos',
             seeTracking: 'Ver seguimiento',
@@ -39,7 +37,6 @@ export default async function CompteBoutiquePage() {
           }
         : {
             title: 'Boutique FitMangas',
-            available: 'Produits disponibles',
             inProgress: 'En cours',
             orders: 'Mes commandes',
             seeTracking: 'Voir le suivi',
@@ -62,24 +59,20 @@ export default async function CompteBoutiquePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-5 pb-16 pt-3 md:px-8">
-      <section className="grid gap-4 md:-mx-8 md:grid-cols-3 xl:-mx-12">
-        <GlassCard className="p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-luxury-soft">{t.available}</p>
-          <p className="mt-2 text-3xl font-semibold text-luxury-ink">{products.length}</p>
-        </GlassCard>
-        <Link href="/compte/boutique/en-cours">
-          <GlassCard className="h-full border border-black/8 p-5 transition hover:-translate-y-0.5 hover:border-luxury-orange/35 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
-            <p className="text-xs uppercase tracking-[0.16em] text-luxury-soft">{t.inProgress}</p>
-            <p className="mt-2 text-3xl font-semibold text-luxury-ink">{myInProgress.length}</p>
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted">{t.seeTracking}</p>
-          </GlassCard>
+      <section className="flex flex-wrap justify-center gap-3">
+        <Link
+          href="/compte/boutique/en-cours"
+          className="rounded-full border border-black/8 bg-white/65 px-5 py-3 text-center shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-luxury-orange/35 hover:bg-white/85"
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">{t.inProgress}</span>
+          <span className="ml-2 rounded-full bg-luxury-ink/8 px-2 py-0.5 text-xs font-semibold text-luxury-ink">{myInProgress.length}</span>
         </Link>
-        <Link href="/compte/boutique/commandes">
-          <GlassCard className="h-full border border-black/8 p-5 transition hover:-translate-y-0.5 hover:border-luxury-orange/35 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
-            <p className="text-xs uppercase tracking-[0.16em] text-luxury-soft">{t.orders}</p>
-            <p className="mt-2 text-3xl font-semibold text-luxury-ink">{myOrders.length}</p>
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted">{t.seeHistory}</p>
-          </GlassCard>
+        <Link
+          href="/compte/boutique/commandes"
+          className="rounded-full border border-black/8 bg-white/65 px-5 py-3 text-center shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-luxury-orange/35 hover:bg-white/85"
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">{t.orders}</span>
+          <span className="ml-2 rounded-full bg-luxury-ink/8 px-2 py-0.5 text-xs font-semibold text-luxury-ink">{myOrders.length}</span>
         </Link>
       </section>
 

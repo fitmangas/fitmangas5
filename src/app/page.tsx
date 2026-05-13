@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 
 import { LandingPage } from '@/components/LandingPage';
+import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   let vimeoShowcase: { title: string; thumbnailUrl: string | null }[] = [];
-  let blogPreviews: { title: string; excerpt: string | null; coverImageUrl: string | null }[] = [];
+  let blogPreviews: { title: string; excerpt: string | null; coverImageUrl: string | null; categoryLabel: string | null }[] = [];
 
   try {
     const admin = createAdminClient();
@@ -51,15 +52,31 @@ export default async function HomePage() {
 
     const { data: articles } = await admin
       .from('blog_articles')
-      .select('title_fr, description_fr, featured_image_url, published_at')
+      .select('title_fr, description_fr, featured_image_url, published_at, blog_categories ( label_fr, slug )')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(3);
-    blogPreviews = (articles ?? []).map((row) => ({
-      title: String(row.title_fr ?? ''),
-      excerpt: row.description_fr ? String(row.description_fr) : null,
-      coverImageUrl: row.featured_image_url ? String(row.featured_image_url) : null,
-    }));
+    const usedImages = new Set<string>();
+    blogPreviews = (articles ?? []).map((row, index) => {
+      const category = Array.isArray(row.blog_categories) ? row.blog_categories[0] : row.blog_categories;
+      const categoryLabel =
+        typeof category?.label_fr === 'string'
+          ? category.label_fr
+          : typeof category?.slug === 'string'
+            ? category.slug
+            : null;
+      return {
+        title: String(row.title_fr ?? ''),
+        excerpt: row.description_fr ? String(row.description_fr) : null,
+        coverImageUrl: uniqueBlogImageUrl({
+          coverImageUrl: row.featured_image_url ? String(row.featured_image_url) : null,
+          categoryLabel,
+          index,
+          used: usedImages,
+        }),
+        categoryLabel,
+      };
+    });
   } catch {
     vimeoShowcase = [];
     blogPreviews = [];

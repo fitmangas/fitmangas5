@@ -5,6 +5,7 @@ import { Heart, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import type { StandaloneVimeoLibraryItem } from '@/lib/standalone-vimeo-library';
+import { VIMEO_FOLDER_UNCATEGORIZED } from '@/lib/vimeo-folder';
 
 function formatStandaloneDuration(seconds: number | null): string {
   if (seconds == null || seconds < 0) return '';
@@ -107,6 +108,8 @@ export function StandaloneVimeoGrid({
     const byFolder = new Map<string, StandaloneVimeoLibraryItem[]>();
     for (const video of videos) {
       const key = video.folderName?.trim() || 'Sans dossier';
+      if (key === VIMEO_FOLDER_UNCATEGORIZED || key === 'Sans dossier') continue;
+      if (!video.vimeoVideoId && !video.embedUrl?.trim()) continue;
       const arr = byFolder.get(key) ?? [];
       arr.push(video);
       byFolder.set(key, arr);

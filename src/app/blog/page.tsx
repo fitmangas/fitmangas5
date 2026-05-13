@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import type { BlogLang } from '@/types/blog';
@@ -56,7 +57,26 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const { data: cats } = await supabase.from('blog_categories').select('*').order('sort_order');
 
   const total = count ?? 0;
-  const hero = articles?.[0];
+  const usedImages = new Set<string>();
+  const displayArticles = (articles ?? []).map((article, index) => {
+    const category = Array.isArray(article.blog_categories) ? article.blog_categories[0] : article.blog_categories;
+    const categoryLabel =
+      typeof category?.label_fr === 'string'
+        ? category.label_fr
+        : typeof category?.slug === 'string'
+          ? category.slug
+          : null;
+    return {
+      ...article,
+      displayImageUrl: uniqueBlogImageUrl({
+        coverImageUrl: article.featured_image_url,
+        categoryLabel,
+        index,
+        used: usedImages,
+      }),
+    };
+  });
+  const hero = displayArticles[0];
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">
@@ -113,7 +133,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
       <section className="mt-14">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Tous les articles</h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {(articles ?? []).slice(page === 1 && hero ? 1 : 0).map((a) => (
+          {displayArticles.slice(page === 1 && hero ? 1 : 0).map((a) => (
             <ArticleCard key={a.id} article={asListArticle(a) as BlogCardArticle & { id: string }} lang={lang} />
           ))}
         </div>
@@ -170,6 +190,7 @@ function FilterChip({
 
 type BlogCardArticle = Parameters<typeof pickLocalizedArticle>[0] & {
   featured_image_url: string | null;
+  displayImageUrl: string;
   average_rating: number | null;
   rating_count: number | null;
   view_count: number | null;
@@ -190,12 +211,8 @@ function HeroArticle({ article, lang }: { article: BlogCardArticle; lang: BlogLa
   return (
     <article className="glass-card mt-12 grid gap-8 overflow-hidden rounded-[2rem] p-6 lg:grid-cols-2 lg:p-10">
       <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/35 bg-white/25">
-        {article.featured_image_url ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={article.featured_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full min-h-[220px] items-center justify-center text-luxury-soft">Fit Mangas</div>
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={article.displayImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="flex flex-col justify-center">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-orange-600">À la une</p>
@@ -245,10 +262,8 @@ function ArticleCard({
   return (
     <Link href={href} className="glass-card group flex flex-col overflow-hidden rounded-2xl border border-white/35 transition hover:border-orange-200/80">
       <div className="relative aspect-[16/10] overflow-hidden bg-white/30">
-        {article.featured_image_url ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={article.featured_image_url} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-        ) : null}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={article.displayImageUrl} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
       </div>
       <div className="flex flex-1 flex-col p-5">
         <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{cat}</span>

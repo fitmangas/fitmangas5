@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { BlogFavoriteToggle } from '@/components/Compte/BlogFavoriteToggle';
+import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { getClientLang } from '@/lib/compte/i18n';
 
 type SearchParams = Promise<{ q?: string; category?: string; tab?: string; sort?: string; page?: string }>;
@@ -164,8 +165,27 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     if (sort === 'rating') return (b.average_rating ?? 0) - (a.average_rating ?? 0);
     return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
   });
-  const hero = sortedBase[0];
-  const rest = sortedBase.slice(1);
+  const usedImages = new Set<string>();
+  const displayArticles = sortedBase.map((article, index) => {
+    const category = Array.isArray(article.blog_categories) ? article.blog_categories[0] : article.blog_categories;
+    const categoryLabel =
+      typeof category?.label_fr === 'string'
+        ? category.label_fr
+        : typeof category?.slug === 'string'
+          ? category.slug
+          : null;
+    return {
+      ...article,
+      displayImageUrl: uniqueBlogImageUrl({
+        coverImageUrl: article.featured_image_url,
+        categoryLabel,
+        index,
+        used: usedImages,
+      }),
+    };
+  });
+  const hero = displayArticles[0];
+  const rest = displayArticles.slice(1);
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedRest = rest.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -281,10 +301,8 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
       {hero ? (
         <section className="glass-card mt-10 grid gap-6 overflow-hidden rounded-[2rem] p-6 md:grid-cols-2 md:p-8">
           <div className="overflow-hidden rounded-2xl border border-white/35 bg-white/25">
-            {hero.featured_image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={hero.featured_image_url} alt="" className="h-full w-full object-cover" />
-            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={hero.displayImageUrl} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="flex flex-col justify-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
@@ -306,7 +324,12 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedRest.map((a) => (
-            <article key={a.id} className="glass-card rounded-2xl border border-white/40 p-4">
+            <article key={a.id} className="glass-card overflow-hidden rounded-2xl border border-white/40">
+              <div className="aspect-[16/10] bg-white/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a.displayImageUrl} alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="p-4">
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">
                 {pickCategoryLabel(a)}
               </p>
@@ -320,6 +343,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
                 >
                   {t.open}
                 </Link>
+              </div>
               </div>
             </article>
           ))}
