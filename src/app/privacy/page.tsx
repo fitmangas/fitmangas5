@@ -2,7 +2,18 @@ import Link from 'next/link';
 
 export const metadata = {
   title: 'Politique de confidentialité — FitMangas',
-  description: 'Politique de confidentialité FitMangas.',
+  description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+  openGraph: {
+    title: 'Politique de confidentialité — FitMangas',
+    description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+    images: ['/client-contact-photo.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Politique de confidentialité — FitMangas',
+    description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+    images: ['/client-contact-photo.png'],
+  },
 };
 
 export default function PrivacyPage() {

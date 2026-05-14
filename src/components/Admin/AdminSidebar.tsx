@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BellRing, BookOpen, Clapperboard, ShoppingBag, TicketPercent, Video } from 'lucide-react';
+import { BellRing, BookOpen, Clapperboard, Rocket, ShoppingBag, TicketPercent, Video } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -12,6 +12,7 @@ const links = [
   { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
+  { href: '/admin/marketing', label: 'Marketing', icon: Rocket },
   { href: '/admin/notifications/settings', label: 'Notifications', icon: BellRing },
 ];
 

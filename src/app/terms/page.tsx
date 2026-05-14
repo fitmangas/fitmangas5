@@ -3,6 +3,17 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Conditions générales — FitMangas',
   description: 'Conditions générales de vente et d’utilisation FitMangas.',
+  openGraph: {
+    title: 'Conditions générales — FitMangas',
+    description: 'Conditions générales de vente et d’utilisation FitMangas.',
+    images: ['/client-contact-photo.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Conditions générales — FitMangas',
+    description: 'Conditions générales de vente et d’utilisation FitMangas.',
+    images: ['/client-contact-photo.png'],
+  },
 };
 
 export default function TermsPage() {

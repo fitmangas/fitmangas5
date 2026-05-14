@@ -17,22 +17,24 @@ function landingLangFromAcceptLanguage(value: string | null): 'FR' | 'ES' {
 }
 
 export const metadata: Metadata = {
-  title: 'Fit Mangas — Pilates en visio et en studio',
-  description: 'Cours de Pilates et Barre avec Alejandra : visio collectif, individuel, replay et accompagnement premium.',
+  title: 'FitMangas — Cours de Pilates & Barre en visio avec Alejandra',
+  description: 'Cours de Pilates et Barre en visio avec Alejandra : live, replay, progression et coaching premium.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Fit Mangas — Pilates en visio et en studio',
-    description: 'Rejoins Fit Mangas : cours live, replay, progression et coaching premium.',
+    title: 'FitMangas — Cours de Pilates & Barre en visio avec Alejandra',
+    description: 'Cours de Pilates et Barre en visio avec Alejandra : live, replay, progression et coaching premium.',
     url: APP_URL,
-    siteName: 'Fit Mangas',
+    siteName: 'FitMangas',
     type: 'website',
+    images: ['/client-contact-photo.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Fit Mangas — Pilates en visio et en studio',
-    description: 'Cours live, replay et progression personnalisée.',
+    title: 'FitMangas — Cours de Pilates & Barre en visio avec Alejandra',
+    description: 'Cours de Pilates et Barre en visio avec Alejandra : live, replay, progression et coaching premium.',
+    images: ['/client-contact-photo.png'],
   },
 };
 

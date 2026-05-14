@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
@@ -8,6 +9,22 @@ import { hasVisioClientAccess } from '@/lib/access-control';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
+
+export const metadata: Metadata = {
+  title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+  description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+  openGraph: {
+    title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+    description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+    images: ['/client-contact-photo.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+    description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+    images: ['/client-contact-photo.png'],
+  },
+};
 
 type Search = { q?: string; category?: string; page?: string; lang?: string };
 

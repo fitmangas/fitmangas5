@@ -25,12 +25,26 @@ export async function generateMetadata(props: {
   const lang = (sp.lang === 'es' ? 'es' : 'fr') as BlogLang;
   const title =
     lang === 'es' ? article.title_es ?? article.title_fr : article.title_fr;
+  const description =
+    lang === 'es'
+      ? article.meta_description_es ?? article.description_es ?? article.description_fr ?? undefined
+      : article.meta_description_fr ?? article.description_fr ?? undefined;
+  const image = article.featured_image_url || '/client-contact-photo.png';
   return {
-    title: `${title} — Blog`,
-    description:
-      lang === 'es'
-        ? article.meta_description_es ?? article.description_es ?? article.description_fr
-        : article.meta_description_fr ?? article.description_fr ?? undefined,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      images: [image],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 
