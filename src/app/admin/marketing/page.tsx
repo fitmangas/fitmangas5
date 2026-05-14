@@ -2,9 +2,13 @@ import Link from 'next/link';
 import { BarChart3, CheckCircle2, Circle, Rocket, Search, TrendingUp } from 'lucide-react';
 
 import { BusinessCharts, NotificationChart, type BusinessStatsPoint, type NotificationPoint } from '@/components/Admin/MarketingCharts';
+import { MarketingAnalyticsLive } from '@/components/Admin/marketing/MarketingAnalyticsLive';
+import { MarketingEditorialCalendarSection } from '@/components/Admin/marketing/MarketingEditorialCalendarSection';
+import { MarketingSearchConsoleLive } from '@/components/Admin/marketing/MarketingSearchConsoleLive';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
+import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 import { saveMarketingSettings, toggleMarketingChecklist } from './actions';
@@ -120,6 +124,41 @@ export default async function AdminMarketingPage() {
   const confirmedRate = newsletterTotal ? Math.round(((newsletterConfirmed ?? 0) / newsletterTotal) * 100) : 0;
   const topArticles = articles.slice(0, 10);
   const seoPages = publicSeoPages(t);
+  const googleApisConnected = hasGoogleServiceAccountJson();
+  const googleSetupDocLabel = 'docs/google-cloud-setup.md';
+
+  const nowIsoMarketing = new Date().toISOString();
+  const { data: scheduledRaw } = await admin
+    .from('blog_articles')
+    .select('id, title_fr, scheduled_publication_at, status')
+    .gte('scheduled_publication_at', nowIsoMarketing)
+    .in('status', ['draft', 'validated'])
+    .order('scheduled_publication_at', { ascending: true })
+    .limit(8);
+
+  const { data: suggestionsRaw } = await admin
+    .from('marketing_editorial_suggestions')
+    .select('id, suggestion_fr, suggestion_es, topics_hint, created_at')
+    .order('created_at', { ascending: false })
+    .limit(12);
+
+  const { data: referralRows } = await admin.from('referrals').select('referrer_user_id');
+  const refList = (referralRows ?? []) as { referrer_user_id: string }[];
+  const countMap = new Map<string, number>();
+  for (const r of refList) {
+    countMap.set(r.referrer_user_id, (countMap.get(r.referrer_user_id) ?? 0) + 1);
+  }
+  const sortedReferrers = [...countMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
+  const referrerIds = sortedReferrers.map(([id]) => id);
+  const { data: referrerProfiles } = referrerIds.length
+    ? await admin.from('profiles').select('id, first_name').in('id', referrerIds)
+    : { data: [] as { id: string; first_name: string | null }[] };
+  const nameById = new Map((referrerProfiles ?? []).map((p) => [p.id, p.first_name ?? '—']));
+  const referralLeaderboard = sortedReferrers.map(([id, count]) => ({
+    id,
+    count,
+    name: nameById.get(id) ?? '—',
+  }));
 
   return (
     <main className="mx-auto max-w-[1280px] space-y-8 px-2 pb-20 pt-3 md:px-6 md:pt-6">
@@ -193,6 +232,10 @@ export default async function AdminMarketingPage() {
             </div>
           </Panel>
         </div>
+
+        <Panel title={t.gscLiveTitle}>
+          <MarketingSearchConsoleLive docFileLabel={googleSetupDocLabel} connected={googleApisConnected} />
+        </Panel>
       </section>
 
       <section id="analytics" className="space-y-5 scroll-mt-28 md:scroll-mt-8">
@@ -202,6 +245,10 @@ export default async function AdminMarketingPage() {
           <StatusCard title="Google Search Console" ok value={t.searchConsoleDnsStatus} />
           <StatusCard title="Meta Pixel" ok={Boolean(settings.meta_pixel_id)} value={settings.meta_pixel_id ? t.active : t.notConfigured} />
         </div>
+
+        <Panel title={t.gaLiveTitle}>
+          <MarketingAnalyticsLive docFileLabel={googleSetupDocLabel} connected={googleApisConnected} />
+        </Panel>
 
         <form action={saveMarketingSettings} className="grid gap-4 rounded-[2rem] border border-white/65 bg-white/60 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-4">
           <Field label="GA4 Measurement ID" name="google_analytics_id" defaultValue={settings.google_analytics_id} placeholder="G-XXXXXXXXXX" />
@@ -235,9 +282,14 @@ export default async function AdminMarketingPage() {
                 {topArticles.map((article) => (
                   <tr key={article.id} className="border-t border-white/50">
                     <td className="px-3 py-3">
-                      <Link className="font-medium text-luxury-ink underline-offset-2 hover:underline" href={`/admin/blog/articles/${article.id}/stats`}>
-                        {article.title_fr}
-                      </Link>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                        <Link className="font-medium text-luxury-ink underline-offset-2 hover:underline" href={`/admin/blog/articles/${article.id}/stats`}>
+                          {article.title_fr}
+                        </Link>
+                        <Link className="text-xs font-semibold text-orange-700 underline-offset-2 hover:underline" href={`/admin/blog/articles/${article.id}/edit`}>
+                          {t.editArticle}
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-3 py-3">{article.view_count ?? 0}</td>
                     <td className="px-3 py-3">{formatSeconds(article.average_time_spent_seconds ?? 0)}</td>
@@ -249,6 +301,13 @@ export default async function AdminMarketingPage() {
             </table>
           </div>
         </Panel>
+
+        <Panel title={t.editorialTitle}>
+          <MarketingEditorialCalendarSection
+            scheduled={(scheduledRaw ?? []) as Array<{ id: string; title_fr: string; scheduled_publication_at: string; status: string }>}
+            suggestions={(suggestionsRaw ?? []) as Array<{ id: string; suggestion_fr: string; suggestion_es: string | null; topics_hint: string | null; created_at: string }>}
+          />
+        </Panel>
       </section>
 
       <section id="marketing" className="space-y-5 scroll-mt-28 md:scroll-mt-8">
@@ -259,6 +318,61 @@ export default async function AdminMarketingPage() {
           <Kpi label={t.confirmationRate} value={`${confirmedRate}%`} />
         </div>
         <NotificationChart data={notificationData} />
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Panel title={t.metaAdsTitle}>
+            <p className="text-sm leading-6 text-luxury-muted">{t.metaAdsHelp}</p>
+            <a
+              href="https://adsmanager.facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-orange-800 underline underline-offset-2"
+            >
+              {t.metaAdsLink} →
+            </a>
+          </Panel>
+          <Panel title={t.googleAdsTitle}>
+            <p className="text-sm leading-6 text-luxury-muted">{t.googleAdsHelp}</p>
+            <a
+              href="https://ads.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-orange-800 underline underline-offset-2"
+            >
+              {t.googleAdsLink} →
+            </a>
+          </Panel>
+        </div>
+
+        <Panel title={t.referralLeaderTitle}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[400px] text-left text-sm">
+              <thead className="text-[10px] uppercase tracking-[0.14em] text-luxury-soft">
+                <tr>
+                  <th className="px-3 py-2">{t.referralAmbassador}</th>
+                  <th className="px-3 py-2">{t.referralCount}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {referralLeaderboard.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="px-3 py-4 text-luxury-muted">
+                      {t.referralEmpty}
+                    </td>
+                  </tr>
+                ) : (
+                  referralLeaderboard.map((row) => (
+                    <tr key={row.id} className="border-t border-white/50">
+                      <td className="px-3 py-3 font-medium text-luxury-ink">{row.name}</td>
+                      <td className="px-3 py-3">{row.count}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+
         <Panel title={t.checklistTitle}>
           <div className="grid gap-4 lg:grid-cols-4">
             {(['seo', 'social', 'ads', 'community'] as const).map((category) => (
@@ -439,6 +553,21 @@ const copy = {
     articleMetaDescription: 'Chaque article utilise son titre, sa description, Open Graph et Twitter Card.',
     privacyDescription: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
     termsDescription: 'Conditions générales de vente et d’utilisation FitMangas.',
+    gaLiveTitle: 'Google Analytics — Données en direct',
+    gscLiveTitle: 'Google Search Console — Données en direct',
+    editorialTitle: 'Calendrier éditorial',
+    editArticle: 'Éditer',
+    metaAdsTitle: 'Performances Meta Ads',
+    metaAdsHelp:
+      'Les performances de vos publicités Instagram et Facebook sont disponibles directement dans le gestionnaire de publicités Meta.',
+    metaAdsLink: 'Voir les performances Meta Ads',
+    googleAdsTitle: 'Performances Google Ads',
+    googleAdsHelp: 'Les performances Google Ads se consultent dans votre compte Google Ads.',
+    googleAdsLink: 'Voir les performances Google Ads',
+    referralLeaderTitle: 'Classement parrainage (ambassadrices)',
+    referralAmbassador: 'Ambassadrice',
+    referralCount: 'Filleules enregistrées',
+    referralEmpty: 'Aucune filleule enregistrée pour le moment.',
   },
   es: {
     title: 'SEO & Marketing',
@@ -475,5 +604,20 @@ const copy = {
     articleMetaDescription: 'Cada artículo usa su título, descripción, Open Graph y Twitter Card.',
     privacyDescription: 'Política de privacidad FitMangas e información sobre datos personales.',
     termsDescription: 'Condiciones generales de venta y uso de FitMangas.',
+    gaLiveTitle: 'Google Analytics — Datos en directo',
+    gscLiveTitle: 'Google Search Console — Datos en directo',
+    editorialTitle: 'Calendario editorial',
+    editArticle: 'Editar',
+    metaAdsTitle: 'Rendimiento Meta Ads',
+    metaAdsHelp:
+      'El rendimiento de tus anuncios en Instagram y Facebook está disponible directamente en el administrador de anuncios de Meta.',
+    metaAdsLink: 'Ver rendimiento Meta Ads',
+    googleAdsTitle: 'Rendimiento Google Ads',
+    googleAdsHelp: 'El rendimiento de Google Ads se consulta en tu cuenta de Google Ads.',
+    googleAdsLink: 'Ver rendimiento Google Ads',
+    referralLeaderTitle: 'Ranking de referidos (embajadoras)',
+    referralAmbassador: 'Embajadora',
+    referralCount: 'Referidas registradas',
+    referralEmpty: 'Todavía no hay referidas registradas.',
   },
 };

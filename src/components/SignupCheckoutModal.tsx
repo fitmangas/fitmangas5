@@ -138,6 +138,10 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
         return;
       }
 
+      if (data.session) {
+        void fetch('/api/referrals/attach', { method: 'POST', credentials: 'include' }).catch(() => {});
+      }
+
       if (!data.session) {
         setInfo(labels.needConfirm);
         return;

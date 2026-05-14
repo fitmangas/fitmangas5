@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BarChart3, ClipboardCheck, Mail } from 'lucide-react';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { GenerateSeoArticleButton } from '@/components/Admin/blog/GenerateSeoArticleButton';
 
 export default async function AdminBlogHubPage() {
   await requireAdmin();
@@ -31,6 +32,10 @@ export default async function AdminBlogHubPage() {
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Admin</p>
       <h1 className="hero-signature-title mt-2 text-3xl">Blog Pilates</h1>
       <p className="mt-3 text-sm text-luxury-muted">Pilotage éditorial, publication et analytics.</p>
+
+      <div className="mt-6">
+        <GenerateSeoArticleButton />
+      </div>
 
       <div className="mt-10 grid gap-4">
         {cards.map(({ href, title, desc, icon: Icon }) => (

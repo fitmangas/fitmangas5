@@ -161,12 +161,20 @@ export default async function AdminBlogCalendarPage() {
                           )}
                         </td>
                         <td className="py-3">
-                          <Link
-                            href={`/admin/blog/articles/${article.id}/stats`}
-                            className="text-xs font-semibold uppercase tracking-[0.12em] text-luxury-muted underline underline-offset-2"
-                          >
-                            Stats
-                          </Link>
+                          <div className="flex flex-wrap gap-3">
+                            <Link
+                              href={`/admin/blog/articles/${article.id}/edit`}
+                              className="text-xs font-semibold uppercase tracking-[0.12em] text-orange-700 underline underline-offset-2"
+                            >
+                              Éditer
+                            </Link>
+                            <Link
+                              href={`/admin/blog/articles/${article.id}/stats`}
+                              className="text-xs font-semibold uppercase tracking-[0.12em] text-luxury-muted underline underline-offset-2"
+                            >
+                              Stats
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))}

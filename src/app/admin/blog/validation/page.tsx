@@ -222,6 +222,12 @@ export default async function AdminBlogValidationPage() {
                       categoryLabel={displayArticle.blog_categories?.label_fr ?? 'Catégorie'}
                     />
                     <Link
+                      href={`/admin/blog/articles/${article.id}/edit`}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-orange-700 underline underline-offset-2"
+                    >
+                      Éditer
+                    </Link>
+                    <Link
                       href={`/admin/blog/articles/${article.id}/stats`}
                       className="text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted underline underline-offset-2"
                     >

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, Gift, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -14,6 +14,7 @@ const links = [
   { href: '/compte/blog', key: 'blog', icon: BookOpen },
   { href: '/compte/replays', key: 'videos', icon: Video },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag },
+  { href: '/compte/parrainage', key: 'referral', icon: Gift },
   { href: '/compte/profil', key: 'profile', icon: UserRound },
   { href: '/compte/preferences', key: 'preferences', icon: Settings },
 ] as const;

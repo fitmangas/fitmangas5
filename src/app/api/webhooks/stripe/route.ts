@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { markReferralsSubscribedForUser } from '@/lib/referrals/attach';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   dispatchPaymentFailed,
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
         if (session.mode === 'subscription') {
           const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null;
           await dispatchSubscriptionActivated(admin, userId, courseId, customerId, subscriptionId);
+          await markReferralsSubscribedForUser(admin, userId);
         } else if (session.mode === 'payment') {
           const concreteCourseId = session.metadata?.concrete_course_id ?? (await findNextPresentialCourse(admin, courseId));
           await admin.from('profiles').update({ stripe_customer_id: customerId, last_checkout_course_id: courseId, updated_at: new Date().toISOString() }).eq('id', userId);
@@ -101,7 +103,10 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.supabase_user_id ?? (await findUserIdByCustomer(admin, asString(subscription.customer)));
         const courseId = subscription.metadata?.course_id;
-        if (userId && courseId) await dispatchSubscriptionActivated(admin, userId, courseId, asString(subscription.customer), subscription.id);
+        if (userId && courseId) {
+          await dispatchSubscriptionActivated(admin, userId, courseId, asString(subscription.customer), subscription.id);
+          await markReferralsSubscribedForUser(admin, userId);
+        }
         break;
       }
       case 'customer.subscription.deleted': {
