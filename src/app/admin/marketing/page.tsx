@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, CheckCircle2, Circle, Rocket, Search, Settings2, TrendingUp } from 'lucide-react';
+import { BarChart3, CheckCircle2, Circle, Rocket, Search, TrendingUp } from 'lucide-react';
 
 import { BusinessCharts, NotificationChart, type BusinessStatsPoint, type NotificationPoint } from '@/components/Admin/MarketingCharts';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
@@ -69,7 +69,6 @@ const fallbackChecklist: ChecklistRow[] = [
 export default async function AdminMarketingPage() {
   const { user, supabase } = await requireAdmin();
   const lang = await getClientLang(supabase, user.id);
-  const locale = lang === 'es' ? 'es-ES' : 'fr-FR';
   const t = copy[lang === 'es' ? 'es' : 'fr'];
   const admin = createAdminClient();
   const settings = await getMarketingSettings();
@@ -200,29 +199,23 @@ export default async function AdminMarketingPage() {
         <SectionTitle icon={<TrendingUp size={18} />} eyebrow={t.tabs.analytics} title={t.analyticsTitle} />
         <div className="grid gap-4 md:grid-cols-3">
           <StatusCard title="Google Analytics" ok={Boolean(settings.google_analytics_id)} value={settings.google_analytics_id ? t.active : t.notConfigured} />
-          <StatusCard title="Google Search Console" ok={Boolean(settings.search_console_code)} value={settings.search_console_code ? t.active : t.notConfigured} />
+          <StatusCard title="Google Search Console" ok value={t.searchConsoleDnsStatus} />
           <StatusCard title="Meta Pixel" ok={Boolean(settings.meta_pixel_id)} value={settings.meta_pixel_id ? t.active : t.notConfigured} />
         </div>
 
-        <form action={saveMarketingSettings} className="grid gap-4 rounded-[2rem] border border-white/65 bg-white/60 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-5">
+        <form action={saveMarketingSettings} className="grid gap-4 rounded-[2rem] border border-white/65 bg-white/60 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl md:grid-cols-2 xl:grid-cols-4">
           <Field label="GA4 Measurement ID" name="google_analytics_id" defaultValue={settings.google_analytics_id} placeholder="G-XXXXXXXXXX" />
-          <Field label="Google verification" name="search_console_code" defaultValue={settings.search_console_code} placeholder="google-site-verification" />
           <Field label="Meta Pixel ID" name="meta_pixel_id" defaultValue={settings.meta_pixel_id} placeholder="1234567890" />
           <Field label="Instagram" name="instagram_handle" defaultValue={settings.instagram_handle} placeholder="@fitmangas" />
           <Field label="TikTok" name="tiktok_handle" defaultValue={settings.tiktok_handle} placeholder="@fitmangas" />
-          <div className="md:col-span-2 xl:col-span-5">
+          <div className="md:col-span-2 xl:col-span-4">
             <button className="btn-luxury-primary min-h-[44px] px-5 text-xs" type="submit">{t.saveSettings}</button>
           </div>
         </form>
 
         <div className="rounded-[2rem] border border-white/65 bg-white/60 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl">
           <h3 className="text-lg font-semibold text-luxury-ink">{t.searchConsoleTitle}</h3>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-luxury-muted">
-            <li>{t.searchConsoleSteps[0]} <a className="underline" href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Google Search Console</a></li>
-            <li>{t.searchConsoleSteps[1]}</li>
-            <li>{t.searchConsoleSteps[2]}</li>
-            <li>{t.searchConsoleSteps[3]}</li>
-          </ol>
+          <p className="mt-3 text-sm leading-6 text-luxury-muted">{t.searchConsoleNote}</p>
         </div>
 
         <BusinessCharts data={businessData} />
@@ -428,12 +421,8 @@ const copy = {
     notConfigured: 'Non configuré',
     saveSettings: 'Enregistrer les réglages',
     searchConsoleTitle: 'Connecter Google Search Console',
-    searchConsoleSteps: [
-      'Aller sur',
-      'Ajouter la propriété fitmangas.com.',
-      'Choisir la vérification via DNS TXT record.',
-      'Copier le code de vérification et le coller ci-dessus.',
-    ],
+    searchConsoleDnsStatus: 'Vérifié via DNS',
+    searchConsoleNote: '✅ Propriété vérifiée via DNS. Sitemap soumis.',
     blogTraffic: 'Trafic blog — articles les plus lus',
     views: 'Vues',
     avgTime: 'Temps moyen',
@@ -468,12 +457,8 @@ const copy = {
     notConfigured: 'No configurado',
     saveSettings: 'Guardar ajustes',
     searchConsoleTitle: 'Conectar Google Search Console',
-    searchConsoleSteps: [
-      'Ir a',
-      'Añadir la propiedad fitmangas.com.',
-      'Elegir verificación por DNS TXT record.',
-      'Copiar el código de verificación y pegarlo arriba.',
-    ],
+    searchConsoleDnsStatus: 'Verificado vía DNS',
+    searchConsoleNote: '✅ Propiedad verificada vía DNS. Sitemap enviado.',
     blogTraffic: 'Tráfico blog — artículos más leídos',
     views: 'Vistas',
     avgTime: 'Tiempo medio',

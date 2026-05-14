@@ -2,7 +2,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export type MarketingSettings = {
   google_analytics_id?: string;
-  search_console_code?: string;
   meta_pixel_id?: string;
   instagram_handle?: string;
   tiktok_handle?: string;
@@ -10,7 +9,6 @@ export type MarketingSettings = {
 
 const MARKETING_SETTING_KEYS = [
   'google_analytics_id',
-  'search_console_code',
   'meta_pixel_id',
   'instagram_handle',
   'tiktok_handle',

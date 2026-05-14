@@ -32,14 +32,10 @@ export default async function RootLayout({
 }>) {
   const settings = await getMarketingSettings();
   const gaId = settings.google_analytics_id?.startsWith('G-') ? settings.google_analytics_id : null;
-  const searchConsoleCode = settings.search_console_code;
   const metaPixelId = settings.meta_pixel_id;
 
   return (
     <html lang="fr">
-      <head>
-        {searchConsoleCode ? <meta name="google-site-verification" content={searchConsoleCode} /> : null}
-      </head>
       <body className="relative min-h-screen">
         <div className="relative min-h-screen">
           {children}
