@@ -208,7 +208,7 @@ export default async function AdminPage() {
       .from('courses')
       .select('id, title, starts_at, timezone')
       .eq('is_published', true)
-      .gte('starts_at', nowIso)
+      .gte('ends_at', nowIso)
       .order('starts_at', { ascending: true })
       .limit(42),
     adminDb.from('standalone_vimeo_videos').select('*', { count: 'exact', head: true }).eq('validation_status', 'pending'),

@@ -1,5 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz';
-import { fr as localeFr } from 'date-fns/locale';
+import { enUS, es, fr as localeFr } from 'date-fns/locale';
 
 import { COACH_PUBLISH_TIMEZONE, fromUserTime } from '@/lib/notifications/timezone';
 
@@ -21,6 +21,16 @@ export function getCourseTimezoneLabel(timeZone: string): string {
 
 export function getCourseTimezoneShortLabel(timeZone: string): string {
   return getCourseTimezoneLabel(timeZone).split(' — ')[0] ?? timeZone;
+}
+
+/** Étiquette courte pour l’affichage client (ex. « Paris »). */
+export function getCourseTimezoneDisplayTag(timeZone: string): string {
+  if (timeZone === 'Europe/Paris') return 'Paris';
+  if (timeZone === 'America/Mexico_City') return 'Mexico';
+  if (timeZone === 'Europe/Madrid') return 'Madrid';
+  if (timeZone === 'Europe/London') return 'Londres';
+  if (timeZone === 'America/New_York') return 'New York';
+  return timeZone.split('/').pop()?.replace(/_/g, ' ') ?? timeZone;
 }
 
 /** Affiche un instant UTC dans le fuseau cours pour les champs date + heure (24 h). */
@@ -115,6 +125,23 @@ export function convertCourseDatetimeBetweenTimezones(
   if (!isCompleteCourseDatetimeLocal(value)) return value;
   const iso = isoFromCourseDatetimeLocal(value, fromTimeZone);
   return snapCourseDatetimeLocalValue(toCourseDatetimeLocalValue(iso, toTimeZone));
+}
+
+/** Carte client : jour court + heure 24 h dans le fuseau cours. */
+export function formatCourseCardSchedule(
+  iso: string,
+  timeZone = DEFAULT_COURSE_TIMEZONE,
+  lang: 'fr' | 'en' | 'es' = 'fr',
+): string {
+  const locale = lang === 'en' ? enUS : lang === 'es' ? es : localeFr;
+  const pattern =
+    lang === 'en'
+      ? "EEE, MMM dd 'at' HH:mm"
+      : lang === 'es'
+        ? "EEE dd MMM 'a las' HH:mm"
+        : "EEE dd MMM 'à' HH:mm";
+  const formatted = formatInTimeZone(new Date(iso), timeZone, pattern, { locale });
+  return `${formatted} · ${getCourseTimezoneDisplayTag(timeZone)}`;
 }
 
 /** Affichage admin : français, 24 h, fuseau explicite. */

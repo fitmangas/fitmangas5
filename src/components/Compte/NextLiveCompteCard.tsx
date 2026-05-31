@@ -8,6 +8,7 @@ import { CalendarCourseModal } from '@/components/Calendar/CalendarCourseModal';
 import { GlassCard } from '@/components/ui/GlassCard';
 import type { NextAppointment } from '@/lib/compte/dashboard';
 import { getCoachImage } from '@/lib/coach-images';
+import { DEFAULT_COURSE_TIMEZONE, formatCourseCardSchedule } from '@/lib/course-datetime';
 import type { SmartCourse } from '@/lib/domain/calendar-types';
 
 function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' | 'en' | 'es'): SmartCourse {
@@ -36,7 +37,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' 
       course_category: 'group',
       starts_at: appointment.startsAt,
       ends_at: appointment.endsAt,
-      timezone: 'UTC',
+      timezone: DEFAULT_COURSE_TIMEZONE,
       location: null,
       live_url: null,
       jitsi_link: null,
@@ -70,7 +71,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' 
       course_category: 'group',
       starts_at: appointment.startsAt,
       ends_at: appointment.endsAt,
-      timezone: 'UTC',
+      timezone: DEFAULT_COURSE_TIMEZONE,
       location: null,
       live_url: null,
       jitsi_link: null,
@@ -97,7 +98,7 @@ function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' 
     course_category: 'group',
     starts_at: appointment.startsAt,
     ends_at: appointment.endsAt,
-    timezone: 'UTC',
+    timezone: DEFAULT_COURSE_TIMEZONE,
     location: null,
     live_url: null,
     jitsi_link: null,
@@ -123,7 +124,6 @@ type Props = {
 export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', iconToneClass = 'kpi-icon-wrap--orange' }: Props) {
   const [open, setOpen] = useState(false);
   const hasUpcomingLive = nextAppointment != null;
-  const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const t =
     lang === 'en'
       ? {
@@ -157,6 +157,12 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
     [nextAppointment, lang],
   );
 
+  const scheduleLabel = useMemo(() => {
+    if (!nextAppointment) return null;
+    const tz = nextAppointment.smartCourse?.timezone?.trim() || DEFAULT_COURSE_TIMEZONE;
+    return formatCourseCardSchedule(nextAppointment.startsAt, tz, lang);
+  }, [nextAppointment, lang]);
+
   const coachImageSrc = hasUpcomingLive ? getCoachImage(0) : null;
 
   return (
@@ -170,15 +176,7 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
                 {hasUpcomingLive ? nextAppointment.title : t.none}
               </p>
               <p className="mt-2 text-xs text-luxury-muted">
-                {hasUpcomingLive
-                  ? new Date(nextAppointment.startsAt).toLocaleString(locale, {
-                      weekday: 'short',
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : t.reserve}
+                {hasUpcomingLive ? scheduleLabel : t.reserve}
               </p>
             </div>
             <span className={`kpi-icon-wrap ${iconToneClass} shrink-0`}>

@@ -4,6 +4,7 @@ import { Activity, Calendar, Sparkles } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getMonthlyProgress, getNextAppointment, type MonthlyProgress, type NextAppointment } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
+import { DEFAULT_COURSE_TIMEZONE, formatCourseInstant } from '@/lib/course-datetime';
 
 import { MonthlyProgressRing } from './MonthlyProgressRing';
 
@@ -29,6 +30,7 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
   const end = new Date(appointment.endsAt);
   const now = Date.now();
   const liveWindow = now >= start.getTime() && now <= end.getTime();
+  const courseTz = appointment.smartCourse?.timezone?.trim() || DEFAULT_COURSE_TIMEZONE;
 
   return (
     <GlassCard className="p-5 md:p-6">
@@ -37,7 +39,7 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Prochain rendez-vous</p>
           <h2 className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-luxury-ink">{appointment.title}</h2>
           <p className="mt-3 text-sm text-luxury-muted">
-            {start.toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}
+            {formatCourseInstant(appointment.startsAt, courseTz)}
           </p>
           {liveWindow ? (
             <p className="mt-2 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-900">

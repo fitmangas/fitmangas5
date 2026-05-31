@@ -9,6 +9,7 @@ import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/ap
 import { CourseDatetimeFields } from '@/components/Admin/CourseDatetimeFields';
 import { CourseReplayLinkForm } from '@/components/Admin/CourseReplayLinkForm';
 import { ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
+import { isCoursePast } from '@/lib/calendar-window';
 import {
   convertCourseDatetimeBetweenTimezones,
   DEFAULT_COURSE_TIMEZONE,
@@ -119,10 +120,11 @@ function formatCourseFormatLabel(c: AdminCourseRow): string {
 }
 
 function splitCoursesByTab(courses: AdminCourseRow[], nowMs: number) {
+  const now = new Date(nowMs);
   const upcoming: AdminCourseRow[] = [];
   const history: AdminCourseRow[] = [];
   for (const c of courses) {
-    if (new Date(c.starts_at).getTime() >= nowMs) upcoming.push(c);
+    if (!isCoursePast(c.ends_at, now)) upcoming.push(c);
     else history.push(c);
   }
   upcoming.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());

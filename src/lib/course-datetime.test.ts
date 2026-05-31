@@ -9,6 +9,7 @@ import {
 } from '@/lib/calendar-window';
 import {
   COURSE_TIME_SLOT_OPTIONS,
+  formatCourseCardSchedule,
   formatCourseInstant,
   isoFromCourseDatetimeLocal,
   jitsiParisDateBlockFromStartsAt,
@@ -63,6 +64,12 @@ describe('course-datetime (Europe/Paris)', () => {
     expect(isoFromCourseDatetimeLocal('2026-06-01T06:05')).toBe('2026-06-01T04:05:00.000Z');
     expect(formatCourseInstant('2026-06-01T04:05:00.000Z', 'Europe/Paris')).toBe(
       '01 juin 2026, 06:05 · France (Paris)',
+    );
+  });
+
+  it('carte client : heure cours en fuseau Paris, pas navigateur', () => {
+    expect(formatCourseCardSchedule('2026-05-31T22:45:00.000Z', 'Europe/Paris', 'fr')).toBe(
+      'lun. 01 juin à 00:45 · Paris',
     );
   });
 
