@@ -32,7 +32,7 @@ export function categoryFromEventType(eventType: string): NotificationCategory {
   if (eventType.startsWith('shop.') || eventType.startsWith('boutique.') || eventType.startsWith('printful.')) {
     return 'shop';
   }
-  if (eventType.startsWith('community.')) {
+  if (eventType.startsWith('community.') || eventType.startsWith('referral.')) {
     return 'community';
   }
   return 'courses';

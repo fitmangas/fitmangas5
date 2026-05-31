@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, LogIn } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { resolvePostLoginRedirectAction } from '@/app/auth/post-login/actions';
 
 type Props = {
   initialError?: string;
@@ -34,7 +35,8 @@ export function AdminLoginForm({ initialError }: Props) {
         return;
       }
 
-      router.replace('/admin');
+      const { path } = await resolvePostLoginRedirectAction();
+      router.replace(path);
       router.refresh();
     } catch {
       setError('Connexion impossible pour le moment.');

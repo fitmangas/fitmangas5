@@ -159,7 +159,7 @@ export function VideoValidationSection({ videos }: Props) {
                       type="button"
                       disabled={busyId === v.id}
                       onClick={() => validate(v.id, 'approve')}
-                      className="rounded-full bg-[#ff7a00] px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white shadow-[0_8px_22px_rgba(255,122,0,0.35)] transition hover:-translate-y-px disabled:opacity-50"
+                      className="btn-luxury-primary px-4 py-2 text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
                     >
                       Valider
                     </button>
@@ -175,7 +175,7 @@ export function VideoValidationSection({ videos }: Props) {
                       type="button"
                       disabled={busyId === v.id}
                       onClick={() => setScheduleFor(v)}
-                      className="rounded-full border border-[#ff7a00]/40 bg-orange-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#c2410c] transition hover:bg-orange-100 disabled:opacity-50"
+                      className="btn-luxury-gold px-4 py-2 text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
                     >
                       Programmer
                     </button>

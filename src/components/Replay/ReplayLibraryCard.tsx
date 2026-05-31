@@ -72,7 +72,7 @@ export function ReplayLibraryCard({ item, lang = 'fr' }: { item: ReplayLibraryIt
             addFav: 'Añadir a favoritos',
             session: 'Sesión',
             available: 'Replay disponible · Fit Mangas',
-            play: 'Lectura',
+            play: 'Ver replay',
             preview: 'Vista previa de video',
             resumeAt: 'Reanudar en',
           }

@@ -20,6 +20,8 @@ declare global {
       },
     ) => {
       dispose: () => void;
+      addListener: (event: string, callback: (...args: unknown[]) => void) => void;
+      executeCommand: (command: string, ...args: unknown[]) => void;
     };
   }
 }

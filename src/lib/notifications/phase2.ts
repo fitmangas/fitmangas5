@@ -2,8 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 import { COURSE_CUSTOMER_TIER, COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
+import { formatEmailFirstName } from '@/lib/email/format-first-name';
+import { buildProfileSubscriptionUpdate } from '@/lib/stripe/profile-subscription-sync';
 import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
+import { courseReminderCopy } from './course-reminder-copy';
 import { COACH_PUBLISH_TIMEZONE, calendarDayKeyInTimeZone, formatInUserTimezone, isWithinCoachMorningPublishWindow } from './timezone';
 import { dispatch } from './dispatcher';
 import { runPhase3DailyJobs } from './phase3';
@@ -199,31 +202,34 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
     const dayDelta = dayDiffInZone(now.toISOString(), new Date(course.starts_at), tz);
     const hour = localHour(now, tz);
     const mins = minutesUntil(course.starts_at, now);
-    const courseTime = formatInUserTimezone(new Date(course.starts_at), tz, profile?.preferred_locale === 'es' ? 'es' : 'fr', 'HH:mm');
+    const locale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
+    const courseTime = formatInUserTimezone(new Date(course.starts_at), tz, locale, 'HH:mm');
     const common = {
       courseTitle: course.title,
-      courseDate: formatInUserTimezone(new Date(course.starts_at), tz, profile?.preferred_locale === 'es' ? 'es' : 'fr', 'PPPP'),
+      courseDate: formatInUserTimezone(new Date(course.starts_at), tz, locale, 'PPPP'),
       courseTime,
       joinUrl: course.jitsi_link || course.live_url || `${APP_URL()}/compte/planning`,
       replayUrl: course.replay_url || `${APP_URL()}/compte/replays`,
     };
     if (course.course_format === 'online' && dayDelta === 1 && hour === 18) {
+      const copy = courseReminderCopy(locale, 'visio_j1', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
         eventType: 'course.visio.reminder_J-1',
-        title: `Rappel : ${course.title} demain à ${courseTime}`,
-        body: 'Votre cours visio est prévu demain.',
+        title: copy.title,
+        body: copy.body,
         idempotencyKey: `course.visio.reminder_J-1:${course.id}:${row.user_id}`,
         payload: common,
       });
       sent += 1;
     }
     if (course.course_format === 'online' && mins >= 55 && mins <= 65) {
+      const copy = courseReminderCopy(locale, 'visio_h1', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
         eventType: 'course.visio.reminder_H-1',
-        title: 'Votre cours commence dans 1h',
-        body: 'Rejoindre le cours.',
+        title: copy.title,
+        body: copy.body,
         idempotencyKey: `course.visio.reminder_H-1:${course.id}:${row.user_id}`,
         payload: common,
         channelHints: ['in_app', 'push'],
@@ -231,40 +237,71 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
       sent += 1;
     }
     if (course.course_format === 'onsite' && dayDelta === 1 && hour === 18) {
+      const copy = courseReminderCopy(locale, 'presential_j1', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
         eventType: 'course.presential.reminder_J-1',
-        title: `Rappel : séance demain à ${courseTime}`,
-        body: 'Adresse : 17 Passage Leroy, 44300 Nantes.',
+        title: copy.title,
+        body: copy.body,
         idempotencyKey: `course.presential.reminder_J-1:${course.id}:${row.user_id}`,
         payload: common,
       });
       sent += 1;
     }
     if (course.course_format === 'onsite' && mins >= 115 && mins <= 125) {
+      const copy = courseReminderCopy(locale, 'presential_h2', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
         eventType: 'course.presential.reminder_H-2',
-        title: 'Votre séance commence dans 2h',
-        body: 'Bon trajet !',
+        title: copy.title,
+        body: copy.body,
         idempotencyKey: `course.presential.reminder_H-2:${course.id}:${row.user_id}`,
         payload: common,
         channelHints: ['in_app', 'push'],
       });
       sent += 1;
     }
-    if (dayDiffInZone(course.ends_at, now, tz) === 1) {
-      await send(client, dispatchFn, {
-        userId: row.user_id,
-        eventType: course.course_format === 'onsite' ? 'course.presential.missed' : 'course.visio.missed',
-        title: course.course_format === 'onsite' ? 'Vous avez manqué votre séance' : 'Vous avez manqué le cours',
-        body: course.course_format === 'onsite' ? 'Nous espérons vous revoir très vite.' : 'Voici le replay dès qu’il est disponible.',
-        idempotencyKey: `course.${course.course_format === 'onsite' ? 'presential' : 'visio'}.missed:${course.id}:${row.user_id}`,
-        payload: common,
-      });
-      sent += 1;
-    }
   }
+
+  const { data: missedRows, error: missedError } = await client
+    .from('enrollments')
+    .select('user_id, course_id, status, profiles!inner(id, first_name, display_timezone, preferred_locale), courses!inner(id, title, starts_at, ends_at, timezone, course_format, course_category, live_url, jitsi_link, replay_url)')
+    .eq('status', 'missed')
+    .lte('courses.ends_at', now.toISOString());
+  if (missedError) throw missedError;
+
+  for (const row of (missedRows ?? []) as EnrollmentRow[]) {
+    const profile = first(row.profiles);
+    const course = first(row.courses);
+    if (!course) continue;
+    const locale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
+    const tz = course.course_format === 'onsite' ? 'Europe/Paris' : profile?.display_timezone?.trim() || course.timezone || 'Europe/Paris';
+    const courseTime = formatInUserTimezone(new Date(course.starts_at), tz, locale, 'HH:mm');
+    const eventType = course.course_format === 'onsite' ? 'course.presential.missed' : 'course.visio.missed';
+    const idempotencyKey = `course.${course.course_format === 'onsite' ? 'presential' : 'visio'}.missed:${course.id}:${row.user_id}`;
+    const { data: already } = await client.from('notification_log').select('id').eq('idempotency_key', idempotencyKey).maybeSingle();
+    if (already) continue;
+
+    const kind = course.course_format === 'onsite' ? 'presential_missed' : 'visio_missed';
+    const copy = courseReminderCopy(locale, kind, course.title, courseTime);
+    const common = {
+      courseTitle: course.title,
+      courseDate: formatInUserTimezone(new Date(course.starts_at), tz, locale, 'PPPP'),
+      courseTime,
+      joinUrl: course.jitsi_link || course.live_url || `${APP_URL()}/compte/planning`,
+      replayUrl: course.replay_url || `${APP_URL()}/compte/replays`,
+    };
+    await send(client, dispatchFn, {
+      userId: row.user_id,
+      eventType,
+      title: copy.title,
+      body: copy.body,
+      idempotencyKey,
+      payload: common,
+    });
+    sent += 1;
+  }
+
   return { sent };
 }
 
@@ -295,16 +332,69 @@ export async function runBlogPublishScheduled(client: SupabaseClient, now = new 
   return { skipped: false, published };
 }
 
+export async function runMissingCourseReplayAlerts(client: SupabaseClient, deps: Phase2Deps = {}) {
+  const now = deps.now ?? new Date();
+  const cutoffMs = now.getTime() - 24 * 60 * 60 * 1000;
+  const cutoffIso = new Date(cutoffMs).toISOString();
+  const dayKey = now.toISOString().slice(0, 10);
+
+  const { data: courses, error } = await client
+    .from('courses')
+    .select('id, title, ends_at')
+    .eq('course_format', 'online')
+    .eq('is_published', true)
+    .lt('ends_at', cutoffIso);
+  if (error) throw error;
+
+  const { data: admins, error: adminError } = await client.from('profiles').select('id').eq('role', 'admin');
+  if (adminError) throw adminError;
+  const adminIds = ((admins ?? []) as { id: string }[]).map((a) => a.id);
+  if (adminIds.length === 0) return { alerted: 0 };
+
+  let alerted = 0;
+  for (const course of (courses ?? []) as { id: string; title: string; ends_at: string }[]) {
+    const { count, error: recError } = await client
+      .from('video_recordings')
+      .select('*', { count: 'exact', head: true })
+      .eq('course_id', course.id);
+    if (recError) throw recError;
+    if ((count ?? 0) > 0) continue;
+
+    const endsLabel = formatInUserTimezone(
+      new Date(course.ends_at),
+      COACH_PUBLISH_TIMEZONE,
+      'fr',
+      'PPP HH:mm',
+    );
+    const body = `Le replay du cours ${course.title} du ${endsLabel} n'a pas été créé.`;
+
+    for (const adminId of adminIds) {
+      await send(client, deps.dispatch ?? dispatch, {
+        userId: adminId,
+        eventType: 'admin.replay_missing',
+        title: 'Replay manquant',
+        body,
+        idempotencyKey: `admin.replay_missing:${course.id}:${dayKey}:${adminId}`,
+        payload: { courseId: course.id, courseTitle: course.title, endsAt: course.ends_at },
+        channelHints: ['in_app', 'email'],
+      });
+    }
+    alerted += 1;
+  }
+  return { alerted };
+}
+
 export async function runPhase2DailyJobs(client: SupabaseClient, deps: Phase2Deps = {}) {
   const now = deps.now ?? new Date();
-  const [blog, onboarding, winBack, courses, phase3] = await Promise.all([
+  const [blog, onboarding, winBack, courses, replayMissing, phase3] = await Promise.all([
     runBlogPublishScheduled(client, now),
     runOnboardingCycle(client, deps),
     runWinBackCycle(client, deps),
     runCourseCycles(client, deps),
+    runMissingCourseReplayAlerts(client, deps),
     runPhase3DailyJobs(client, deps),
   ]);
-  return { blog, onboarding, winBack, courses, phase3 };
+  return { blog, onboarding, winBack, courses, replayMissing, phase3 };
 }
 
 export async function markStripeEventProcessed(client: SupabaseClient, event: Stripe.Event) {
@@ -316,14 +406,67 @@ export async function markStripeEventProcessed(client: SupabaseClient, event: St
   return true;
 }
 
+export function welcomeDay0IdempotencyKey(userId: string): string {
+  return `onboarding.day0:${userId}:first`;
+}
+
+export async function hasWelcomeDay0BeenSent(client: SupabaseClient, userId: string): Promise<boolean> {
+  const key = welcomeDay0IdempotencyKey(userId);
+  const { data: byKey } = await client.from('notification_log').select('id').eq('idempotency_key', key).maybeSingle();
+  if (byKey?.id) return true;
+
+  const { data: byEvent } = await client
+    .from('notification_log')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('event_type', 'onboarding.day0')
+    .limit(1)
+    .maybeSingle();
+  return !!byEvent?.id;
+}
+
+export async function dispatchWelcomeDay0(
+  client: SupabaseClient,
+  userId: string,
+  deps: Phase2Deps = {},
+): Promise<{ sent: true } | { skipped: true; reason: 'already_sent' }> {
+  if (await hasWelcomeDay0BeenSent(client, userId)) {
+    return { skipped: true, reason: 'already_sent' };
+  }
+
+  const { data: prof } = await client.from('profiles').select('first_name').eq('id', userId).maybeSingle();
+  const firstName = formatEmailFirstName(prof?.first_name);
+  await send(client, deps.dispatch ?? dispatch, {
+    userId,
+    eventType: 'onboarding.day0',
+    title: 'Bienvenue ! Votre compte FitMangas est prêt.',
+    body: 'Ton espace membre est prêt : planning, replays et ressources t’attendent.',
+    idempotencyKey: welcomeDay0IdempotencyKey(userId),
+    payload: { firstName },
+    channelHints: ['in_app', 'email'],
+  });
+  return { sent: true };
+}
+
 export async function dispatchSubscriptionActivated(client: SupabaseClient, userId: string, courseId: string, customerId: string | null, subscriptionId: string | null, deps: Phase2Deps = {}) {
   const tier = COURSE_CUSTOMER_TIER[courseId];
-  if (!tier) return;
   const now = deps.now ?? new Date();
-  await client.from('subscriptions').upsert({
+
+  if (!tier) {
+    console.warn('[dispatchSubscriptionActivated] tier inconnu pour courseId — bienvenue envoyée sans sync abonnement', {
+      userId,
+      courseId,
+    });
+    if (customerId) {
+      await client.from('profiles').update({ stripe_customer_id: customerId, updated_at: now.toISOString() }).eq('id', userId);
+    }
+    await dispatchWelcomeDay0(client, userId, deps);
+    return;
+  }
+  const subRow = {
     user_id: userId,
     tier,
-    status: 'active',
+    status: 'active' as const,
     starts_at: now.toISOString(),
     stripe_customer_id: customerId,
     stripe_subscription_id: subscriptionId,
@@ -331,17 +474,45 @@ export async function dispatchSubscriptionActivated(client: SupabaseClient, user
     currency: 'eur',
     interval: 'month',
     metadata: { source: 'stripe_webhook', course_id: courseId },
-  }, { onConflict: 'stripe_subscription_id' });
-  await client.from('profiles').update({ stripe_customer_id: customerId, last_checkout_course_id: courseId, customer_tier: tier, updated_at: now.toISOString() }).eq('id', userId);
-  await send(client, deps.dispatch ?? dispatch, {
-    userId,
-    eventType: 'onboarding.day0',
-    title: 'Bienvenue ! Votre abonnement est actif.',
-    body: 'Votre abonnement FitMangas est actif.',
-    idempotencyKey: `onboarding.day0:${userId}:${subscriptionId ?? courseId}`,
-    payload: { firstName: '' },
-    channelHints: ['in_app', 'email'],
+    updated_at: now.toISOString(),
+  };
+
+  if (subscriptionId) {
+    const { error: upsertError } = await client.from('subscriptions').upsert(subRow, { onConflict: 'stripe_subscription_id' });
+    if (upsertError) {
+      console.error('[dispatchSubscriptionActivated] subscriptions upsert', upsertError);
+      throw upsertError;
+    }
+  } else {
+    const { data: existing } = await client
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('tier', tier)
+      .in('status', ['active', 'trialing'])
+      .maybeSingle();
+    if (existing?.id) {
+      const { error: updateError } = await client.from('subscriptions').update(subRow).eq('id', existing.id);
+      if (updateError) throw updateError;
+    } else {
+      const { error: insertError } = await client.from('subscriptions').insert(subRow);
+      if (insertError) throw insertError;
+    }
+  }
+
+  const profilePatch = buildProfileSubscriptionUpdate({
+    stripeCustomerId: customerId,
+    courseId,
+    subscriptionStatus: 'active',
+    lastCheckoutCourseId: courseId,
+    customerTier: tier,
   });
+  const { error: profileError } = await client.from('profiles').update(profilePatch).eq('id', userId);
+  if (profileError) {
+    console.error('[dispatchSubscriptionActivated] profiles update', profileError);
+    throw profileError;
+  }
+  await dispatchWelcomeDay0(client, userId, deps);
 }
 
 export async function dispatchPaymentFailed(client: SupabaseClient, stripe: Stripe, customerId: string, userId: string, idempotencySuffix: string, deps: Phase2Deps = {}) {
@@ -353,6 +524,41 @@ export async function dispatchPaymentFailed(client: SupabaseClient, stripe: Stri
     body: 'Mettez à jour votre moyen de paiement.',
     idempotencyKey: `subscription.payment_failed:${userId}:${idempotencySuffix}`,
     payload: { billingPortalUrl: portal.url ?? `${APP_URL()}/compte/profil` },
+  });
+}
+
+/** Présentiel payé mais aucune séance publiée à assigner — bienvenue + confirmation d’achat. */
+export async function dispatchPresentialPurchaseWithoutScheduledCourse(
+  client: SupabaseClient,
+  userId: string,
+  offerId: string,
+  deps: Phase2Deps = {},
+) {
+  const dispatchFn = deps.dispatch ?? dispatch;
+  const { data: prof } = await client.from('profiles').select('first_name').eq('id', userId).maybeSingle();
+  const firstName = formatEmailFirstName(prof?.first_name);
+
+  if (await hasWelcomeDay0BeenSent(client, userId)) {
+    await send(client, dispatchFn, {
+      userId,
+      eventType: 'course.presential.purchase_pending',
+      title: 'Ton achat est confirmé',
+      body: 'Nous te tiendrons informée dès que ta séance sera planifiée.',
+      idempotencyKey: `course.presential.purchase_pending:${userId}:${offerId}`,
+      payload: { firstName, offerId, appUrl: APP_URL() },
+      channelHints: ['in_app', 'email'],
+    });
+    return;
+  }
+
+  await send(client, dispatchFn, {
+    userId,
+    eventType: 'course.presential.purchase_pending',
+    title: 'Bienvenue ! Ton achat FitMangas est confirmé',
+    body: 'Ton paiement est enregistré. Ta séance sera planifiée très bientôt.',
+    idempotencyKey: welcomeDay0IdempotencyKey(userId),
+    payload: { firstName, offerId, appUrl: APP_URL() },
+    channelHints: ['in_app', 'email'],
   });
 }
 
@@ -386,6 +592,7 @@ export async function dispatchPresentialPurchased(client: SupabaseClient, userId
     },
     channelHints: ['in_app', 'email'],
   });
+  await dispatchWelcomeDay0(client, userId, deps);
 }
 
 export async function dispatchCourseCancelledByCoach(client: SupabaseClient, courseId: string, deps: Phase2Deps = {}) {
@@ -496,5 +703,48 @@ export async function dispatchSubscriptionRenewed(client: SupabaseClient, userId
     body: 'Votre renouvellement FitMangas est confirmé.',
     idempotencyKey: `subscription.renewed:${userId}:${invoiceId}`,
     channelHints: ['email'],
+  });
+}
+
+export async function dispatchCheckoutAbandoned(
+  client: SupabaseClient,
+  userId: string,
+  courseId: string,
+  sessionId: string,
+  deps: Phase2Deps = {},
+) {
+  const { data: prof } = await client.from('profiles').select('first_name').eq('id', userId).maybeSingle();
+  await send(client, deps.dispatch ?? dispatch, {
+    userId,
+    eventType: 'subscription.checkout_abandoned',
+    title: 'Finalise ton inscription FitMangas',
+    body: 'Ton paiement n’a pas été finalisé. Reprends ton inscription quand tu veux.',
+    idempotencyKey: `subscription.checkout_abandoned:${sessionId}`,
+    payload: {
+      firstName: prof?.first_name,
+      courseId,
+      appUrl: APP_URL(),
+    },
+    channelHints: ['email'],
+  });
+}
+
+export async function dispatchReferralRewardUnlocked(
+  client: SupabaseClient,
+  referrerUserId: string,
+  deps: Phase2Deps = {},
+) {
+  const { data: prof } = await client.from('profiles').select('first_name').eq('id', referrerUserId).maybeSingle();
+  await send(client, deps.dispatch ?? dispatch, {
+    userId: referrerUserId,
+    eventType: 'referral.reward_unlocked',
+    title: 'Félicitations ! Ton abonnement est offert 🎉',
+    body: 'Tes 5 filleules sont actives : ton prochain mois Visio est gratuit.',
+    idempotencyKey: `referral.reward_unlocked:${referrerUserId}`,
+    payload: {
+      firstName: prof?.first_name,
+      appUrl: APP_URL(),
+    },
+    channelHints: ['in_app', 'email'],
   });
 }

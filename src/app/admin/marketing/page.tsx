@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { BarChart3, CheckCircle2, Circle, Rocket, Search, TrendingUp } from 'lucide-react';
 
 import { BusinessCharts, NotificationChart, type BusinessStatsPoint, type NotificationPoint } from '@/components/Admin/MarketingCharts';
+import { MarketingGlobalAiAdvisor } from '@/components/Admin/marketing/MarketingGlobalAiAdvisor';
+import { MarketingAiAdvisor } from '@/components/Admin/marketing/MarketingAiAdvisor';
 import { MarketingAnalyticsLive } from '@/components/Admin/marketing/MarketingAnalyticsLive';
 import { MarketingEditorialCalendarSection } from '@/components/Admin/marketing/MarketingEditorialCalendarSection';
 import { MarketingSearchConsoleLive } from '@/components/Admin/marketing/MarketingSearchConsoleLive';
@@ -160,6 +162,23 @@ export default async function AdminMarketingPage() {
     name: nameById.get(id) ?? '—',
   }));
 
+  const scheduledCount = (scheduledRaw ?? []).length;
+  const latestBusiness = businessData.length > 0 ? businessData[businessData.length - 1] : null;
+  const notificationTotals = notificationData.reduce(
+    (acc, row) => ({
+      email: acc.email + row.email,
+      push: acc.push + row.push,
+      inApp: acc.inApp + row.inApp,
+    }),
+    { email: 0, push: 0, inApp: 0 },
+  );
+  const checklistForAdvisor = checklist.map((item) => ({
+    key: item.key,
+    label: lang === 'es' ? item.label_es : item.label_fr,
+    category: item.category,
+    completed: item.completed,
+  }));
+
   return (
     <main className="mx-auto max-w-[1280px] space-y-8 px-2 pb-20 pt-3 md:px-6 md:pt-6">
       <header className="rounded-[2rem] border border-white/65 bg-white/60 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-7">
@@ -179,8 +198,22 @@ export default async function AdminMarketingPage() {
         </div>
       </header>
 
+      <MarketingGlobalAiAdvisor />
+
       <section id="seo" className="space-y-5 scroll-mt-28 md:scroll-mt-8">
         <SectionTitle icon={<Search size={18} />} eyebrow={t.tabs.seo} title={t.seoTitle} />
+        <MarketingAiAdvisor
+          variant="seo"
+          googleConnected={googleApisConnected}
+          articleScores={seoRows.map((row) => ({
+            title: row.title,
+            score: row.score,
+            checks: row.checks,
+          }))}
+          metaPages={seoPages}
+          publishedCount={articles.length}
+          scheduledCount={scheduledCount}
+        />
         <div className="grid gap-4 lg:grid-cols-3">
           <StatusCard title="Sitemap" ok value="Sitemap actif" href={`${APP_URL}/sitemap.xml`} />
           <StatusCard title="Robots.txt" ok value="Robots.txt actif" href={`${APP_URL}/robots.txt`} />
@@ -240,6 +273,16 @@ export default async function AdminMarketingPage() {
 
       <section id="analytics" className="space-y-5 scroll-mt-28 md:scroll-mt-8">
         <SectionTitle icon={<TrendingUp size={18} />} eyebrow={t.tabs.analytics} title={t.analyticsTitle} />
+        <MarketingAiAdvisor
+          variant="traffic"
+          googleConnected={googleApisConnected}
+          blogTopArticles={topArticles.map((article) => ({
+            title: article.title_fr,
+            views: article.view_count ?? 0,
+            avgTimeSeconds: article.average_time_spent_seconds ?? 0,
+            scrollPercent: article.average_scroll_percentage ?? 0,
+          }))}
+        />
         <div className="grid gap-4 md:grid-cols-3">
           <StatusCard title="Google Analytics" ok={Boolean(settings.google_analytics_id)} value={settings.google_analytics_id ? t.active : t.notConfigured} />
           <StatusCard title="Google Search Console" ok value={t.searchConsoleDnsStatus} />
@@ -312,6 +355,40 @@ export default async function AdminMarketingPage() {
 
       <section id="marketing" className="space-y-5 scroll-mt-28 md:scroll-mt-8">
         <SectionTitle icon={<BarChart3 size={18} />} eyebrow={t.tabs.marketing} title={t.marketingTitle} />
+        <MarketingAiAdvisor
+          variant="marketing"
+          marketingInput={{
+            business: latestBusiness
+              ? {
+                  mrr: latestBusiness.mrr,
+                  activeSubscribers: latestBusiness.activeSubscribers,
+                  churn30d: latestBusiness.churn,
+                  newSubscribers30d: latestBusiness.newSubscribers,
+                  unsubscribed30d: latestBusiness.unsubscribed,
+                }
+              : null,
+            newsletter: {
+              total: newsletterTotal ?? 0,
+              confirmed: newsletterConfirmed ?? 0,
+              confirmationRatePercent: confirmedRate,
+            },
+            notifications30d: {
+              email: notificationTotals.email,
+              push: notificationTotals.push,
+              inApp: notificationTotals.inApp,
+              total: notificationTotals.email + notificationTotals.push + notificationTotals.inApp,
+            },
+            referral: {
+              ambassadorsCount: referralLeaderboard.length,
+              totalReferrals: refList.length,
+              topAmbassadors: referralLeaderboard.slice(0, 5).map((r) => ({ name: r.name, count: r.count })),
+            },
+            checklist: {
+              completed: checklistForAdvisor.filter((i) => i.completed).map(({ key, label, category }) => ({ key, label, category })),
+              pending: checklistForAdvisor.filter((i) => !i.completed).map(({ key, label, category }) => ({ key, label, category })),
+            },
+          }}
+        />
         <div className="grid gap-4 md:grid-cols-3">
           <Kpi label={t.newsletterSubscribers} value={String(newsletterTotal ?? 0)} />
           <Kpi label={t.newsletterConfirmed} value={String(newsletterConfirmed ?? 0)} />

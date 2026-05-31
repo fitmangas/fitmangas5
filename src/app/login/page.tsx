@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { AdminLoginForm } from '@/components/AdminLoginForm';
-import { checkIsAdmin } from '@/lib/auth/admin';
+import { resolvePostLoginPath } from '@/lib/auth/post-login-redirect';
 import { createClient } from '@/lib/supabase/server';
 
 function getInitialError(error?: string) {
@@ -20,8 +20,8 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    const adminCheck = await checkIsAdmin(supabase, user);
-    if (adminCheck.isAdmin) {
+    const path = await resolvePostLoginPath(supabase, user);
+    if (path === '/admin') {
       redirect('/admin');
     }
   }
@@ -31,6 +31,12 @@ export default async function LoginPage({
   return (
     <div className="min-h-screen bg-brand-beige px-6 py-16">
       <AdminLoginForm initialError={getInitialError(params.error)} />
+      <p className="mx-auto mt-6 max-w-md text-center text-xs text-brand-ink/55">
+        Espace cliente ?{' '}
+        <a href="/connexion" className="font-semibold text-brand-accent underline underline-offset-2">
+          Connexion membre
+        </a>
+      </p>
     </div>
   );
 }

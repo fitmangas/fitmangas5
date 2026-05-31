@@ -132,6 +132,7 @@ export default async function LiveCoursePage({
         .select('id, embed_url, title')
         .eq('course_id', idParsed.data)
         .eq('is_ready', true)
+        .eq('validation_status', 'approved')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -140,6 +141,7 @@ export default async function LiveCoursePage({
         .select('id, embed_url, title')
         .eq('course_id', idParsed.data)
         .eq('is_ready', true)
+        .eq('validation_status', 'approved')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();

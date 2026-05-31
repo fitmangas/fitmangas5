@@ -19,20 +19,34 @@ export function getVisioLockState(hasAccess: boolean) {
 
 export function VisioLock({ children, featureDescription_fr, featureDescription_es, hasAccess = false, locale = 'fr' }: Props) {
   const [loading, setLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const state = getVisioLockState(hasAccess);
   if (!state.showOverlay) return <>{children}</>;
 
+  const errorFallback =
+    locale === 'es'
+      ? 'No se pudo iniciar el pago. Inténtalo de nuevo en unos instantes.'
+      : 'Impossible de lancer le paiement. Réessaie dans un instant.';
+
   async function handleCheckout() {
     setLoading(true);
+    setCheckoutError('');
     try {
       await logVisioLockCheckoutInitiated('visio_lock_overlay');
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ courseId: state.ctaOffer }),
       });
-      const json = (await res.json()) as { url?: string };
-      if (json.url) window.location.href = json.url;
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      setCheckoutError(json.error?.trim() || errorFallback);
+    } catch {
+      setCheckoutError(errorFallback);
     } finally {
       setLoading(false);
     }
@@ -40,7 +54,7 @@ export function VisioLock({ children, featureDescription_fr, featureDescription_
 
   const description = locale === 'es' ? featureDescription_es : featureDescription_fr;
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/50 bg-white/30 shadow-[0_24px_80px_rgba(48,35,28,0.10)]">
+    <div className="relative h-full overflow-hidden rounded-[28px] bg-white/30 shadow-[0_24px_80px_rgba(48,35,28,0.10)]">
       <div className="pointer-events-none opacity-45 blur-[7px]">{children}</div>
       <div className="absolute inset-0 flex items-center justify-center bg-luxury-cream/55 px-6 backdrop-blur-md">
         <div className="max-w-sm text-center">
@@ -57,6 +71,9 @@ export function VisioLock({ children, featureDescription_fr, featureDescription_
             {locale === 'es' ? 'Hazte miembro completo — 39€/mes' : 'Devenez membre complet — 39€/mois'}
           </button>
           <p className="mt-4 text-sm leading-relaxed text-luxury-ink/70">{description}</p>
+          {checkoutError ? (
+            <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{checkoutError}</p>
+          ) : null}
         </div>
       </div>
     </div>

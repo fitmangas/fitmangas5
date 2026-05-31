@@ -1,8 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
+import { wrapResendEmail } from '@/lib/email/base-template';
+import { countActiveQualifiedReferrals, REFERRAL_REWARD_THRESHOLD } from '@/lib/referrals/reward';
+
 import { dispatch } from './dispatcher';
-import { calendarDayKeyInTimeZone } from './timezone';
+import { calendarDayKeyInTimeZone, formatInUserTimezone } from './timezone';
 import { renderTemplate, getEmailTemplate } from './templates';
 
 type DispatchFn = typeof dispatch;
@@ -159,20 +162,158 @@ export async function runWeMissYouCycles(client: SupabaseClient, deps: Phase3Dep
   return { sent };
 }
 
+type DigestLocale = 'fr' | 'es';
+
+export type DigestSummary = {
+  attendedThisWeek: number;
+  nextCourseTitle: string | null;
+  nextCourseWhen: string | null;
+  blogTitles: string[];
+  referralActiveCount: number;
+  referralRewardActive: boolean;
+};
+
+export async function buildDigestSummaryForUser(
+  client: SupabaseClient,
+  userId: string,
+  tz: string,
+  locale: DigestLocale,
+  now: Date,
+): Promise<DigestSummary> {
+  const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+  const nowIso = now.toISOString();
+
+  const { count: attendedThisWeek } = await client
+    .from('enrollments')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'attended')
+    .gte('updated_at', weekAgo);
+
+  const { data: bookedRows } = await client
+    .from('enrollments')
+    .select('courses ( title, starts_at, timezone )')
+    .eq('user_id', userId)
+    .eq('status', 'booked');
+
+  type BookedRow = {
+    courses:
+      | { title: string; starts_at: string; timezone: string | null }
+      | Array<{ title: string; starts_at: string; timezone: string | null }>
+      | null;
+  };
+
+  let nextCourseTitle: string | null = null;
+  let nextCourseWhen: string | null = null;
+  let nextStartsAt: string | null = null;
+  for (const row of (bookedRows ?? []) as BookedRow[]) {
+    const course = Array.isArray(row.courses) ? row.courses[0] : row.courses;
+    if (!course?.starts_at || course.starts_at <= nowIso) continue;
+    if (!nextStartsAt || course.starts_at < nextStartsAt) {
+      nextStartsAt = course.starts_at;
+      nextCourseTitle = course.title;
+      const courseTz = course.timezone?.trim() || tz;
+      nextCourseWhen = formatInUserTimezone(new Date(course.starts_at), courseTz, locale, 'PPPP HH:mm');
+    }
+  }
+
+  const titleCol = locale === 'es' ? 'title_es' : 'title_fr';
+  const { data: articles } = await client
+    .from('blog_articles')
+    .select(`${titleCol}, published_at`)
+    .eq('status', 'published')
+    .gte('published_at', weekAgo)
+    .order('published_at', { ascending: false })
+    .limit(3);
+
+  const blogTitles = ((articles ?? []) as Record<string, string | null>[])
+    .map((a) => a[titleCol])
+    .filter((t): t is string => Boolean(t?.trim()));
+
+  const referralActiveCount = await countActiveQualifiedReferrals(client, userId);
+  const { data: prof } = await client.from('profiles').select('referral_reward_active').eq('id', userId).maybeSingle();
+
+  return {
+    attendedThisWeek: attendedThisWeek ?? 0,
+    nextCourseTitle,
+    nextCourseWhen,
+    blogTitles,
+    referralActiveCount,
+    referralRewardActive: prof?.referral_reward_active === true,
+  };
+}
+
+function formatDigestSummaryLines(
+  locale: DigestLocale,
+  summary: DigestSummary,
+  queuedLines: string[],
+): string {
+  const lines: string[] = [];
+  if (locale === 'es') {
+    lines.push(
+      `Esta semana has seguido ${summary.attendedThisWeek} sesión${summary.attendedThisWeek === 1 ? '' : 'es'}.`,
+    );
+    if (summary.nextCourseTitle && summary.nextCourseWhen) {
+      lines.push(`Próxima sesión : ${summary.nextCourseTitle} — ${summary.nextCourseWhen}.`);
+    } else {
+      lines.push('No tienes ninguna sesión reservada por el momento.');
+    }
+    if (summary.blogTitles.length) {
+      lines.push('Nuevo en el blog :');
+      for (const title of summary.blogTitles) lines.push(`• ${title}`);
+    }
+    if (summary.referralActiveCount > 0 || summary.referralRewardActive) {
+      if (summary.referralRewardActive) {
+        lines.push('Apadrinamiento : tu recompensa mensual está activa.');
+      } else {
+        lines.push(
+          `Apadrinamiento : ${summary.referralActiveCount}/${REFERRAL_REWARD_THRESHOLD} referidas activas.`,
+        );
+      }
+    }
+  } else {
+    lines.push(
+      `Cette semaine, tu as suivi ${summary.attendedThisWeek} cours${summary.attendedThisWeek > 1 ? 's' : ''}.`,
+    );
+    if (summary.nextCourseTitle && summary.nextCourseWhen) {
+      lines.push(`Prochain cours : ${summary.nextCourseTitle} — ${summary.nextCourseWhen}.`);
+    } else {
+      lines.push('Aucun cours réservé pour le moment.');
+    }
+    if (summary.blogTitles.length) {
+      lines.push('Nouveautés blog :');
+      for (const title of summary.blogTitles) lines.push(`• ${title}`);
+    }
+    if (summary.referralActiveCount > 0 || summary.referralRewardActive) {
+      if (summary.referralRewardActive) {
+        lines.push('Parrainage : ta récompense mensuelle est active.');
+      } else {
+        lines.push(
+          `Parrainage : ${summary.referralActiveCount}/${REFERRAL_REWARD_THRESHOLD} filleules actives.`,
+        );
+      }
+    }
+  }
+  if (queuedLines.length) {
+    lines.push(locale === 'es' ? 'Otras notificaciones agrupadas :' : 'Autres notifications regroupées :');
+    lines.push(...queuedLines);
+  }
+  return lines.join('\n');
+}
+
 export async function processDigestQueue(client: SupabaseClient, deps: Phase3Deps = {}) {
   const now = deps.now ?? new Date();
   const { data: prefs, error } = await client
     .from('notification_preferences')
     .select('user_id, digest_frequency, profiles!inner(display_timezone, preferred_locale)')
-    .in('digest_frequency', ['daily', 'weekly']);
+    .in('digest_frequency', ['daily', 'weekly', 'off']);
   if (error) throw error;
 
   let sent = 0;
-  for (const pref of (prefs ?? []) as { user_id: string; digest_frequency: 'daily' | 'weekly'; profiles: { display_timezone?: string | null; preferred_locale?: string | null } | Array<{ display_timezone?: string | null; preferred_locale?: string | null }> }[]) {
+  for (const pref of (prefs ?? []) as { user_id: string; digest_frequency: 'daily' | 'weekly' | 'off'; profiles: { display_timezone?: string | null; preferred_locale?: string | null } | Array<{ display_timezone?: string | null; preferred_locale?: string | null }> }[]) {
     const profile = Array.isArray(pref.profiles) ? pref.profiles[0] : pref.profiles;
     const tz = profile?.display_timezone || 'Europe/Paris';
     if (localHour(now, tz) !== 8) continue;
-    if (pref.digest_frequency === 'weekly' && !isMonday(now, tz)) continue;
 
     const { data: queued } = await client
       .from('notification_digest_queue')
@@ -180,25 +321,45 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
       .eq('user_id', pref.user_id)
       .is('processed_at', null);
     const rows = (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
-    if (rows.length === 0) continue;
+
+    const scheduledDigest =
+      pref.digest_frequency === 'daily' || (pref.digest_frequency === 'weekly' && isMonday(now, tz));
+    if (!scheduledDigest && rows.length === 0) continue;
+    if (pref.digest_frequency === 'weekly' && !isMonday(now, tz)) continue;
+    if (pref.digest_frequency === 'off' && rows.length === 0) continue;
 
     const { data: userData } = await client.auth.admin.getUserById(pref.user_id);
     const email = userData.user?.email;
     if (!email) continue;
-    const items = rows.map((row) => `• ${row.digest_bucket}: ${String(row.payload.event_type ?? 'FitMangas')}`).join('\n');
+
+    const locale: DigestLocale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
+    const summary = await buildDigestSummaryForUser(client, pref.user_id, tz, locale, now);
+    const queuedLines = rows.map((row) => `• ${row.digest_bucket}: ${String(row.payload.event_type ?? 'FitMangas')}`);
+    const summaryLines = formatDigestSummaryLines(locale, summary, queuedLines);
+
     const template = getEmailTemplate('digest.summary');
     if (!template) continue;
-    const locale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
-    const rendered = renderTemplate(template, locale, { date: calendarDayKeyInTimeZone(tz, now), items });
-    const ok = await sendEmail(email, rendered.subject, rendered.html);
+    const rendered = renderTemplate(template, locale, {
+      date: calendarDayKeyInTimeZone(tz, now),
+      summaryLines,
+      appUrl: `${appUrl()}/compte`,
+    });
+    const html = wrapResendEmail({
+      innerHtml: rendered.html,
+      locale,
+      showPreferencesLink: true,
+    });
+    const ok = await sendEmail(email, rendered.subject, html);
     if (!ok) continue;
 
-    await client.from('notification_digest_queue').update({ processed_at: now.toISOString() }).eq('user_id', pref.user_id).is('processed_at', null);
+    if (rows.length) {
+      await client.from('notification_digest_queue').update({ processed_at: now.toISOString() }).eq('user_id', pref.user_id).is('processed_at', null);
+    }
     await client.from('notification_log').insert({
       user_id: pref.user_id,
       event_type: 'digest.summary',
       channel: 'email',
-      payload: { digest_count: rows.length },
+      payload: { digest_count: rows.length, attendedThisWeek: summary.attendedThisWeek },
       idempotency_key: `digest.summary:${pref.user_id}:${calendarDayKeyInTimeZone(tz, now)}:${pref.digest_frequency}`,
     });
     sent += 1;

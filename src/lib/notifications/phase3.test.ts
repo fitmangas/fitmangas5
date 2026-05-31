@@ -9,13 +9,17 @@ import {
   runWeMissYouCycles,
 } from './phase3';
 
-function chain(data: unknown[]) {
-  const promise = Promise.resolve({ data, error: null });
+function chain(data: unknown[], extras: { count?: number } = {}) {
+  const promise = Promise.resolve({ data, count: extras.count ?? data.length, error: null });
   const self = {
     select: vi.fn(() => self),
     eq: vi.fn(() => self),
     in: vi.fn(() => self),
     is: vi.fn(() => self),
+    gte: vi.fn(() => self),
+    order: vi.fn(() => self),
+    limit: vi.fn(() => self),
+    maybeSingle: vi.fn(() => promise),
     update: vi.fn(() => self),
     insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
     then: promise.then.bind(promise),
@@ -28,7 +32,9 @@ function chain(data: unknown[]) {
 function mockClient(tables: Record<string, unknown[]>): SupabaseClient {
   return {
     from: vi.fn((table: string) => ({
-      select: vi.fn(() => chain(tables[table] ?? [])),
+      select: vi.fn((_cols?: string, opts?: { count?: string; head?: boolean }) =>
+        chain(tables[table] ?? [], opts?.head ? { count: 0 } : {}),
+      ),
       update: vi.fn(() => chain([])),
       insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
     })),
@@ -78,8 +84,13 @@ describe('Phase 3 notifications', () => {
     expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'community.we_miss_you_60d', channel_hints: ['email'] }));
   });
 
-  it('queue vide → pas de digest', async () => {
-    const client = mockClient({ notification_preferences: [{ user_id: 'u1', digest_frequency: 'daily', profiles: { display_timezone: 'Europe/Paris' } }] });
+  it('queue vide + daily à 8h → digest enrichi tenté (0 sans Resend)', async () => {
+    const client = mockClient({
+      notification_preferences: [{ user_id: 'u1', digest_frequency: 'daily', profiles: { display_timezone: 'Europe/Paris' } }],
+      enrollments: [],
+      blog_articles: [],
+      profiles: [{ referral_reward_active: false }],
+    });
     const result = await processDigestQueue(client, { now: new Date('2026-05-10T06:00:00Z') });
     expect(result.sent).toBe(0);
   });

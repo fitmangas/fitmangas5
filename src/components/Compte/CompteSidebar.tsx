@@ -4,24 +4,24 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Clapperboard, Gift, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
 
 const links = [
-  { href: '/compte#planning', key: 'planning', icon: Clapperboard, exact: false },
+  { href: '/compte/planning', key: 'planning', icon: CalendarDays, exact: true },
   { href: '/compte/blog', key: 'blog', icon: BookOpen, exact: true },
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
+  { href: '/compte/notifications', key: 'notifications', icon: Bell, exact: true },
   { href: '/compte/parrainage', key: 'referral', icon: Gift, exact: true },
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
-  { href: '/compte/preferences', key: 'preferences', icon: Settings, exact: true },
 ] as const;
 
 type NavKey = (typeof links)[number]['key'];
 
-export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
+export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?: ClientLang; unreadNotifications?: number }) {
   const pathname = usePathname();
   const [hash, setHash] = useState('');
   const labels = compteNavLabels[lang];
@@ -43,7 +43,7 @@ export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
         }`}
       >
         <Image
-          src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+          src="/logo.png"
           alt="Logo FitMangas"
           width={30}
           height={30}
@@ -54,7 +54,7 @@ export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
         const label = labels[key as NavKey];
         const basePath = href.split('#')[0];
         const hrefHash = href.includes('#') ? `#${href.split('#')[1]}` : '';
-        const isProfile = basePath === '/compte/profil';
+        const isProfile = basePath === '/compte/profil' || pathname === '/compte/preferences';
         const isCompteRoot = basePath === '/compte';
 
         const isActive =
@@ -68,6 +68,13 @@ export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
                   ? pathname === basePath
                   : pathname === basePath || pathname.startsWith(`${basePath}/`);
 
+        const badge =
+          key === 'notifications' && unreadNotifications > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff3b30] px-[5px] text-[10px] font-bold leading-none text-white shadow-md ring-2 ring-white">
+              {unreadNotifications > 9 ? '9+' : unreadNotifications}
+            </span>
+          ) : null;
+
         return (
           <Link
             key={href}
@@ -80,6 +87,7 @@ export function CompteSidebar({ lang = 'fr' }: { lang?: ClientLang }) {
             }`}
           >
             <Icon size={23} strokeWidth={2} aria-hidden />
+            {badge}
           </Link>
         );
       })}

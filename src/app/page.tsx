@@ -6,7 +6,7 @@ import { LandingPage } from '@/components/LandingPage';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
 
 function landingLangFromAcceptLanguage(value: string | null): 'FR' | 'ES' {
   const firstSupported = (value ?? '')
@@ -38,7 +38,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function HomePage() {
+type HomeSearchParams = Promise<{ compte?: string; offer?: string }>;
+
+export const revalidate = 300;
+
+export default async function HomePage({ searchParams }: { searchParams: HomeSearchParams }) {
+  const sp = await searchParams;
+  const openLoginRequired = sp.compte === 'connexion-requise';
+  const initialOfferId = sp.offer?.trim() || undefined;
   let vimeoShowcase: { title: string; thumbnailUrl: string | null }[] = [];
   let blogPreviews: {
     titleFr: string;
@@ -124,7 +131,13 @@ export default async function HomePage() {
   return (
     <>
       <Script id="fitmangas-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <LandingPage vimeoShowcase={vimeoShowcase} blogPreviews={blogPreviews} initialLang={initialLang} />
+      <LandingPage
+        vimeoShowcase={vimeoShowcase}
+        blogPreviews={blogPreviews}
+        initialLang={initialLang}
+        openLoginRequired={openLoginRequired}
+        initialOfferId={initialOfferId}
+      />
     </>
   );
 }

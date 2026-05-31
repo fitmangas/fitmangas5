@@ -60,7 +60,7 @@ export async function updateNotificationPreferences(partial: UpdateNotificationP
   if (error) {
     throw new Error(error.message);
   }
-  revalidatePath('/compte/preferences');
+  revalidatePath('/compte/profil');
 }
 
 export async function updateProfilePreferences(partial: ProfilePreferencesUpdate) {
@@ -105,7 +105,7 @@ export async function updateProfilePreferences(partial: ProfilePreferencesUpdate
   if (error) {
     throw new Error(error.message);
   }
-  revalidatePath('/compte/preferences');
+  revalidatePath('/compte/profil');
 }
 
 export async function savePushSubscription(subscription: PushSubscriptionPayload) {
@@ -144,7 +144,7 @@ export async function savePushSubscription(subscription: PushSubscriptionPayload
   if (error) {
     throw new Error(error.message);
   }
-  revalidatePath('/compte/preferences');
+  revalidatePath('/compte/profil');
 }
 
 export async function deletePushSubscription(endpoint: string) {
@@ -170,5 +170,5 @@ export async function deletePushSubscription(endpoint: string) {
   if (error) {
     throw new Error(error.message);
   }
-  revalidatePath('/compte/preferences');
+  revalidatePath('/compte/profil');
 }

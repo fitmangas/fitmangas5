@@ -38,6 +38,8 @@ function buildConfigOverwrite(isModerator: boolean): Record<string, unknown> {
       startWithAudioMuted: false,
       startWithVideoMuted: false,
       disableModeratorIndicator: false,
+      fileRecordingsEnabled: true,
+      hiddenDomain: 'recorder.meet.jitsi',
     };
   }
   return {
@@ -67,6 +69,12 @@ export type JitsiRoomProps = {
   jwt?: string;
 };
 
+type JitsiMeetApi = {
+  dispose: () => void;
+  addListener: (event: string, callback: (...args: unknown[]) => void) => void;
+  executeCommand: (command: string, ...args: unknown[]) => void;
+};
+
 export function JitsiRoom({
   roomUrl,
   title = 'Live',
@@ -77,11 +85,12 @@ export function JitsiRoom({
 }: JitsiRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const apiRef = useRef<{ dispose: () => void } | null>(null);
+  const apiRef = useRef<JitsiMeetApi | null>(null);
 
   useEffect(() => {
     setError(null);
     let cancelled = false;
+    let recordingStartTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function mount() {
       if (!containerRef.current) return;
@@ -111,7 +120,22 @@ export function JitsiRoom({
           },
           configOverwrite: buildConfigOverwrite(isModerator),
           interfaceConfigOverwrite: buildInterfaceConfigOverwrite(isModerator),
-        });
+        }) as JitsiMeetApi;
+
+        if (isModerator) {
+          const api = apiRef.current;
+          api.addListener('videoConferenceJoined', () => {
+            recordingStartTimer = setTimeout(() => {
+              if (!cancelled) {
+                apiRef.current?.executeCommand('startRecording', { mode: 'file' });
+              }
+            }, 5000);
+          });
+
+          api.addListener('recordingStatusChanged', (...args: unknown[]) => {
+            console.log('[Jitsi Recording]', args[0]);
+          });
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Erreur lors de l’ouverture du live.');
@@ -123,6 +147,7 @@ export function JitsiRoom({
 
     return () => {
       cancelled = true;
+      if (recordingStartTimer) clearTimeout(recordingStartTimer);
       apiRef.current?.dispose();
       apiRef.current = null;
       if (containerRef.current) containerRef.current.innerHTML = '';

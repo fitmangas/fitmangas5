@@ -7,6 +7,7 @@ import { CalendarCheck2 } from 'lucide-react';
 import { CalendarCourseModal } from '@/components/Calendar/CalendarCourseModal';
 import { GlassCard } from '@/components/ui/GlassCard';
 import type { NextAppointment } from '@/lib/compte/dashboard';
+import { getCoachImage } from '@/lib/coach-images';
 import type { SmartCourse } from '@/lib/domain/calendar-types';
 
 function buildModalCourse(appointment: NonNullable<NextAppointment>, lang: 'fr' | 'en' | 'es'): SmartCourse {
@@ -156,55 +157,71 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
     [nextAppointment, lang],
   );
 
+  const coachImageSrc = hasUpcomingLive ? getCoachImage(0) : null;
+
   return (
     <>
-      <GlassCard className="relative p-5 md:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
-            <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">
-              {hasUpcomingLive ? nextAppointment.title : t.none}
-            </p>
-            <p className="mt-2 text-xs text-luxury-muted">
-              {hasUpcomingLive
-                ? new Date(nextAppointment.startsAt).toLocaleString(locale, {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : t.reserve}
-            </p>
+      <GlassCard className="relative h-full p-5 md:p-6" style={{ position: 'relative', overflow: 'visible', zIndex: 'auto' }}>
+        <div style={{ position: 'relative', zIndex: 20 }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
+              <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">
+                {hasUpcomingLive ? nextAppointment.title : t.none}
+              </p>
+              <p className="mt-2 text-xs text-luxury-muted">
+                {hasUpcomingLive
+                  ? new Date(nextAppointment.startsAt).toLocaleString(locale, {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : t.reserve}
+              </p>
+            </div>
+            <span className={`kpi-icon-wrap ${iconToneClass} shrink-0`}>
+              <CalendarCheck2 size={20} aria-hidden strokeWidth={2} />
+            </span>
           </div>
-          <span className={`kpi-icon-wrap ${iconToneClass} shrink-0`}>
-            <CalendarCheck2 size={20} aria-hidden strokeWidth={2} />
-          </span>
-        </div>
-        {liveUnread && liveUnread > 0 ? (
-          <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
-            {liveUnread > 99 ? '99+' : liveUnread}
-          </span>
-        ) : null}
-        <div className="mt-5 flex flex-wrap gap-2">
-          {hasUpcomingLive ? (
-            <>
-              <button type="button" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]" onClick={() => setOpen(true)}>
-                {t.details}
-              </button>
-              <Link
-                href={`/live/${nextAppointment.courseId}`}
-                className="btn-luxury-primary relative z-20 min-h-[46px] min-w-[160px]"
-              >
-                {t.join}
+          {liveUnread && liveUnread > 0 ? (
+            <span className="absolute right-3 top-3 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
+              {liveUnread > 99 ? '99+' : liveUnread}
+            </span>
+          ) : null}
+          <div className="mt-5 flex flex-wrap gap-2">
+            {hasUpcomingLive ? (
+              <>
+                <button type="button" className="btn-luxury-ghost min-h-[46px] min-w-[160px]" onClick={() => setOpen(true)}>
+                  {t.details}
+                </button>
+                <Link
+                  href={`/live/${nextAppointment.courseId}`}
+                  className="btn-luxury-primary min-h-[46px] min-w-[160px]"
+                >
+                  {t.join}
+                </Link>
+              </>
+            ) : (
+              <Link href="/compte/planning" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
+                {t.seePlanning}
               </Link>
-            </>
-          ) : (
-            <Link href="/compte/planning" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
-              {t.seePlanning}
-            </Link>
-          )}
+            )}
+          </div>
         </div>
+        {coachImageSrc ? (
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 z-10 h-[150px] w-[110px] overflow-hidden rounded-br-[1rem]"
+            aria-hidden
+          >
+            <img
+              src={coachImageSrc}
+              alt=""
+              className="block h-full w-full object-cover object-bottom"
+            />
+          </div>
+        ) : null}
       </GlassCard>
 
       <CalendarCourseModal course={open ? modalCourse : null} onClose={() => setOpen(false)} lang={lang} />

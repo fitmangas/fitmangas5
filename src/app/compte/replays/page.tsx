@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
 import { ReplayLibraryCard } from '@/components/Replay/ReplayLibraryCard';
 import { VisioLock } from '@/components/Premium/VisioLock';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
@@ -31,7 +32,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           emptyAll: 'No replay available right now.',
           clientArea: 'Client area',
           subtitle: 'Latest featured replay, favorites and full history.',
-          back: 'Back to dashboard',
+          dashboard: 'Dashboard',
           all: 'All replays',
           fav: 'My favorites',
           search: 'Search a replay...',
@@ -55,7 +56,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             emptyAll: 'No hay replays disponibles por ahora.',
             clientArea: 'Área cliente',
             subtitle: 'Último replay destacado, favoritos e historial completo.',
-            back: 'Volver al panel',
+            dashboard: 'Dashboard',
             all: 'Todos los replays',
             fav: 'Mis favoritos',
             search: 'Buscar un replay...',
@@ -78,7 +79,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             emptyAll: 'Aucun replay disponible pour le moment.',
             clientArea: 'Espace client',
             subtitle: 'Dernier replay en vedette, favoris et historique complet.',
-            back: 'Retour dashboard',
+            dashboard: 'Dashboard',
             all: 'Tous les replays',
             fav: 'Mes favoris',
             search: 'Rechercher un replay...',
@@ -188,16 +189,12 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-16 pt-6 md:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.clientArea}</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
-        </div>
-        <Link href="/compte" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
-          ← {t.back}
-        </Link>
+    <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
+      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.clientArea}</p>
+        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
+        <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
       </header>
 
       <div className="mt-8 flex flex-wrap gap-2">

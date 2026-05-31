@@ -79,7 +79,7 @@ export function BlogRatingBlock({ articleId, initialAverage, initialCount, isLog
       </div>
       {!isLoggedIn ? (
         <p className="mt-3 text-xs text-luxury-muted">
-          <a href="/login" className="font-semibold underline underline-offset-2">
+          <a href="/connexion" className="font-semibold underline underline-offset-2">
             Connexion
           </a>{' '}
           requise pour voter.

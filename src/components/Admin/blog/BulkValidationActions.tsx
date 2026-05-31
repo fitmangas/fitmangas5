@@ -48,7 +48,7 @@ export function BulkValidationActions({ pendingValidationIds }: { pendingValidat
           type="button"
           disabled={busy || count === 0}
           onClick={() => void run('approve')}
-          className="rounded-full bg-emerald-600 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white disabled:opacity-50"
+          className="btn-luxury-primary px-4 py-2 text-[11px] disabled:opacity-50"
         >
           Valider tout le mois
         </button>

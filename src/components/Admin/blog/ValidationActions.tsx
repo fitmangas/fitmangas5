@@ -50,7 +50,7 @@ export function ValidationActions({
           type="button"
           disabled={busy}
           onClick={() => void patch('approve')}
-          className="rounded-full bg-emerald-600 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white disabled:opacity-50"
+          className="btn-luxury-primary px-4 py-2 text-[11px] disabled:opacity-50"
         >
           Valider
         </button>

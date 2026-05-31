@@ -37,7 +37,7 @@ function SeoPanelContent({
     <>
       <button
         type="button"
-        className="w-full rounded-full bg-orange-500/15 px-4 py-3 text-sm font-semibold text-orange-900"
+        className="btn-luxury-gold w-full px-4 py-3 text-sm normal-case tracking-normal"
         disabled={seoLoading}
         onClick={onAnalyze}
       >
@@ -149,7 +149,7 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
         </Link>
         <button
           type="button"
-          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-orange-200/80 bg-orange-50/80 px-4 text-xs font-semibold text-orange-900 lg:hidden"
+          className="btn-luxury-gold inline-flex min-h-[44px] items-center justify-center gap-2 px-4 text-xs normal-case tracking-normal lg:hidden"
           onClick={() => setPanelOpen(true)}
         >
           <PanelRightOpen size={18} /> Assistant SEO

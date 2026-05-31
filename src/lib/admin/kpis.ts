@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { computeMemberHealth } from '@/lib/admin/member-health';
 import { getPrintfulOrders, parseMoney } from '@/lib/printful';
 
 type TrendPoint = {
@@ -22,6 +23,8 @@ export type AdminKpis = {
     healthy: number;
     fragile: number;
     atRisk: number;
+    newMembers: number;
+    watch: number;
   };
   trend: TrendPoint[];
 };
@@ -477,15 +480,25 @@ async function liveShowUpRate30d(): Promise<number | null> {
   return Math.round((attended / total) * 10000) / 100;
 }
 
-async function healthScoreBuckets(): Promise<{ healthy: number; fragile: number; atRisk: number }> {
+async function healthScoreBuckets(): Promise<{
+  healthy: number;
+  fragile: number;
+  atRisk: number;
+  newMembers: number;
+  watch: number;
+}> {
   const admin = createAdminClient();
   const now = Date.now();
-  const tenDaysAgo = now - 10 * 24 * 60 * 60 * 1000;
-  const fourDaysAgo = now - 4 * 24 * 60 * 60 * 1000;
 
-  const { data: members } = await admin.from('profiles').select('id').eq('role', 'member');
+  const { data: members } = await admin.from('profiles').select('id, created_at').eq('role', 'member').eq('archived', false);
   const ids = (members ?? []).map((m) => m.id);
-  if (!ids.length) return { healthy: 0, fragile: 0, atRisk: 0 };
+  if (!ids.length) return { healthy: 0, fragile: 0, atRisk: 0, newMembers: 0, watch: 0 };
+
+  const createdAtById = new Map<string, number>();
+  for (const m of members ?? []) {
+    const ts = m.created_at ? new Date(m.created_at).getTime() : now;
+    createdAtById.set(m.id, ts);
+  }
 
   const { data: attendedEnrollments } = await admin
     .from('enrollments')
@@ -522,19 +535,21 @@ async function healthScoreBuckets(): Promise<{ healthy: number; fragile: number;
   let healthy = 0;
   let fragile = 0;
   let atRisk = 0;
+  let newMembers = 0;
+  let watch = 0;
 
   for (const id of ids) {
     const last = Math.max(lastLive.get(id) ?? 0, lastReplay.get(id) ?? 0);
-    if (!last || last < tenDaysAgo) {
-      atRisk += 1;
-    } else if (last < fourDaysAgo) {
-      fragile += 1;
-    } else {
-      healthy += 1;
-    }
+    const createdTs = createdAtById.get(id) ?? now;
+    const bucket = computeMemberHealth({ lastActivityTs: last, accountCreatedTs: createdTs, now });
+    if (bucket === 'new') newMembers += 1;
+    else if (bucket === 'watch') watch += 1;
+    else if (bucket === 'green') healthy += 1;
+    else if (bucket === 'orange') fragile += 1;
+    else atRisk += 1;
   }
 
-  return { healthy, fragile, atRisk };
+  return { healthy, fragile, atRisk, newMembers, watch };
 }
 
 async function refreshDailySnapshot(): Promise<void> {

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { clientIpFromRequest, assertWebhookRateLimit } from '@/lib/webhook-rate-limit';
 import { extractVimeoNumericIdFromWebhookPayload } from '@/lib/vimeo-webhook-parse';
 import { verifyVimeoWebhookSignature } from '@/lib/vimeo-webhook-verify';
+import { updateCourseRecordingFromWebhook } from '@/lib/replay-admin';
 import { getVideoMetadata } from '@/lib/vimeo';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +62,18 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+
+  const courseUpdate = await updateCourseRecordingFromWebhook(admin, vimeoId, meta);
+  if (courseUpdate) {
+    console.info('[vimeo webhook] course recording updated', vimeoId, courseUpdate.course_recording_id);
+    return NextResponse.json({
+      ok: true,
+      type: 'course_recording',
+      vimeo_video_id: vimeoId,
+      course_recording_id: courseUpdate.course_recording_id,
+    });
+  }
+
   const defaultCoachId = parseDefaultCoachIdFromEnv();
 
   const { data: jitsiRow } = await admin.from('video_recordings').select('id').eq('vimeo_video_id', vimeoId).maybeSingle();

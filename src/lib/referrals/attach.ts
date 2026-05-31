@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { isValidReferralCode, normalizeReferralCode } from '@/lib/referrals/cookie';
+import { referredCheckoutQualifiesForProgram, resolveReferrerReferralProgram } from '@/lib/referrals/referral-program';
+import { syncReferralRewardForReferrer, syncReferrerRewardAfterReferredUserChange } from '@/lib/referrals/reward';
+import type Stripe from 'stripe';
+
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
-}
-
-function normalizeRef(code: string) {
-  return code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 48);
 }
 
 export async function attachReferralForNewUser(
@@ -15,8 +16,8 @@ export async function attachReferralForNewUser(
   newUserEmail: string | null | undefined,
 ): Promise<void> {
   if (!refCodeRaw || !newUserEmail) return;
-  const refCode = normalizeRef(refCodeRaw);
-  if (refCode.length < 4) return;
+  const refCode = normalizeReferralCode(refCodeRaw);
+  if (!isValidReferralCode(refCode)) return;
   const email = normalizeEmail(newUserEmail);
   if (!email) return;
 
@@ -57,11 +58,57 @@ export async function attachReferralForNewUser(
   if (error) console.error('[attachReferralForNewUser] insert', error.message);
 }
 
-export async function markReferralsSubscribedForUser(admin: SupabaseClient, userId: string): Promise<void> {
+export async function markReferralsSubscribedForUser(
+  admin: SupabaseClient,
+  userId: string,
+  courseId: string | null | undefined,
+  stripe: Stripe | null = null,
+): Promise<void> {
+  const isVisioCheckout = courseId === 'v-coll' || courseId === 'v-ind';
+  if (!isVisioCheckout) {
+    await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);
+    return;
+  }
+
+  const { data: referralRow } = await admin
+    .from('referrals')
+    .select('referrer_user_id')
+    .eq('referred_user_id', userId)
+    .maybeSingle();
+
+  if (!referralRow?.referrer_user_id) return;
+
+  const { data: referrerProfile } = await admin
+    .from('profiles')
+    .select('subscription_type, last_checkout_course_id, subscription_status')
+    .eq('id', referralRow.referrer_user_id)
+    .maybeSingle();
+
+  const program = resolveReferrerReferralProgram(referrerProfile ?? {});
+  if (!referredCheckoutQualifiesForProgram(program, courseId)) {
+    await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);
+    return;
+  }
+
   const now = new Date().toISOString();
-  await admin
+  const { data: updated, error } = await admin
     .from('referrals')
     .update({ status: 'subscribed', converted_at: now })
     .eq('referred_user_id', userId)
-    .in('status', ['pending', 'signed_up']);
+    .in('status', ['pending', 'signed_up'])
+    .select('referrer_user_id');
+
+  if (error) {
+    console.error('[markReferralsSubscribedForUser]', error.message);
+    return;
+  }
+
+  const referrerIds = [...new Set((updated ?? []).map((r) => r.referrer_user_id).filter(Boolean))] as string[];
+  for (const referrerId of referrerIds) {
+    await syncReferralRewardForReferrer(admin, stripe, referrerId);
+  }
+
+  if (!referrerIds.length) {
+    await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);
+  }
 }

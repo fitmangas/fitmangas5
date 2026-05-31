@@ -68,7 +68,7 @@ export function PrintfulProductsSaleGridEditor({ products }: { products: Product
           type="button"
           onClick={() => void saveOrder()}
           disabled={!hasChanges || saving}
-          className="inline-flex items-center gap-2 rounded-full bg-luxury-orange px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="btn-luxury-primary gap-2 px-4 py-2 text-[11px] disabled:cursor-not-allowed disabled:opacity-45"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : null}
           Sauvegarder

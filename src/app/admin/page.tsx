@@ -2,18 +2,28 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Euro, Video } from 'lucide-react';
 
+import { AiBusinessAdvisor } from '@/components/Admin/AiBusinessAdvisor';
 import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
+import { AdminViewSwitchMenuLink } from '@/components/Admin/AdminViewSwitchClient';
+import { ClientAvatar } from '@/components/Admin/ClientAvatar';
 import { DismissibleDashboardBadge, DismissOnClickLink } from '@/components/Admin/DismissibleDashboardBadge';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { checkIsAdmin } from '@/lib/auth/admin';
-import { getAdminKpiDrilldowns, getAdminKpis, stripeCollectedCurrentMonthEur } from '@/lib/admin/kpis';
+import { checkIsAdmin, canUseAdminViewSwitch } from '@/lib/auth/admin';
+import {
+  getCachedAdminKpiDrilldowns,
+  getCachedAdminKpis,
+  getCachedStripeCollectedCurrentMonthEur,
+} from '@/lib/admin/cached-kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { DEFAULT_COURSE_TIMEZONE, formatCourseInstant } from '@/lib/course-datetime';
+import { getDemoClientMode } from '@/lib/demo-client-mode';
 
 type ProfileRow = {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
   role: string | null;
   last_checkout_course_id: string | null;
   updated_at: string | null;
@@ -23,6 +33,7 @@ type UpcomingCourseRow = {
   id: string;
   title: string;
   starts_at: string;
+  timezone: string | null;
 };
 
 type Point = { x: number; y: number };
@@ -147,6 +158,8 @@ function formatMonthYear(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+export const revalidate = 300;
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const {
@@ -162,6 +175,12 @@ export default async function AdminPage() {
     redirect('/login?error=forbidden');
   }
 
+  const [viewSwitchGate, clientView] = await Promise.all([
+    canUseAdminViewSwitch(supabase, user),
+    getDemoClientMode(),
+  ]);
+  const showViewSwitch = viewSwitchGate.canSwitch;
+
   const adminDb = createAdminClient();
   const nowIso = new Date().toISOString();
   const [
@@ -175,17 +194,19 @@ export default async function AdminPage() {
     stripeMonthEur,
     kpiDrilldowns,
   ] = await Promise.all([
-    supabase
+    adminDb
       .from('profiles')
-      .select('id, first_name, last_name, role, last_checkout_course_id, updated_at')
+      .select('id, first_name, last_name, avatar_url, role, last_checkout_course_id, updated_at')
+      .eq('archived', false)
+      .eq('role', 'member')
       .order('updated_at', { ascending: false })
-      .limit(10),
+      .limit(4),
     adminDb.from('video_recordings').select('*', { count: 'exact', head: true }).eq('is_ready', true),
-    getAdminKpis(),
+    getCachedAdminKpis(),
     supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle(),
     adminDb
       .from('courses')
-      .select('id, title, starts_at')
+      .select('id, title, starts_at, timezone')
       .eq('is_published', true)
       .gte('starts_at', nowIso)
       .order('starts_at', { ascending: true })
@@ -196,8 +217,8 @@ export default async function AdminPage() {
       .select('*', { count: 'exact', head: true })
       .eq('month_year', formatMonthYear(new Date()))
       .eq('status', 'pending'),
-    stripeCollectedCurrentMonthEur(),
-    getAdminKpiDrilldowns(),
+    getCachedStripeCollectedCurrentMonthEur(),
+    getCachedAdminKpiDrilldowns(),
   ]);
 
   const upcomingCourses = (upcomingCoursesData ?? []) as UpcomingCourseRow[];
@@ -244,14 +265,17 @@ export default async function AdminPage() {
       : (stripeMonthEur ?? 0) + kpiDrilldowns.boutiqueRevenueEur;
 
   return (
-    <div className="mx-auto max-w-[1280px] space-y-5 xl:space-y-6 pt-3 md:pt-4">
-      <div className="relative z-50 overflow-visible border-b border-white/10 bg-transparent pb-2 pt-3 backdrop-blur-[20px] md:pb-2.5 md:pt-4">
+    <div className="mx-auto max-w-[1280px] min-w-0 space-y-5 pt-3 md:pt-4 xl:space-y-6">
+      <div className="relative z-50 border-b border-white/10 bg-transparent pb-2 pt-3 backdrop-blur-[20px] md:pb-2.5 md:pt-4">
         {/* Sur xl : même grille 4 cols que les KPI pour centrer le texte au-dessus des colonnes Churn + Abonnés */}
         <div className="hidden items-center gap-5 xl:grid xl:grid-cols-4">
+          <div className="flex items-center justify-start">
+            <AiBusinessAdvisor />
+          </div>
           <div className="col-start-2 col-span-2 min-w-0 text-center">
-            <h1 className="hero-signature-title text-6xl text-luxury-ink">Hola {firstName}</h1>
+            <h1 className="hero-signature-title text-6xl text-luxury-ink">Bonjour {firstName}</h1>
             <p className="hero-signature-subtitle mt-1 text-sm md:text-base">
-              Un nuevo día para hacer crecer tu imperio.
+              Une nouvelle journée pour faire grandir ton studio.
             </p>
           </div>
           <div className="flex justify-end">
@@ -268,12 +292,10 @@ export default async function AdminPage() {
                 <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                   Retour site
                 </Link>
+                {showViewSwitch ? <AdminViewSwitchMenuLink clientView={clientView} /> : null}
                 <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                   Mon profil
                 </Link>
-                <a href="/api/demo-mode/enable" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
-                  Démo élève
-                </a>
                 <form action="/auth/signout" method="post" className="mt-1">
                   <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
                     Déconnexion
@@ -285,11 +307,14 @@ export default async function AdminPage() {
         </div>
 
         {/* < xl : layout simple */}
-        <div className="flex items-center justify-between gap-6 xl:hidden">
-          <div className="min-w-0 flex-1 text-center">
-            <h1 className="hero-signature-title text-5xl text-luxury-ink md:text-6xl">Hola {firstName}</h1>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 xl:hidden">
+          <AiBusinessAdvisor />
+          <div className="min-w-0 text-center">
+            <h1 className="hero-signature-title break-words text-[1.65rem] leading-[0.95] text-luxury-ink sm:text-5xl md:text-6xl">
+              Bonjour {firstName}
+            </h1>
             <p className="hero-signature-subtitle mt-1 text-sm md:text-base">
-              Un nuevo día para hacer crecer tu imperio.
+              Une nouvelle journée pour faire grandir ton studio.
             </p>
           </div>
           <details className="relative z-[120] shrink-0">
@@ -298,19 +323,17 @@ export default async function AdminPage() {
               <img
                 src="/alejandra.png?v=2"
                 alt="Alejandra"
-                className="w-[100px] h-auto max-h-[200px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer"
+                className="h-auto w-14 max-h-[120px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer sm:w-[88px] md:w-[100px] md:max-h-[200px]"
               />
             </summary>
             <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
               <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                 Retour site
               </Link>
+              {showViewSwitch ? <AdminViewSwitchMenuLink clientView={clientView} /> : null}
               <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                 Mon profil
               </Link>
-              <a href="/api/demo-mode/enable" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
-                Démo élève
-              </a>
               <form action="/auth/signout" method="post" className="mt-1">
                 <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
                   Déconnexion
@@ -345,7 +368,7 @@ export default async function AdminPage() {
             <p className="text-[10px] uppercase tracking-widest text-white/50">Cours à venir</p>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[10px] text-white/55">
-            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, idx) => (
+            {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map((d, idx) => (
               <span key={`${d}-${idx}`}>{d}</span>
             ))}
           </div>
@@ -385,18 +408,22 @@ export default async function AdminPage() {
           </div>
           <div className="mt-4 space-y-3">
             {nextThree.map((course) => (
-              <div key={course.id} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5">
+              <a
+                key={course.id}
+                href={`/live/${course.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block cursor-pointer rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 transition hover:border-white/30 hover:bg-white/20"
+                title="Rejoindre le live"
+              >
                 <p className="truncate text-sm font-semibold text-white">{course.title}</p>
                 <p className="mt-1 text-xs text-white/70">
-                  {new Date(course.starts_at).toLocaleString('fr-FR', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatCourseInstant(
+                    course.starts_at,
+                    course.timezone?.trim() || DEFAULT_COURSE_TIMEZONE,
+                  )}
                 </p>
-              </div>
+              </a>
             ))}
             {nextThree.length === 0 ? (
               <p className="text-sm text-white/65">Aucun cours planifié.</p>
@@ -406,7 +433,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr_1.9fr]">
-        <GlassCard className="h-full p-5 md:p-6">
+        <GlassCard elevated className="p-5 md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR Stripe</p>
@@ -418,7 +445,7 @@ export default async function AdminPage() {
             </span>
           </div>
         </GlassCard>
-        <GlassCard className="relative flex flex-col p-5 md:p-6">
+        <GlassCard elevated className="relative flex flex-col p-5 md:p-6">
           <DismissibleDashboardBadge storageKey="admin_badge_vimeo_pending" count={pendingStandaloneCount ?? 0} />
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -426,7 +453,7 @@ export default async function AdminPage() {
               <p className="mt-3 text-3xl font-semibold tabular-nums text-luxury-ink">{totalReplaysReady ?? 0}</p>
               <p className="mt-2 text-xs text-luxury-muted">Replays prêts</p>
             </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--green">
+            <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
               <Video size={20} aria-hidden strokeWidth={2} />
             </span>
           </div>
@@ -439,8 +466,16 @@ export default async function AdminPage() {
             Bibliothèque Vimeo
           </DismissOnClickLink>
         </GlassCard>
-        <GlassCard className="p-5 md:p-6">
+        <GlassCard elevated className="p-5 md:p-6">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>
+          <div className="mt-1 flex justify-end">
+            <Link
+              href="/admin/clients"
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-orange underline-offset-4 hover:underline"
+            >
+              Voir tous →
+            </Link>
+          </div>
           <div className="mt-3 overflow-x-auto">
             <table className="min-w-full text-left">
             <thead>
@@ -457,8 +492,13 @@ export default async function AdminPage() {
                   <td className="px-2 py-3">
                     <Link
                       href={`/admin/clients/${profile.id}`}
-                      className="font-semibold text-[#ff7a00] underline-offset-4 hover:underline"
+                      className="inline-flex items-center gap-3 font-semibold text-luxury-orange underline-offset-4 hover:underline"
                     >
+                      <ClientAvatar
+                        avatarUrl={profile.avatar_url}
+                        name={[profile.first_name, profile.last_name].filter(Boolean).join(' ')}
+                        size={32}
+                      />
                       {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8)}
                     </Link>
                   </td>
@@ -483,7 +523,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[2fr_1fr]">
-        <GlassCard className="p-5 md:p-6">
+        <GlassCard elevated className="p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
@@ -505,7 +545,7 @@ export default async function AdminPage() {
                     </linearGradient>
                     <linearGradient id="mrrLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#ff9a3d" />
-                      <stop offset="100%" stopColor="#ff7a00" />
+                      <stop offset="100%" stopColor="#C45D3E" />
                     </linearGradient>
                     <filter id="mrrGlow" x="-20%" y="-20%" width="140%" height="140%">
                       <feGaussianBlur stdDeviation="1.4" result="blur" />
@@ -529,7 +569,7 @@ export default async function AdminPage() {
                     cx="100"
                     cy={trendPoints[trendPoints.length - 1]?.y ?? 90}
                     r="2.8"
-                    fill="#ff7a00"
+                    fill="#C45D3E"
                     stroke="rgba(255,255,255,0.9)"
                     strokeWidth="1.1"
                   />
@@ -547,10 +587,10 @@ export default async function AdminPage() {
           </div>
         </GlassCard>
 
-        <GlassCard className="p-5 md:p-6">
+        <GlassCard elevated className="p-5 md:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Engagement</p>
           <div className="mt-6 space-y-4">
-            <RingGauge value={kpis.replayCompletionRate30d} color="#ff7a00" label="Completion rate replay" />
+            <RingGauge value={kpis.replayCompletionRate30d} color="#C45D3E" label="Completion rate replay" />
             <div className="h-px bg-white/60" />
             <RingGauge value={kpis.liveShowUpRate30d} color="#10b981" label="Show-up rate live" />
             <div className="h-px bg-white/60" />

@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Smartphone } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
-import { FORTNIGHT_DAYS, getUtcFortnightWindow } from '@/lib/calendar-window';
+import {
+  courseDayKeyInTimeZone,
+  DEFAULT_CALENDAR_TIMEZONE,
+  FORTNIGHT_DAYS,
+  getTwoWeekCalendarDayStarts,
+} from '@/lib/calendar-window';
+import { calendarDayKeyInTimeZone } from '@/lib/notifications/timezone';
 
 import { CalendarCourseModal } from './CalendarCourseModal';
 import { badgeForAccess, effectiveAccessForUi } from '@/lib/calendar-course-ui';
@@ -19,21 +25,9 @@ type ApiResponse = {
   };
 };
 
-/** Clé jour UTC pour regrouper avec les événements (starts_at ISO). */
-function utcDayKey(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
-/** Les 14 jours de la fenêtre (UTC), du jour courant inclus. */
-function getFortnightUtcDays() {
-  const { start } = getUtcFortnightWindow();
-  const days: Date[] = [];
-  for (let i = 0; i < FORTNIGHT_DAYS; i++) {
-    const d = new Date(start);
-    d.setUTCDate(d.getUTCDate() + i);
-    days.push(d);
-  }
-  return days;
+/** Clé jour calendaire (fuseau cours) pour regrouper les événements. */
+function courseDayKey(iso: string, timeZone: string) {
+  return courseDayKeyInTimeZone(iso, timeZone);
 }
 
 function classForAccess(access: AccessType) {
@@ -46,19 +40,21 @@ function classForAccess(access: AccessType) {
   return 'border-white/20 bg-white/[0.08] text-white/70 blur-[0.5px]';
 }
 
-function formatFortnightSubtitle(locale: string) {
-  const days = getFortnightUtcDays();
+function formatFortnightSubtitle(locale: string, lang: 'fr' | 'en' | 'es') {
+  const days = getTwoWeekCalendarDayStarts(DEFAULT_CALENDAR_TIMEZONE);
   const first = days[0];
   const last = days[days.length - 1];
   const opts: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: DEFAULT_CALENDAR_TIMEZONE,
   };
   const from = first.toLocaleDateString(locale, opts);
   const to = last.toLocaleDateString(locale, opts);
-  return `${from} → ${to}`;
+  if (lang === 'en') return `Week of ${from} to ${to}`;
+  if (lang === 'es') return `Semana del ${from} al ${to}`;
+  return `Semaine du ${from} au ${to}`;
 }
 
 export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
@@ -118,7 +114,8 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
             weekdays: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
           };
 
-  const fortnightDays = getFortnightUtcDays();
+  const calendarDays = getTwoWeekCalendarDayStarts(DEFAULT_CALENDAR_TIMEZONE);
+  const todayKey = calendarDayKeyInTimeZone(DEFAULT_CALENDAR_TIMEZONE);
 
   const hasUpcomingEvents = events.length > 0;
   const canUseMobileSync = Boolean(tier) || hasUpcomingEvents;
@@ -184,7 +181,8 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
   const groupedByDay = useMemo(() => {
     const map = new Map<string, SmartCourse[]>();
     events.forEach((event) => {
-      const key = utcDayKey(event.starts_at);
+      const tz = event.timezone?.trim() || DEFAULT_CALENDAR_TIMEZONE;
+      const key = courseDayKey(event.starts_at, tz);
       const dayEvents = map.get(key) ?? [];
       dayEvents.push(event);
       map.set(key, dayEvents);
@@ -197,16 +195,16 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
     [events],
   );
 
-  const formatEventDate = (iso: string) =>
+  const formatEventDate = (iso: string, timeZone: string) =>
     new Date(iso).toLocaleDateString(locale, {
       weekday: 'short',
       day: '2-digit',
       month: 'short',
-      timeZone: 'UTC',
+      timeZone,
     });
 
-  const formatEventTime = (startIso: string, endIso: string) => {
-    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' };
+  const formatEventTime = (startIso: string, endIso: string, timeZone: string) => {
+    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', timeZone };
     return `${new Date(startIso).toLocaleTimeString(locale, opts)} - ${new Date(endIso).toLocaleTimeString(locale, opts)}`;
   };
 
@@ -216,7 +214,7 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-white/60">{t.title}</p>
           <p className="mt-2 text-sm leading-relaxed text-white/80">
-            {t.upcoming} {FORTNIGHT_DAYS} {t.days} · {formatFortnightSubtitle(locale)}
+            {t.upcoming} {FORTNIGHT_DAYS} {t.days} · {formatFortnightSubtitle(locale, lang)}
           </p>
         </div>
         <div className="flex w-full shrink-0 flex-wrap items-center justify-end sm:w-auto sm:justify-end sm:pt-0.5">
@@ -278,6 +276,7 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
             ))
           : sortedEvents.map((event) => {
               const access = effectiveAccessForUi(event);
+              const tz = event.timezone?.trim() || DEFAULT_CALENDAR_TIMEZONE;
               return (
                 <button
                   key={event.id}
@@ -288,10 +287,10 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">
-                        {formatEventDate(event.starts_at)}
+                        {formatEventDate(event.starts_at, tz)}
                       </p>
                       <p className="mt-1 text-base font-semibold leading-tight">{event.title}</p>
-                      <p className="mt-1 text-xs opacity-80">{formatEventTime(event.starts_at, event.ends_at)}</p>
+                      <p className="mt-1 text-xs opacity-80">{formatEventTime(event.starts_at, event.ends_at, tz)}</p>
                     </div>
                     <span className="shrink-0 rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]">
                       {badgeForAccess(access)}
@@ -316,17 +315,24 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
           ? Array.from({ length: 14 }, (_, index) => (
               <div key={index} className="min-h-24 animate-pulse rounded-xl bg-white/10" />
             ))
-          : fortnightDays.map((date) => {
-              const key = date.toISOString().slice(0, 10);
+          : calendarDays.map((date) => {
+              const key = calendarDayKeyInTimeZone(DEFAULT_CALENDAR_TIMEZONE, date);
               const dayEvents = groupedByDay.get(key) ?? [];
+              const isPastDay = key < todayKey;
 
               return (
                 <div
                   key={key}
-                  className="min-h-24 rounded-xl border border-white/15 bg-white/[0.06] p-1.5 backdrop-blur-md"
+                  className={`min-h-24 rounded-xl border border-white/15 bg-white/[0.06] p-1.5 backdrop-blur-md transition ${
+                    isPastDay ? 'opacity-45' : ''
+                  }`}
                 >
                   <div className="mb-1 text-[11px] font-semibold text-white/75">
-                    {date.toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' })}
+                    {date.toLocaleDateString(locale, {
+                      day: 'numeric',
+                      month: 'short',
+                      timeZone: DEFAULT_CALENDAR_TIMEZONE,
+                    })}
                   </div>
                   <div className="space-y-1">
                     {dayEvents.slice(0, 3).map((event) => (

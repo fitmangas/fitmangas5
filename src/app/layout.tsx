@@ -1,6 +1,5 @@
-import type { Metadata } from 'next';
-import Script from 'next/script';
-
+import type { Metadata, Viewport } from 'next';
+import { PublicMarketingScripts } from '@/components/Marketing/PublicMarketingScripts';
 import { FloatingWhatsApp } from '@/components/Support/FloatingWhatsApp';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 
@@ -23,6 +22,13 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
   },
+  manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#C45D3E',
 };
 
 export default async function RootLayout({
@@ -36,40 +42,12 @@ export default async function RootLayout({
 
   return (
     <html lang="fr">
-      <body className="relative min-h-screen">
+      <body className="relative min-h-screen overflow-x-clip">
         <div className="relative min-h-screen">
           {children}
           <FloatingWhatsApp />
         </div>
-        {gaId ? (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
-            <Script id="ga4" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${gaId}');
-              `}
-            </Script>
-          </>
-        ) : null}
-        {metaPixelId ? (
-          <Script id="meta-pixel" strategy="afterInteractive">
-            {`
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${metaPixelId}');
-              fbq('track', 'PageView');
-            `}
-          </Script>
-        ) : null}
+        <PublicMarketingScripts gaId={gaId} metaPixelId={metaPixelId ?? null} />
       </body>
     </html>
   );

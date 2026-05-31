@@ -23,7 +23,9 @@ export interface Content {
   microline: string;
   segVisio: string;
   segNantes: string;
-  visioLabel: string;
+  visioCollectifLabel: string;
+  visioIndividuelLabel: string;
+  visioIndividuelCollectifExtra: string;
   nantesLabel: string;
   sectionTitle: string;
   trustLine: string;
@@ -53,7 +55,9 @@ export const translations: Record<Language, Content> = {
     microline: "Réserve en 30 secondes.",
     segVisio: "Visio",
     segNantes: "Présentiel",
-    visioLabel: "5 cours par mois",
+    visioCollectifLabel: "8 cours par mois",
+    visioIndividuelLabel: "5 cours par mois",
+    visioIndividuelCollectifExtra: "+ accès aux 8 cours mensuels collectifs",
     nantesLabel: "Studio Nantes",
     sectionTitle: "Choisis ton cours",
     trustLine: "Paiement sécurisé • Abonnements gérés par Stripe",
@@ -104,7 +108,9 @@ export const translations: Record<Language, Content> = {
     microline: "Reserva en 30 segundos.",
     segVisio: "Online",
     segNantes: "Presencial",
-    visioLabel: "5 clases al mes",
+    visioCollectifLabel: "8 clases al mes",
+    visioIndividuelLabel: "5 clases al mes",
+    visioIndividuelCollectifExtra: "+ acceso a los 8 cursos mensuales colectivos",
     nantesLabel: "Studio Nantes",
     sectionTitle: "Elige tu clase",
     trustLine: "Pago seguro • Suscripciones gestionadas por Stripe",

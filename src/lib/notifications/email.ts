@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
 
+import { formatEmailFirstName } from '@/lib/email/format-first-name';
+import { wrapResendEmail } from '@/lib/email/base-template';
+
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEmailTemplate, renderTemplate } from './templates';
 
@@ -30,7 +33,7 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
   const admin = createAdminClient();
   const { data: profile, error } = await admin
     .from('profiles')
-    .select('id, preferred_locale')
+    .select('id, preferred_locale, first_name')
     .eq('id', args.toProfileId)
     .maybeSingle();
   if (error) throw error;
@@ -48,17 +51,29 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
   }
 
   const locale = profile.preferred_locale === 'es' ? 'es' : 'fr';
+  const metaFirstName =
+    userData.user?.user_metadata && typeof userData.user.user_metadata === 'object'
+      ? (userData.user.user_metadata as { first_name?: unknown }).first_name
+      : undefined;
+  const firstName = formatEmailFirstName(profile.first_name) || formatEmailFirstName(String(metaFirstName ?? ''));
+  const payload = { ...args.payload, firstName };
   const template = getEmailTemplate(args.event_type);
-  const rendered = template ? renderTemplate(template, locale, args.payload) : null;
+  const rendered = template ? renderTemplate(template, locale, payload) : null;
   const title = rendered?.subject ?? String(args.payload.title ?? 'FitMangas');
   const body = args.payload.body != null ? String(args.payload.body) : '';
-  const html = rendered?.html ?? `
-    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1d1d1f">
-      <h1>${escapeHtml(title)}</h1>
-      ${body ? `<p>${escapeHtml(body)}</p>` : ''}
-      <p style="font-size:12px;color:#777">FitMangas · ${escapeHtml(args.locale)} · ${escapeHtml(args.event_type)}</p>
-    </div>
+  const innerHtml =
+    rendered?.html ??
+    `
+    <h1 style="margin:0 0 20px;font-size:22px;line-height:1.25;font-weight:700;color:#C45D3E;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${escapeHtml(title)}</h1>
+    ${body ? `<p style="margin:0 0 14px;color:#2D2D2D;">${escapeHtml(body)}</p>` : ''}
+    <p style="margin:16px 0 0;font-size:12px;color:#6B6560;">FitMangas · ${escapeHtml(args.locale)} · ${escapeHtml(args.event_type)}</p>
   `;
+  const showPreferences = !template?.critical;
+  const html = wrapResendEmail({
+    innerHtml,
+    locale,
+    showPreferencesLink: showPreferences,
+  });
 
   const resend = new Resend(apiKey);
   await resend.emails.send({

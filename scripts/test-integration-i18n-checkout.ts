@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { COURSE_CHECKOUT_MODE, COURSE_STRIPE_PRICE_ENV } from '../src/lib/checkout-courses';
-import { compteNavLabels, isClientLang, localeFromClientLang, resolveFirstName } from '../src/lib/compte/i18n';
+import { compteNavLabels, formatCompteGreeting, isClientLang, localeFromClientLang, resolveFirstName } from '../src/lib/compte/i18n';
 
 function testLanguageConsistency() {
   assert.equal(isClientLang('fr'), true);
@@ -15,7 +15,7 @@ function testLanguageConsistency() {
 
   for (const lang of ['fr', 'en', 'es'] as const) {
     assert.ok(compteNavLabels[lang].dashboard.length > 0);
-    assert.ok(compteNavLabels[lang].invoices.length > 0);
+    assert.ok(compteNavLabels[lang].referral.length > 0);
   }
 }
 
@@ -23,7 +23,9 @@ function testFirstNameResolution() {
   assert.equal(resolveFirstName('Alejandra', {}), 'Alejandra');
   assert.equal(resolveFirstName(null, { given_name: 'Maria' }), 'Maria');
   assert.equal(resolveFirstName('', { name: 'Lucia Gomez' }), 'Lucia');
-  assert.equal(resolveFirstName(null, {}), 'Alejandra');
+  assert.equal(resolveFirstName(null, {}), null);
+  assert.equal(formatCompteGreeting('fr', null), 'Bonjour !');
+  assert.equal(formatCompteGreeting('es', null), '¡Hola!');
 }
 
 function testCheckoutMappingCoherence() {

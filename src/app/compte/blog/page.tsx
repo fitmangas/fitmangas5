@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { BlogFavoriteToggle } from '@/components/Compte/BlogFavoriteToggle';
+import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
 import { VisioLock } from '@/components/Premium/VisioLock';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { getClientLang } from '@/lib/compte/i18n';
@@ -26,7 +27,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             emptyAll: 'Aún no hay artículos publicados.',
             area: 'Área cliente',
             subtitle: 'Último artículo destacado + historial completo.',
-            back: 'Volver al panel',
+            dashboard: 'Dashboard',
             all: 'Todos los artículos',
             fav: 'Mis favoritos',
             search: 'Buscar un artículo...',
@@ -52,7 +53,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             emptyAll: 'Aucun article publié pour le moment.',
             area: 'Espace client',
             subtitle: 'Dernier article en vedette + historique complet.',
-            back: 'Retour dashboard',
+            dashboard: 'Dashboard',
             all: 'Tous les articles',
             fav: 'Mes favoris',
             search: 'Rechercher un article...',
@@ -113,6 +114,31 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   const sort = sp.sort === 'rating' || sp.sort === 'views' ? sp.sort : 'recent';
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
+  const articleSelect = `
+      id,title_fr,title_en,title_es,description_fr,description_en,description_es,slug_fr,slug_en,slug_es,featured_image_url,published_at,status,average_rating,view_count,
+      blog_categories ( label_fr, label_es, slug )
+    `;
+
+  // Hero : toujours l’article publié le plus récent (indépendant des filtres / onglets).
+  const { data: latestHeroRow } = await supabase
+    .from('blog_articles')
+    .select(articleSelect)
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestHeroRow) {
+    console.log('[compte/blog] hero', {
+      id: latestHeroRow.id,
+      title: latestHeroRow.title_fr,
+      published_at: latestHeroRow.published_at,
+    });
+  } else {
+    console.log('[compte/blog] hero', null);
+  }
+
   const { data: cats } = await supabase.from('blog_categories').select('id,slug,label_fr,label_es').order('sort_order');
   let categoryId: string | null = null;
   if (category) {
@@ -121,12 +147,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
 
   let query = supabase
     .from('blog_articles')
-    .select(
-      `
-      id,title_fr,title_en,title_es,description_fr,description_en,description_es,slug_fr,slug_en,slug_es,featured_image_url,published_at,status,average_rating,view_count,
-      blog_categories ( label_fr, label_es, slug )
-    `,
-    )
+    .select(articleSelect)
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(200);
@@ -163,7 +184,9 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   }
 
   const favorites = list.filter((a) => favoriteIds.has(a.id));
-  const sortedBase = [...(tab === 'favorites' ? favorites : list)];
+  const heroSource = latestHeroRow ?? null;
+  const listForGrid = heroSource ? (tab === 'favorites' ? favorites : list).filter((a) => a.id !== heroSource.id) : tab === 'favorites' ? favorites : list;
+  const sortedBase = [...listForGrid];
   sortedBase.sort((a, b) => {
     if (sort === 'views') return (b.view_count ?? 0) - (a.view_count ?? 0);
     if (sort === 'rating') return (b.average_rating ?? 0) - (a.average_rating ?? 0);
@@ -188,8 +211,28 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
       }),
     };
   });
-  const hero = displayArticles[0];
-  const rest = displayArticles.slice(1);
+  const heroUsedImages = new Set<string>();
+  const hero =
+    heroSource &&
+    (() => {
+      const category = Array.isArray(heroSource.blog_categories) ? heroSource.blog_categories[0] : heroSource.blog_categories;
+      const categoryLabel =
+        typeof category?.label_fr === 'string'
+          ? category.label_fr
+          : typeof category?.slug === 'string'
+            ? category.slug
+            : null;
+      return {
+        ...heroSource,
+        displayImageUrl: uniqueBlogImageUrl({
+          coverImageUrl: heroSource.featured_image_url,
+          categoryLabel,
+          index: 0,
+          used: heroUsedImages,
+        }),
+      };
+    })();
+  const rest = displayArticles;
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedRest = rest.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -222,16 +265,12 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-16 pt-6 md:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.area}</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
-        </div>
-        <Link href="/compte" className="btn-luxury-ghost px-5 py-2.5 text-[10px] tracking-[0.14em]">
-          ← {t.back}
-        </Link>
+    <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
+      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.area}</p>
+        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
+        <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
       </header>
 
       <div className="mt-8 flex flex-wrap gap-2">

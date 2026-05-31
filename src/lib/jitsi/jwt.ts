@@ -56,6 +56,12 @@ export function createJitsiJwtToken(payload: JitsiTokenPayload): string {
         email: payload.email,
         moderator: payload.isModerator ? 'true' : 'false',
       },
+      features: payload.isModerator
+        ? {
+            recording: true,
+            livestreaming: true,
+          }
+        : undefined,
     },
   };
 

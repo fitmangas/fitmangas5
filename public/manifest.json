@@ -1,0 +1,25 @@
+{
+  "name": "FitMangas",
+  "short_name": "FitMangas",
+  "description": "Cours de Pilates et Barre en visio avec Alejandra",
+  "start_url": "/compte",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F0EB",
+  "theme_color": "#C45D3E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

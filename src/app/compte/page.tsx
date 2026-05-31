@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
+import { CheckoutPurchaseTracker } from '@/components/Marketing/CheckoutPurchaseTracker';
 import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
 import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
@@ -10,39 +11,65 @@ import { VisioLock } from '@/components/Premium/VisioLock';
 import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
-import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
+import { formatCompteGreeting, getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { hasVisioClientAccess } from '@/lib/access-control';
+import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
+import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { createClient } from '@/lib/supabase/server';
 
-function weeklyMotivation(firstName: string, lang: 'fr' | 'en' | 'es'): string {
+function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
   const lines =
     lang === 'en'
-      ? [
-          `New week ${firstName}: keep moving with consistency, one step at a time.`,
-          `${firstName}, every session counts. This week, we stay on track.`,
-          `Weekly focus ${firstName}: stay steady and proud of your energy.`,
-          `${firstName}, this week is about breath, consistency and progress.`,
-          `Gentle discipline, lasting results. You are on the right path, ${firstName}.`,
-        ]
-      : lang === 'es'
+      ? firstName
         ? [
-            `Nueva semana ${firstName}: avanza con constancia, paso a paso.`,
-            `${firstName}, cada sesión cuenta. Esta semana mantenemos el ritmo.`,
-            `Objetivo de la semana ${firstName}: constancia y energía.`,
-            `${firstName}, esta semana: presencia, respiración y progreso.`,
-            `Disciplina suave, resultados duraderos. Vas por buen camino, ${firstName}.`,
+            `New week ${firstName}: keep moving with consistency, one step at a time.`,
+            `${firstName}, every session counts. This week, we stay on track.`,
+            `Weekly focus ${firstName}: stay steady and proud of your energy.`,
+            `${firstName}, this week is about breath, consistency and progress.`,
+            `Gentle discipline, lasting results. You are on the right path, ${firstName}.`,
           ]
         : [
-            `Nouvelle semaine ${firstName} : avance avec constance, même à petits pas.`,
-            `${firstName}, chaque séance compte. Cette semaine, on garde le rythme.`,
-            `Objectif de la semaine ${firstName} : rester régulière et fière de ton énergie.`,
-            `${firstName}, focus sur toi cette semaine : présence, souffle et progression.`,
-            `Semaine en cours : discipline douce, résultats durables. Tu es sur la bonne voie ${firstName}.`,
-          ];
+            'New week: keep moving with consistency, one step at a time.',
+            'Every session counts. This week, we stay on track.',
+            'Weekly focus: stay steady and proud of your energy.',
+            'This week is about breath, consistency and progress.',
+            'Gentle discipline, lasting results. You are on the right path.',
+          ]
+      : lang === 'es'
+        ? firstName
+          ? [
+              `Nueva semana ${firstName}: avanza con constancia, paso a paso.`,
+              `${firstName}, cada sesión cuenta. Esta semana mantenemos el ritmo.`,
+              `Objetivo de la semana ${firstName}: constancia y energía.`,
+              `${firstName}, esta semana: presencia, respiración y progreso.`,
+              `Disciplina suave, resultados duraderos. Vas por buen camino, ${firstName}.`,
+            ]
+          : [
+              'Nueva semana: avanza con constancia, paso a paso.',
+              'Cada sesión cuenta. Esta semana mantenemos el ritmo.',
+              'Objetivo de la semana: constancia y energía.',
+              'Esta semana: presencia, respiración y progreso.',
+              'Disciplina suave, resultados duraderos. Vas por buen camino.',
+            ]
+        : firstName
+          ? [
+              `Nouvelle semaine ${firstName} : avance avec constance, même à petits pas.`,
+              `${firstName}, chaque séance compte. Cette semaine, on garde le rythme.`,
+              `Objectif de la semaine ${firstName} : rester régulière et fière de ton énergie.`,
+              `${firstName}, focus sur toi cette semaine : présence, souffle et progression.`,
+              `Semaine en cours : discipline douce, résultats durables. Tu es sur la bonne voie ${firstName}.`,
+            ]
+          : [
+              'Nouvelle semaine : avance avec constance, même à petits pas.',
+              'Chaque séance compte. Cette semaine, on garde le rythme.',
+              'Objectif de la semaine : rester régulière et fière de ton énergie.',
+              'Focus sur toi cette semaine : présence, souffle et progression.',
+              'Semaine en cours : discipline douce, résultats durables. Tu es sur la bonne voie.',
+            ];
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const weekIndex = Math.floor((now.getTime() - yearStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
@@ -52,7 +79,12 @@ function weeklyMotivation(firstName: string, lang: 'fr' | 'en' | 'es'): string {
 export default async function ComptePage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    purchase_value?: string;
+    purchase_currency?: string;
+    course_id?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
@@ -65,9 +97,13 @@ export default async function ComptePage({
 
   const params = await searchParams;
   const checkoutOk = params.checkout === 'success';
+  const purchaseValue = checkoutOk ? Number.parseFloat(params.purchase_value ?? '') : NaN;
+  const purchaseCurrency = params.purchase_currency?.trim() || 'EUR';
+  const purchaseCourseId = params.course_id?.trim() || null;
   const goal = getMonthlySessionGoal();
 
-  const [lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+  const [marketingSettings, lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+    getMarketingSettings(),
     getClientLang(supabase, user.id),
     hasVisioClientAccess(user.id),
     supabase
@@ -102,6 +138,7 @@ export default async function ComptePage({
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
+  const greeting = formatCompteGreeting(lang, firstName);
   const grade = profile?.gamification_grade ??
     computeGamificationGrade({
       points: profile?.gamification_points ?? 0,
@@ -204,11 +241,29 @@ export default async function ComptePage({
   const replayHoursRounded = Math.ceil(replayHoursAvailable);
   const vimeoHoursRounded = Math.ceil(vimeoLibraryHours);
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
+  const gaId = marketingSettings.google_analytics_id?.startsWith('G-') ? marketingSettings.google_analytics_id : null;
+  const metaPixelId = marketingSettings.meta_pixel_id ?? null;
+  const trackedPurchaseValue =
+    checkoutOk && Number.isFinite(purchaseValue) && purchaseValue > 0
+      ? purchaseValue
+      : checkoutOk && purchaseCourseId && COURSE_PRICE_CENTS[purchaseCourseId]
+        ? COURSE_PRICE_CENTS[purchaseCourseId] / 100
+        : 0;
+
   return (
-    <div className="mx-auto max-w-[1280px] space-y-8 px-3 pb-16 md:space-y-10 md:px-8">
+    <div className="mx-auto max-w-[1280px] min-w-0 space-y-4 pb-16 md:space-y-10 md:px-8">
+      {checkoutOk && trackedPurchaseValue > 0 ? (
+        <CheckoutPurchaseTracker
+          gaId={gaId}
+          metaPixelId={metaPixelId}
+          value={trackedPurchaseValue}
+          currency={purchaseCurrency}
+          courseId={purchaseCourseId}
+        />
+      ) : null}
       <section className="grid items-center gap-5 pt-2 text-center md:grid-cols-[1fr_auto] md:text-left">
         <div>
-          <h1 className="hero-signature-title text-4xl text-luxury-ink md:text-6xl">{t.hello} {firstName}</h1>
+          <h1 className="hero-signature-title break-words text-3xl text-luxury-ink sm:text-4xl md:text-6xl">{greeting}</h1>
           <p className="hero-signature-subtitle mt-1 text-sm md:text-base">{motivation}</p>
           {checkoutOk ? (
             <p className="mx-auto mt-4 max-w-2xl rounded-2xl border border-emerald-300/60 bg-emerald-50/90 px-5 py-3.5 text-sm font-medium leading-relaxed text-emerald-950">
@@ -216,13 +271,22 @@ export default async function ComptePage({
             </p>
           ) : null}
         </div>
-        <details className="relative z-[120] mx-auto w-full max-w-[210px] md:mx-0 md:w-auto md:max-w-none">
+        <details className="relative z-10 mx-auto w-full max-w-[210px] md:mx-0 md:w-auto md:max-w-none">
+          {unreadNotifications && unreadNotifications > 0 ? (
+            <Link
+              href="/compte/notifications"
+              className="absolute right-2 top-2 z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_4px_10px_rgba(255,59,48,0.45)] ring-2 ring-white"
+              aria-label={t.notifications}
+            >
+              {unreadNotifications > 9 ? '9+' : unreadNotifications}
+            </Link>
+          ) : null}
           <summary className="relative flex cursor-pointer list-none flex-col items-center gap-2 rounded-[2rem] border border-white/60 bg-white/65 px-4 py-3 shadow-[0_12px_32px_rgba(29,29,31,0.12)] backdrop-blur-xl [&::-webkit-details-marker]:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <div className="flex flex-col items-center">
               <img
                 src={avatarUrl}
-                alt="Coach IA"
+                alt={firstName ? `Photo de ${firstName}` : 'Photo de profil'}
                 className="h-[88px] w-[88px] rounded-full object-cover object-top ring-1 ring-white/70"
               />
               <span
@@ -237,20 +301,15 @@ export default async function ComptePage({
                 {level}
               </span>
             </div>
-            {unreadNotifications && unreadNotifications > 0 ? (
-              <span className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_4px_10px_rgba(255,59,48,0.45)] ring-2 ring-white">
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </span>
-            ) : null}
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/85 text-base font-semibold text-luxury-ink">
               +
             </span>
           </summary>
-          <div className="absolute left-1/2 z-[140] mt-2 w-56 -translate-x-1/2 rounded-3xl border border-white/70 bg-white/90 p-2 text-left shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl md:left-auto md:right-0 md:translate-x-0">
+          <div className="absolute left-1/2 z-20 mt-2 w-56 -translate-x-1/2 rounded-3xl border border-white/70 bg-white/90 p-2 text-left shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl md:left-auto md:right-0 md:translate-x-0">
             <Link href="/compte/profil" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
               {t.profile}
             </Link>
-            <Link href="/compte/profil#notifications" className="mt-1 flex items-center justify-between rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
+            <Link href="/compte/notifications" className="mt-1 flex items-center justify-between rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
               <span>{t.notifications}</span>
               {unreadNotifications && unreadNotifications > 0 ? (
                 <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_4px_10px_rgba(255,59,48,0.45)]">
@@ -273,7 +332,7 @@ export default async function ComptePage({
       <section className="space-y-4">
         <div className="flex items-center gap-3 px-1">
           <Image
-            src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+            src="/logo.png"
             alt="Logo FitMangas"
             width={56}
             height={56}
@@ -283,7 +342,7 @@ export default async function ComptePage({
             <h2 className="text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
           </div>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <GlassCard className="relative p-5 md:p-6">
             <Link href="/compte/progression" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.openProgress} />
             <div className="flex items-start justify-between gap-3">
@@ -313,14 +372,18 @@ export default async function ComptePage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
-                <div className="mt-8 space-y-4">
-                <p className="flex flex-wrap items-baseline gap-2 text-sm text-luxury-muted md:whitespace-nowrap">
-                    <span className="inline-block w-[64px] text-right text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{replayHoursRounded}h</span>
-                    <span>{t.replayHoursAvailable}</span>
+                <div className="mt-8 flex flex-col gap-3">
+                  <p className="flex min-w-0 items-baseline gap-2 text-sm text-luxury-muted">
+                    <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                      {replayHoursRounded}h
+                    </span>
+                    <span className="leading-snug">{t.replayHoursAvailable}</span>
                   </p>
-                  <p className="flex flex-wrap items-baseline gap-2 text-sm text-luxury-muted md:whitespace-nowrap">
-                    <span className="inline-block w-[64px] text-right text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{vimeoHoursRounded}h</span>
-                    <span>{t.vimeoHoursLibrary}</span>
+                  <p className="flex min-w-0 items-baseline gap-2 text-sm text-luxury-muted">
+                    <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                      {vimeoHoursRounded}h
+                    </span>
+                    <span className="leading-snug">{t.vimeoHoursLibrary}</span>
                   </p>
                 </div>
               </div>

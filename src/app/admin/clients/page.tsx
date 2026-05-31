@@ -1,43 +1,44 @@
 import Link from 'next/link';
 
+import { ClientAvatar } from '@/components/Admin/ClientAvatar';
 import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
+import { MEMBER_HEALTH_LABELS } from '@/lib/admin/health-labels';
+import { computeMemberHealth, type MemberHealthBadge } from '@/lib/admin/member-health';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-type Health = 'green' | 'orange' | 'red';
+const HEALTH_FILTERS: MemberHealthBadge[] = ['new', 'watch', 'green', 'orange', 'red'];
 
-function classify(lastActivityTs: number, now: number): Health {
-  const tenDaysAgo = now - 10 * 24 * 60 * 60 * 1000;
-  const fourDaysAgo = now - 4 * 24 * 60 * 60 * 1000;
-  if (!lastActivityTs || lastActivityTs < tenDaysAgo) return 'red';
-  if (lastActivityTs < fourDaysAgo) return 'orange';
-  return 'green';
-}
-
-function badgeClass(health: Health): string {
+function badgeClass(health: MemberHealthBadge): string {
   if (health === 'green') return 'bg-emerald-100 text-emerald-800';
   if (health === 'orange') return 'bg-amber-100 text-amber-900';
-  return 'bg-rose-100 text-rose-900';
-}
-
-function badgeLabel(health: Health): string {
-  if (health === 'green') return 'Actif';
-  if (health === 'orange') return 'Fragile';
-  return 'À risque';
+  if (health === 'red') return 'bg-rose-100 text-rose-900';
+  if (health === 'new') return 'bg-sky-100 text-sky-900';
+  return 'bg-indigo-100 text-indigo-900';
 }
 
 export default async function AdminClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ health?: string }>;
+  searchParams: Promise<{ health?: string; archived?: string }>;
 }) {
   await requireAdmin();
   const admin = createAdminClient();
   const params = await searchParams;
-  const filter = params.health === 'green' || params.health === 'orange' || params.health === 'red' ? params.health : null;
+  const raw = params.health ?? '';
+  const filter = HEALTH_FILTERS.includes(raw as MemberHealthBadge) ? (raw as MemberHealthBadge) : null;
+  const showArchived = params.archived === '1';
+
+  let membersQuery = admin
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url, updated_at, created_at, archived')
+    .eq('role', 'member')
+    .order('updated_at', { ascending: false });
+  membersQuery = showArchived ? membersQuery.eq('archived', true) : membersQuery.eq('archived', false);
 
   const [{ data: members }, { data: attended }, { data: replay }] = await Promise.all([
-    admin.from('profiles').select('id, first_name, last_name, updated_at').eq('role', 'member').order('updated_at', { ascending: false }),
+    membersQuery,
     admin
       .from('enrollments')
       .select('user_id, course_id, status, courses(starts_at)')
@@ -67,10 +68,12 @@ export default async function AdminClientsPage({
   const rows = (members ?? [])
     .map((m) => {
       const lastTs = lastActivityByUser.get(m.id) ?? 0;
-      const health = classify(lastTs, now);
+      const createdTs = m.created_at ? new Date(m.created_at).getTime() : now;
+      const health = computeMemberHealth({ lastActivityTs: lastTs, accountCreatedTs: createdTs, now });
       return {
         id: m.id,
         name: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.id.slice(0, 8),
+        avatarUrl: m.avatar_url,
         health,
         lastActivity: lastTs ? new Date(lastTs).toLocaleDateString('fr-FR') : 'Aucune activité',
       };
@@ -83,19 +86,33 @@ export default async function AdminClientsPage({
         <Link href="/admin" className="text-sm font-medium text-luxury-orange underline-offset-4 hover:underline">
           ← Dashboard
         </Link>
-        <p className="text-sm text-luxury-muted">
-          Filtre : <span className="font-medium text-luxury-ink">{filter ? badgeLabel(filter) : 'Tous'}</span>
-        </p>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <p className="text-luxury-muted">
+            Santé : <span className="font-medium text-luxury-ink">{filter ? MEMBER_HEALTH_LABELS[filter] : 'Tous'}</span>
+          </p>
+          {showArchived ? (
+            <Link href="/admin/clients" className="font-medium text-luxury-orange underline-offset-4 hover:underline">
+              Masquer archivés
+            </Link>
+          ) : (
+            <Link
+              href="/admin/clients?archived=1"
+              className="font-medium text-luxury-orange underline-offset-4 hover:underline"
+            >
+              Voir archivés
+            </Link>
+          )}
+        </div>
       </div>
 
-      <div className="glass-card overflow-hidden p-6 md:p-8">
+      <GlassCard elevated className="overflow-hidden p-6 md:p-8">
         <h1 className="text-xl font-semibold tracking-tight text-luxury-ink">Clients — Santé</h1>
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className={ADMIN_HEAD_TR}>
                 <th className="px-2 py-3">Client</th>
-                <th className="px-2 py-3">Health</th>
+                <th className="px-2 py-3">Santé</th>
                 <th className="px-2 py-3">Dernière activité</th>
                 <th className="px-2 py-3">Fiche</th>
               </tr>
@@ -103,10 +120,15 @@ export default async function AdminClientsPage({
             <tbody className="text-luxury-ink">
               {rows.map((row) => (
                 <tr key={row.id} className="border-b border-white/30">
-                  <td className="px-2 py-3">{row.name}</td>
+                  <td className="px-2 py-3">
+                    <div className="flex items-center gap-3">
+                      <ClientAvatar avatarUrl={row.avatarUrl} name={row.name} size={36} />
+                      <span className="font-medium">{row.name}</span>
+                    </div>
+                  </td>
                   <td className="px-2 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass(row.health)}`}>
-                      {badgeLabel(row.health)}
+                      {MEMBER_HEALTH_LABELS[row.health]}
                     </span>
                   </td>
                   <td className="px-2 py-3 text-luxury-muted">{row.lastActivity}</td>
@@ -127,7 +149,7 @@ export default async function AdminClientsPage({
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }

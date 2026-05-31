@@ -16,6 +16,7 @@ type Props = {
   lang: Lang;
   userId: string;
   initialEnabled: boolean;
+  compact?: boolean;
 };
 
 const labels = {
@@ -65,7 +66,7 @@ function extractKeys(subscription: PushSubscription) {
   return { p256dh, auth };
 }
 
-export function PushOptIn({ lang, userId, initialEnabled }: Props) {
+export function PushOptIn({ lang, userId, initialEnabled, compact = false }: Props) {
   const l = labels[lang];
   const [enabled, setEnabled] = useState(initialEnabled);
   const [status, setStatus] = useState<'idle' | 'enabled' | 'denied' | 'unsupported' | 'missing-key' | 'error'>(
@@ -174,6 +175,29 @@ export function PushOptIn({ lang, userId, initialEnabled }: Props) {
             : status === 'error'
               ? l.error
               : null;
+
+  if (compact) {
+    return (
+      <GlassCard className="flex h-full flex-col justify-between gap-3 rounded-2xl border border-luxury-violet/15 p-4 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            {enabled ? <Bell className="h-4 w-4 text-luxury-violet" aria-hidden /> : <BellOff className="h-4 w-4 text-luxury-muted" aria-hidden />}
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-ink">{l.title}</h3>
+          </div>
+          <p className="mt-2 text-xs leading-snug text-luxury-muted">{l.body}</p>
+          {message ? <p className="mt-1 text-[10px] text-luxury-muted">{message}</p> : null}
+        </div>
+        <button
+          type="button"
+          disabled={isPending || status === 'unsupported' || status === 'denied' || status === 'missing-key'}
+          onClick={enabled ? disablePush : enablePush}
+          className="w-full rounded-xl border border-luxury-violet/25 bg-luxury-violet/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-luxury-ink transition hover:bg-luxury-violet/15 disabled:opacity-50"
+        >
+          {enabled ? l.disable : l.enable}
+        </button>
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard className="space-y-4 border border-luxury-violet/15 p-5">

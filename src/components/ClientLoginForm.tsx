@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Loader2, LogIn } from 'lucide-react';
 
 import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
+import { resolvePostLoginRedirectAction } from '@/app/auth/post-login/actions';
 import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 
@@ -34,7 +35,8 @@ export function ClientLoginForm() {
       }
 
       await updateDetectedTimezoneOnLogin(detectBrowserTimeZone());
-      router.replace('/compte');
+      const { path } = await resolvePostLoginRedirectAction();
+      router.replace(path);
       router.refresh();
     } catch {
       setError('Connexion impossible pour le moment.');

@@ -5,14 +5,9 @@ import { parseServiceAccountJson } from '@/lib/google/service-account';
 const WEBMASTERS_READONLY = 'https://www.googleapis.com/auth/webmasters.readonly';
 
 export function searchConsoleSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
-  try {
-    const href = raw.startsWith('http') ? raw : `https://${raw}`;
-    const parsed = new URL(href);
-    return `${parsed.origin}/`;
-  } catch {
-    return 'https://fitmangas.com/';
-  }
+  const fromEnv = process.env.GSC_SITE_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return 'sc-domain:fitmangas.com';
 }
 
 async function getSearchConsoleClient() {

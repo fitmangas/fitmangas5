@@ -9,9 +9,11 @@ import * as subscriptionWinBack from './subscription-win-back';
 import * as coursePresentialCancelled from './course-presential-cancelled';
 import * as coursePresentialMissed from './course-presential-missed';
 import * as coursePresentialPurchased from './course-presential-purchased';
+import * as coursePresentialReminderH2 from './course-presential-reminder-h2';
 import * as coursePresentialReminderJ1 from './course-presential-reminder-j1';
 import * as courseVisioCancelled from './course-visio-cancelled';
 import * as courseVisioMissed from './course-visio-missed';
+import * as courseVisioReminderH1 from './course-visio-reminder-h1';
 import * as courseVisioReminderJ1 from './course-visio-reminder-j1';
 import * as courseVisioReplayReady from './course-visio-replay-ready';
 import * as blogArticlePublished from './blog-article-published';
@@ -21,6 +23,10 @@ import * as birthday from './birthday';
 import * as digest from './digest';
 import * as weMissYou30d from './we-miss-you-30d';
 import * as weMissYou60d from './we-miss-you-60d';
+import * as supportTicketConfirmation from './support-ticket-confirmation';
+import * as referralRewardUnlocked from './referral-reward-unlocked';
+import * as checkoutAbandoned from './checkout-abandoned';
+import * as presentialPurchasePending from './presential-purchase-pending';
 import type { NotificationEmailTemplate, TemplateLocale } from './types';
 
 export const TEMPLATE_REGISTRY = {
@@ -34,11 +40,13 @@ export const TEMPLATE_REGISTRY = {
   'subscription.renewed': subscriptionRenewed,
   'subscription.win_back_J+30': subscriptionWinBack,
   'course.visio.reminder_J-1': courseVisioReminderJ1,
+  'course.visio.reminder_H-1': courseVisioReminderH1,
   'course.visio.cancelled': courseVisioCancelled,
   'course.visio.replay_ready': courseVisioReplayReady,
   'course.visio.missed': courseVisioMissed,
   'course.presential.purchased': coursePresentialPurchased,
   'course.presential.reminder_J-1': coursePresentialReminderJ1,
+  'course.presential.reminder_H-2': coursePresentialReminderH2,
   'course.presential.cancelled_by_coach': coursePresentialCancelled,
   'course.presential.missed': coursePresentialMissed,
   'blog.article_published': blogArticlePublished,
@@ -48,6 +56,10 @@ export const TEMPLATE_REGISTRY = {
   'community.we_miss_you_30d': weMissYou30d,
   'community.we_miss_you_60d': weMissYou60d,
   'digest.summary': digest,
+  'account.support_ticket_received': supportTicketConfirmation,
+  'referral.reward_unlocked': referralRewardUnlocked,
+  'subscription.checkout_abandoned': checkoutAbandoned,
+  'course.presential.purchase_pending': presentialPurchasePending,
 } satisfies Record<string, NotificationEmailTemplate>;
 
 export function getEmailTemplate(eventType: string): NotificationEmailTemplate | null {

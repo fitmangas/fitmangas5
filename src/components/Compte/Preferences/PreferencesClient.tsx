@@ -36,9 +36,11 @@ type Props = {
   initialPrefs: Omit<NotificationPreferencesRow, 'user_id'>;
   initialProfile: PreferencesProfileInitial;
   lang: PreferencesLang;
+  /** Intégré dans /compte/profil (sans en-tête page dédiée). */
+  embedded?: boolean;
 };
 
-export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }: Props) {
+export function PreferencesClient({ userId, initialPrefs, initialProfile, lang, embedded = false }: Props) {
   const router = useRouter();
   const l = preferencesLabels[lang];
 
@@ -195,8 +197,94 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
     queueProfile({ marketing_email_opt_in: v });
   }
 
+  const rootClass = embedded ? 'space-y-4' : 'mx-auto max-w-2xl space-y-8 pb-16';
+
+  if (embedded) {
+    return (
+      <div className={rootClass}>
+        <SaveToast visible={toastVisible} message={toastMessage} />
+
+        <GlassCard id="notifications" className="scroll-mt-28 p-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{l.notificationsTitle}</p>
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <NotificationCategoryCard title={l.categoryCourses}>
+              <Toggle id="courses-inapp" label={l.inApp} checked={prefs.courses_inapp_enabled} onChange={setCoursesInApp} compact />
+              <Toggle id="courses-email" label={l.email} checked={prefs.courses_email_enabled} onChange={setCoursesEmail} compact />
+            </NotificationCategoryCard>
+            <NotificationCategoryCard title={l.categoryContent}>
+              <Toggle id="content-inapp" label={l.inApp} checked={prefs.content_inapp_enabled} onChange={setContentInApp} compact />
+              <Toggle id="content-email" label={l.email} checked={prefs.content_email_enabled} onChange={setContentEmail} compact />
+            </NotificationCategoryCard>
+            <NotificationCategoryCard title={l.categoryShop}>
+              <Toggle id="shop-inapp" label={l.inApp} checked={prefs.shop_inapp_enabled} onChange={setShopInApp} compact />
+              <Toggle id="shop-email" label={l.email} checked={prefs.shop_email_enabled} onChange={setShopEmail} compact />
+            </NotificationCategoryCard>
+            <NotificationCategoryCard title={l.categoryCommunity}>
+              <Toggle id="community-inapp" label={l.inApp} checked={prefs.community_inapp_enabled} onChange={setCommunityInApp} compact />
+              <Toggle id="community-email" label={l.email} checked={prefs.community_email_enabled} onChange={setCommunityEmail} compact />
+            </NotificationCategoryCard>
+          </div>
+          <div className="mt-3 flex gap-2 rounded-xl border border-white/50 bg-white/30 p-3">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-luxury-muted" aria-hidden />
+            <p className="text-[10px] leading-relaxed text-luxury-muted">{l.essentialsBody}</p>
+          </div>
+        </GlassCard>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <PushOptIn
+            userId={userId}
+            lang={lang}
+            compact
+            initialEnabled={
+              prefs.courses_push_enabled ||
+              prefs.content_push_enabled ||
+              prefs.shop_push_enabled ||
+              prefs.community_push_enabled
+            }
+          />
+          <GlassCard className="flex h-full flex-col justify-between gap-3 p-4 shadow-sm">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-ink">{l.silenceTitle}</p>
+              <p className="mt-1 text-xs text-luxury-muted">{l.silenceBody}</p>
+            </div>
+            <Toggle
+              id="silence-mode"
+              label={l.silenceLabel}
+              checked={prefs.silence_mode_enabled}
+              onChange={setSilence}
+              compact
+            />
+          </GlassCard>
+          <GlassCard className="flex h-full flex-col gap-2 p-4 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-ink">{l.digestTitle}</p>
+            <RadioGroup
+              name="digest_frequency"
+              value={prefs.digest_frequency}
+              onChange={setDigest}
+              options={[
+                { value: 'off', label: l.digestOff },
+                { value: 'daily', label: l.digestDaily },
+                { value: 'weekly', label: l.digestWeekly },
+              ]}
+            />
+          </GlassCard>
+        </div>
+
+        <GlassCard className="p-4 shadow-sm">
+          <Toggle
+            id="marketing-email"
+            label={l.marketingLabel}
+            description={l.marketingBody}
+            checked={marketingOptIn}
+            onChange={setMarketing}
+          />
+        </GlassCard>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-2xl space-y-8 pb-16">
+    <div className={rootClass}>
       <SaveToast visible={toastVisible} message={toastMessage} />
 
       <header className="space-y-2">
@@ -206,7 +294,42 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         <p className="text-base text-luxury-muted">{l.pageSubtitle}</p>
       </header>
 
-      <GlassCard className="space-y-8 p-6 shadow-sm md:p-8">
+      <GlassCard id="langue" className="scroll-mt-28 space-y-7 p-6 shadow-sm md:p-8">
+        <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.languageTimezoneTitle}</h2>
+        <div>
+          <p className="mb-3 text-sm font-semibold text-luxury-ink">{l.languageLabel}</p>
+          <div className="flex flex-wrap gap-2">
+            {(['fr', 'es'] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setLocale(code)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 ${
+                  preferredLocale === code
+                    ? 'border-luxury-emerald/45 bg-white/80 text-luxury-ink shadow-[0_6px_16px_rgba(16,185,129,0.12)]'
+                    : 'border-white/55 bg-white/35 text-luxury-muted shadow-sm hover:border-white/80 hover:bg-white/60'
+                }`}
+              >
+                {code === 'fr' ? l.languageFr : l.languageEs}
+              </button>
+            ))}
+          </div>
+        </div>
+        <TimezoneSelector
+          currentTimezone={displayTimezone}
+          labels={{
+            timezoneLabel: l.timezoneLabel,
+            timezoneStatus: timezoneManualLocked ? l.timezoneManual : l.timezoneAuto,
+            timezoneEdit: l.timezoneEdit,
+            timezoneSave: l.timezoneSave,
+            timezoneCancel: l.timezoneCancel,
+          }}
+          flushPending={flushPendingSilently}
+          onSave={handleTimezoneSave}
+        />
+      </GlassCard>
+
+      <GlassCard id="notifications" className="scroll-mt-28 space-y-8 p-6 shadow-sm md:p-8">
         <div>
           <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.notificationsTitle}</h2>
         </div>
@@ -308,43 +431,6 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang }
         />
       </GlassCard>
 
-      <GlassCard className="space-y-7 p-6 shadow-sm md:p-8">
-        <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.languageTimezoneTitle}</h2>
-
-        <div>
-          <p className="mb-3 text-sm font-semibold text-luxury-ink">{l.languageLabel}</p>
-          <div className="flex flex-wrap gap-2">
-            {(['fr', 'es'] as const).map((code) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLocale(code)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 ${
-                  preferredLocale === code
-                    ? 'border-luxury-emerald/45 bg-white/80 text-luxury-ink shadow-[0_6px_16px_rgba(16,185,129,0.12)]'
-                    : 'border-white/55 bg-white/35 text-luxury-muted shadow-sm hover:border-white/80 hover:bg-white/60'
-                }`}
-              >
-                {code === 'fr' ? l.languageFr : l.languageEs}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <TimezoneSelector
-          currentTimezone={displayTimezone}
-          labels={{
-            timezoneLabel: l.timezoneLabel,
-            timezoneStatus: timezoneManualLocked ? l.timezoneManual : l.timezoneAuto,
-            timezoneEdit: l.timezoneEdit,
-            timezoneSave: l.timezoneSave,
-            timezoneCancel: l.timezoneCancel,
-          }}
-          flushPending={flushPendingSilently}
-          onSave={handleTimezoneSave}
-        />
-      </GlassCard>
-
       <GlassCard className="space-y-5 p-6 shadow-sm md:p-8">
         <h2 className="font-serif text-xl font-semibold text-luxury-ink">{l.marketingTitle}</h2>
         <Toggle
@@ -364,6 +450,15 @@ function CategoryBlock({ title, children }: { title: string; children: ReactNode
     <div className="border-b border-white/35 pb-7 last:border-0 last:pb-0">
       <p className="mb-5 text-sm font-semibold uppercase tracking-[0.14em] text-luxury-muted/90">{title}</p>
       <div className="space-y-5">{children}</div>
+    </div>
+  );
+}
+
+function NotificationCategoryCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-[108px] flex-col justify-between gap-2 rounded-2xl border border-white/55 bg-white/40 p-3 shadow-sm">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-ink">{title}</p>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }

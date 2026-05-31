@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { wrapResendEmail } from '@/lib/email/base-template';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const TOKEN_TTL_HOURS = 48;
@@ -45,13 +46,36 @@ export async function createNewsletterConfirmationToken(subscriptionId: string):
   return token;
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeHref(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 export async function sendNewsletterConfirmationEmail(email: string, token: string): Promise<{ sent: boolean; confirmUrl: string }> {
   const confirmUrl = `${appUrl()}/api/client/newsletter/confirm?token=${encodeURIComponent(token)}`;
-  const result = await sendEmailViaResend(
-    email,
-    'Confirme ton inscription newsletter FitMangas',
-    `<p>Confirme ton inscription en cliquant ici :</p><p><a href="${confirmUrl}">${confirmUrl}</a></p>`,
-  );
+  const innerHtml = `<p style="margin:0 0 14px;color:#2D2D2D;">Confirme ton inscription en cliquant sur le bouton ci-dessous.</p>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:24px auto 0;">
+        <tr>
+          <td align="center" style="border-radius:8px;background-color:#C45D3E;">
+            <a href="${escapeHref(confirmUrl)}" class="email-cta-link" style="display:inline-block;padding:14px 32px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;background-color:#C45D3E;">Confirmer mon inscription</a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0;font-size:12px;color:#6B6560;word-break:break-all;">${escapeHtml(confirmUrl)}</p>`;
+  const html = wrapResendEmail({
+    innerHtml,
+    locale: 'fr',
+    showPreferencesLink: false,
+  });
+  const result = await sendEmailViaResend(email, 'Confirme ton inscription newsletter FitMangas', html);
   if (!result.sent) {
     console.info('[newsletter confirm] mode sans provider, lien:', confirmUrl);
   }
@@ -77,13 +101,20 @@ export async function sendPublicationNewsletter(params: { articleId: string; tit
     .map((s) => s.email)
     .filter(Boolean)
     .filter((email) => !excludedEmails.has(String(email).trim().toLowerCase()));
+  const articleUrlEsc = escapeHref(articleUrl);
+  const titleEsc = escapeHtml(params.title);
   let sent = 0;
   for (const email of list) {
-    const result = await sendEmailViaResend(
-      email,
-      `Nouveau sur le blog : ${params.title}`,
-      `<p>Un nouvel article vient d'être publié :</p><p><strong>${params.title}</strong></p><p><a href="${articleUrl}">Lire l'article</a></p>`,
-    );
+    const inner = `<p style="margin:0 0 14px;color:#2D2D2D;">Un nouvel article vient d'être publié :</p><p style="margin:0 0 20px;font-size:18px;font-weight:700;color:#C45D3E;">${titleEsc}</p>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+        <tr>
+          <td align="center" style="border-radius:8px;background-color:#C45D3E;">
+            <a href="${articleUrlEsc}" class="email-cta-link" style="display:inline-block;padding:14px 32px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;background-color:#C45D3E;">Lire l'article</a>
+          </td>
+        </tr>
+      </table>`;
+    const html = wrapResendEmail({ innerHtml: inner, locale: 'fr', showPreferencesLink: true });
+    const result = await sendEmailViaResend(email, `Nouveau sur le blog : ${params.title}`, html);
     if (result.sent) sent += 1;
   }
 

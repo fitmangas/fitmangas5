@@ -6,6 +6,7 @@ import { Loader2, LogIn, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
+import { resolvePostLoginRedirectAction } from '@/app/auth/post-login/actions';
 import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 import type { Language } from '@/types';
@@ -14,9 +15,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   lang?: Language;
+  /** Message affiché quand la redirection impose la connexion (ex. espace membre). */
+  loginRequiredMessage?: string;
 };
 
-export function ClientLoginModal({ open, onClose, lang = 'FR' }: Props) {
+export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMessage }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,7 +65,8 @@ export function ClientLoginModal({ open, onClose, lang = 'FR' }: Props) {
 
       await updateDetectedTimezoneOnLogin(detectBrowserTimeZone());
       onClose();
-      router.replace('/compte');
+      const { path } = await resolvePostLoginRedirectAction();
+      router.replace(path);
       router.refresh();
     } catch {
       setError(t.fallbackError);
@@ -108,7 +112,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR' }: Props) {
                 {t.title}
               </h2>
               <p className="mt-2 text-xs leading-relaxed text-brand-ink/55">
-                {t.intro}
+                {loginRequiredMessage ?? t.intro}
               </p>
             </div>
 

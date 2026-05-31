@@ -15,8 +15,22 @@ import type { DispatchResult } from './types';
 
 type TableData = Record<string, unknown[]>;
 
+function filterRows(rows: unknown[], filters: { eq: Record<string, unknown>; in: Record<string, unknown[]> }) {
+  return rows.filter((row) => {
+    const r = row as Record<string, unknown>;
+    for (const [key, value] of Object.entries(filters.eq)) {
+      if (r[key] !== value) return false;
+    }
+    for (const [key, values] of Object.entries(filters.in)) {
+      if (!values.includes(r[key] as never)) return false;
+    }
+    return true;
+  });
+}
+
 function queryResult(data: unknown[]) {
-  const result = Promise.resolve({ data, error: null });
+  const filters = { eq: {} as Record<string, unknown>, in: {} as Record<string, unknown[]> };
+  const resolveRows = () => filterRows(data, filters);
   const chain: {
     select: ReturnType<typeof vi.fn>;
     in: ReturnType<typeof vi.fn>;
@@ -32,17 +46,23 @@ function queryResult(data: unknown[]) {
     finally: typeof Promise.prototype.finally;
   } = {
     select: vi.fn(() => chain),
-    in: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
+    in: vi.fn((col: string, vals: unknown[]) => {
+      filters.in[col] = vals;
+      return chain;
+    }),
+    eq: vi.fn((col: string, val: unknown) => {
+      filters.eq[col] = val;
+      return chain;
+    }),
     not: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(() => chain),
-    maybeSingle: vi.fn(() => Promise.resolve({ data: data[0] ?? null, error: null })),
-    then: result.then.bind(result),
-    catch: result.catch.bind(result),
-    finally: result.finally.bind(result),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: resolveRows()[0] ?? null, error: null })),
+    then: (onFulfilled, onRejected) => Promise.resolve({ data: resolveRows(), error: null }).then(onFulfilled, onRejected),
+    catch: (onRejected) => Promise.resolve({ data: resolveRows(), error: null }).catch(onRejected),
+    finally: (onFinally) => Promise.resolve({ data: resolveRows(), error: null }).finally(onFinally),
   };
   return chain;
 }
@@ -141,7 +161,7 @@ describe('Phase 2 cycles', () => {
   });
 
   it('subscription.cancelled → notif cliente + notif admin', async () => {
-    const client = clientWith({ profiles: [{ id: 'admin-1' }] });
+    const client = clientWith({ profiles: [{ id: 'admin-1', role: 'admin' }] });
     await dispatchSubscriptionCancelled(client, 'u1', 'online_group_monthly', '2026-05-10T00:00:00Z', { dispatch: dispatchMock });
     expect(dispatchMock).toHaveBeenCalledTimes(2);
   });
@@ -171,13 +191,28 @@ describe('Phase 2 cycles', () => {
   it('cours annulé → dispatch critique tous canaux', async () => {
     const client = clientWith({
       courses: [{ id: 'c1', title: 'Live', starts_at: '2026-05-10T16:00:00Z', course_format: 'online' }],
-      enrollments: [{ user_id: 'u1' }],
+      enrollments: [{ user_id: 'u1', course_id: 'c1', status: 'booked' }],
     });
     await dispatchCourseCancelledByCoach(client, 'c1', { dispatch: dispatchMock });
     expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.visio.cancelled' }));
   });
 
-  it('cours manqué → dispatch J+1', async () => {
+  it('cours manqué → dispatch uniquement si statut missed (pointage admin)', async () => {
+    const client = clientWith({
+      enrollments: [{
+        user_id: 'u1',
+        course_id: 'c1',
+        status: 'missed',
+        profiles: { id: 'u1', display_timezone: 'Europe/Paris', preferred_locale: 'fr' },
+        courses: { id: 'c1', title: 'Live', starts_at: '2026-05-09T17:00:00Z', ends_at: '2026-05-09T18:00:00Z', course_format: 'online', course_category: 'group' },
+      }],
+      notification_log: [],
+    });
+    await runCourseCycles(client, { dispatch: dispatchMock, now: new Date('2026-05-10T18:30:00Z') });
+    expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.visio.missed' }));
+  });
+
+  it('inscription booked le lendemain → pas de missed auto', async () => {
     const client = clientWith({
       enrollments: [{
         user_id: 'u1',
@@ -188,7 +223,7 @@ describe('Phase 2 cycles', () => {
       }],
     });
     await runCourseCycles(client, { dispatch: dispatchMock, now: new Date('2026-05-10T18:30:00Z') });
-    expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.visio.missed' }));
+    expect(dispatchMock).not.toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.visio.missed' }));
   });
 
   it('purchased présentiel → email avec adresse Nantes', async () => {
@@ -205,7 +240,7 @@ describe('Phase 2 cycles', () => {
   it('cancelled_by_coach présentiel → dispatch critique', async () => {
     const client = clientWith({
       courses: [{ id: 'c1', title: 'Nantes', starts_at: '2026-05-10T16:00:00Z', course_format: 'onsite' }],
-      enrollments: [{ user_id: 'u1' }],
+      enrollments: [{ user_id: 'u1', course_id: 'c1', status: 'booked' }],
     });
     await dispatchCourseCancelledByCoach(client, 'c1', { dispatch: dispatchMock });
     expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.presential.cancelled_by_coach' }));

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Lock, Unlock, X } from 'lucide-react';
 
 import type { SmartCourse } from '@/lib/domain/calendar-types';
-import { isCoursePast } from '@/lib/calendar-window';
+import { DEFAULT_CALENDAR_TIMEZONE, isCoursePast } from '@/lib/calendar-window';
+import { getCoachImage } from '@/lib/coach-images';
 
 import { effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
@@ -18,6 +19,7 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
   if (!course) return null;
 
   const selectedIsPast = isCoursePast(course.ends_at);
+  const coachImageSrc = getCoachImage(0);
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const t =
     lang === 'en'
@@ -79,7 +81,10 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="relative z-10 w-full max-w-md rounded-t-[1.75rem] border border-white/35 bg-white/[0.42] p-6 shadow-[0_24px_64px_rgba(15,23,42,0.18)] backdrop-blur-[22px] sm:rounded-[1.75rem]">
+      <div
+        className="relative z-10 w-full max-w-md rounded-t-[1.75rem] border border-white/80 bg-brand-beige p-6 shadow-[0_14px_32px_rgba(31,27,22,0.14),0_32px_64px_-28px_rgba(21,18,15,0.28)] sm:rounded-[1.75rem]"
+        style={{ position: 'relative', overflow: 'visible' }}
+      >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">
@@ -91,7 +96,7 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/40 bg-white/30 p-2 text-luxury-soft transition hover:bg-white/50"
+            className="rounded-full border border-brand-ink/10 bg-white p-2 text-luxury-soft shadow-sm transition hover:bg-white/90 hover:text-luxury-ink"
             aria-label={t.close}
           >
             <X size={14} />
@@ -105,13 +110,15 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
             month: 'long',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: course.timezone?.trim() || DEFAULT_CALENDAR_TIMEZONE,
           })}
         </p>
         <p className="mb-4 text-sm text-luxury-muted">{course.description || t.descFallback}</p>
 
+        <div style={{ position: 'relative', zIndex: 2 }}>
         {selectedIsPast ? (
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/30 px-3 py-1 text-xs text-luxury-muted backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white px-3 py-1 text-xs text-luxury-muted shadow-sm">
               {t.ended}
             </div>
             {effectiveAccessForUi(course) === 'full' && course.replay_url ? (
@@ -178,6 +185,22 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
             </a>
           </div>
         )}
+        </div>
+        <img
+          src={coachImageSrc}
+          alt=""
+          aria-hidden
+          style={{
+            position: 'absolute',
+            bottom: '0px',
+            right: '8px',
+            height: '120px',
+            width: 'auto',
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
       </div>
       <button type="button" onClick={onClose} className="absolute inset-0" aria-label={t.closeModal} />
     </div>

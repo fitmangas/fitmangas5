@@ -412,7 +412,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
             <div className="flex flex-col justify-center">
               <div className="mt-3">
                 <NextImage
-                  src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+                  src="/logo.png"
                   alt="Logo FitMangas"
                   width={72}
                   height={72}

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { createPromoCodeAction, deletePromoCodeAction } from '@/app/admin/promos/actions';
-import { ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
+import { ADMIN_BTN_PRIMARY, ADMIN_FIELD_CLASS, ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
 
 export type PromoRow = {
   id: string;
@@ -18,11 +18,8 @@ export type PromoRow = {
   active: boolean;
 };
 
-const fieldClass =
-  'mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#ff7a00]/25';
-
-const primaryCtaClass =
-  'rounded-full bg-[#ff7a00] px-7 py-3 text-[10px] font-bold uppercase tracking-widest text-white shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_8px_26px_rgba(255,122,0,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_12px_32px_rgba(255,122,0,0.58)] disabled:opacity-50';
+const fieldClass = ADMIN_FIELD_CLASS;
+const primaryCtaClass = `${ADMIN_BTN_PRIMARY} px-7 py-3 text-[10px] font-bold uppercase tracking-widest`;
 
 export function PromoCodesManager({ promos }: { promos: PromoRow[] }) {
   const router = useRouter();
@@ -100,7 +97,7 @@ export function PromoCodesManager({ promos }: { promos: PromoRow[] }) {
           </label>
 
           <label className="flex items-center gap-3 rounded-2xl border border-white/55 bg-white/35 px-4 py-3 text-sm text-luxury-ink backdrop-blur-md md:col-span-2">
-            <input name="active" type="checkbox" defaultChecked className="size-4 rounded border-white/60 text-[#ff7a00] focus:ring-[#ff7a00]/30" />
+            <input name="active" type="checkbox" defaultChecked className="size-4 rounded border-white/60 text-luxury-orange focus:ring-luxury-orange/30" />
             Code actif dès la création
           </label>
 

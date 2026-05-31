@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+
+import { getReferralCodeForCheckout } from '@/lib/referrals/checkout-referral';
 import { createClient } from '@/lib/supabase/server';
-import {
-  COURSE_CHECKOUT_MODE,
-  getStripePriceId,
-  isValidCheckoutCourseId,
-} from '@/lib/checkout-courses';
+import { createStripeCheckoutSession, parseCheckoutCourseId } from '@/lib/stripe/create-checkout-session';
 
 export async function POST(request: Request) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -32,52 +30,22 @@ export async function POST(request: Request) {
 
   const courseId =
     typeof body === 'object' && body !== null && 'courseId' in body && typeof (body as { courseId: unknown }).courseId === 'string'
-      ? (body as { courseId: string }).courseId
-      : '';
+      ? parseCheckoutCourseId((body as { courseId: string }).courseId)
+      : null;
 
-  if (!isValidCheckoutCourseId(courseId)) {
+  if (!courseId) {
     return NextResponse.json({ error: 'Offre non reconnue.' }, { status: 400 });
   }
-
-  const priceId = getStripePriceId(courseId);
-  if (!priceId) {
-    return NextResponse.json(
-      {
-        error:
-          'Identifiant de prix Stripe manquant. Définissez la variable d’environnement correspondante (voir .env.example).',
-      },
-      { status: 503 },
-    );
-  }
-
-  const mode = COURSE_CHECKOUT_MODE[courseId];
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.NODE_ENV === 'production' ? 'https://fitmangas.com' : 'http://localhost:3000');
 
   const stripe = new Stripe(stripeSecret);
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode,
-      customer_email: user.email ?? undefined,
-      client_reference_id: user.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl.replace(/\/$/, '')}/compte?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl.replace(/\/$/, '')}/checkout/abandoned?session_id={CHECKOUT_SESSION_ID}`,
-      metadata: {
-        supabase_user_id: user.id,
-        course_id: courseId,
-      },
-      subscription_data:
-        mode === 'subscription'
-          ? { metadata: { supabase_user_id: user.id, course_id: courseId } }
-          : undefined,
-      payment_intent_data:
-        mode === 'payment'
-          ? { metadata: { supabase_user_id: user.id, course_id: courseId } }
-          : undefined,
+    const referralCode = await getReferralCodeForCheckout();
+    const session = await createStripeCheckoutSession(stripe, {
+      userId: user.id,
+      email: user.email,
+      courseId,
+      referralCode,
     });
 
     if (!session.url) {
@@ -86,6 +54,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url });
   } catch (e) {
+    if (e instanceof Error && e.message === 'STRIPE_PRICE_MISSING') {
+      return NextResponse.json(
+        {
+          error:
+            'Identifiant de prix Stripe manquant. Définissez la variable d’environnement correspondante (voir .env.example).',
+        },
+        { status: 503 },
+      );
+    }
     console.error('[checkout]', e);
     return NextResponse.json({ error: 'Impossible de créer la session de paiement.' }, { status: 500 });
   }

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Euro, FileText, HeartPulse, Users, X } from 'lucide-react';
 
 import type { AdminKpiDrilldowns, AdminKpis } from '@/lib/admin/kpis';
+import { MEMBER_HEALTH_LABELS } from '@/lib/admin/health-labels';
 import { GlassCard } from '@/components/ui/GlassCard';
 
 function fmtEur(v: number): string {
@@ -13,7 +14,7 @@ function fmtEur(v: number): string {
 }
 
 type ModalKey = 'revenue' | null;
-const HEALTH_ALL_HREF = '/admin/clients?health=all';
+const CLIENTS_HREF = '/admin/clients';
 
 export function AdminKpiCardsInteractive({
   stripeMonthEur,
@@ -31,12 +32,12 @@ export function AdminKpiCardsInteractive({
 
   return (
     <>
-      <section className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => setModal('revenue')} className="flex min-h-[138px] w-full flex-col text-left">
+      <section className="relative z-10 grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <GlassCard kpi className="p-5 md:p-6">
+          <button type="button" onClick={() => setModal('revenue')} className="flex w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 pr-2">
-                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft leading-snug">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft leading-snug">
                   Revenus Stripe
                   <br />
                   (mois en cours)
@@ -52,11 +53,11 @@ export function AdminKpiCardsInteractive({
           </button>
         </GlassCard>
 
-        <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => router.push('/admin/blog/validation')} className="flex min-h-[138px] w-full flex-col text-left">
+        <GlassCard kpi className="p-5 md:p-6">
+          <button type="button" onClick={() => router.push('/admin/blog/validation')} className="flex w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 pr-2">
-                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Blog</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Blog</p>
               </div>
               <span className="relative kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
                 <FileText size={20} aria-hidden strokeWidth={2} />
@@ -72,11 +73,11 @@ export function AdminKpiCardsInteractive({
           </button>
         </GlassCard>
 
-        <GlassCard className="p-5 md:p-6">
-          <button type="button" onClick={() => router.push('/boutique')} className="flex min-h-[138px] w-full flex-col text-left">
+        <GlassCard kpi className="p-5 md:p-6">
+          <button type="button" onClick={() => router.push('/admin/boutique')} className="flex w-full flex-col text-left">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 pr-2">
-                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Boutique</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Boutique</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--blue shrink-0">
                 <Users size={20} aria-hidden strokeWidth={2} />
@@ -85,31 +86,31 @@ export function AdminKpiCardsInteractive({
             <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{drilldowns.boutiqueItemsSold}</p>
             <p className="mt-2 text-xs text-luxury-muted">Articles vendus (ce mois)</p>
             <div className="mt-4 flex justify-center">
-              <span className="inline-flex min-h-[46px] min-w-[240px] items-center justify-center rounded-full border border-white/85 bg-white/60 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-luxury-ink shadow-[0_2px_12px_rgba(29,29,31,0.08)]">
+              <span className="inline-flex min-h-[46px] w-full max-w-full items-center justify-center rounded-full border border-white/85 bg-white/60 px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-luxury-ink shadow-[0_2px_12px_rgba(29,29,31,0.08)] sm:min-w-[240px] sm:w-auto">
                 Boutique
               </span>
             </div>
           </button>
         </GlassCard>
 
-        <GlassCard className="p-5 md:p-6">
+        <GlassCard kpi className="p-5 md:p-6">
           <div
             role="button"
             tabIndex={0}
-            onClick={() => router.push(HEALTH_ALL_HREF)}
+            onClick={() => router.push(CLIENTS_HREF)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                router.push(HEALTH_ALL_HREF);
+                router.push(CLIENTS_HREF);
               }
             }}
             className="cursor-pointer"
-            aria-label="Ouvrir la vue complète Health"
+            aria-label="Ouvrir la vue complète Santé"
           >
-            <div className="flex min-h-[138px] flex-col">
+            <div className="flex flex-col">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 pr-2">
-                <p className="min-h-[30px] text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Health</p>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Santé</p>
                 </div>
                 <span className="kpi-icon-wrap kpi-icon-wrap--green shrink-0">
                   <HeartPulse size={20} aria-hidden strokeWidth={2} />
@@ -117,13 +118,38 @@ export function AdminKpiCardsInteractive({
               </div>
               <div className="mt-3 space-y-2">
                   <Link
-                    href={HEALTH_ALL_HREF}
+                    href={CLIENTS_HREF}
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
-                    <span className="font-medium">{kpis.health.healthy + kpis.health.fragile + kpis.health.atRisk}</span>
+                    <span className="font-medium">
+                      {kpis.health.healthy +
+                        kpis.health.fragile +
+                        kpis.health.atRisk +
+                        kpis.health.newMembers +
+                        kpis.health.watch}
+                    </span>
                     <span className="text-luxury-muted">Total abonnées</span>
+                  </Link>
+                  <Link
+                    href="/admin/clients?health=new"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
+                    <span className="font-medium">{kpis.health.newMembers}</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.new}</span>
+                  </Link>
+                  <Link
+                    href="/admin/clients?health=watch"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                    title="Inscrite 7–14 j, pas encore de cours ni replay"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                    <span className="font-medium">{kpis.health.watch}</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.watch}</span>
                   </Link>
                   <Link
                     href="/admin/clients?health=green"
@@ -132,16 +158,17 @@ export function AdminKpiCardsInteractive({
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                     <span className="font-medium">{kpis.health.healthy}</span>
-                    <span className="text-luxury-muted">Actifs</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.green}</span>
                   </Link>
                   <Link
                     href="/admin/clients?health=orange"
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                    title="Dernière activité entre 4 et 14 jours"
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                     <span className="font-medium">{kpis.health.fragile}</span>
-                    <span className="text-luxury-muted">Fragiles</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.orange}</span>
                   </Link>
                   <Link
                     href="/admin/clients?health=red"
@@ -150,9 +177,9 @@ export function AdminKpiCardsInteractive({
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
                     <span className="font-medium">{kpis.health.atRisk}</span>
-                    <span className="text-luxury-muted">À risque</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.red}</span>
                   </Link>
-                </div>
+              </div>
             </div>
           </div>
         </GlassCard>
@@ -204,7 +231,7 @@ export function AdminKpiCardsInteractive({
                       >
                         <div className="mb-2 flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold leading-tight text-luxury-ink">{row.courseLabel}</p>
-                          <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                          <span className="rounded-full border border-[#C9A96E]/50 bg-[#C9A96E]/15 px-2.5 py-0.5 text-[10px] font-semibold text-[#8B6B2E]">
                             {drilldowns.revenueGrandTotalEur > 0
                               ? `${((row.amountEur / drilldowns.revenueGrandTotalEur) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%`
                               : '0%'}
@@ -215,7 +242,7 @@ export function AdminKpiCardsInteractive({
                         </p>
                         <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-orange-100/90">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
+                            className="h-full rounded-full bg-gradient-to-r from-[#C45D3E] to-[#b35338]"
                             style={{
                               width: `${
                                 drilldowns.revenueGrandTotalEur > 0

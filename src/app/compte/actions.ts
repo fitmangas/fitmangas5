@@ -37,6 +37,7 @@ export async function markNotificationReadAction(notificationId: string): Promis
   if (error) return { ok: false, message: error.message };
 
   revalidatePath('/compte');
+  revalidatePath('/compte/notifications');
   return { ok: true };
 }
 
@@ -57,6 +58,7 @@ export async function markAllNotificationsReadAction(): Promise<CompteActionResu
   if (error) return { ok: false, message: error.message };
 
   revalidatePath('/compte');
+  revalidatePath('/compte/notifications');
   return { ok: true };
 }
 

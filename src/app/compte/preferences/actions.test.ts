@@ -119,7 +119,7 @@ describe('updateNotificationPreferences', () => {
       digest_frequency: 'weekly',
       updated_at: expect.any(String),
     });
-    expect(revalidatePath).toHaveBeenCalledWith('/compte/preferences');
+    expect(revalidatePath).toHaveBeenCalledWith('/compte/profil');
   });
 });
 

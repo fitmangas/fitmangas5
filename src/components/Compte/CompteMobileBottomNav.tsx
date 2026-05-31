@@ -4,26 +4,27 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Gift, Settings, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
 
 const links = [
-  { href: '/compte#planning', key: 'planning', icon: CalendarDays },
+  { href: '/compte/planning', key: 'planning', icon: CalendarDays },
   { href: '/compte/blog', key: 'blog', icon: BookOpen },
   { href: '/compte/replays', key: 'videos', icon: Video },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag },
+  { href: '/compte/notifications', key: 'notifications', icon: Bell },
   { href: '/compte/parrainage', key: 'referral', icon: Gift },
   { href: '/compte/profil', key: 'profile', icon: UserRound },
-  { href: '/compte/preferences', key: 'preferences', icon: Settings },
 ] as const;
 
 type NavKey = (typeof links)[number]['key'];
 
-export function CompteMobileBottomNav({ lang = 'fr' }: { lang?: ClientLang }) {
+export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0 }: { lang?: ClientLang; unreadNotifications?: number }) {
   const pathname = usePathname();
   const [hash, setHash] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const labels = compteNavLabels[lang];
 
   useEffect(() => {
@@ -33,19 +34,33 @@ export function CompteMobileBottomNav({ lang = 'fr' }: { lang?: ClientLang }) {
     return () => window.removeEventListener('hashchange', readHash);
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <nav className="fixed inset-x-0 top-0 z-[230] bg-[#fbf7ef]/95 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:hidden" aria-label="Navigation mobile">
-      <div className="flex items-center justify-between gap-1 rounded-[1.45rem] border border-white/75 bg-white/88 px-2 py-2">
+    <nav
+      className={`sticky top-0 z-50 overflow-hidden px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-300 md:hidden ${
+        scrolled
+          ? 'border-b border-white/30 bg-white/85 shadow-[0_4px_24px_rgba(15,23,42,0.08)]'
+          : 'border-b border-white/20 bg-white/70'
+      }`}
+      aria-label="Navigation mobile"
+    >
+      <div className="grid grid-cols-8 gap-0.5 rounded-[1.45rem] border border-white/40 bg-white/55 px-1.5 py-2 backdrop-blur-md transition-colors duration-300">
         <Link
           href="/compte"
           aria-label={labels.dashboard}
           title={labels.dashboard}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/60 bg-white/80 shadow-sm ${
+          className={`mx-auto flex h-10 w-full max-w-[2.75rem] items-center justify-center rounded-full border border-white/60 bg-white/80 shadow-sm ${
             pathname === '/compte' && !hash ? 'ring-2 ring-orange-300/70' : ''
           }`}
         >
           <Image
-            src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+            src="/logo.png"
             alt="FitMangas"
             width={24}
             height={24}
@@ -60,17 +75,25 @@ export function CompteMobileBottomNav({ lang = 'fr' }: { lang?: ClientLang }) {
               ? pathname === '/compte' && hash === hrefHash
               : pathname === basePath || pathname.startsWith(`${basePath}/`);
           const label = labels[key as NavKey];
+          const badge =
+            key === 'notifications' && unreadNotifications > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            ) : null;
+
           return (
             <Link
               key={href}
               href={href}
               aria-label={label}
               title={label}
-              className={`flex h-11 w-10 items-center justify-center rounded-2xl transition ${
+              className={`relative mx-auto flex h-10 w-full max-w-[2.75rem] items-center justify-center rounded-2xl transition ${
                 active ? 'bg-luxury-ink text-white shadow-md' : 'text-luxury-muted hover:bg-white/70 hover:text-luxury-ink'
               }`}
             >
-              <Icon size={21} strokeWidth={2} aria-hidden />
+              <Icon size={20} strokeWidth={2} aria-hidden />
+              {badge}
             </Link>
           );
         })}

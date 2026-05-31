@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Activity, Flame, MoonStar, Target, Video } from 'lucide-react';
 
+import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
 import { getClientLang, resolveFirstName } from '@/lib/compte/i18n';
 import { getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
@@ -210,7 +210,7 @@ export default async function CompteProgressionPage() {
     lang === 'en'
       ? {
           morning: 'Good morning',
-          back: 'Back',
+          dashboard: 'Dashboard',
           summary: 'Summary',
           performance: 'Performance',
           body: 'Body battery',
@@ -242,7 +242,7 @@ export default async function CompteProgressionPage() {
       : lang === 'es'
         ? {
             morning: 'Buenos días',
-            back: 'Volver',
+            dashboard: 'Dashboard',
             summary: 'Resumen',
             performance: 'Rendimiento',
             body: 'Energía corporal',
@@ -273,7 +273,7 @@ export default async function CompteProgressionPage() {
           }
         : {
             morning: 'Bonjour',
-            back: 'Retour',
+            dashboard: 'Dashboard',
             summary: 'Résumé',
             performance: 'Performance',
             body: 'Énergie corporelle',
@@ -303,20 +303,21 @@ export default async function CompteProgressionPage() {
             },
           };
 
-  const progressHeading =
-    lang === 'en'
+  const progressHeading = firstName
+    ? lang === 'en'
       ? `Your\u00A0progress, ${firstName}`
       : lang === 'es'
         ? `Tu\u00A0progreso, ${firstName}`
-        : `Ta\u00A0progression, ${firstName}`;
+        : `Ta\u00A0progression, ${firstName}`
+    : lang === 'en'
+      ? 'Your\u00A0progress'
+      : lang === 'es'
+        ? 'Tu\u00A0progreso'
+        : 'Ta\u00A0progression';
 
   return (
     <div className="mx-auto max-w-[1180px] px-4 pb-16 pt-2 md:px-8">
-      <div className="mb-3">
-        <Link href="/compte" className="inline-flex rounded-full border border-black/5 bg-white/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-ink shadow-[0_8px_18px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5">
-          {t.back}
-        </Link>
-      </div>
+      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
 
       <section className="relative overflow-hidden rounded-[38px] border border-white/70 bg-[#eceef1] p-5 shadow-[0_24px_52px_rgba(20,20,30,0.18)] md:p-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.45),transparent_42%)]" />

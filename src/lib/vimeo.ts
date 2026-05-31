@@ -1,6 +1,5 @@
 import { readFile, stat } from 'fs/promises';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { dispatchReplayReady } from '@/lib/notifications/phase2';
 
 const VIMEO_API_BASE = 'https://api.vimeo.com';
 const TUS_VERSION = '1.0.0';
@@ -283,6 +282,14 @@ export async function syncVideoRecording(params: {
   const metadata = await getVideoMetadata(params.vimeoId);
   const admin = createAdminClient();
 
+  const { data: existing } = await admin
+    .from('video_recordings')
+    .select('validation_status, is_ready, available_at')
+    .eq('vimeo_video_id', metadata.vimeoId)
+    .maybeSingle();
+
+  const approved = existing?.validation_status === 'approved' && existing.is_ready === true;
+
   const payload = {
     course_id: params.courseId,
     vimeo_video_id: metadata.vimeoId,
@@ -294,8 +301,9 @@ export async function syncVideoRecording(params: {
     duration_seconds: metadata.durationSeconds,
     privacy_view: metadata.privacyView ?? 'unlisted',
     upload_status: metadata.isReady ? 'ready' : 'transcoding',
-    is_ready: metadata.isReady,
-    available_at: metadata.isReady ? new Date().toISOString() : null,
+    validation_status: existing?.validation_status ?? 'pending',
+    is_ready: approved,
+    available_at: approved ? (existing?.available_at ?? new Date().toISOString()) : null,
     metadata: {
       link: metadata.link,
       transcode_status: metadata.transcodeStatus,
@@ -309,10 +317,6 @@ export async function syncVideoRecording(params: {
 
   if (error) {
     throw new Error(`Sync video_recordings failed: ${error.message}`);
-  }
-
-  if (metadata.isReady) {
-    await dispatchReplayReady(admin, params.courseId);
   }
 
   return metadata;

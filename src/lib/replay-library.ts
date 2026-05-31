@@ -82,13 +82,21 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
 
   if (adminBypass) {
     const admin = createAdminClient();
-    const { data, error } = await admin.from('video_recordings').select(selectCols).eq('is_ready', true);
+    const { data, error } = await admin
+      .from('video_recordings')
+      .select(selectCols)
+      .eq('is_ready', true)
+      .eq('validation_status', 'approved');
     if (error) throw new Error(error.message);
     /* En démo : montrer aussi les replays prêts avant la fin officielle du cours (ex. « Test live » pour présentation). */
     list = mapAndFilter(data as unknown as RecordingRow[] | null, { demoAdminShowUpcomingWithReplay: demo });
   } else {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('video_recordings').select(selectCols).eq('is_ready', true);
+    const { data, error } = await supabase
+      .from('video_recordings')
+      .select(selectCols)
+      .eq('is_ready', true)
+      .eq('validation_status', 'approved');
 
     if (error) throw new Error(error.message);
     list = mapAndFilter(data as unknown as RecordingRow[] | null);

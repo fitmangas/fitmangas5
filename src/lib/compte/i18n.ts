@@ -37,10 +37,10 @@ function normalizeFirstName(value: unknown): string | null {
   if (!trimmed) return null;
   const token = trimmed.split(/\s+/)[0]?.trim();
   if (!token) return null;
-  return token.charAt(0).toUpperCase() + token.slice(1);
+  return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
 }
 
-export function resolveFirstName(profileFirstName: unknown, userMetadata?: unknown): string {
+export function resolveFirstName(profileFirstName: unknown, userMetadata?: unknown): string | null {
   const fromProfile = normalizeFirstName(profileFirstName);
   if (fromProfile) return fromProfile;
 
@@ -55,8 +55,18 @@ export function resolveFirstName(profileFirstName: unknown, userMetadata?: unkno
     normalizeFirstName(meta.given_name) ??
     normalizeFirstName(meta.name) ??
     normalizeFirstName(meta.full_name) ??
-    'Alejandra'
+    null
   );
+}
+
+export function formatCompteGreeting(lang: ClientLang, firstName: string | null): string {
+  if (firstName) {
+    const hello = lang === 'es' ? 'Hola' : lang === 'en' ? 'Hello' : 'Bonjour';
+    return `${hello} ${firstName}`;
+  }
+  if (lang === 'es') return '¡Hola!';
+  if (lang === 'en') return 'Hello!';
+  return 'Bonjour !';
 }
 
 export const compteNavLabels: Record<
@@ -70,6 +80,7 @@ export const compteNavLabels: Record<
     profile: string;
     preferences: string;
     referral: string;
+    notifications: string;
   }
 > = {
   fr: {
@@ -81,6 +92,7 @@ export const compteNavLabels: Record<
     profile: 'Profil',
     preferences: 'Préférences',
     referral: 'Parrainage',
+    notifications: 'Notifications',
   },
   en: {
     dashboard: 'Dashboard',
@@ -91,6 +103,7 @@ export const compteNavLabels: Record<
     profile: 'Profile',
     preferences: 'Preferences',
     referral: 'Referrals',
+    notifications: 'Notifications',
   },
   es: {
     dashboard: 'Panel',
@@ -101,5 +114,6 @@ export const compteNavLabels: Record<
     profile: 'Perfil',
     preferences: 'Preferencias',
     referral: 'Referidos',
+    notifications: 'Notificaciones',
   },
 };

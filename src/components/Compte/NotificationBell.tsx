@@ -46,7 +46,7 @@ export function NotificationBell({ userId, items }: { userId: string; items: Not
           </span>
         ) : null}
       </summary>
-      <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
+      <div className="absolute right-0 z-50 mt-2 max-w-[calc(100vw-2rem)] w-[22rem] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
         {localItems.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-luxury-muted">Aucune notification.</p>
         ) : (

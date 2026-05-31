@@ -20,10 +20,17 @@ import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
 import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
+import { SHOW_MEXICO } from '@/lib/landing/feature-flags';
+import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
 
-const HERO_IMAGE_URL =
-  process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL ||
-  "https://www.dropbox.com/scl/fi/vmq043zpcjkehh6rsyn7n/DSC_3488.PNG?rlkey=gladkol1foebum7jcagsz1mf3&st=awo05ygo&raw=1";
+const HERO_IMAGE_URL = process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL || LANDING_HERO_IMAGE;
+
+function withLocalOfferImages(courses: Course[]): Course[] {
+  return courses.map((course) => ({
+    ...course,
+    imageUrl: landingOfferImageUrl(course.id) ?? course.imageUrl,
+  }));
+}
 const LANDING_INSTAGRAM_URL = process.env.NEXT_PUBLIC_LANDING_INSTAGRAM_URL || 'https://www.instagram.com/fit.mangas/';
 const LANDING_CONTACT_EMAIL = process.env.NEXT_PUBLIC_LANDING_CONTACT_EMAIL || 'info@casamangas.fr';
 
@@ -52,10 +59,14 @@ export function LandingPage({
   vimeoShowcase = [],
   blogPreviews = [],
   initialLang = 'FR',
+  openLoginRequired = false,
+  initialOfferId,
 }: {
   vimeoShowcase?: VimeoShowcaseItem[];
   blogPreviews?: BlogPreviewItem[];
   initialLang?: Language;
+  openLoginRequired?: boolean;
+  initialOfferId?: string;
 }) {
   const [lang, setLang] = useState<Language>(initialLang);
   const [segment, setSegment] = useState<Segment>('VISIO');
@@ -89,7 +100,8 @@ export function LandingPage({
           positiveReviews: 'Plus de 500 avis positifs',
           blogLabel: 'Le Blog',
           blogTitle: 'Inspiration Pilates & bien-être',
-          blogCta: 'Accédez au blog complet en devenant membre Visio — à partir de 39€/mois',
+          blogCta: 'S’inscrire pour accéder au blog',
+          blogArticleCta: 'Réservé aux membres — S’inscrire',
           privacy: 'Confidentialité',
           terms: 'Conditions',
           proofGiven: 'Cours donnés',
@@ -126,7 +138,8 @@ export function LandingPage({
           positiveReviews: 'Más de 500 opiniones positivas',
           blogLabel: 'El Blog',
           blogTitle: 'Inspiración Pilates y bienestar',
-          blogCta: 'Accede al blog completo como miembro Visio — desde 39€/mes',
+          blogCta: 'Inscribirse para acceder al blog',
+          blogArticleCta: 'Reservado a miembros — Inscribirse',
           privacy: 'Privacidad',
           terms: 'Condiciones',
           proofGiven: 'Clases dadas',
@@ -183,6 +196,19 @@ export function LandingPage({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const loginRequiredMessage =
+    lang === 'ES'
+      ? 'Conéctate para acceder a tu espacio.'
+      : 'Connecte-toi pour accéder à ton espace.';
+
+  useEffect(() => {
+    if (openLoginRequired) setShowLoginModal(true);
+  }, [openLoginRequired]);
+
+  useEffect(() => {
+    if (!SHOW_MEXICO && onsiteCity === 'MEXICO') setOnsiteCity('NANTES');
+  }, [onsiteCity]);
+
   const toggleLang = (newLang: Language) => {
     setLang(newLang);
   };
@@ -191,13 +217,28 @@ export function LandingPage({
     return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
   };
 
-  const activeCourses =
+  const visioOfferLabel = (courseId: string) => {
+    if (courseId === 'v-coll') return t.visioCollectifLabel;
+    if (courseId === 'v-ind') return t.visioIndividuelLabel;
+    return t.visioCollectifLabel;
+  };
+
+  const activeCourses = withLocalOfferImages(
     segment === 'VISIO'
       ? t.courses.visio
       : onsiteCity === 'NANTES'
         ? t.courses.nantes
-        : t.courses.mexico;
-  const onboardingCourses = [...t.courses.visio, ...t.courses.nantes];
+        : t.courses.mexico,
+  );
+  const onboardingCourses = withLocalOfferImages([...t.courses.visio, ...t.courses.nantes]);
+
+  useEffect(() => {
+    if (!initialOfferId) return;
+    const match =
+      onboardingCourses.find((c) => c.id === initialOfferId) ??
+      withLocalOfferImages([...t.courses.visio, ...t.courses.nantes, ...t.courses.mexico]).find((c) => c.id === initialOfferId);
+    if (match) setSelectedCourse(match);
+  }, [initialOfferId, lang]);
   const fallbackPilatesCards: { title: string; imageUrl: string; level: string }[] = [
     { title: 'Pilates Mat 1', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.beginner },
     { title: 'Pilates Mat 2', imageUrl: t.courses.visio[1]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.beginner },
@@ -267,7 +308,7 @@ export function LandingPage({
         ]
       : inspirationPilatesCards;
   return (
-    <div className="min-h-screen bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
+    <div className="min-h-screen overflow-x-clip bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       {/* Top Bar */}
       <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
         <div className="relative max-w-6xl mx-auto px-4 md:px-10 py-3 md:py-4">
@@ -315,7 +356,7 @@ export function LandingPage({
         </div>
       </div>
 
-      <main className="max-w-2xl md:max-w-6xl mx-auto px-6 md:px-8 pt-6 md:pt-10 pb-24">
+      <main className="max-w-2xl md:max-w-6xl mx-auto px-6 md:px-8 pt-6 md:pt-10 pb-24 overflow-x-clip">
         <div className="mb-6 flex justify-end gap-6 md:hidden">
           <button 
             onClick={() => toggleLang('FR')}
@@ -339,7 +380,7 @@ export function LandingPage({
             className="px-1 sm:px-2"
           >
             <Image
-              src="/Spreadshop Logo (1800 x 1800 px)-2.png"
+              src="/logo.png"
               alt="Logo FitMangas"
               width={58}
               height={58}
@@ -431,23 +472,26 @@ export function LandingPage({
             transition={{ delay: 0.1 }}
             className="bg-white rounded-[40px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-brand-ink/[0.03]"
           >
-            <div className="aspect-[4/5] relative overflow-hidden">
-              <img
+            <div className="relative aspect-[4/5] overflow-hidden">
+              <Image
                 src={HERO_IMAGE_URL}
                 alt="Alejandra Mangas"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 45vw"
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/8 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-10 text-center">
-                <h1 className="text-6xl md:text-7xl font-serif font-normal italic mb-3 tracking-tighter leading-none">{t.title}</h1>
-                <p className="text-[10px] tracking-[0.4em] uppercase text-brand-accent font-bold">{t.subtitle}</p>
+                <h2 className="text-4xl sm:text-5xl md:text-7xl font-serif font-normal italic mb-3 tracking-tighter leading-none break-words">{t.title}</h2>
+                <p className="text-[10px] tracking-[0.25em] sm:tracking-[0.4em] uppercase text-brand-accent font-bold">{t.subtitle}</p>
               </div>
             </div>
             <div className="p-6 pt-0 md:p-8 md:pt-0" />
           </motion.section>
         </section>
 
+        <section id="offers" className="scroll-mt-24">
         {/* Segment Toggle */}
         <div className="mb-8 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <button 
@@ -483,16 +527,18 @@ export function LandingPage({
             >
               Nantes
             </button>
-            <button
-              onClick={() => setOnsiteCity('MEXICO')}
-              className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
-                onsiteCity === 'MEXICO'
-                  ? 'bg-brand-accent text-white shadow-sm'
-                  : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
-              }`}
-            >
-              Mexico
-            </button>
+            {SHOW_MEXICO ? (
+              <button
+                onClick={() => setOnsiteCity('MEXICO')}
+                className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
+                  onsiteCity === 'MEXICO'
+                    ? 'bg-brand-accent text-white shadow-sm'
+                    : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
+                }`}
+              >
+                Mexico
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="mb-12" />
@@ -501,7 +547,7 @@ export function LandingPage({
         {/* Offers Grid */}
         <div className="space-y-12 mb-20">
           <div className="text-center space-y-3">
-            <span className="text-[12px] tracking-[0.45em] uppercase text-brand-accent/90 font-semibold drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
+            <span className="text-[12px] tracking-[0.2em] sm:tracking-[0.45em] uppercase text-brand-accent/90 font-semibold drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
               {t.sectionTitle}
             </span>
             <div className="h-px w-12 bg-brand-accent/20 mx-auto" />
@@ -525,14 +571,13 @@ export function LandingPage({
                 className="group cursor-pointer bg-white rounded-[40px] border border-brand-ink/[0.03] hover:border-brand-accent/20 transition-all duration-500 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.02)] flex flex-col"
               >
                 {/* Image Section */}
-                <div className="h-56 sm:h-64 relative overflow-hidden">
-                  <img 
-                    src={course.imageUrl || (course.id.includes('coll') 
-                      ? "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=800&auto=format&fit=crop" 
-                      : "https://images.unsplash.com/photo-1591343395902-1adcb454c2e4?q=80&w=800&auto=format&fit=crop")} 
+                <div className="relative h-56 overflow-hidden sm:h-64">
+                  <Image
+                    src={course.imageUrl || '/landing/offer-v-coll.jpg'}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
-                    referrerPolicy="no-referrer"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-brand-ink/5 group-hover:bg-transparent transition-colors duration-500" />
                   {course.badge && (
@@ -550,8 +595,15 @@ export function LandingPage({
                     <div className="flex justify-between items-start mb-4 md:mb-8">
                       <div className="space-y-1 md:space-y-2">
                         <span className="text-[10px] tracking-[0.3em] uppercase text-brand-accent font-bold opacity-80">
-                          {segment === 'VISIO' ? t.visioLabel : `${lang === 'FR' ? 'Studio' : 'Studio'} ${onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}`}
+                          {segment === 'VISIO'
+                            ? visioOfferLabel(course.id)
+                            : `${lang === 'FR' ? 'Studio' : 'Studio'} ${onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}`}
                         </span>
+                        {segment === 'VISIO' && course.id === 'v-ind' ? (
+                          <p className="text-[11px] font-medium tracking-wide text-brand-ink/55">
+                            {t.visioIndividuelCollectifExtra}
+                          </p>
+                        ) : null}
                         <h3 className="text-2xl md:text-4xl font-serif font-normal tracking-tight text-brand-ink group-hover:text-brand-accent transition-colors duration-300 leading-none">
                           {course.title}
                         </h3>
@@ -631,6 +683,7 @@ export function LandingPage({
             <ArrowRight size={14} />
           </div>
         </motion.a>
+        </section>
 
         {/* Pilates styles inspiration section */}
         <section className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10">
@@ -687,7 +740,7 @@ export function LandingPage({
             <h2 className="text-4xl font-serif font-normal italic tracking-tight mb-10">{l.reviews}</h2>
             
             {/* Grouped Avatars Row - Structural inspiration from Canva */}
-            <div className="flex justify-center -space-x-5 mb-6">
+            <div className="flex justify-center -space-x-5 mb-6 overflow-x-clip px-2">
               {t.testimonials.map((testimonial, i) => (
                 <motion.div
                   key={i}
@@ -784,6 +837,7 @@ export function LandingPage({
                     ) : null}
                     <h3 className="font-serif text-xl italic text-brand-ink">{title}</h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{excerpt}</p>
+                    <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-accent">{l.blogArticleCta}</p>
                   </div>
                 </button>
               );
@@ -813,9 +867,9 @@ export function LandingPage({
           </div>
           <div className="mt-6 flex justify-center">
             <Link
-              href="/login"
-              aria-label="Accès administrateur"
-              title="Accès administrateur"
+              href="/connexion"
+              aria-label={lang === 'ES' ? 'Acceso cliente' : 'Espace client'}
+              title={lang === 'ES' ? 'Acceso cliente' : 'Espace client'}
               className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-ink/10 text-brand-ink/30 transition hover:border-brand-accent/40 hover:text-brand-accent"
             >
               <LockKeyhole size={14} className="transition group-hover:scale-110" />
@@ -831,7 +885,12 @@ export function LandingPage({
         lang={lang}
         onClose={() => setSelectedCourse(null)}
       />
-      <ClientLoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} lang={lang} />
+      <ClientLoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        lang={lang}
+        loginRequiredMessage={openLoginRequired ? loginRequiredMessage : undefined}
+      />
 
       {/* Scroll to Top */}
       <AnimatePresence>
