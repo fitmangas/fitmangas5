@@ -21,7 +21,7 @@ import {
   snapCourseDatetimeLocalValue,
   toCourseDatetimeLocalValue,
 } from '@/lib/course-datetime';
-import { liveCourseHref } from '@/lib/live/live-back-url';
+import { LIVE_FROM_ADMIN_COURSES, liveCourseHref } from '@/lib/live/live-back-url';
 
 export type AdminCourseRow = {
   id: string;
@@ -167,7 +167,7 @@ function CourseRowActions({
         <Pencil size={14} />
       </button>
       <a
-        href={liveCourseHref(c.id, { from: '/admin/courses' })}
+        href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES })}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/80 p-2 text-emerald-800 hover:bg-emerald-100"
@@ -176,7 +176,7 @@ function CourseRowActions({
         <Play size={14} strokeWidth={2} className="-ml-px" aria-hidden />
       </a>
       <a
-        href={liveCourseHref(c.id, { from: '/admin/courses', preview: 'client' })}
+        href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES, preview: 'client' })}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center rounded-full border border-brand-ink/12 bg-white p-2 text-brand-ink/70 hover:border-brand-accent/40 hover:bg-brand-beige/50 hover:text-brand-ink"
@@ -626,7 +626,16 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 key={c.id}
                 className="rounded-2xl border border-white/25 bg-white/20 p-4 shadow-sm"
               >
-                <h4 className="font-semibold text-brand-ink">{c.title}</h4>
+                <h4 className="font-semibold text-brand-ink">
+                  <a
+                    href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand-accent hover:underline"
+                  >
+                    {c.title}
+                  </a>
+                </h4>
                 <dl className="mt-3 space-y-1.5 text-xs text-brand-ink/75">
                   <div className="flex justify-between gap-3">
                     <dt className="text-brand-ink/50">Début</dt>
@@ -681,7 +690,16 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 const coursePast = new Date(c.ends_at).getTime() < Date.now();
                 return (
                   <tr key={c.id} className="border-b border-white/20 hover:bg-white/25">
-                    <td className="max-w-[200px] truncate px-4 py-3 font-medium">{c.title}</td>
+                    <td className="max-w-[200px] truncate px-4 py-3 font-medium">
+                      <a
+                        href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-brand-accent hover:underline"
+                      >
+                        {c.title}
+                      </a>
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs">{formatCourseStart(c)}</td>
                     <td className="px-4 py-3 text-xs">{formatCourseFormatLabel(c)}</td>
                     <td className="px-4 py-3 text-xs">{c.capacity_max ?? '—'}</td>
@@ -727,7 +745,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 <a
-                  href={liveCourseHref(editing.id, { from: '/admin/courses', preview: 'client' })}
+                  href={liveCourseHref(editing.id, { from: LIVE_FROM_ADMIN_COURSES, preview: 'client' })}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-brand-accent/35 bg-brand-accent/[0.08] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-brand-accent hover:bg-brand-accent/[0.14]"

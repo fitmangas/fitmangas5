@@ -1,5 +1,8 @@
 const ALLOWED_FROM_ROOTS = ['/admin', '/compte'] as const;
 
+export const LIVE_FROM_ADMIN = '/admin';
+export const LIVE_FROM_ADMIN_COURSES = '/admin/courses';
+
 /** Valide un chemin interne passé en ?from= (anti open-redirect). */
 export function sanitizeLiveFromParam(from: string | undefined | null): string | null {
   if (!from?.trim()) return null;
@@ -28,22 +31,23 @@ function labelForPath(path: string): string {
 export function resolveLiveBackLink(params: {
   from?: string | null;
   realAdmin: boolean;
-  effectiveStudentPreview: boolean;
+  /** true uniquement si ?preview=client (pas le cookie mode démo). */
+  studentPreviewFromUrl: boolean;
 }): LiveBackLink {
-  if (params.effectiveStudentPreview || !params.realAdmin) {
-    const clientFrom = sanitizeLiveFromParam(params.from);
-    if (clientFrom?.startsWith('/compte')) {
-      return { href: clientFrom, label: labelForPath(clientFrom) };
+  const from = sanitizeLiveFromParam(params.from);
+
+  if (params.studentPreviewFromUrl || !params.realAdmin) {
+    if (from?.startsWith('/compte')) {
+      return { href: from, label: labelForPath(from) };
     }
     return { href: '/compte', label: 'Calendrier' };
   }
 
-  const from = sanitizeLiveFromParam(params.from);
   if (from?.startsWith('/admin')) {
     return { href: from, label: labelForPath(from) };
   }
 
-  return { href: '/admin/courses', label: 'Séances' };
+  return { href: LIVE_FROM_ADMIN_COURSES, label: 'Séances' };
 }
 
 /** Construit l’URL /live avec provenance optionnelle. */

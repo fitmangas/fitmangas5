@@ -62,7 +62,7 @@ export default async function LiveCoursePage({
     return (
       <AccessDenied
         subtitle="Lien invalide."
-        back={resolveLiveBackLink({ from: fromParam, realAdmin: false, effectiveStudentPreview: true })}
+        back={resolveLiveBackLink({ from: fromParam, realAdmin: false, studentPreviewFromUrl: studentPreview })}
       />
     );
   }
@@ -79,7 +79,7 @@ export default async function LiveCoursePage({
         back={resolveLiveBackLink({
           from: fromParam,
           realAdmin: false,
-          effectiveStudentPreview: studentPreview,
+          studentPreviewFromUrl: studentPreview,
         })}
       />
     );
@@ -95,7 +95,7 @@ export default async function LiveCoursePage({
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
   const globalDemo = (await getDemoClientMode()) && realAdmin;
   const effectiveStudentPreview = studentPreview || globalDemo;
-  const backLink = resolveLiveBackLink({ from: fromParam, realAdmin, effectiveStudentPreview });
+  const backLink = resolveLiveBackLink({ from: fromParam, realAdmin, studentPreviewFromUrl: studentPreview });
 
   let allowed = false;
   let isModerator = false;

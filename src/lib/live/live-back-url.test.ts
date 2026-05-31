@@ -16,22 +16,28 @@ describe('live-back-url', () => {
 
   it('admin vue admin → retour admin (from ou défaut séances)', () => {
     expect(
-      resolveLiveBackLink({ from: '/admin', realAdmin: true, effectiveStudentPreview: false }),
+      resolveLiveBackLink({ from: '/admin', realAdmin: true, studentPreviewFromUrl: false }),
     ).toEqual({ href: '/admin', label: 'Tableau de bord' });
     expect(
-      resolveLiveBackLink({ from: null, realAdmin: true, effectiveStudentPreview: false }),
+      resolveLiveBackLink({ from: null, realAdmin: true, studentPreviewFromUrl: false }),
     ).toEqual({ href: '/admin/courses', label: 'Séances' });
   });
 
-  it('admin aperçu client → retour client même si from admin', () => {
+  it('admin avec ?from=/admin/courses → retour admin même sans preview URL', () => {
     expect(
-      resolveLiveBackLink({ from: '/admin/courses', realAdmin: true, effectiveStudentPreview: true }),
+      resolveLiveBackLink({ from: '/admin/courses', realAdmin: true, studentPreviewFromUrl: false }),
+    ).toEqual({ href: '/admin/courses', label: 'Séances' });
+  });
+
+  it('admin aperçu client (?preview=client) → retour client', () => {
+    expect(
+      resolveLiveBackLink({ from: '/admin/courses', realAdmin: true, studentPreviewFromUrl: true }),
     ).toEqual({ href: '/compte', label: 'Calendrier' });
   });
 
   it('client → retour compte', () => {
     expect(
-      resolveLiveBackLink({ from: '/compte/planning', realAdmin: false, effectiveStudentPreview: false }),
+      resolveLiveBackLink({ from: '/compte/planning', realAdmin: false, studentPreviewFromUrl: false }),
     ).toEqual({ href: '/compte/planning', label: 'Planning' });
   });
 
