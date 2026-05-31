@@ -1,14 +1,12 @@
 'use client';
 
 import {
-  COURSE_HOUR_OPTIONS,
-  COURSE_MINUTE_OPTIONS,
+  COURSE_TIME_SLOT_OPTIONS,
   COURSE_TIMEZONE_OPTIONS,
   formatCourseLocalPreview,
   joinCourseDatetimeLocal,
-  joinCourseTimeParts,
+  snapCourseTimeSlot,
   splitCourseDatetimeLocal,
-  splitCourseTimeParts,
 } from '@/lib/course-datetime';
 
 const FIELD =
@@ -38,18 +36,14 @@ function DatetimePair({
   preview: string | null;
 }) {
   const { date, time } = splitCourseDatetimeLocal(value);
-  const { hour, minute } = splitCourseTimeParts(time || '00:00');
+  const timeSlot = snapCourseTimeSlot(time || '00:00');
 
   function updateDate(nextDate: string) {
-    onChange(joinCourseDatetimeLocal(nextDate, hour, minute));
+    onChange(joinCourseDatetimeLocal(nextDate, timeSlot));
   }
 
-  function updateHour(nextHour: string) {
-    onChange(joinCourseDatetimeLocal(date, nextHour, minute));
-  }
-
-  function updateMinute(nextMinute: string) {
-    onChange(joinCourseDatetimeLocal(date, hour, nextMinute));
+  function updateTimeSlot(nextTime: string) {
+    onChange(joinCourseDatetimeLocal(date, nextTime));
   }
 
   return (
@@ -57,40 +51,22 @@ function DatetimePair({
       <span className={LABEL}>{label}</span>
       <div className="mt-2 space-y-2">
         <input type="date" required value={date} onChange={(e) => updateDate(e.target.value)} className={FIELD} />
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block">
-            <span className="sr-only">Heures</span>
-            <select
-              required
-              value={hour}
-              onChange={(e) => updateHour(e.target.value)}
-              className={FIELD}
-              aria-label="Heures"
-            >
-              {COURSE_HOUR_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option} h
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="sr-only">Minutes</span>
-            <select
-              required
-              value={minute}
-              onChange={(e) => updateMinute(e.target.value)}
-              className={FIELD}
-              aria-label="Minutes"
-            >
-              {COURSE_MINUTE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option} min
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <label className="block">
+          <span className="sr-only">Heure</span>
+          <select
+            required
+            value={timeSlot}
+            onChange={(e) => updateTimeSlot(e.target.value)}
+            className={FIELD}
+            aria-label="Heure"
+          >
+            {COURSE_TIME_SLOT_OPTIONS.map((slot) => (
+              <option key={slot} value={slot}>
+                {slot}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {preview ? (
         <p className="mt-1.5 text-[11px] leading-snug text-luxury-muted">{preview}</p>
@@ -128,7 +104,7 @@ export function CourseDatetimeFields({
         </select>
       </label>
       <p className="text-[11px] leading-snug text-luxury-muted">
-        Choisis la date puis l&apos;heure via les listes (pas de saisie clavier). Le stockage en base reste en UTC.
+        Choisis la date puis le créneau horaire (pas de 5 min, pas de saisie clavier). Le stockage en base reste en UTC.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <DatetimePair

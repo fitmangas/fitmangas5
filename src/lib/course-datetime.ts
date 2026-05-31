@@ -38,52 +38,38 @@ export function isoFromCourseDatetimeLocal(value: string, timeZone = DEFAULT_COU
   return fromUserTime(withSeconds, timeZone).toISOString();
 }
 
-export const COURSE_MINUTE_OPTIONS = ['00', '15', '30', '45'] as const;
+export const COURSE_TIME_STEP_MINUTES = 5;
 
-export const COURSE_HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) =>
-  String(index).padStart(2, '0'),
+/** Créneaux 00:00 → 23:55 par pas de 5 minutes (288 options). */
+export const COURSE_TIME_SLOT_OPTIONS = Array.from(
+  { length: (24 * 60) / COURSE_TIME_STEP_MINUTES },
+  (_, index) => {
+    const totalMinutes = index * COURSE_TIME_STEP_MINUTES;
+    const hour = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const minute = String(totalMinutes % 60).padStart(2, '0');
+    return `${hour}:${minute}`;
+  },
 );
 
-export function snapCourseMinuteValue(minutes: number): (typeof COURSE_MINUTE_OPTIONS)[number] {
-  const clamped = Math.min(59, Math.max(0, minutes));
-  let best: (typeof COURSE_MINUTE_OPTIONS)[number] = '00';
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const option of COURSE_MINUTE_OPTIONS) {
-    const distance = Math.abs(clamped - Number(option));
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = option;
-    }
-  }
-  return best;
-}
-
-export function splitCourseTimeParts(time: string): { hour: string; minute: string } {
+export function snapCourseTimeSlot(time: string): string {
   const trimmed = time.trim();
   const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) {
-    return { hour: '00', minute: '00' };
-  }
+  if (!match) return '00:00';
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
-  if (hours < 0 || hours > 23) {
-    return { hour: '00', minute: '00' };
-  }
-  return {
-    hour: String(hours).padStart(2, '0'),
-    minute: snapCourseMinuteValue(minutes),
-  };
-}
-
-export function joinCourseTimeParts(hour: string, minute: string): string {
-  return `${hour}:${minute}`;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return '00:00';
+  const total = hours * 60 + minutes;
+  const snapped = Math.round(total / COURSE_TIME_STEP_MINUTES) * COURSE_TIME_STEP_MINUTES;
+  const clamped = Math.min(23 * 60 + 55, Math.max(0, snapped));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 export function snapCourseDatetimeLocalValue(value: string): string {
   const { date, time } = splitCourseDatetimeLocal(value);
   if (!date) return value;
-  const { hour, minute } = splitCourseTimeParts(time || '00:00');
-  return `${date}T${joinCourseTimeParts(hour, minute)}`;
+  return `${date}T${snapCourseTimeSlot(time || '00:00')}`;
 }
 
 export function splitCourseDatetimeLocal(value: string): { date: string; time: string } {
@@ -98,9 +84,7 @@ export function normalizeCourseTimeInput(time: string): string | null {
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  if (!COURSE_MINUTE_OPTIONS.includes(minutes.toString().padStart(2, '0') as (typeof COURSE_MINUTE_OPTIONS)[number])) {
-    return null;
-  }
+  if (minutes % COURSE_TIME_STEP_MINUTES !== 0) return null;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
@@ -110,9 +94,10 @@ export function isCompleteCourseDatetimeLocal(value: string): boolean {
   return Boolean(date && normalizeCourseTimeInput(time));
 }
 
-export function joinCourseDatetimeLocal(date: string, hour: string, minute: string): string {
+export function joinCourseDatetimeLocal(date: string, time: string): string {
   if (!date) return '';
-  return `${date}T${joinCourseTimeParts(hour, minute)}`;
+  if (!time) return `${date}T`;
+  return `${date}T${time}`;
 }
 
 export function plusOneHourCourseDatetimeLocal(value: string, timeZone = DEFAULT_COURSE_TIMEZONE): string {

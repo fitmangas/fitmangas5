@@ -8,10 +8,12 @@ import {
   isoWeekdayInTimeZone,
 } from '@/lib/calendar-window';
 import {
+  COURSE_TIME_SLOT_OPTIONS,
   formatCourseInstant,
   isoFromCourseDatetimeLocal,
   jitsiParisDateBlockFromStartsAt,
   plusOneHourCourseDatetimeLocal,
+  snapCourseTimeSlot,
   toCourseDatetimeLocalValue,
 } from '@/lib/course-datetime';
 
@@ -46,6 +48,26 @@ describe('course-datetime (Europe/Paris)', () => {
     expect(formatCourseInstant('2026-05-31T22:45:00.000Z', 'Europe/Paris')).toBe(
       '01 juin 2026, 00:45 · France (Paris)',
     );
+  });
+
+  it('créneaux horaires par pas de 5 minutes', () => {
+    expect(COURSE_TIME_SLOT_OPTIONS).toHaveLength(288);
+    expect(COURSE_TIME_SLOT_OPTIONS[0]).toBe('00:00');
+    expect(COURSE_TIME_SLOT_OPTIONS[1]).toBe('00:05');
+    expect(COURSE_TIME_SLOT_OPTIONS.at(-1)).toBe('23:55');
+    expect(snapCourseTimeSlot('19:07')).toBe('19:05');
+    expect(snapCourseTimeSlot('19:08')).toBe('19:10');
+  });
+
+  it('06:05 Paris est un créneau valide', () => {
+    expect(isoFromCourseDatetimeLocal('2026-06-01T06:05')).toBe('2026-06-01T04:05:00.000Z');
+    expect(formatCourseInstant('2026-06-01T04:05:00.000Z', 'Europe/Paris')).toBe(
+      '01 juin 2026, 06:05 · France (Paris)',
+    );
+  });
+
+  it('plusOneHour arrondit au pas de 5 minutes', () => {
+    expect(plusOneHourCourseDatetimeLocal('2026-06-02T18:55', 'Europe/Paris')).toBe('2026-06-02T19:55');
   });
 });
 
