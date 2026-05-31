@@ -12,12 +12,13 @@ import {
 } from '@/lib/access-control';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
+import { resolveLiveBackLink } from '@/lib/live/live-back-url';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const uuidSchema = z.string().uuid();
 
-function AccessDenied({ subtitle }: { subtitle: string }) {
+function AccessDenied({ subtitle, back }: { subtitle: string; back: { href: string; label: string } }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">
       <div className="glass-card max-w-md px-8 py-10 text-center">
@@ -27,11 +28,11 @@ function AccessDenied({ subtitle }: { subtitle: string }) {
           Tu n’as pas accès complet à cette séance, ou le lien n’est pas valide.
         </p>
         <Link
-          href="/compte"
+          href={back.href}
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:opacity-95"
         >
           <ArrowLeft size={14} />
-          Retour au calendrier
+          Retour — {back.label}
         </Link>
       </div>
     </div>
@@ -43,19 +44,27 @@ export default async function LiveCoursePage({
   searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ preview?: string | string[] }>;
+  searchParams: Promise<{ preview?: string | string[]; from?: string | string[] }>;
 }) {
   const { courseId } = await params;
   const urlParams = await searchParams;
   const previewRaw = urlParams.preview;
+  const fromRaw = urlParams.from;
   const previewToken =
     typeof previewRaw === 'string' ? previewRaw : Array.isArray(previewRaw) ? previewRaw[0] : undefined;
+  const fromParam =
+    typeof fromRaw === 'string' ? fromRaw : Array.isArray(fromRaw) ? fromRaw[0] : undefined;
   const studentPreview =
     previewToken === 'client' || previewToken === 'eleve' || previewToken === 'student';
 
   const idParsed = uuidSchema.safeParse(courseId);
   if (!idParsed.success) {
-    return <AccessDenied subtitle="Lien invalide." />;
+    return (
+      <AccessDenied
+        subtitle="Lien invalide."
+        back={resolveLiveBackLink({ from: fromParam, realAdmin: false, effectiveStudentPreview: true })}
+      />
+    );
   }
 
   const supabase = await createClient();
@@ -64,7 +73,16 @@ export default async function LiveCoursePage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return <AccessDenied subtitle="Connexion requise." />;
+    return (
+      <AccessDenied
+        subtitle="Connexion requise."
+        back={resolveLiveBackLink({
+          from: fromParam,
+          realAdmin: false,
+          effectiveStudentPreview: studentPreview,
+        })}
+      />
+    );
   }
 
   await supabase
@@ -77,6 +95,7 @@ export default async function LiveCoursePage({
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
   const globalDemo = (await getDemoClientMode()) && realAdmin;
   const effectiveStudentPreview = studentPreview || globalDemo;
+  const backLink = resolveLiveBackLink({ from: fromParam, realAdmin, effectiveStudentPreview });
 
   let allowed = false;
   let isModerator = false;
@@ -93,11 +112,11 @@ export default async function LiveCoursePage({
       allowed = livePriv.isAdmin || accessFull;
     }
   } catch {
-    return <AccessDenied subtitle="Impossible de vérifier ton accès." />;
+    return <AccessDenied subtitle="Impossible de vérifier ton accès." back={backLink} />;
   }
 
   if (!allowed || !livePriv) {
-    return <AccessDenied subtitle="Tu n’as pas accès à ce live." />;
+    return <AccessDenied subtitle="Tu n’as pas accès à ce live." back={backLink} />;
   }
 
   const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).maybeSingle();
@@ -118,7 +137,7 @@ export default async function LiveCoursePage({
     .maybeSingle();
 
   if (error || !course) {
-    return <AccessDenied subtitle="Séance introuvable." />;
+    return <AccessDenied subtitle="Séance introuvable." back={backLink} />;
   }
 
   const courseEndedAt = new Date(course.ends_at);
@@ -175,11 +194,11 @@ export default async function LiveCoursePage({
             Aucune salle Jitsi n’est encore renseignée pour cette séance.
           </p>
           <Link
-            href="/compte"
+            href={backLink.href}
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-accent px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:opacity-95"
           >
             <ArrowLeft size={14} />
-            Retour au calendrier
+            {backLink.label}
           </Link>
         </div>
       </div>
@@ -194,11 +213,11 @@ export default async function LiveCoursePage({
         <div className="flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <Link
-              href="/compte"
+              href={backLink.href}
               className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-ink/50 hover:text-brand-ink"
             >
               <ArrowLeft size={14} />
-              Calendrier
+              {backLink.label}
             </Link>
             <h1 className="mt-2 truncate font-serif text-xl italic text-brand-ink sm:text-2xl">{course.title}</h1>
           </div>

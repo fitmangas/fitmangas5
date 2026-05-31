@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { DEFAULT_COURSE_TIMEZONE, formatCourseInstant } from '@/lib/course-datetime';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
+import { liveCourseHref } from '@/lib/live/live-back-url';
 
 type ProfileRow = {
   id: string;
@@ -410,7 +411,7 @@ export default async function AdminPage() {
             {nextThree.map((course) => (
               <a
                 key={course.id}
-                href={`/live/${course.id}`}
+                href={liveCourseHref(course.id, { from: '/admin' })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block cursor-pointer rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 transition hover:border-white/30 hover:bg-white/20"

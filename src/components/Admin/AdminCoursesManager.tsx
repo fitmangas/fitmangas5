@@ -21,6 +21,7 @@ import {
   snapCourseDatetimeLocalValue,
   toCourseDatetimeLocalValue,
 } from '@/lib/course-datetime';
+import { liveCourseHref } from '@/lib/live/live-back-url';
 
 export type AdminCourseRow = {
   id: string;
@@ -166,7 +167,7 @@ function CourseRowActions({
         <Pencil size={14} />
       </button>
       <a
-        href={`/live/${c.id}`}
+        href={liveCourseHref(c.id, { from: '/admin/courses' })}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/80 p-2 text-emerald-800 hover:bg-emerald-100"
@@ -175,7 +176,7 @@ function CourseRowActions({
         <Play size={14} strokeWidth={2} className="-ml-px" aria-hidden />
       </a>
       <a
-        href={`/live/${c.id}?preview=client`}
+        href={liveCourseHref(c.id, { from: '/admin/courses', preview: 'client' })}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center rounded-full border border-brand-ink/12 bg-white p-2 text-brand-ink/70 hover:border-brand-accent/40 hover:bg-brand-beige/50 hover:text-brand-ink"
@@ -726,7 +727,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 <a
-                  href={`/live/${editing.id}?preview=client`}
+                  href={liveCourseHref(editing.id, { from: '/admin/courses', preview: 'client' })}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-brand-accent/35 bg-brand-accent/[0.08] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-brand-accent hover:bg-brand-accent/[0.14]"
