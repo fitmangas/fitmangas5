@@ -185,7 +185,13 @@ describe('Phase 2 cycles', () => {
       }],
     });
     await runCourseCycles(client, { dispatch: dispatchMock, now: new Date('2026-05-10T16:00:00Z') });
-    expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'course.visio.reminder_J-1' }));
+    expect(dispatchMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        event_type: 'course.visio.reminder_J-1',
+        payload: expect.objectContaining({ joinUrl: 'https://fitmangas.com/live/c1' }),
+      }),
+    );
   });
 
   it('cours annulé → dispatch critique tous canaux', async () => {

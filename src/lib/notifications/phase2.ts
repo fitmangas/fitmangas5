@@ -63,6 +63,14 @@ type Phase2Deps = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
 
+/** Lien email / notification : page in-app (iframe Jitsi), pas l’URL Jitsi brute. */
+function courseJoinUrl(course: Pick<Course, 'id' | 'course_format'>): string {
+  if (course.course_format === 'online') {
+    return `${APP_URL()}/live/${course.id}`;
+  }
+  return `${APP_URL()}/compte/planning`;
+}
+
 function first<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null;
   return Array.isArray(value) ? value[0] ?? null : value;
@@ -208,7 +216,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
       courseTitle: course.title,
       courseDate: formatInUserTimezone(new Date(course.starts_at), tz, locale, 'PPPP'),
       courseTime,
-      joinUrl: course.jitsi_link || course.live_url || `${APP_URL()}/compte/planning`,
+      joinUrl: courseJoinUrl(course),
       replayUrl: course.replay_url || `${APP_URL()}/compte/replays`,
     };
     if (course.course_format === 'online' && dayDelta === 1 && hour === 18) {
@@ -288,7 +296,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
       courseTitle: course.title,
       courseDate: formatInUserTimezone(new Date(course.starts_at), tz, locale, 'PPPP'),
       courseTime,
-      joinUrl: course.jitsi_link || course.live_url || `${APP_URL()}/compte/planning`,
+      joinUrl: courseJoinUrl(course),
       replayUrl: course.replay_url || `${APP_URL()}/compte/replays`,
     };
     await send(client, dispatchFn, {
