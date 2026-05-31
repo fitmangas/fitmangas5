@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { buildJitsiConfigOverwrite, buildJitsiInterfaceConfigOverwrite } from '@/lib/jitsi/embed-config';
 import { resolveJitsiEmbedFromRoomUrl } from '@/lib/jitsi/embed-from-room-url';
 
 function loadExternalApiScript(scriptOrigin: string): Promise<void> {
@@ -24,37 +25,6 @@ function loadExternalApiScript(scriptOrigin: string): Promise<void> {
     script.onerror = () => reject(new Error(`Impossible de charger ${src}`));
     document.head.appendChild(script);
   });
-}
-
-function buildConfigOverwrite(isModerator: boolean): Record<string, unknown> {
-  const common = {
-    prejoinPageEnabled: false,
-    disableDeepLinking: false,
-    defaultLanguage: 'fr',
-  };
-  if (isModerator) {
-    return {
-      ...common,
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-      disableModeratorIndicator: false,
-      fileRecordingsEnabled: true,
-      hiddenDomain: 'recorder.meet.jitsi',
-    };
-  }
-  return {
-    ...common,
-    startWithAudioMuted: true,
-    startWithVideoMuted: false,
-  };
-}
-
-function buildInterfaceConfigOverwrite(isModerator: boolean): Record<string, unknown> {
-  if (!isModerator) return {};
-  return {
-    SHOW_JITSI_WATERMARK: false,
-    SHOW_WATERMARK_FOR_GUESTS: false,
-  };
 }
 
 export type JitsiRoomProps = {
@@ -118,8 +88,8 @@ export function JitsiRoom({
             displayName: displayName.trim() || 'Participant',
             email: email.trim() || 'participant@local',
           },
-          configOverwrite: buildConfigOverwrite(isModerator),
-          interfaceConfigOverwrite: buildInterfaceConfigOverwrite(isModerator),
+          configOverwrite: buildJitsiConfigOverwrite(isModerator),
+          interfaceConfigOverwrite: buildJitsiInterfaceConfigOverwrite(isModerator),
         }) as JitsiMeetApi;
 
         if (isModerator) {
