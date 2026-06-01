@@ -32,8 +32,10 @@ describe('jitsi embed-config', () => {
   it('toolbar inclut fullscreen ; clients sans bouton micro', () => {
     expect(JITSI_PARTICIPANT_TOOLBAR_BUTTONS).toContain('fullscreen');
     expect(JITSI_PARTICIPANT_TOOLBAR_BUTTONS).not.toContain('microphone');
+    expect(JITSI_PARTICIPANT_TOOLBAR_BUTTONS).not.toContain('toggle-camera');
     expect(JITSI_MODERATOR_TOOLBAR_BUTTONS).toContain('fullscreen');
     expect(JITSI_MODERATOR_TOOLBAR_BUTTONS).toContain('microphone');
+    expect(JITSI_MODERATOR_TOOLBAR_BUTTONS).toContain('toggle-camera');
     expect(JITSI_MODERATOR_TOOLBAR_BUTTONS).toContain('participants-pane');
   });
 });

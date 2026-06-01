@@ -2,6 +2,7 @@
 export const JITSI_MODERATOR_TOOLBAR_BUTTONS = [
   'microphone',
   'camera',
+  'toggle-camera',
   'desktop',
   'fullscreen',
   'participants-pane',
