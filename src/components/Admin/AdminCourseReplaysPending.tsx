@@ -29,12 +29,6 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function embedSrc(card: PendingCourseReplayCard): string {
-  const raw = card.embed_url?.trim();
-  if (raw && raw.includes('player.vimeo.com')) return raw;
-  return `https://player.vimeo.com/video/${card.vimeo_video_id}`;
-}
-
 type Props = {
   pending: PendingCourseReplayCard[];
 };
@@ -85,13 +79,14 @@ export function AdminCourseReplaysPending({ pending }: Props) {
               className="glass-card flex flex-col gap-4 border border-white/75 bg-white/45 p-5 shadow-[0_8px_30px_rgba(29,29,31,0.06)] backdrop-blur-[20px] lg:flex-row"
             >
               <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black/10 lg:h-40 lg:w-64 lg:shrink-0">
-                <iframe
-                  src={embedSrc(v)}
-                  title={v.title ?? v.course_title}
-                  className="h-full w-full"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                />
+                {v.thumbnail_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs font-medium text-luxury-muted">
+                    Vignette indisponible
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-base font-semibold text-luxury-ink">{v.course_title}</p>

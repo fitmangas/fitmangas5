@@ -102,6 +102,7 @@ export function JitsiRoom({
   const [error, setError] = useState<string | null>(null);
   const [isAppFullscreen, setIsAppFullscreen] = useState(false);
   const apiRef = useRef<JitsiMeetApi | null>(null);
+  const isFullscreenLayout = isAppFullscreen;
 
   useEffect(() => {
     const sync = () => setIsAppFullscreen(isDocumentFullscreen());
@@ -246,7 +247,11 @@ export function JitsiRoom({
       </p>
       <div
         ref={containerRef}
-        className="h-[min(72vh,800px)] w-full min-h-[420px] flex-1 overflow-hidden bg-black [&_iframe]:h-full [&_iframe]:min-h-[420px] [&_iframe]:w-full"
+        className={
+          isFullscreenLayout
+            ? 'w-full min-h-0 flex-1 overflow-hidden bg-black [&_iframe]:h-full [&_iframe]:w-full'
+            : 'mx-auto aspect-video w-full max-w-6xl overflow-hidden bg-black [&_iframe]:h-full [&_iframe]:w-full'
+        }
         aria-label="Visioconférence Jitsi"
       />
     </div>
