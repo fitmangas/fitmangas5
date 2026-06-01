@@ -38,6 +38,8 @@ export function buildJitsiConfigOverwrite(isModerator: boolean): Record<string, 
       disableModeratorIndicator: false,
       fileRecordingsEnabled: true,
       hiddenDomain: 'recorder.meet.jitsi',
+      /** Stage limité à la coach — local à l’embed modérateur (follow-me recorder-only pour Jibri). */
+      maxStageParticipants: 1,
     };
   }
   return {

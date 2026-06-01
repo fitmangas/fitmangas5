@@ -70,6 +70,25 @@ type JitsiMeetApi = {
   executeCommand: (command: string, ...args: unknown[]) => void;
 };
 
+/** Délai avant startRecording — laisse le layout coach-only se stabiliser pour Jibri. */
+const RECORDING_START_DELAY_MS = 8000;
+/** Re-sync layout après join Jibri (recordingStatusChanged.on). */
+const RECORDING_LAYOUT_RESYNC_DELAY_MS = 2000;
+
+/**
+ * Layout replay coach-only : setFollowMe(..., recorderOnly=true) → seul Jibri suit, pas les clientes.
+ * setFollowMe(value, recorderOnly) documenté dans le handbook Jitsi External API.
+ */
+function applyCoachRecordingLayout(api: JitsiMeetApi, coachId: string): void {
+  try {
+    api.executeCommand('setTileView', false);
+    api.executeCommand('pinParticipant', coachId);
+    api.executeCommand('setFollowMe', true, true);
+  } catch (e) {
+    console.warn('[JitsiRoom] layout enregistrement coach-only', e);
+  }
+}
+
 export function JitsiRoom({
   roomUrl,
   title = 'Live',
@@ -111,7 +130,9 @@ export function JitsiRoom({
   useEffect(() => {
     setError(null);
     let cancelled = false;
+    let coachId: string | undefined;
     let recordingStartTimer: ReturnType<typeof setTimeout> | null = null;
+    let recordingResyncTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function mount() {
       if (!containerRef.current) return;
@@ -145,22 +166,38 @@ export function JitsiRoom({
 
         if (isModerator) {
           const api = apiRef.current;
-          api.addListener('videoConferenceJoined', () => {
+          api.addListener('videoConferenceJoined', (event: unknown) => {
+            const joined = event as { id?: string } | undefined;
+            coachId = joined?.id;
+
             try {
               api.executeCommand('toggleModeration', true, 'audio');
             } catch (e) {
               console.warn('[JitsiRoom] toggleModeration audio — vérifier mod_av_moderation côté serveur', e);
             }
 
+            if (coachId) {
+              applyCoachRecordingLayout(api, coachId);
+            }
+
             recordingStartTimer = setTimeout(() => {
-              if (!cancelled) {
-                apiRef.current?.executeCommand('startRecording', { mode: 'file' });
+              if (cancelled || !apiRef.current) return;
+              if (coachId) {
+                applyCoachRecordingLayout(apiRef.current, coachId);
               }
-            }, 5000);
+              apiRef.current.executeCommand('startRecording', { mode: 'file' });
+            }, RECORDING_START_DELAY_MS);
           });
 
           api.addListener('recordingStatusChanged', (...args: unknown[]) => {
-            console.log('[Jitsi Recording]', args[0]);
+            const status = args[0] as { on?: boolean } | undefined;
+            console.log('[Jitsi Recording]', status);
+            if (!status?.on || !coachId) return;
+            if (recordingResyncTimer) clearTimeout(recordingResyncTimer);
+            recordingResyncTimer = setTimeout(() => {
+              if (cancelled || !coachId || !apiRef.current) return;
+              applyCoachRecordingLayout(apiRef.current, coachId);
+            }, RECORDING_LAYOUT_RESYNC_DELAY_MS);
           });
         }
       } catch (e) {
@@ -175,6 +212,7 @@ export function JitsiRoom({
     return () => {
       cancelled = true;
       if (recordingStartTimer) clearTimeout(recordingStartTimer);
+      if (recordingResyncTimer) clearTimeout(recordingResyncTimer);
       apiRef.current?.dispose();
       apiRef.current = null;
       if (containerRef.current) containerRef.current.innerHTML = '';

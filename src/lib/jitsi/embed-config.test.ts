@@ -24,6 +24,11 @@ describe('jitsi embed-config', () => {
     expect(buildJitsiConfigOverwrite(true).startWithAudioMuted).toBe(false);
   });
 
+  it('modérateur limite le stage à 1 participant (replay coach-only)', () => {
+    expect(buildJitsiConfigOverwrite(true).maxStageParticipants).toBe(1);
+    expect(buildJitsiConfigOverwrite(false).maxStageParticipants).toBeUndefined();
+  });
+
   it('toolbar inclut fullscreen ; clients sans bouton micro', () => {
     expect(JITSI_PARTICIPANT_TOOLBAR_BUTTONS).toContain('fullscreen');
     expect(JITSI_PARTICIPANT_TOOLBAR_BUTTONS).not.toContain('microphone');
