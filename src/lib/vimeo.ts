@@ -88,6 +88,13 @@ function extractApiFolderName(data: VimeoVideoMetadataResponse): string | null {
   return data.parent_folder?.name?.trim() || data.folder?.name?.trim() || null;
 }
 
+/** Vimeo renvoie souvent duration=0 pendant le transcodage — NULL en base jusqu'à durée réelle. */
+export function normalizeDurationSeconds(seconds: number | null | undefined): number | null {
+  if (seconds == null || !Number.isFinite(seconds)) return null;
+  const n = Math.round(Number(seconds));
+  return n > 0 ? n : null;
+}
+
 /** Champs communs liste / détail vidéo Vimeo. */
 const VIDEO_API_FIELDS =
   'uri,name,description,link,created_time,duration,embed.html,pictures.sizes.link,privacy.view,transcode.status,parent_folder.name,folder.name';
@@ -105,7 +112,7 @@ export function mapVimeoVideoResponseToMetadata(data: VimeoVideoMetadataResponse
     createdTime: data.created_time ?? null,
     embedUrl: extractEmbedUrl(data.embed?.html),
     thumbnailUrl: thumbnailUrl ?? null,
-    durationSeconds: data.duration ?? null,
+    durationSeconds: normalizeDurationSeconds(data.duration),
     privacyView: data.privacy?.view ?? null,
     transcodeStatus,
     isReady,

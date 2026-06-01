@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { dispatchReplayReady } from '@/lib/notifications/phase2';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseVimeoVideoId } from '@/lib/vimeo-parse-id';
-import { getVideoMetadata, type VimeoVideoMetadata } from '@/lib/vimeo';
+import { getVideoMetadata, normalizeDurationSeconds, type VimeoVideoMetadata } from '@/lib/vimeo';
 
 export type CourseRecordingValidationStatus = 'pending' | 'approved' | 'rejected';
 
@@ -21,7 +21,7 @@ function buildMetadataFields(metadata: VimeoVideoMetadata) {
     description: metadata.description,
     embed_url: metadata.embedUrl ?? metadata.link,
     thumbnail_url: metadata.thumbnailUrl,
-    duration_seconds: metadata.durationSeconds,
+    duration_seconds: normalizeDurationSeconds(metadata.durationSeconds),
     privacy_view: metadata.privacyView ?? 'unlisted',
     upload_status: metadata.isReady ? ('ready' as const) : ('transcoding' as const),
     metadata: {
@@ -164,7 +164,10 @@ export async function updateCourseRecordingFromWebhook(
   if (meta) {
     payload.embed_url = meta.embedUrl ?? meta.link;
     payload.thumbnail_url = meta.thumbnailUrl;
-    payload.duration_seconds = meta.durationSeconds;
+    const duration = normalizeDurationSeconds(meta.durationSeconds);
+    if (duration != null) {
+      payload.duration_seconds = duration;
+    }
     payload.title = meta.title;
     payload.description = meta.description;
     payload.vimeo_uri = meta.vimeoUri;
