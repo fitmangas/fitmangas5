@@ -27,7 +27,7 @@ function labelForPath(path: string): string {
   return 'Calendrier';
 }
 
-/** Lien retour /live — respecte la vue d’origine sans toucher au toggle admin/client. */
+/** Lien retour /live — respecte la vue d'origine sans toucher au toggle admin/client. */
 export function resolveLiveBackLink(params: {
   from?: string | null;
   realAdmin: boolean;
@@ -50,7 +50,13 @@ export function resolveLiveBackLink(params: {
   return { href: LIVE_FROM_ADMIN_COURSES, label: 'Séances' };
 }
 
-/** Construit l’URL /live avec provenance optionnelle. */
+/** true si ?from= pointe vers une page admin (lien play/œil dashboard, séances, etc.). */
+export function isLiveAdminEntry(from: string | undefined | null): boolean {
+  const path = sanitizeLiveFromParam(from);
+  return path?.startsWith('/admin') ?? false;
+}
+
+/** Construit l'URL /live avec provenance optionnelle. */
 export function liveCourseHref(courseId: string, options?: { from?: string; preview?: 'client' }): string {
   const q = new URLSearchParams();
   if (options?.preview === 'client') q.set('preview', 'client');

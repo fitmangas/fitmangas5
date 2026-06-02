@@ -102,7 +102,10 @@ export function JitsiRoom({
   const [error, setError] = useState<string | null>(null);
   const [isAppFullscreen, setIsAppFullscreen] = useState(false);
   const apiRef = useRef<JitsiMeetApi | null>(null);
-  const isFullscreenLayout = isAppFullscreen;
+
+  /** Force les wrappers Jitsi + iframe à remplir le conteneur 16:9. */
+  const jitsiFillClass =
+    '[&>div]:absolute [&>div]:inset-0 [&>div]:h-full [&>div]:w-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:block [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0';
 
   useEffect(() => {
     const sync = () => setIsAppFullscreen(isDocumentFullscreen());
@@ -229,7 +232,7 @@ export function JitsiRoom({
   return (
     <div
       ref={shellRef}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-brand-ink/[0.08] bg-brand-ink/[0.04] shadow-inner"
+      className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-brand-ink/[0.08] bg-brand-ink/[0.04] shadow-inner ${isAppFullscreen ? 'flex-1' : ''}`}
     >
       <div className="flex items-center justify-end gap-2 border-b border-brand-ink/[0.06] bg-white/40 px-3 py-2">
         <button
@@ -248,9 +251,9 @@ export function JitsiRoom({
       <div
         ref={containerRef}
         className={
-          isFullscreenLayout
-            ? 'w-full min-h-0 flex-1 overflow-hidden bg-black [&_iframe]:h-full [&_iframe]:w-full'
-            : 'mx-auto aspect-video w-full max-w-6xl overflow-hidden bg-black [&_iframe]:h-full [&_iframe]:w-full'
+          isAppFullscreen
+            ? `relative w-full min-h-0 flex-1 overflow-hidden bg-black ${jitsiFillClass}`
+            : `relative mx-auto aspect-video w-full max-w-6xl overflow-hidden bg-black ${jitsiFillClass}`
         }
         aria-label="Visioconférence Jitsi"
       />

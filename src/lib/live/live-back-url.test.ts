@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { liveCourseHref, resolveLiveBackLink, sanitizeLiveFromParam } from '@/lib/live/live-back-url';
+import { isLiveAdminEntry, liveCourseHref, resolveLiveBackLink, sanitizeLiveFromParam } from '@/lib/live/live-back-url';
 
 describe('live-back-url', () => {
   it('sanitizeLiveFromParam accepte les chemins internes admin/compte', () => {
@@ -46,5 +46,12 @@ describe('live-back-url', () => {
     expect(liveCourseHref('abc', { from: '/admin/courses', preview: 'client' })).toBe(
       '/live/abc?preview=client&from=%2Fadmin%2Fcourses',
     );
+  });
+
+  it('isLiveAdminEntry détecte la provenance admin', () => {
+    expect(isLiveAdminEntry('/admin')).toBe(true);
+    expect(isLiveAdminEntry('/admin/courses')).toBe(true);
+    expect(isLiveAdminEntry('/compte/planning')).toBe(false);
+    expect(isLiveAdminEntry(null)).toBe(false);
   });
 });

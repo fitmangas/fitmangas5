@@ -12,7 +12,7 @@ import {
 } from '@/lib/access-control';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
-import { resolveLiveBackLink } from '@/lib/live/live-back-url';
+import { isLiveAdminEntry, resolveLiveBackLink } from '@/lib/live/live-back-url';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -94,7 +94,8 @@ export default async function LiveCoursePage({
 
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
   const globalDemo = (await getDemoClientMode()) && realAdmin;
-  const effectiveStudentPreview = studentPreview || globalDemo;
+  /** Aperçu élève : ?preview=client explicite, ou cookie Vue Client hors navigation admin. */
+  const effectiveStudentPreview = studentPreview || (globalDemo && !isLiveAdminEntry(fromParam));
   const backLink = resolveLiveBackLink({ from: fromParam, realAdmin, studentPreviewFromUrl: studentPreview });
 
   let allowed = false;
