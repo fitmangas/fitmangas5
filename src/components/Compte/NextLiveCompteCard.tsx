@@ -210,13 +210,13 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
         </div>
         {coachImageSrc ? (
           <div
-            className="pointer-events-none absolute bottom-0 right-4 z-10 h-[105px] w-[77px] overflow-hidden"
+            className="pointer-events-none absolute bottom-0 right-4 z-10 h-[86px] w-[118px] overflow-hidden sm:h-[95px] sm:w-[130px]"
             aria-hidden
           >
             <img
               src={coachImageSrc}
               alt=""
-              className="block h-full w-full object-cover object-bottom"
+              className="block h-full w-full object-contain object-bottom"
             />
           </div>
         ) : null}
