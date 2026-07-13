@@ -18,7 +18,7 @@ export default async function AdminCoursesPage() {
       admin
         .from('courses')
         .select(
-          'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, capacity_max, location, live_url, jitsi_link, replay_url, spotify_playlist_url, is_published, created_at',
+          'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, capacity_max, location, live_url, jitsi_link, replay_url, spotify_playlist_url, is_published, course_language, created_at',
         )
         .order('starts_at', { ascending: true }),
       admin

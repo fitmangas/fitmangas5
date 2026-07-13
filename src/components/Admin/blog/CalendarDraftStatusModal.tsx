@@ -51,6 +51,7 @@ export function CalendarDraftStatusModal({
         ? createPortal(
             <div
               className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4"
+              data-overlay-dismiss
               onClick={() => setOpen(false)}
             >
               <div

@@ -36,6 +36,7 @@ const courseUpsertSchema = z
     replayUrl: z.string().nullable().optional(),
     spotifyPlaylistUrl: z.string().nullable().optional(),
     timezone: z.string().max(64).default('Europe/Paris'),
+    courseLanguage: z.union([z.enum(['fr', 'es']), z.literal(''), z.null()]).optional(),
   })
   .superRefine((data, ctx) => {
     const start = new Date(data.startsAt);
@@ -62,6 +63,11 @@ function normalizeOptionalUrl(value: string | null | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+function normalizeCourseLanguage(value: string | null | undefined): 'fr' | 'es' | null {
+  if (value === 'fr' || value === 'es') return value;
+  return null;
 }
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -95,6 +101,7 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
       replay_url: normalizeOptionalUrl(d.replayUrl),
       spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
       is_published: d.isPublished,
+      course_language: normalizeCourseLanguage(d.courseLanguage ?? null),
       created_by: user.id,
       auto_add_for_monthly: d.courseFormat === 'online',
     });
@@ -151,6 +158,7 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
         replay_url: normalizeOptionalUrl(d.replayUrl),
         spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
         is_published: d.isPublished,
+        course_language: normalizeCourseLanguage(d.courseLanguage ?? null),
         auto_add_for_monthly: d.courseFormat === 'online',
       })
       .eq('id', idParse.data);

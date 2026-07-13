@@ -58,6 +58,7 @@ type Phase2Deps = {
   dispatch?: DispatchFn;
   now?: Date;
   stripe?: Stripe;
+  subscriptionStatus?: 'active' | 'trialing';
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -459,6 +460,7 @@ export async function dispatchWelcomeDay0(
 export async function dispatchSubscriptionActivated(client: SupabaseClient, userId: string, courseId: string, customerId: string | null, subscriptionId: string | null, deps: Phase2Deps = {}) {
   const tier = COURSE_CUSTOMER_TIER[courseId];
   const now = deps.now ?? new Date();
+  const subscriptionStatus = deps.subscriptionStatus ?? 'active';
 
   if (!tier) {
     console.warn('[dispatchSubscriptionActivated] tier inconnu pour courseId — bienvenue envoyée sans sync abonnement', {
@@ -474,7 +476,7 @@ export async function dispatchSubscriptionActivated(client: SupabaseClient, user
   const subRow = {
     user_id: userId,
     tier,
-    status: 'active' as const,
+    status: subscriptionStatus,
     starts_at: now.toISOString(),
     stripe_customer_id: customerId,
     stripe_subscription_id: subscriptionId,
@@ -511,7 +513,7 @@ export async function dispatchSubscriptionActivated(client: SupabaseClient, user
   const profilePatch = buildProfileSubscriptionUpdate({
     stripeCustomerId: customerId,
     courseId,
-    subscriptionStatus: 'active',
+    subscriptionStatus,
     lastCheckoutCourseId: courseId,
     customerTier: tier,
   });

@@ -62,8 +62,7 @@ export default async function CompteParrainagePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-2 py-8 md:px-0">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.kicker}</p>
-        <h1 className="hero-signature-title mt-2 text-3xl text-luxury-ink">{t.title}</h1>
+        <h1 className="hero-signature-title text-3xl text-luxury-ink">{t.title}</h1>
         <p className="mt-3 text-sm leading-6 text-luxury-muted">{programCopy.intro}</p>
       </div>
 
@@ -186,7 +185,6 @@ type ProgramCopySlice = {
 
 const copy = {
   fr: {
-    kicker: 'Communauté',
     title: 'Parrainage',
     rewardTitle: 'Ton abonnement offert',
     yourCode: 'Ton code et ton lien',
@@ -244,7 +242,6 @@ const copy = {
     } satisfies Record<ReferralProgramKind, ProgramCopySlice>,
   },
   es: {
-    kicker: 'Comunidad',
     title: 'Referidos',
     rewardTitle: 'Tu suscripción gratis',
     yourCode: 'Tu código y tu enlace',

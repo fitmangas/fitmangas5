@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Lock, Unlock, X } from 'lucide-react';
 
 import type { SmartCourse } from '@/lib/domain/calendar-types';
@@ -9,13 +11,33 @@ import { getCoachImage } from '@/lib/coach-images';
 
 import { effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
+import { AddToCalendarMenu } from './AddToCalendarMenu';
+import { CourseLanguageFlag } from './CourseLanguageFlag';
+
 type Props = {
   course: SmartCourse | null;
   onClose: () => void;
   lang?: 'fr' | 'en' | 'es';
 };
 
+function courseCalendarUrl(courseId: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return `${window.location.origin}/live/${courseId}`;
+}
+
 export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
+  const isOpen = course != null;
+
+  // Bloque le défilement de la page tant que la modale est ouverte
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   if (!course) return null;
 
   const selectedIsPast = isCoursePast(course.ends_at);
@@ -79,28 +101,31 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
             closeModal: 'Fermer la modale',
           };
 
-  return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+  const modal = (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm sm:p-6">
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label={t.closeModal} />
       <div
-        className="relative z-10 w-full max-w-md rounded-t-[1.75rem] border border-white/80 bg-brand-beige p-6 shadow-[0_14px_32px_rgba(31,27,22,0.14),0_32px_64px_-28px_rgba(21,18,15,0.28)] sm:rounded-[1.75rem]"
-        style={{ position: 'relative', overflow: 'visible' }}
+        className="relative z-10 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/80 bg-brand-beige p-6 shadow-[0_14px_32px_rgba(31,27,22,0.2),0_32px_64px_-28px_rgba(21,18,15,0.4)]"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">
               {course.course_format === 'online' ? t.online : t.inPerson} ·{' '}
               {course.course_category === 'group' ? t.group : t.solo}
             </p>
             <h3 className="mt-1 text-2xl font-semibold tracking-tight text-luxury-ink">{course.title}</h3>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-brand-ink/10 bg-white p-2 text-luxury-soft shadow-sm transition hover:bg-white/90 hover:text-luxury-ink"
-            aria-label={t.close}
-          >
-            <X size={14} />
-          </button>
+          <div className="flex shrink-0 items-start gap-2">
+            <CourseLanguageFlag language={course.course_language} uiLang={lang} className="mt-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-ink/10 bg-white p-2 text-luxury-soft shadow-sm transition hover:bg-white/90 hover:text-luxury-ink"
+              aria-label={t.close}
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
 
         <p className="mb-3 text-sm text-luxury-muted">
@@ -166,6 +191,18 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
                   {t.replay}
                 </a>
               ) : null}
+              <AddToCalendarMenu
+                lang={lang}
+                event={{
+                  id: course.id,
+                  title: course.title,
+                  description: course.description,
+                  startsAt: course.starts_at,
+                  endsAt: course.ends_at,
+                  location: course.location,
+                  url: courseCalendarUrl(course.id),
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -202,7 +239,9 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
           }}
         />
       </div>
-      <button type="button" onClick={onClose} className="absolute inset-0" aria-label={t.closeModal} />
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modal, document.body);
 }

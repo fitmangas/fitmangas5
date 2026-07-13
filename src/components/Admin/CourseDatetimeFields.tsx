@@ -10,7 +10,7 @@ import {
 } from '@/lib/course-datetime';
 
 const FIELD =
-  'mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#C45D3E]/25';
+  'mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25';
 
 const LABEL = 'block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft';
 

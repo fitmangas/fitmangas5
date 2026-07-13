@@ -45,21 +45,18 @@ async function resolveCheckoutUserId(
 ): Promise<string | null> {
   const fromMeta = session.metadata?.supabase_user_id ?? session.client_reference_id ?? null;
   if (fromMeta) {
-    console.log('[stripe webhook] resolveCheckoutUserId: metadata/client_reference', { userId: fromMeta });
     return fromMeta;
   }
 
   const customerId = asString(session.customer);
   const byCustomer = await findUserIdByCustomer(admin, customerId);
   if (byCustomer) {
-    console.log('[stripe webhook] resolveCheckoutUserId: stripe_customer_id', { userId: byCustomer, customerId });
     return byCustomer;
   }
 
   const email = session.customer_email ?? session.customer_details?.email ?? null;
   const byEmail = await findUserIdByEmail(admin, email);
   if (byEmail) {
-    console.log('[stripe webhook] resolveCheckoutUserId: customer_email', { userId: byEmail, email });
     return byEmail;
   }
 
@@ -85,6 +82,29 @@ async function findNextPresentialCourse(admin: ReturnType<typeof createAdminClie
     .limit(1)
     .maybeSingle();
   return data?.id ?? null;
+}
+
+function subscriptionStatusForAccess(status: Stripe.Subscription.Status | null | undefined): 'active' | 'trialing' {
+  return status === 'trialing' ? 'trialing' : 'active';
+}
+
+async function resolveCheckoutSubscription(
+  stripe: Stripe,
+  session: Stripe.Checkout.Session,
+): Promise<{ id: string | null; status: 'active' | 'trialing' }> {
+  const subscription = session.subscription;
+  if (!subscription) return { id: null, status: 'active' };
+  if (typeof subscription !== 'string') {
+    return {
+      id: subscription.id,
+      status: subscriptionStatusForAccess(subscription.status),
+    };
+  }
+  const retrieved = await stripe.subscriptions.retrieve(subscription);
+  return {
+    id: retrieved.id,
+    status: subscriptionStatusForAccess(retrieved.status),
+  };
 }
 
 export async function POST(request: Request) {
@@ -129,20 +149,6 @@ export async function POST(request: Request) {
         const customerId = await resolveStripeCustomerIdFromSession(stripe, session);
         const customerEmail = session.customer_email ?? session.customer_details?.email ?? null;
 
-        console.log('[stripe webhook] checkout.session.completed start', {
-          eventId: event.id,
-          sessionId: session.id,
-          mode: session.mode,
-          courseId,
-          customerId,
-          customerEmail,
-          clientReferenceId: session.client_reference_id,
-          metadataUserId: session.metadata?.supabase_user_id,
-          paymentStatus: session.payment_status,
-          status: session.status,
-          amountTotal: session.amount_total,
-        });
-
         if (!courseId) {
           console.warn('[stripe webhook] checkout.session.completed skip — course_id manquant', { sessionId: session.id });
           break;
@@ -153,30 +159,19 @@ export async function POST(request: Request) {
           throw new Error(`checkout.session.completed: profil introuvable pour la session ${session.id}`);
         }
 
-        console.log('[stripe webhook] confirmUserEmailIfNeeded', { userId });
         await confirmUserEmailIfNeeded(admin, userId);
-        console.log('[stripe webhook] confirmUserEmailIfNeeded done', { userId });
 
         if (session.mode === 'subscription') {
-          const subscriptionId =
-            typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null;
-          console.log('[stripe webhook] dispatchSubscriptionActivated', { userId, courseId, subscriptionId, customerId });
-          await dispatchSubscriptionActivated(admin, userId, courseId, customerId, subscriptionId);
-          const { data: profileAfter } = await admin
-            .from('profiles')
-            .select('stripe_customer_id, subscription_status, subscription_type, customer_tier, last_checkout_course_id')
-            .eq('id', userId)
-            .maybeSingle();
-          console.log('[stripe webhook] profil après activation', { userId, profileAfter });
-          const { data: subsAfter } = await admin.from('subscriptions').select('id, tier, status, stripe_subscription_id').eq('user_id', userId);
-          console.log('[stripe webhook] subscriptions après activation', { userId, subsAfter });
+          const subscription = await resolveCheckoutSubscription(stripe, session);
+          await dispatchSubscriptionActivated(admin, userId, courseId, customerId, subscription.id, {
+            subscriptionStatus: subscription.status,
+          });
           const refFromMeta = session.metadata?.referral_code;
           if (typeof refFromMeta === 'string' && isValidReferralCode(refFromMeta)) {
             const { data: authUser } = await admin.auth.admin.getUserById(userId);
             await attachReferralForNewUser(admin, normalizeReferralCode(refFromMeta), userId, authUser.user?.email);
           }
           await markReferralsSubscribedForUser(admin, userId, courseId, stripe);
-          console.log('[stripe webhook] markReferralsSubscribedForUser done', { userId, courseId });
         } else if (session.mode === 'payment') {
           const concreteCourseId = session.metadata?.concrete_course_id ?? (await findNextPresentialCourse(admin, courseId));
           const profilePatch = buildProfileSubscriptionUpdate({
@@ -185,18 +180,14 @@ export async function POST(request: Request) {
             subscriptionStatus: 'active',
             lastCheckoutCourseId: courseId,
           });
-          console.log('[stripe webhook] payment mode profile update', { userId, concreteCourseId, profilePatch });
           const { error: profileErr } = await admin.from('profiles').update(profilePatch).eq('id', userId);
           if (profileErr) console.error('[stripe webhook] payment profile update failed', profileErr);
           if (concreteCourseId) {
-            console.log('[stripe webhook] dispatchPresentialPurchased', { userId, concreteCourseId, courseId });
             await dispatchPresentialPurchased(admin, userId, concreteCourseId, courseId);
           } else {
-            console.log('[stripe webhook] dispatchPresentialPurchaseWithoutScheduledCourse', { userId, courseId });
             await dispatchPresentialPurchaseWithoutScheduledCourse(admin, userId, courseId);
           }
         }
-        console.log('[stripe webhook] checkout.session.completed end', { sessionId: session.id, userId });
         break;
       }
       case 'customer.subscription.created': {
@@ -204,7 +195,9 @@ export async function POST(request: Request) {
         const userId = subscription.metadata?.supabase_user_id ?? (await findUserIdByCustomer(admin, asString(subscription.customer)));
         const courseId = subscription.metadata?.course_id;
         if (userId && courseId) {
-          await dispatchSubscriptionActivated(admin, userId, courseId, asString(subscription.customer), subscription.id);
+          await dispatchSubscriptionActivated(admin, userId, courseId, asString(subscription.customer), subscription.id, {
+            subscriptionStatus: subscriptionStatusForAccess(subscription.status),
+          });
           await markReferralsSubscribedForUser(admin, userId, courseId, stripe);
         }
         break;

@@ -1,0 +1,64 @@
+SIMULATION — articles PUBLIÉS uniquement (aucune écriture en base)
+Commande: npm run blog:rewrite:titles
+
+Articles publiés total: 14
+Articles publiés avec titre générique: 13
+Articles déjà OK (non traités): 1 — « Les bases du Pilates : respiration et posture »
+
+Résultat de cette exécution: quota API Gemini journalier épuisé (20 req/jour, modèle gemini-2.5-flash).
+→ 0 nouveau titre proposé, 13 articles conservés inchangés (comportement voulu en secours).
+
+[1/13] INCHANGÉ — article-pilates-5-mouvement-souffle-005
+  FR: Article pilates 5 — mouvement & souffle → Article pilates 5 — mouvement & souffle
+  ES: Artículo pilates 5 — movimiento y respiración → Artículo pilates 5 — movimiento y respiración
+
+[2/13] INCHANGÉ — article-pilates-3-mouvement-souffle-003
+  FR: Article pilates 3 — mouvement & souffle → Article pilates 3 — mouvement & souffle
+  ES: Artículo pilates 3 — movimiento y respiración → Artículo pilates 3 — movimiento y respiración
+
+[3/13] INCHANGÉ — article-pilates-2-mouvement-souffle-002
+  FR: Article pilates 2 — mouvement & souffle → Article pilates 2 — mouvement & souffle
+  ES: Artículo pilates 2 — movimiento y respiración → Artículo pilates 2 — movimiento y respiración
+
+[4/13] INCHANGÉ — article-pilates-4-mouvement-souffle-004
+  FR: Article pilates 4 — mouvement & souffle → Article pilates 4 — mouvement & souffle
+  ES: Artículo pilates 4 — movimiento y respiración → Artículo pilates 4 — movimiento y respiración
+
+[5/13] INCHANGÉ — article-pilates-6-mouvement-souffle-006
+  FR: Article pilates 6 — mouvement & souffle → Article pilates 6 — mouvement & souffle
+  ES: Artículo pilates 6 — movimiento y respiración → Artículo pilates 6 — movimiento y respiración
+
+[6/13] INCHANGÉ — article-pilates-12-mouvement-souffle-012
+  FR: Article pilates 12 — mouvement & souffle → Article pilates 12 — mouvement & souffle
+  ES: Artículo pilates 12 — movimiento y respiración → Artículo pilates 12 — movimiento y respiración
+
+[7/13] INCHANGÉ — article-pilates-17-mouvement-souffle-017
+  FR: Article pilates 17 — mouvement & souffle → Article pilates 17 — mouvement & souffle
+  ES: Artículo pilates 17 — movimiento y respiración → Artículo pilates 17 — movimiento y respiración
+
+[8/13] INCHANGÉ — article-pilates-11-mouvement-souffle-011
+  FR: Article pilates 11 — mouvement & souffle → Article pilates 11 — mouvement & souffle
+  ES: Artículo pilates 11 — movimiento y respiración → Artículo pilates 11 — movimiento y respiración
+
+[9/13] INCHANGÉ — article-pilates-13-mouvement-souffle-013
+  FR: Article pilates 13 — mouvement & souffle → Article pilates 13 — mouvement & souffle
+  ES: Artículo pilates 13 — movimiento y respiración → Artículo pilates 13 — movimiento y respiración
+
+[10/13] INCHANGÉ — article-pilates-14-mouvement-souffle-014
+  FR: Article pilates 14 — mouvement & souffle → Article pilates 14 — mouvement & souffle
+  ES: Artículo pilates 14 — movimiento y respiración → Artículo pilates 14 — movimiento y respiración
+
+[11/13] INCHANGÉ — article-pilates-16-mouvement-souffle-016
+  FR: Article pilates 16 — mouvement & souffle → Article pilates 16 — mouvement & souffle
+  ES: Artículo pilates 16 — movimiento y respiración → Artículo pilates 16 — movimiento y respiración
+
+[12/13] INCHANGÉ — article-pilates-10-mouvement-souffle-010
+  FR: Article pilates 10 — mouvement & souffle → Article pilates 10 — mouvement & souffle
+  ES: Artículo pilates 10 — movimiento y respiración → Artículo pilates 10 — movimiento y respiración
+
+[13/13] INCHANGÉ — article-pilates-15-mouvement-souffle-015
+  FR: Article pilates 15 — mouvement & souffle → Article pilates 15 — mouvement & souffle
+  ES: Artículo pilates 15 — movimiento y respiración → Artículo pilates 15 — movimiento y respiración
+
+Pour relancer quand le quota Gemini sera disponible:
+  npm run blog:rewrite:titles

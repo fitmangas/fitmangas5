@@ -31,8 +31,6 @@ export async function GET(request: Request) {
   const sessionId = searchParams.get('session_id');
   const origin = getAppBaseUrl();
 
-  console.log('[checkout-success] GET', { sessionId: sessionId ? 'present' : 'missing' });
-
   if (!sessionId) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
   }
@@ -48,11 +46,6 @@ export async function GET(request: Request) {
 
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log('[checkout-success] session retrieved', {
-      sessionId,
-      payment_status: session.payment_status,
-      status: session.status,
-    });
   } catch (e) {
     console.error('[checkout-success] retrieve session', e);
     return NextResponse.redirect(`${origin}/?checkout=error`);
@@ -70,7 +63,6 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  console.log('[checkout-success] confirmUserEmailIfNeeded', { userId });
   await confirmUserEmailIfNeeded(admin, userId);
 
   const stripeCustomerId = await resolveStripeCustomerIdFromSession(stripe, session);
@@ -89,8 +81,6 @@ export async function GET(request: Request) {
       .eq('id', userId);
     if (profileSyncErr) {
       console.error('[checkout-success] stripe_customer_id sync', profileSyncErr);
-    } else {
-      console.log('[checkout-success] stripe_customer_id synced', { userId, stripeCustomerId });
     }
   }
 
@@ -102,7 +92,6 @@ export async function GET(request: Request) {
   }
 
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(compteSuccessUrl(origin, session))}`;
-  console.log('[checkout-success] generateLink magiclink', { userId, redirectTo });
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: 'magiclink',
     email,
@@ -126,6 +115,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(connexionUrl.toString());
   }
 
-  console.log('[checkout-success] redirect to magic link', { userId });
   return NextResponse.redirect(actionLink);
 }

@@ -14,8 +14,8 @@ export function MonthlyProgressRing({
   const dashOffset = c - (pct / 100) * c;
 
   return (
-    <div className="relative mx-auto flex h-[160px] w-[160px] items-center justify-center">
-      <svg className="h-[160px] w-[160px] -rotate-90" viewBox="0 0 120 120" aria-hidden>
+    <div className="relative mx-auto flex h-[104px] w-[104px] items-center justify-center md:h-[160px] md:w-[160px]">
+      <svg className="h-[104px] w-[104px] -rotate-90 md:h-[160px] md:w-[160px]" viewBox="0 0 120 120" aria-hidden>
         <defs>
           <linearGradient id="luxRingOrange" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#ff9a3d" />
@@ -47,10 +47,10 @@ export function MonthlyProgressRing({
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
         <div className="inline-flex items-baseline gap-1">
-          <span className="text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{followedCount}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-muted">/ {goal}</span>
+          <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-3xl">{followedCount}</span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-muted md:text-[10px]">/ {goal}</span>
         </div>
-        <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-[#ff7a00]">{pct}%</span>
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-[#ff7a00] md:mt-1 md:text-[9px]">{pct}%</span>
       </div>
     </div>
   );

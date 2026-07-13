@@ -7,6 +7,7 @@ export type CustomerTier =
 export type AccessType = 'full' | 'preview' | 'locked';
 export type CourseFormat = 'online' | 'onsite';
 export type CourseCategory = 'individual' | 'group';
+export type CourseLanguage = 'fr' | 'es';
 
 export type AccessPolicy = {
   access_level: AccessType;
@@ -33,6 +34,8 @@ export type SmartCourse = {
   jitsi_link: string | null;
   replay_url: string | null;
   capacity_max: number | null;
+  /** Langue de la séance (fr / es), null si non définie. */
+  course_language?: CourseLanguage | null;
   /** Si true, traiter comme accès complet côté UI (profil admin). */
   viewer_is_admin?: boolean;
   access_type: AccessType;

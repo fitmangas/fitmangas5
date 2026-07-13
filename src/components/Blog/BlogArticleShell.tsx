@@ -7,6 +7,7 @@ import { BlogLanguageBar, useBlogLanguagePref } from '@/components/Blog/BlogLang
 import { BlogRatingBlock } from '@/components/Blog/BlogRatingBlock';
 import { BlogScrollTracker } from '@/components/Blog/BlogScrollTracker';
 import { BlogViewBeacon } from '@/components/Blog/BlogViewBeacon';
+import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
@@ -68,7 +69,7 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
   return (
     <article className="mx-auto max-w-3xl px-4 pb-20 pt-8 sm:px-6">
       <BlogViewBeacon articleId={article.id} />
-      <BlogScrollTracker articleId={article.id} />
+      {isLoggedIn ? <BlogScrollTracker articleId={article.id} /> : null}
 
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <BlogLanguageBar value={lang} onChange={setLang} />
@@ -112,6 +113,8 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
         initialCount={article.rating_count ?? 0}
         isLoggedIn={isLoggedIn}
       />
+
+      <BlogConversionCta className="mt-10" />
 
       <div className="mt-10">
         <NewsletterCta articleId={article.id} />

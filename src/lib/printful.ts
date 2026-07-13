@@ -129,6 +129,8 @@ export type PrintfulProductDetail = {
 
 export type PrintfulCreateOrderInput = {
   externalId?: string;
+  /** Ne mettre à true qu'après paiement client confirmé. */
+  confirm?: boolean;
   recipient: {
     name: string;
     email: string;
@@ -263,7 +265,7 @@ export async function createPrintfulOrder(input: PrintfulCreateOrderInput): Prom
       sync_variant_id: i.syncVariantId,
       quantity: i.quantity,
     })),
-    confirm: true,
+    confirm: input.confirm === true,
   };
   return await printfulMutation<PrintfulOrder>('/orders', 'POST', payload);
 }

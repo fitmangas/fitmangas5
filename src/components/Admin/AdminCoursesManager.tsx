@@ -8,7 +8,7 @@ import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/ap
 
 import { CourseDatetimeFields } from '@/components/Admin/CourseDatetimeFields';
 import { CourseReplayLinkForm } from '@/components/Admin/CourseReplayLinkForm';
-import { ADMIN_HEAD_TR, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
+import { ADMIN_HEAD_TR, ADMIN_LIST_CARD_CLASS, ADMIN_PANEL_CLASS, ADMIN_SURFACE_BAR } from '@/components/Admin/adminSurfaceClasses';
 import { isCoursePast } from '@/lib/calendar-window';
 import {
   convertCourseDatetimeBetweenTimezones,
@@ -21,6 +21,7 @@ import {
   snapCourseDatetimeLocalValue,
   toCourseDatetimeLocalValue,
 } from '@/lib/course-datetime';
+import { isCourseLanguage } from '@/lib/course-language';
 import { LIVE_FROM_ADMIN_COURSES, liveCourseHref } from '@/lib/live/live-back-url';
 
 export type AdminCourseRow = {
@@ -41,6 +42,7 @@ export type AdminCourseRow = {
   spotify_playlist_url?: string | null;
   is_published: boolean;
   created_at: string;
+  course_language?: 'fr' | 'es' | null;
 };
 
 export type CourseRecordingSummary = {
@@ -74,6 +76,7 @@ type FormState = {
   jitsiLink: string;
   replayUrl: string;
   spotifyPlaylistUrl: string;
+  courseLanguage: '' | 'fr' | 'es';
 };
 
 const COURSE_TYPE_OPTIONS: Array<{ value: FormState['courseType']; label: string }> = [
@@ -97,10 +100,10 @@ const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
 const TEMPLATE_STORAGE_KEY = 'admin-course-description-templates-v1';
 
 const REFINED_SELECT =
-  'admin-form-refined mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-5 py-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#C45D3E]/25';
+  'admin-form-refined mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-5 py-3.5 text-sm shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25';
 
 const REFINED_TEXTAREA =
-  'admin-form-refined admin-form-refined--textarea mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-5 py-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#C45D3E]/25';
+  'admin-form-refined admin-form-refined--textarea mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-5 py-4 text-sm shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25';
 
 const SUBMIT_BTN =
   'btn-luxury-primary px-7 py-3 text-[10px] font-bold uppercase tracking-widest disabled:opacity-50';
@@ -267,6 +270,7 @@ function emptyCreateForm(): FormState {
     jitsiLink: '',
     replayUrl: '',
     spotifyPlaylistUrl: '',
+    courseLanguage: '',
   };
 }
 
@@ -289,6 +293,7 @@ function courseToFormState(c: AdminCourseRow): FormState {
     jitsiLink: c.jitsi_link ?? '',
     replayUrl: c.replay_url ?? '',
     spotifyPlaylistUrl: c.spotify_playlist_url ?? '',
+    courseLanguage: isCourseLanguage(c.course_language) ? c.course_language : '',
   };
 }
 
@@ -322,6 +327,7 @@ function formToPayload(f: FormState) {
     replayUrl: null,
     spotifyPlaylistUrl: null,
     timezone: f.timeZone,
+    courseLanguage: f.courseLanguage || null,
   };
 }
 
@@ -456,7 +462,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
         </div>
       ) : null}
 
-      <section className="glass-card border-white/80 bg-white/45 p-5 backdrop-blur-2xl">
+      <section className={ADMIN_PANEL_CLASS}>
         <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
           <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Type de cours
@@ -518,6 +524,20 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               </button>
             </div>
           </div>
+          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+            Langue du cours
+            <select
+              value={createForm.courseLanguage}
+              onChange={(e) =>
+                setCreateForm((s) => ({ ...s, courseLanguage: e.target.value as FormState['courseLanguage'] }))
+              }
+              className={REFINED_SELECT}
+            >
+              <option value="">— Non définie</option>
+              <option value="fr">Français</option>
+              <option value="es">Espagnol</option>
+            </select>
+          </label>
           <CourseDatetimeFields
             className="md:col-span-2"
             timeZone={createForm.timeZone}
@@ -541,7 +561,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               <select
                 value={createForm.city}
                 onChange={(e) => setCreateForm((s) => ({ ...s, city: e.target.value as 'Nantes' | 'Mexico' }))}
-                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                className={REFINED_SELECT}
               >
                 <option value="Nantes">Nantes</option>
                 <option value="Mexico">Mexico</option>
@@ -557,7 +577,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 value={createForm.capacityMax}
                 onChange={(e) => setCreateForm((s) => ({ ...s, capacityMax: e.target.value }))}
                 placeholder="Illimité si vide"
-                className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                className={REFINED_SELECT}
               />
             </label>
           ) : null}
@@ -582,7 +602,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
         </form>
       </section>
 
-      <section className="glass-card overflow-hidden">
+      <section className={`${ADMIN_PANEL_CLASS} overflow-hidden p-0`}>
         <div className={`${ADMIN_SURFACE_BAR} px-4 py-4 md:px-6`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-white/90">Séances</h3>
@@ -622,11 +642,8 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
           {displayedCourses.map((c) => {
             const coursePast = new Date(c.ends_at).getTime() < Date.now();
             return (
-              <article
-                key={c.id}
-                className="rounded-2xl border border-white/25 bg-white/20 p-4 shadow-sm"
-              >
-                <h4 className="font-semibold text-brand-ink">
+              <article key={c.id} className={ADMIN_LIST_CARD_CLASS}>
+                <h4 className="text-sm font-semibold text-luxury-ink">
                   <a
                     href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES })}
                     target="_blank"
@@ -636,7 +653,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                     {c.title}
                   </a>
                 </h4>
-                <dl className="mt-3 space-y-1.5 text-xs text-brand-ink/75">
+                <dl className="mt-3 space-y-1.5 text-xs text-luxury-muted">
                   <div className="flex justify-between gap-3">
                     <dt className="text-brand-ink/50">Début</dt>
                     <dd className="text-right font-medium">{formatCourseStart(c)}</dd>
@@ -674,23 +691,23 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
 
         {/* Desktop : tableau */}
         <div className="hidden overflow-x-auto md:block">
-          <table className="min-w-full text-left text-sm">
+          <table className="admin-form-refined min-w-full text-left text-sm text-luxury-ink">
             <thead>
               <tr className={ADMIN_HEAD_TR}>
-                <th className="px-4 py-3">Titre</th>
-                <th className="px-4 py-3">Début</th>
-                <th className="px-4 py-3">Format</th>
-                <th className="px-4 py-3">Places max</th>
-                <th className="px-4 py-3">Publié</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em]">Titre</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em]">Début</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em]">Format</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em]">Places max</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em]">Publié</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.14em]">Actions</th>
               </tr>
             </thead>
-            <tbody className="text-brand-ink/85">
+            <tbody>
               {displayedCourses.map((c) => {
                 const coursePast = new Date(c.ends_at).getTime() < Date.now();
                 return (
-                  <tr key={c.id} className="border-b border-white/20 hover:bg-white/25">
-                    <td className="max-w-[200px] truncate px-4 py-3 font-medium">
+                  <tr key={c.id} className="border-b border-white/30 bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition hover:bg-white/28">
+                    <td className="max-w-[200px] truncate px-4 py-3 text-sm font-medium">
                       <a
                         href={liveCourseHref(c.id, { from: LIVE_FROM_ADMIN_COURSES })}
                         target="_blank"
@@ -735,7 +752,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
 
       {editing && editForm ? (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm">
-          <div className="glass-card max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 shadow-2xl">
+          <div className={`${ADMIN_PANEL_CLASS} max-h-[90vh] w-full max-w-lg overflow-y-auto p-6`}>
             <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-white/35 pb-4">
               <div className="min-w-0 flex-1 pr-2">
                 <h3 className="text-xl font-semibold leading-snug text-luxury-ink">Modifier la séance</h3>
@@ -836,7 +853,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                           : s,
                       )
                     }
-                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                    className={REFINED_SELECT}
                   >
                     <option value="online">En ligne</option>
                     <option value="onsite">Présentiel</option>
@@ -851,20 +868,36 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                         s ? { ...s, courseCategory: e.target.value as 'individual' | 'group' } : s,
                       )
                     }
-                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                    className={REFINED_SELECT}
                   >
                     <option value="group">Collectif</option>
                     <option value="individual">Individuel</option>
                   </select>
                 </label>
               </div>
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                Langue du cours
+                <select
+                  value={editForm.courseLanguage}
+                  onChange={(e) =>
+                    setEditForm((s) =>
+                      s ? { ...s, courseLanguage: e.target.value as FormState['courseLanguage'] } : s,
+                    )
+                  }
+                  className={REFINED_SELECT}
+                >
+                  <option value="">— Non définie</option>
+                  <option value="fr">Français</option>
+                  <option value="es">Espagnol</option>
+                </select>
+              </label>
               {editForm.courseFormat === 'onsite' ? (
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Ville
                   <select
                     value={editForm.city}
                     onChange={(e) => setEditForm((s) => (s ? { ...s, city: e.target.value as 'Nantes' | 'Mexico' } : s))}
-                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                    className="mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25"
                   >
                     <option value="Nantes">Nantes</option>
                     <option value="Mexico">Mexico</option>
@@ -880,7 +913,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                     value={editForm.capacityMax}
                     onChange={(e) => setEditForm((s) => (s ? { ...s, capacityMax: e.target.value } : s))}
                     placeholder="Illimité si vide"
-                    className="mt-2 w-full rounded-2xl border border-white/85 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none focus:ring-2 focus:ring-[#C45D3E]/25"
+                    className="mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25"
                   />
                 </label>
               ) : null}

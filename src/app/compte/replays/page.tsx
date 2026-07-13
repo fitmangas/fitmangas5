@@ -30,8 +30,6 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           title: 'My replays',
           emptyFav: 'No favorite replay yet.',
           emptyAll: 'No replay available right now.',
-          clientArea: 'Client area',
-          subtitle: 'Latest featured replay, favorites and full history.',
           dashboard: 'Dashboard',
           all: 'All replays',
           fav: 'My favorites',
@@ -54,8 +52,6 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             title: 'Mis replays',
             emptyFav: 'Aún no hay replays favoritos.',
             emptyAll: 'No hay replays disponibles por ahora.',
-            clientArea: 'Área cliente',
-            subtitle: 'Último replay destacado, favoritos e historial completo.',
             dashboard: 'Dashboard',
             all: 'Todos los replays',
             fav: 'Mis favoritos',
@@ -77,8 +73,6 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             title: 'Mes replays',
             emptyFav: 'Aucun replay favori pour le moment.',
             emptyAll: 'Aucun replay disponible pour le moment.',
-            clientArea: 'Espace client',
-            subtitle: 'Dernier replay en vedette, favoris et historique complet.',
             dashboard: 'Dashboard',
             all: 'Tous les replays',
             fav: 'Mes favoris',
@@ -101,9 +95,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
         <header>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.clientArea}</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
+          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
         </header>
         <div className="mt-8">
           <VisioLock
@@ -192,9 +184,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
       <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
       <header>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.clientArea}</p>
-        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-        <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
+        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
       </header>
 
       <div className="mt-8 flex flex-wrap gap-2">

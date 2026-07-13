@@ -25,8 +25,6 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             title: 'Mi blog',
             emptyFav: 'Aún no hay favoritos.',
             emptyAll: 'Aún no hay artículos publicados.',
-            area: 'Área cliente',
-            subtitle: 'Último artículo destacado + historial completo.',
             dashboard: 'Dashboard',
             all: 'Todos los artículos',
             fav: 'Mis favoritos',
@@ -51,8 +49,6 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             title: 'Mon blog',
             emptyFav: 'Aucun favori pour le moment.',
             emptyAll: 'Aucun article publié pour le moment.',
-            area: 'Espace client',
-            subtitle: 'Dernier article en vedette + historique complet.',
             dashboard: 'Dashboard',
             all: 'Tous les articles',
             fav: 'Mes favoris',
@@ -78,9 +74,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     return (
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-6 md:px-8">
         <header>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.area}</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
+          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
         </header>
         <div className="mt-8">
           <VisioLock
@@ -115,7 +109,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
   const articleSelect = `
-      id,title_fr,title_en,title_es,description_fr,description_en,description_es,slug_fr,slug_en,slug_es,featured_image_url,published_at,status,average_rating,view_count,
+      id,title_fr,title_en,title_es,description_fr,description_en,description_es,slug_fr,slug_en,slug_es,featured_image_url,published_at,created_at,status,average_rating,view_count,
       blog_categories ( label_fr, label_es, slug )
     `;
 
@@ -126,18 +120,10 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     .eq('status', 'published')
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
-
-  if (latestHeroRow) {
-    console.log('[compte/blog] hero', {
-      id: latestHeroRow.id,
-      title: latestHeroRow.title_fr,
-      published_at: latestHeroRow.published_at,
-    });
-  } else {
-    console.log('[compte/blog] hero', null);
-  }
 
   const { data: cats } = await supabase.from('blog_categories').select('id,slug,label_fr,label_es').order('sort_order');
   let categoryId: string | null = null;
@@ -150,6 +136,8 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     .select(articleSelect)
     .eq('status', 'published')
     .order('published_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(200);
 
   if (categoryId) query = query.eq('category_id', categoryId);
@@ -190,7 +178,12 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
   sortedBase.sort((a, b) => {
     if (sort === 'views') return (b.view_count ?? 0) - (a.view_count ?? 0);
     if (sort === 'rating') return (b.average_rating ?? 0) - (a.average_rating ?? 0);
-    return new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
+    const publishedDiff =
+      new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime();
+    if (publishedDiff !== 0) return publishedDiff;
+    const createdDiff = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+    if (createdDiff !== 0) return createdDiff;
+    return b.id.localeCompare(a.id);
   });
   const usedImages = new Set<string>();
   const displayArticles = sortedBase.map((article, index) => {
@@ -268,9 +261,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
       <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
       <header>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.area}</p>
-        <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
-        <p className="mt-2 text-sm text-luxury-muted">{t.subtitle}</p>
+        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
       </header>
 
       <div className="mt-8 flex flex-wrap gap-2">

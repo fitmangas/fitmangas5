@@ -27,7 +27,6 @@ export default async function ProfilPage() {
   const t =
     blogLang === 'en'
       ? {
-          overline: 'My profile',
           title: 'Account settings',
           dashboard: 'Dashboard',
           profileSection: 'My profile',
@@ -40,7 +39,6 @@ export default async function ProfilPage() {
         }
       : blogLang === 'es'
         ? {
-            overline: 'Mi perfil',
             title: 'Configuración de cuenta',
             dashboard: 'Dashboard',
             profileSection: 'Mi perfil',
@@ -52,7 +50,6 @@ export default async function ProfilPage() {
             openShopArea: 'Pedidos tienda',
           }
         : {
-            overline: 'Mon profil',
             title: 'Paramètres du compte',
             dashboard: 'Dashboard',
             profileSection: 'Mon profil',
@@ -87,8 +84,7 @@ export default async function ProfilPage() {
     <div className="mx-auto max-w-5xl space-y-4 px-5 pb-16 pt-2 md:px-8">
       <CompteDashboardBackLink label={t.dashboard} className="mb-2" />
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{t.overline}</p>
-        <h1 className="hero-signature-title mt-1 text-3xl md:text-4xl">{t.title}</h1>
+        <h1 className="hero-signature-title text-3xl md:text-4xl">{t.title}</h1>
       </div>
 
       <ProfileMonProfilCard

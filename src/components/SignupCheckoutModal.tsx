@@ -4,12 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Loader2, ArrowRight, Lock, ChevronDown } from 'lucide-react';
 import type { Course, Language, Segment } from '@/types';
-import {
-  detectBrowserLocale,
-  detectBrowserTimeZone,
-  localeLabel,
-  type DetectedLocale,
-} from '@/lib/locale-timezone-detection';
+import { detectBrowserLocale, detectBrowserTimeZone, type DetectedLocale } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 import { REF_COOKIE, normalizeReferralCode, isValidReferralCode } from '@/lib/referrals/cookie';
 
@@ -39,21 +34,6 @@ type Props = {
   onClose: () => void;
 };
 
-function formatTimezoneOffset(timeZone: string, locale: DetectedLocale) {
-  try {
-    return (
-      new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'fr-FR', {
-        timeZone,
-        timeZoneName: 'shortOffset',
-      })
-        .formatToParts(new Date())
-        .find((part) => part.type === 'timeZoneName')?.value ?? ''
-    );
-  } catch {
-    return '';
-  }
-}
-
 export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lang, onClose }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -75,6 +55,15 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
     if (fromCookie) setReferralCode(fromCookie);
   }, []);
 
+  useEffect(() => {
+    if (!course) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [course]);
+
   const labels =
     lang === 'FR'
       ? {
@@ -87,8 +76,6 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           cta: 'Continuer vers le paiement',
           close: 'Fermer',
           missingSupabase: 'Configuration incomplète. Paiement indisponible pour le moment.',
-          detectedLanguage: 'Langue détectée',
-          detectedTimezone: 'Fuseau détecté',
           referralCode: 'Code parrainage (optionnel)',
           referralHint: 'Si une amie t’a partagé son lien, le code est pré-rempli.',
         }
@@ -102,14 +89,9 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           cta: 'Continuar al pago',
           close: 'Cerrar',
           missingSupabase: 'Configuración incompleta. Pago no disponible por ahora.',
-          detectedLanguage: 'Idioma detectado',
-          detectedTimezone: 'Zona horaria detectada',
           referralCode: 'Código de referido (opcional)',
           referralHint: 'Si una amiga compartió su enlace, el código ya está rellenado.',
         };
-  const detectedUiLang = detectedLocale;
-  const timezoneOffsetLabel =
-    typeof Intl === 'undefined' ? '' : formatTimezoneOffset(detectedTimeZone, detectedUiLang);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -222,7 +204,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
     <AnimatePresence>
       {course && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-brand-ink/40 p-0 sm:items-center sm:p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-ink/40 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -230,37 +212,41 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           role="presentation"
         >
           <motion.div
-            initial={{ y: 40, opacity: 0 }}
+            initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
+            exit={{ y: 16, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-md rounded-t-[32px] border border-brand-ink/[0.06] bg-white shadow-2xl sm:rounded-[32px]"
+            className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="signup-title"
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 rounded-full p-2 text-brand-ink/40 transition hover:bg-brand-sand/40 hover:text-brand-ink"
-              aria-label={labels.close}
-            >
-              <X size={18} />
-            </button>
-
-            <div className="border-b border-brand-ink/[0.06] px-8 pb-6 pt-8">
-              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">
-                {effectiveSegment === 'VISIO'
-                  ? lang === 'FR'
-                    ? 'Visio'
-                    : 'Online'
-                  : 'Nantes'}
-              </p>
-              <h2 id="signup-title" className="font-serif text-2xl italic tracking-tight text-brand-ink">
-                {labels.title}
-              </h2>
-              <p className="mt-2 text-xs leading-relaxed text-brand-ink/50">{labels.subtitle}</p>
+            {/* En-tête fixe */}
+            <div className="shrink-0 border-b border-brand-ink/[0.06] px-6 pb-5 pt-6 sm:px-8 sm:pt-8">
+              <div className="flex items-start justify-between gap-4 pr-8">
+                <div className="min-w-0 flex-1">
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">
+                    {effectiveSegment === 'VISIO'
+                      ? lang === 'FR'
+                        ? 'Visio'
+                        : 'Online'
+                      : 'Nantes'}
+                  </p>
+                  <h2 id="signup-title" className="font-serif text-2xl italic tracking-tight text-brand-ink">
+                    {labels.title}
+                  </h2>
+                  <p className="mt-2 text-xs leading-relaxed text-brand-ink/50">{labels.subtitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute right-4 top-4 rounded-full p-2 text-brand-ink/40 transition hover:bg-brand-sand/40 hover:text-brand-ink sm:right-5 sm:top-5"
+                  aria-label={labels.close}
+                >
+                  <X size={18} />
+                </button>
+              </div>
               <div className="mt-4">
                 <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">
                   {lang === 'FR' ? 'Formule' : 'Fórmula'}
@@ -269,12 +255,14 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                   <button
                     type="button"
                     onClick={() => setFormulaMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/75 transition hover:border-brand-accent/35 hover:text-brand-accent"
+                    className="inline-flex max-w-full items-center gap-2 rounded-full border border-brand-ink/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/75 transition hover:border-brand-accent/35 hover:text-brand-accent"
                     aria-haspopup="listbox"
                     aria-expanded={formulaMenuOpen}
                   >
-                    {course.title}
-                    <ChevronDown size={13} className={`transition ${formulaMenuOpen ? 'rotate-180' : ''}`} />
+                    <span className="truncate">
+                      {course.title} — {course.price}
+                    </span>
+                    <ChevronDown size={13} className={`shrink-0 transition ${formulaMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   <AnimatePresence>
                     {formulaMenuOpen && (
@@ -311,125 +299,101 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                   </AnimatePresence>
                 </div>
               </div>
-              <p className="mt-3 font-medium text-brand-ink">{course.title}</p>
-              <p className="text-sm text-brand-accent">{course.price}</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 px-8 py-8">
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                  {labels.firstName}
-                  <input
-                    required
-                    autoComplete="given-name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                  />
-                </label>
-                <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                  {labels.lastName}
-                  <input
-                    required
-                    autoComplete="family-name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                  />
-                </label>
-              </div>
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                {labels.email}
-                <input
-                  required
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                />
-              </label>
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                {lang === 'FR' ? 'Date de naissance' : 'Fecha de nacimiento'}
-                <input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                />
-              </label>
-              <div className="grid grid-cols-1 gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/25 p-4 text-[11px] text-brand-ink/55 sm:grid-cols-2">
-                <label className="block">
-                  <span className="font-bold uppercase tracking-[0.16em] text-brand-ink/40">
-                    {labels.detectedLanguage}
-                  </span>
-                  <select
-                    value={detectedLocale}
-                    onChange={(e) => setDetectedLocale(e.target.value === 'es' ? 'es' : 'fr')}
-                    className="mt-2 w-full rounded-xl border border-brand-ink/[0.08] bg-white px-3 py-2 text-xs text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                  >
-                    <option value="fr">{localeLabel('fr', detectedUiLang)}</option>
-                    <option value="es">{localeLabel('es', detectedUiLang)}</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="font-bold uppercase tracking-[0.16em] text-brand-ink/40">
-                    {labels.detectedTimezone}
-                  </span>
-                  <input
-                    value={detectedTimeZone}
-                    onChange={(e) => setDetectedTimeZone(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-brand-ink/[0.08] bg-white px-3 py-2 font-mono text-xs text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                  />
-                  {timezoneOffsetLabel ? (
-                    <span className="mt-1 block font-mono text-[10px] text-brand-ink/45">
-                      {detectedTimeZone} ({timezoneOffsetLabel.replace('UTC', 'UTC')})
+            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+              {/* Corps scrollable */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                      {labels.firstName}
+                      <input
+                        required
+                        autoComplete="given-name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                      />
+                    </label>
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                      {labels.lastName}
+                      <input
+                        required
+                        autoComplete="family-name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                      />
+                    </label>
+                  </div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    {labels.email}
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                    />
+                  </label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    {lang === 'FR' ? 'Date de naissance' : 'Fecha de nacimiento'}
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                    />
+                  </label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    {labels.referralCode}
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="EX: MARIE-1234"
+                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 font-mono text-sm uppercase tracking-wide text-brand-ink placeholder:text-brand-ink/25 outline-none ring-brand-accent/30 transition focus:ring-2"
+                    />
+                    <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-brand-ink/45">
+                      {labels.referralHint}
                     </span>
+                  </label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    <span className="inline-flex items-center gap-1">
+                      <Lock size={10} className="opacity-50" />
+                      {labels.password}
+                    </span>
+                    <input
+                      required
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                    />
+                  </label>
+
+                  {error ? (
+                    <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</p>
                   ) : null}
-                </label>
+                </div>
               </div>
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                {labels.referralCode}
-                <input
-                  type="text"
-                  autoComplete="off"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  placeholder="EX: MARIE-1234"
-                  className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 font-mono text-sm uppercase tracking-wide text-brand-ink placeholder:text-brand-ink/25 outline-none ring-brand-accent/30 transition focus:ring-2"
-                />
-                <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-brand-ink/45">
-                  {labels.referralHint}
-                </span>
-              </label>
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                <span className="inline-flex items-center gap-1">
-                  <Lock size={10} className="opacity-50" />
-                  {labels.password}
-                </span>
-                <input
-                  required
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                />
-              </label>
 
-              {error && (
-                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-accent py-4 text-[10px] font-bold uppercase tracking-[0.25em] text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
-              >
-                {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
-                {labels.cta}
-              </button>
-
+              {/* Pied fixe */}
+              <div className="shrink-0 border-t border-brand-ink/[0.06] bg-white px-6 py-4 sm:px-8">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-luxury-primary flex w-full items-center justify-center gap-2 py-4 text-[10px] font-bold uppercase tracking-[0.25em] disabled:opacity-60"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+                  {labels.cta}
+                </button>
+              </div>
             </form>
           </motion.div>
         </motion.div>

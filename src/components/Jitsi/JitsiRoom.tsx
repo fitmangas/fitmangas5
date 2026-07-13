@@ -195,7 +195,6 @@ export function JitsiRoom({
 
           api.addListener('recordingStatusChanged', (...args: unknown[]) => {
             const status = args[0] as { on?: boolean } | undefined;
-            console.log('[Jitsi Recording]', status);
             if (!status?.on || !coachId) return;
             if (recordingResyncTimer) clearTimeout(recordingResyncTimer);
             recordingResyncTimer = setTimeout(() => {

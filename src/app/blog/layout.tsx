@@ -8,7 +8,7 @@ import { getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 };
 
 export default async function BlogLayout({ children }: { children: ReactNode }) {

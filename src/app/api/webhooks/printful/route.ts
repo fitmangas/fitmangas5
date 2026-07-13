@@ -44,10 +44,14 @@ async function userIdFromEmail(email: string | null | undefined) {
 }
 
 export async function POST(request: Request) {
-  const signatureSecret = process.env.PRINTFUL_WEBHOOK_SECRET;
+  const signatureSecret = process.env.PRINTFUL_WEBHOOK_SECRET?.trim();
   const rawBody = await request.text();
   if (signatureSecret) {
-    const signature = request.headers.get('x-pf-signature') ?? request.headers.get('x-printful-signature');
+    const signature = (
+      request.headers.get('x-pf-signature') ??
+      request.headers.get('x-printful-signature') ??
+      ''
+    ).trim();
     if (!signature) {
       return NextResponse.json({ error: 'Signature Printful manquante.' }, { status: 401 });
     }

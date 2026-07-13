@@ -14,8 +14,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
-import { fetchUnsplashImage } from '../src/lib/blog/blog-image-fetcher';
+import { collectUsedPhotoIdsFromUrls, fetchUnsplashImage } from '../src/lib/blog/blog-image-fetcher';
 import { generateFrenchArticle } from '../src/lib/blog/blog-content-generator';
+import { buildTopicBrief, generateBlogTitlesFromContent } from '../src/lib/blog/blog-title-generator';
 import { slugifyBlog } from '../src/lib/blog/slugify';
 
 type ParsedArticle = {
@@ -64,28 +65,6 @@ function parsePlanningFile(raw: string): ParsedArticle[] {
   return out;
 }
 
-function fallbackCategoryForIndex(index: number): string {
-  return ['technique', 'respiration', 'posture', 'renforcement', 'bien-etre', 'nutrition'][index % 6] ?? 'technique';
-}
-
-function fillTo104(seed: ParsedArticle[]): ParsedArticle[] {
-  const out = [...seed];
-  const base = new Date();
-  while (out.length < 104) {
-    const i = out.length + 1;
-    const d = new Date(base);
-    d.setDate(d.getDate() + i * 3);
-    out.push({
-      index: i,
-      title: `Article pilates ${i} — mouvement & souffle`,
-      date: d,
-      categorySlug: fallbackCategoryForIndex(i),
-      description: `Conseils pilates pratiques pour l’article ${i}.`,
-    });
-  }
-  return out.slice(0, 104);
-}
-
 function monthYearFromDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -98,6 +77,21 @@ function looksLikeFallbackContent(contentHtml: string, description: string): boo
     'Un guide concret pour progresser en pilates autour de',
   ];
   return markers.some((m) => contentHtml.includes(m) || description.includes(m));
+}
+
+async function ensureUniqueSlug(
+  admin: ReturnType<typeof createClient>,
+  baseTitle: string,
+  index: number,
+): Promise<string> {
+  const base = slugifyBlog(baseTitle);
+  let slug = `${base}-${String(index).padStart(3, '0')}`;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { data: exists } = await admin.from('blog_articles').select('id').eq('slug_fr', slug).maybeSingle();
+    if (!exists) return slug;
+    slug = `${base}-${String(index).padStart(3, '0')}-${attempt + 2}`;
+  }
+  return `${base}-${Date.now()}`;
 }
 
 async function ensureCategoryId(
@@ -158,10 +152,14 @@ async function main() {
   if (existsSync(planningPath)) {
     parsed = parsePlanningFile(readFileSync(planningPath, 'utf8'));
   }
-  parsed = fillTo104(parsed);
   if (limit != null) parsed = parsed.slice(0, limit);
 
-  console.log(`Seed complet: ${parsed.length} article(s) à traiter.`);
+  console.log(`Seed complet: ${parsed.length} article(s) à traiter (planning uniquement, sans plafond).`);
+  if (parsed.length === 0) {
+    console.warn(
+      'Aucun article dans le planning. Les nouveaux articles sont créés automatiquement par le cron hebdomadaire.',
+    );
+  }
   if (refreshExisting) {
     console.log('Mode refresh activé: les articles déjà présents peuvent être enrichis (Gemini/Unsplash).');
   }
@@ -176,6 +174,11 @@ async function main() {
 
   const { data: categories } = await admin.from('blog_categories').select('id, slug');
   const categoryCache = new Map<string, string>((categories ?? []).map((c) => [c.slug, c.id]));
+
+  const { data: existingImageRows } = await admin.from('blog_articles').select('featured_image_url');
+  const usedPhotoIds = collectUsedPhotoIdsFromUrls(
+    (existingImageRows ?? []).map((row) => row.featured_image_url),
+  );
 
   const seededArticles: Array<{ articleId: string; date: Date; index: number; title: string; reused: boolean }> = [];
   let refreshedCount = 0;
@@ -215,16 +218,28 @@ async function main() {
       continue;
     }
 
+    const topicBrief = buildTopicBrief(p.categorySlug, p.index, p.description);
     const generated = await generateFrenchArticle({
-      title: p.title,
+      topicBrief,
       category: p.categorySlug,
       publishDateIso: p.date.toISOString(),
     });
 
-    const img = await fetchUnsplashImage({
-      title: p.title,
+    const titles = await generateBlogTitlesFromContent({
+      contentHtmlFr: generated.contentHtml,
+      descriptionFr: generated.description,
       categorySlug: p.categorySlug,
     });
+    const titleFr = titles.title_fr;
+    const titleEs = titles.title_es;
+
+    const img = await fetchUnsplashImage({
+      title: titleFr,
+      categorySlug: p.categorySlug,
+      excludedPhotoIds: usedPhotoIds,
+      variant: p.index,
+    });
+    if (img.photoId) usedPhotoIds.add(img.photoId);
 
     if (existingBySlug?.id) {
       const shouldRefreshText = looksLikeFallbackContent(
@@ -284,9 +299,11 @@ async function main() {
       .from('blog_articles')
       .insert({
         coach_id: coach.id,
-        title_fr: p.title,
-        slug_fr: slugFr,
-        description_fr: generated.description || p.description || `Article pilates: ${p.title}`,
+        title_fr: titleFr,
+        title_es: titleEs,
+        slug_fr: await ensureUniqueSlug(admin, titleFr, p.index),
+        slug_es: slugifyBlog(titleEs),
+        description_fr: generated.description || p.description || `Article pilates: ${titleFr}`,
         content_fr: generated.contentHtml,
         category_id: categoryId,
         featured_image_url: img.imageUrl,
@@ -312,7 +329,7 @@ async function main() {
         reused: false,
       });
       const src = img.imageUrl ? 'IA+Unsplash' : 'IA';
-      console.log(`✅ ${p.index}/${parsed.length} ${p.title} (${src})`);
+      console.log(`✅ ${p.index}/${parsed.length} ${titleFr} (${src})`);
     }
   }
 

@@ -2,6 +2,8 @@ import Stripe from 'stripe';
 
 import { COURSE_CHECKOUT_MODE, getStripePriceId, isValidCheckoutCourseId } from '@/lib/checkout-courses';
 
+export const VISIO_FREE_TRIAL_DAYS = 7;
+
 export type CreateCheckoutSessionInput = {
   userId: string;
   email: string | null | undefined;
@@ -15,6 +17,10 @@ export function getAppBaseUrl() {
     process.env.APP_URL ||
     (process.env.NODE_ENV === 'production' ? 'https://fitmangas.com' : 'http://localhost:3000')
   ).replace(/\/$/, '');
+}
+
+function isVisioSubscriptionCourse(courseId: string): boolean {
+  return courseId === 'v-coll' || courseId === 'v-ind';
 }
 
 export async function createStripeCheckoutSession(
@@ -49,7 +55,11 @@ export async function createStripeCheckoutSession(
   };
 
   if (mode === 'subscription') {
-    params.subscription_data = { metadata: { ...metadata } };
+    params.payment_method_collection = 'always';
+    params.subscription_data = {
+      metadata: { ...metadata },
+      ...(isVisioSubscriptionCourse(courseId) ? { trial_period_days: VISIO_FREE_TRIAL_DAYS } : {}),
+    };
   } else {
     params.payment_intent_data = { metadata: { ...metadata } };
   }

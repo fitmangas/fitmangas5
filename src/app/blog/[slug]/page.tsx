@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { BlogArticleShell } from '@/components/Blog/BlogArticleShell';
 import {
   fetchAnyArticleBySlugParam,
   fetchAnyArticleBySlugParamAdmin,
   fetchPublishedArticleBySlugParam,
 } from '@/lib/blog/fetch-article';
-import { hasVisioClientAccess } from '@/lib/access-control';
 import { getClientLang } from '@/lib/compte/i18n';
 import type { BlogLang } from '@/types/blog';
 
@@ -65,9 +64,6 @@ export default async function BlogArticlePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/?compte=connexion-requise');
-
-  if (!(await hasVisioClientAccess(user.id))) redirect('/compte/blog');
 
   let article = previewDraft ? await fetchAnyArticleBySlugParamAdmin(slug) : await fetchPublishedArticleBySlugParam(slug);
   if (!article && !previewDraft && user) {

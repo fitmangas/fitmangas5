@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 
 import { createPrintfulOrder } from '@/lib/printful';
-import { dispatchBoutiqueOrderPaid } from '@/lib/notifications/phase3';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 type CreateOrderBody = {
@@ -67,6 +65,9 @@ export async function POST(req: Request) {
         : [{ syncVariantId: variantId, quantity }];
 
     const order = await createPrintfulOrder({
+      // Sécurité paiement : cette route ne confirme jamais la production Printful.
+      // La confirmation fournisseur devra être faite seulement après paiement client encaissé.
+      confirm: false,
       recipient: {
         name: recipient.name.trim(),
         email: user.email,
@@ -77,11 +78,7 @@ export async function POST(req: Request) {
       },
       items,
     });
-    await dispatchBoutiqueOrderPaid(createAdminClient(), {
-      userId: user.id,
-      orderRef: String(order.id ?? order.external_id ?? 'printful'),
-    });
-    return NextResponse.json({ order });
+    return NextResponse.json({ order, status: 'draft' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     return NextResponse.json({ error: message }, { status: 500 });

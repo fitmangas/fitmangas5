@@ -1,4 +1,4 @@
-const BLOG_FALLBACK_IMAGES = [
+export const BLOG_FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1510894347713-fc3ed6fdf539?auto=format&fit=crop&w=1200&q=80',

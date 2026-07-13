@@ -2,11 +2,23 @@
   "crons": [
     {
       "path": "/api/admin/cron/daily-jobs",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/admin/blog/cron/generate-titles",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/admin/blog/cron/publish-scheduled",
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/admin/blog/cron/generate-articles",
+      "schedule": "30 6 * * 1"
+    },
+    {
       "path": "/api/admin/blog/cron/prepare-monthly-validation",
-      "schedule": "0 6 1 * *"
+      "schedule": "0 7 1 * *"
     }
   ]
 }

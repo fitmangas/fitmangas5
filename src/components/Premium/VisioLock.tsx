@@ -11,13 +11,14 @@ type Props = {
   featureDescription_es: string;
   hasAccess?: boolean;
   locale?: 'fr' | 'es';
+  className?: string;
 };
 
 export function getVisioLockState(hasAccess: boolean) {
   return { showOverlay: !hasAccess, ctaOffer: 'v-coll' as const };
 }
 
-export function VisioLock({ children, featureDescription_fr, featureDescription_es, hasAccess = false, locale = 'fr' }: Props) {
+export function VisioLock({ children, featureDescription_fr, featureDescription_es, hasAccess = false, locale = 'fr', className = '' }: Props) {
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const state = getVisioLockState(hasAccess);
@@ -54,7 +55,7 @@ export function VisioLock({ children, featureDescription_fr, featureDescription_
 
   const description = locale === 'es' ? featureDescription_es : featureDescription_fr;
   return (
-    <div className="relative h-full overflow-hidden rounded-[28px] bg-white/30 shadow-[0_24px_80px_rgba(48,35,28,0.10)]">
+    <div className={`relative h-full overflow-hidden rounded-[28px] bg-white/30 shadow-[0_24px_80px_rgba(48,35,28,0.10)] ${className}`.trim()}>
       <div className="pointer-events-none opacity-45 blur-[7px]">{children}</div>
       <div className="absolute inset-0 flex items-center justify-center bg-luxury-cream/55 px-6 backdrop-blur-md">
         <div className="max-w-sm text-center">

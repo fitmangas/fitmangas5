@@ -18,7 +18,7 @@ export function GenerateSeoArticleButton() {
         Générer un article SEO (IA)
       </button>
       {open ? (
-        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6" role="presentation" onClick={() => !pending && setOpen(false)}>
+        <div className="fixed inset-0 z-[500] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6" role="presentation" data-overlay-dismiss onClick={() => !pending && setOpen(false)}>
           <div
             className="w-full max-w-lg rounded-t-3xl border border-white/40 bg-[#fffdf8] p-6 shadow-2xl sm:rounded-3xl"
             role="dialog"

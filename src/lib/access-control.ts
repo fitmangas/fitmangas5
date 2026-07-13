@@ -173,7 +173,7 @@ export async function getCoursesForUser(userId: string): Promise<SmartCourse[]> 
       supabase
         .from('courses')
         .select(
-          'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, replay_url, capacity_max, is_published',
+          'id, slug, title, description, course_format, course_category, starts_at, ends_at, timezone, location, live_url, jitsi_link, replay_url, capacity_max, course_language, is_published',
         )
         .eq('is_published', true)
         .order('starts_at', { ascending: true }),

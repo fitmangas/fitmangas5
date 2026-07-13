@@ -52,6 +52,18 @@ export function BlogRatingBlock({ articleId, initialAverage, initialCount, isLog
 
   const displayAvg = avg != null ? avg.toFixed(1) : '—';
 
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-2xl border border-white/40 bg-white/50 px-5 py-4 backdrop-blur-md">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-luxury-muted">Avis des membres</p>
+        <p className="mt-3 text-sm text-luxury-muted">
+          <span className="font-semibold text-luxury-ink">{displayAvg}</span> / 5 · {count}{' '}
+          {count === 1 ? 'vote' : 'votes'}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-white/40 bg-white/50 px-5 py-4 backdrop-blur-md">
       <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-luxury-muted">Ton avis</p>
@@ -77,14 +89,6 @@ export function BlogRatingBlock({ articleId, initialAverage, initialCount, isLog
           {count === 1 ? 'vote' : 'votes'}
         </div>
       </div>
-      {!isLoggedIn ? (
-        <p className="mt-3 text-xs text-luxury-muted">
-          <a href="/connexion" className="font-semibold underline underline-offset-2">
-            Connexion
-          </a>{' '}
-          requise pour voter.
-        </p>
-      ) : null}
       {msg ? <p className="mt-3 text-xs text-emerald-800">{msg}</p> : null}
     </div>
   );

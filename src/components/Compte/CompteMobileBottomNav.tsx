@@ -43,14 +43,16 @@ export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0 }: 
 
   return (
     <nav
-      className={`sticky top-0 z-50 overflow-hidden px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-300 md:hidden ${
-        scrolled
-          ? 'border-b border-white/30 bg-white/85 shadow-[0_4px_24px_rgba(15,23,42,0.08)]'
-          : 'border-b border-white/20 bg-white/70'
-      }`}
+      className="sticky top-0 z-50 overflow-visible bg-transparent px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] md:hidden"
       aria-label="Navigation mobile"
     >
-      <div className="grid grid-cols-8 gap-0.5 rounded-[1.45rem] border border-white/40 bg-white/55 px-1.5 py-2 backdrop-blur-md transition-colors duration-300">
+      <div
+        className={`grid grid-cols-8 gap-0.5 rounded-full border border-white/40 bg-white/55 px-1.5 py-2 backdrop-blur-md transition-[box-shadow] duration-300 ${
+          scrolled
+            ? 'shadow-[0_12px_32px_rgba(15,23,42,0.14),0_4px_12px_rgba(15,23,42,0.08)]'
+            : 'shadow-[0_10px_28px_rgba(15,23,42,0.12),0_4px_12px_rgba(15,23,42,0.06)]'
+        }`}
+      >
         <Link
           href="/compte"
           aria-label={labels.dashboard}

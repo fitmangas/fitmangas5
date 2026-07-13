@@ -21,6 +21,8 @@
     "seed:blog:complete": "tsx scripts/seed-blog-articles-complete.ts",
     "blog:translate:missing": "tsx scripts/blog-translate-missing.ts",
     "blog:cleanup:duplicates": "tsx scripts/cleanup-blog-duplicates.ts",
+    "blog:refresh:images": "tsx scripts/refresh-blog-images.ts",
+    "blog:rewrite:titles": "tsx scripts/rewrite-blog-titles.ts",
     "blog:schedule:normalize": "tsx scripts/normalize-blog-monthly-schedule.ts",
     "automation:inactive": "tsx scripts/automation/report-inactive-users.ts",
     "automation:birthdays": "tsx scripts/automation/run-birthday-day.ts",

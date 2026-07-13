@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { AdminViewSwitch } from '@/components/Admin/AdminViewSwitch';
 import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { SupportFloatingButton } from '@/components/Compte/SupportFloatingButton';
@@ -34,7 +33,6 @@ export default async function CompteLayout({ children }: { children: React.React
       <div className="luxury-grain" aria-hidden />
       <div className="relative">
         <CompteSidebar lang={lang} unreadNotifications={unreadNotifications ?? 0} />
-        <AdminViewSwitch />
         <CompteMobileBottomNav lang={lang} unreadNotifications={unreadNotifications ?? 0} />
         <main className="luxury-main relative z-0 pb-20 pt-2 md:pb-16 md:pl-24 md:pt-0">{children}</main>
         <SupportFloatingButton lang={lang} />

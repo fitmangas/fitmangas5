@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
-import { COACH_PUBLISH_TIMEZONE, isWithinCoachMorningPublishWindow } from '@/lib/notifications/timezone';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
@@ -19,13 +18,6 @@ async function handlePublish(request: Request) {
   }
 
   const now = new Date();
-  if (!isWithinCoachMorningPublishWindow(now, COACH_PUBLISH_TIMEZONE)) {
-    return NextResponse.json({
-      skipped: true,
-      reason: 'outside_coach_publish_window',
-      coachTimeZone: COACH_PUBLISH_TIMEZONE,
-    });
-  }
 
   try {
     const admin = createAdminClient();

@@ -19,8 +19,20 @@ export function GlassCard({
   elevated = false,
   ...rest
 }: Props) {
+  const isInteractive =
+    typeof rest.onClick === 'function' ||
+    typeof rest.onKeyDown === 'function' ||
+    rest.role === 'button' ||
+    rest.tabIndex === 0;
   const base = variant === 'dark' ? 'glass-card glass-card--dark' : 'glass-card';
-  const mods = [base, kpi ? 'glass-card--kpi' : '', elevated ? 'glass-card--elevated' : ''].filter(Boolean).join(' ');
+  const mods = [
+    base,
+    kpi ? 'glass-card--kpi' : '',
+    elevated ? 'glass-card--elevated' : '',
+    isInteractive ? 'glass-card--interactive' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     <div className="glass-card-zoom h-full">
       <div className={`${mods} h-full ${className}`.trim()} {...rest}>

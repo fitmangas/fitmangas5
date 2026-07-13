@@ -34,7 +34,7 @@ export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?:
   }, []);
 
   return (
-    <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
+    <aside className="luxury-floating-rail luxury-floating-rail--compte fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
       <Link
         href="/compte"
         title={labels.dashboard}

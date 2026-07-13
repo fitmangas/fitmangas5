@@ -34,7 +34,6 @@ export default async function CompteBoutiqueEnCoursPage() {
   const t =
     lang === 'en'
       ? {
-          overline: 'Client shop',
           title: 'Tracking in progress',
           back: 'Back to shop',
           empty: 'No order in progress right now.',
@@ -54,7 +53,6 @@ export default async function CompteBoutiqueEnCoursPage() {
         }
       : lang === 'es'
         ? {
-            overline: 'Tienda cliente',
             title: 'Seguimiento en curso',
             back: 'Volver a tienda',
             empty: 'No hay pedidos en curso por ahora.',
@@ -73,7 +71,6 @@ export default async function CompteBoutiqueEnCoursPage() {
             wait: 'El seguimiento estará disponible tras el envío.',
           }
         : {
-            overline: 'Boutique client',
             title: 'Suivi en cours',
             back: 'Retour boutique',
             empty: 'Aucune commande en cours pour le moment.',
@@ -110,8 +107,7 @@ export default async function CompteBoutiqueEnCoursPage() {
     <div className="mx-auto max-w-6xl space-y-5 px-5 pb-16 pt-4 md:px-8">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.overline}</p>
-          <h1 className="hero-signature-title mt-2 text-4xl md:text-5xl">{t.title}</h1>
+          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
         </div>
         <Link href="/compte/boutique" className="btn-luxury-ghost px-4 py-2 text-[11px] tracking-[0.12em]">
           {t.back}

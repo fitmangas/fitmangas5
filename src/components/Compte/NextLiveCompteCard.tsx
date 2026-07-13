@@ -138,7 +138,7 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
         ? {
             title: 'Próximo live',
             none: 'No hay live programado',
-            reserve: 'Reserva una sesión desde el calendario de abajo.',
+            reserve: 'Encuentra tus sesiones en el calendario de abajo.',
             details: 'Detalles',
             join: 'Unirse',
             seePlanning: 'Ver planificación',
@@ -146,7 +146,7 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
         : {
             title: 'Prochain live',
             none: 'Aucun live planifié',
-            reserve: 'Réserve une séance depuis le calendrier ci-dessous.',
+            reserve: 'Retrouve tes séances dans le calendrier ci-dessous.',
             details: 'Détails',
             join: 'Rejoindre',
             seePlanning: 'Voir planning',
@@ -167,15 +167,15 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
 
   return (
     <>
-      <GlassCard className="relative h-full p-5 md:p-6" style={{ position: 'relative', overflow: 'visible', zIndex: 'auto' }}>
-        <div style={{ position: 'relative', zIndex: 20 }}>
+      <GlassCard className="relative order-3 col-span-2 h-full overflow-hidden p-4 md:order-none md:col-span-1 md:p-6">
+        <div className="relative z-10">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-luxury-ink">
+              <p className="mt-2 text-lg font-semibold tracking-tight text-luxury-ink md:mt-3 md:text-xl">
                 {hasUpcomingLive ? nextAppointment.title : t.none}
               </p>
-              <p className="mt-2 text-xs text-luxury-muted">
+              <p className="mt-2 text-luxury-muted max-md:text-[9px] max-md:leading-[1.35] md:text-xs md:leading-snug">
                 {hasUpcomingLive ? scheduleLabel : t.reserve}
               </p>
             </div>
@@ -188,29 +188,32 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
               {liveUnread > 99 ? '99+' : liveUnread}
             </span>
           ) : null}
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 md:mt-5">
             {hasUpcomingLive ? (
               <>
-                <button type="button" className="btn-luxury-ghost min-h-[46px] min-w-[160px]" onClick={() => setOpen(true)}>
+                <button type="button" className="btn-luxury-ghost min-h-[42px] min-w-[140px] px-4 md:min-h-[46px] md:min-w-[160px]" onClick={() => setOpen(true)}>
                   {t.details}
                 </button>
                 <Link
                   href={`/live/${nextAppointment.courseId}`}
-                  className="btn-luxury-primary min-h-[46px] min-w-[160px]"
+                  className="btn-luxury-primary min-h-[42px] min-w-[140px] px-4 md:min-h-[46px] md:min-w-[160px]"
                 >
                   {t.join}
                 </Link>
               </>
             ) : (
-              <Link href="/compte/planning" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
-                {t.seePlanning}
+              <Link
+                href="/compte/planning"
+                className="btn-luxury-ghost flex min-h-[42px] w-full min-w-0 items-center justify-center px-4 text-center leading-tight tracking-[0.1em] max-md:flex-col max-md:gap-0 md:min-h-[46px] md:w-auto md:min-w-[160px] md:flex-row md:tracking-[0.15em]"
+              >
+                <span className="block w-full text-center">{t.seePlanning}</span>
               </Link>
             )}
           </div>
         </div>
         {coachImageSrc ? (
           <div
-            className="pointer-events-none absolute bottom-0 right-3 z-10 h-[84px] w-[68px] overflow-hidden sm:right-4 sm:h-[90px] sm:w-[74px]"
+            className="pointer-events-none absolute bottom-0 right-3 z-0 h-[84px] w-[68px] overflow-hidden sm:right-4 sm:h-[90px] sm:w-[74px]"
             aria-hidden
           >
             <img

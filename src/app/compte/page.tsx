@@ -102,7 +102,7 @@ export default async function ComptePage({
   const purchaseCourseId = params.course_id?.trim() || null;
   const goal = getMonthlySessionGoal();
 
-  const [marketingSettings, lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }] = await Promise.all([
+  const [marketingSettings, lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }, { count: publishedBlogCount }] = await Promise.all([
     getMarketingSettings(),
     getClientLang(supabase, user.id),
     hasVisioClientAccess(user.id),
@@ -134,6 +134,7 @@ export default async function ComptePage({
       .eq('user_id', user.id)
       .in('kind', ['live_course', 'planning_live'])
       .is('read_at', null),
+    supabase.from('blog_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
   ]);
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
@@ -164,12 +165,13 @@ export default async function ComptePage({
           replay: 'Replay',
           replayLibraryTitle: 'Replay & Library',
           availableVideos: 'available video',
-            replayHoursAvailable: 'Replay available',
+            replayHoursAvailable: 'Replay',
             vimeoHoursLibrary: 'Library',
           seeReplays: 'See my replays',
           myLibrary: 'My library',
           blog: 'My blog',
           articles: 'Articles',
+          publishedArticles: 'published articles',
           blogHint: 'Read the latest article, find history and save favorites.',
           openBlog: 'Open my blog',
           planning: 'Schedule',
@@ -193,12 +195,13 @@ export default async function ComptePage({
             replay: 'Replay',
             replayLibraryTitle: 'Replay & Biblioteca',
             availableVideos: 'video disponible',
-            replayHoursAvailable: 'Replay disponible',
+            replayHoursAvailable: 'Replay',
             vimeoHoursLibrary: 'Biblioteca',
             seeReplays: 'Ver mis replays',
             myLibrary: 'Mi biblioteca',
             blog: 'Mi blog',
             articles: 'Artículos',
+            publishedArticles: 'artículos publicados',
             blogHint: 'Lee el último artículo, revisa el historial y guarda favoritos.',
             openBlog: 'Abrir mi blog',
             planning: 'Planificación',
@@ -221,12 +224,13 @@ export default async function ComptePage({
             replay: 'Replay',
             replayLibraryTitle: 'Replay & Bibliothèque',
             availableVideos: 'vidéo disponible',
-            replayHoursAvailable: 'Replay disponible',
+            replayHoursAvailable: 'Replay',
             vimeoHoursLibrary: 'Bibliothèque',
             seeReplays: 'Voir mes replays',
             myLibrary: 'Ma bibliothèque',
             blog: 'Mon blog',
             articles: 'Articles',
+            publishedArticles: 'articles publiés',
             blogHint: 'Lis le dernier article, retrouve l’historique et enregistre tes favoris.',
             openBlog: 'Ouvrir mon blog',
             planning: 'Planning',
@@ -251,7 +255,7 @@ export default async function ComptePage({
         : 0;
 
   return (
-    <div className="mx-auto max-w-[1280px] min-w-0 space-y-4 pb-16 md:space-y-10 md:px-8">
+    <div className="mx-auto max-w-[1280px] min-w-0 space-y-3 pb-16 md:space-y-10 md:px-8">
       {checkoutOk && trackedPurchaseValue > 0 ? (
         <CheckoutPurchaseTracker
           gaId={gaId}
@@ -261,17 +265,17 @@ export default async function ComptePage({
           courseId={purchaseCourseId}
         />
       ) : null}
-      <section className="grid items-center gap-5 pt-2 text-center md:grid-cols-[1fr_auto] md:text-left">
+      <section className="grid items-center gap-3 pt-1 text-center md:grid-cols-[1fr_auto] md:gap-5 md:pt-2 md:text-left">
         <div>
-          <h1 className="hero-signature-title break-words text-3xl text-luxury-ink sm:text-4xl md:text-6xl">{greeting}</h1>
-          <p className="hero-signature-subtitle mt-1 text-sm md:text-base">{motivation}</p>
+          <h1 className="hero-signature-title break-words text-2xl text-luxury-ink sm:text-4xl md:text-6xl">{greeting}</h1>
+          <p className="hero-signature-subtitle mt-1 text-xs md:text-base">{motivation}</p>
           {checkoutOk ? (
             <p className="mx-auto mt-4 max-w-2xl rounded-2xl border border-emerald-300/60 bg-emerald-50/90 px-5 py-3.5 text-sm font-medium leading-relaxed text-emerald-950">
               {t.paid}
             </p>
           ) : null}
         </div>
-        <details className="relative z-10 mx-auto w-full max-w-[210px] md:mx-0 md:w-auto md:max-w-none">
+        <details className="relative z-10 mx-auto w-full max-w-[178px] md:mx-0 md:w-auto md:max-w-none">
           {unreadNotifications && unreadNotifications > 0 ? (
             <Link
               href="/compte/notifications"
@@ -281,13 +285,13 @@ export default async function ComptePage({
               {unreadNotifications > 9 ? '9+' : unreadNotifications}
             </Link>
           ) : null}
-          <summary className="relative flex cursor-pointer list-none flex-col items-center gap-2 rounded-[2rem] border border-white/60 bg-white/65 px-4 py-3 shadow-[0_12px_32px_rgba(29,29,31,0.12)] backdrop-blur-xl [&::-webkit-details-marker]:hidden">
+          <summary className="relative flex cursor-pointer list-none flex-col items-center gap-1.5 rounded-[1.6rem] border border-white/60 bg-white/65 px-3 py-2.5 shadow-[0_12px_32px_rgba(29,29,31,0.12)] backdrop-blur-xl md:gap-2 md:rounded-[2rem] md:px-4 md:py-3 [&::-webkit-details-marker]:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <div className="flex flex-col items-center">
               <img
                 src={avatarUrl}
                 alt={firstName ? `Photo de ${firstName}` : 'Photo de profil'}
-                className="h-[88px] w-[88px] rounded-full object-cover object-top ring-1 ring-white/70"
+                className="h-[66px] w-[66px] rounded-full object-cover object-top ring-1 ring-white/70 md:h-[88px] md:w-[88px]"
               />
               <span
                 className={`premium-badge mt-1.5 inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.18em] backdrop-blur-md ${
@@ -301,7 +305,7 @@ export default async function ComptePage({
                 {level}
               </span>
             </div>
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/85 text-base font-semibold text-luxury-ink">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/85 text-sm font-semibold text-luxury-ink md:h-8 md:w-8 md:text-base">
               +
             </span>
           </summary>
@@ -329,32 +333,36 @@ export default async function ComptePage({
         </details>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center gap-3 px-1">
+      <section className="relative isolate space-y-3 md:space-y-4">
+        <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
           <Image
             src="/logo.png"
             alt="Logo FitMangas"
             width={56}
             height={56}
-            className="h-[46px] w-[46px] shrink-0 object-contain md:h-[56px] md:w-[56px]"
+            className="h-9 w-9 shrink-0 object-contain md:h-[56px] md:w-[56px]"
           />
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
           </div>
         </div>
-        <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <GlassCard className="relative p-5 md:p-6">
+        <div className="relative z-0 grid grid-cols-2 items-stretch gap-3 md:gap-5 xl:grid-cols-4">
+          <GlassCard className="relative order-1 flex h-full flex-col p-3 md:order-none md:p-6">
             <Link href="/compte/progression" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.openProgress} />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
-                <p className="mt-2 text-xs text-luxury-muted">{t.coursesMonth}</p>
+            <div className="max-md:mb-6">
+              <div className="flex items-start justify-between gap-2 md:gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
+                  <p className="mt-1 text-luxury-muted max-md:whitespace-nowrap max-md:pb-3 max-md:text-[9px] max-md:tracking-[0.1em] md:mt-2 md:pb-0 md:text-xs">
+                    {t.coursesMonth}
+                  </p>
+                </div>
+                <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0 scale-90 md:scale-100">
+                  <Target size={20} aria-hidden strokeWidth={2} />
+                </span>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0">
-                <Target size={20} aria-hidden strokeWidth={2} />
-              </span>
             </div>
-            <div className="mt-1 flex justify-center">
+            <div className="flex justify-center md:mt-1">
               <MonthlyProgressRing followedCount={monthly.followedCount} goal={monthly.goal} />
             </div>
           </GlassCard>
@@ -366,21 +374,22 @@ export default async function ComptePage({
             locale={lang === 'es' ? 'es' : 'fr'}
             featureDescription_fr="Les replays sont inclus dans l’abonnement Visio collectif à 39€/mois."
             featureDescription_es="Los replays están incluidos en la suscripción Visio grupal a 39€/mes."
+            className="order-4 col-span-2 md:order-none md:col-span-1"
           >
-          <GlassCard className="relative p-5 md:p-6">
+          <GlassCard className="relative order-4 col-span-2 flex h-full flex-col p-4 md:order-none md:col-span-1 md:p-6">
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.myLibrary} />
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
-                <div className="mt-8 flex flex-col gap-3">
-                  <p className="flex min-w-0 items-baseline gap-2 text-sm text-luxury-muted">
-                    <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                <div className="mt-4 grid grid-cols-2 gap-3 md:mt-8 md:flex md:flex-col">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                    <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {replayHoursRounded}h
                     </span>
                     <span className="leading-snug">{t.replayHoursAvailable}</span>
                   </p>
-                  <p className="flex min-w-0 items-baseline gap-2 text-sm text-luxury-muted">
-                    <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                    <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {vimeoHoursRounded}h
                     </span>
                     <span className="leading-snug">{t.vimeoHoursLibrary}</span>
@@ -396,8 +405,8 @@ export default async function ComptePage({
                 {replayUnread > 99 ? '99+' : replayUnread}
               </span>
             ) : null}
-            <div className="mt-5">
-              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 min-h-[46px] min-w-[160px]">
+            <div className="mt-auto pt-4 md:mt-5 md:pt-0">
+              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
                 {t.myLibrary}
               </Link>
             </div>
@@ -409,25 +418,30 @@ export default async function ComptePage({
             locale={lang === 'es' ? 'es' : 'fr'}
             featureDescription_fr="Le blog complet est inclus dans l’abonnement Visio collectif à 39€/mois."
             featureDescription_es="El blog completo está incluido en la suscripción Visio grupal a 39€/mes."
+            className="order-2 md:order-none"
           >
-          <GlassCard className="relative p-5 md:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
+          <GlassCard className="relative order-2 flex h-full flex-col p-3 md:order-none md:p-6">
+            <div className="flex items-start justify-between gap-2 md:gap-3">
+              <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{t.articles}</p>
-                <p className="mt-2 text-xs text-luxury-muted">{t.blogHint}</p>
+                <p className="mt-2 hidden text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:mt-3 md:block md:text-3xl">{t.articles}</p>
+                <p className="mt-2 hidden text-xs text-luxury-muted md:block">{t.blogHint}</p>
               </div>
-              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0">
+              <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0 scale-90 md:scale-100">
                 <BookOpenText size={20} aria-hidden strokeWidth={2} />
               </span>
+            </div>
+            <div className="flex flex-1 flex-col items-center justify-center py-3 md:hidden">
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{publishedBlogCount ?? 0}</p>
+              <p className="mt-1 text-center text-[10px] leading-snug text-luxury-muted">{t.publishedArticles}</p>
             </div>
             {blogUnread && blogUnread > 0 ? (
               <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
                 {blogUnread > 99 ? '99+' : blogUnread}
               </span>
             ) : null}
-            <div className="mt-5">
-              <Link href="/compte/blog" className="btn-luxury-ghost min-h-[46px] min-w-[160px]">
+            <div className="mt-auto pt-2 md:mt-5 md:pt-0">
+              <Link href="/compte/blog" className="btn-luxury-ghost flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
                 {t.openBlog}
               </Link>
             </div>
@@ -436,19 +450,22 @@ export default async function ComptePage({
         </div>
       </section>
 
-      <section id="planning" className="scroll-mt-24 space-y-4">
-        <div className="px-1">
+      <section id="planning" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
+        <div className="relative z-10 px-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.planning}</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.nextSessions}</h2>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.nextSessions}</h2>
         </div>
-        <SmartCalendar lang={lang} />
+        <div className="relative z-0">
+          <SmartCalendar lang={lang} />
+        </div>
       </section>
 
-      <section id="replays" className="scroll-mt-24 space-y-4">
-        <div className="px-1">
+      <section id="replays" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
+        <div className="relative z-10 px-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.library}</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.onDemand}</h2>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.onDemand}</h2>
         </div>
+        <div className="relative z-0">
         <VisioLock
           hasAccess={hasVisioAccess}
           locale={lang === 'es' ? 'es' : 'fr'}
@@ -457,6 +474,7 @@ export default async function ComptePage({
         >
           <MyReplaysSection userId={user.id} lang={lang} />
         </VisioLock>
+        </div>
       </section>
     </div>
   );

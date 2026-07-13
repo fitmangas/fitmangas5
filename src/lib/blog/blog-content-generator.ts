@@ -7,10 +7,10 @@ type GeneratedArticle = {
   seoKeywords: string;
 };
 
-function fallbackContent(title: string, category: string): GeneratedArticle {
-  const description = `Un guide concret pour progresser en pilates autour de "${title}".`;
+function fallbackContent(topicBrief: string, category: string): GeneratedArticle {
+  const description = `Un guide concret pour progresser en pilates : ${topicBrief}`;
   const paragraphs = [
-    `<h2>Pourquoi ce sujet change ta pratique</h2><p>${title} revient souvent dans les blocages des élèves : manque de régularité, surcharge mentale ou difficulté à sentir les bons appuis. En pilates, les progrès ne viennent pas d'une séance parfaite, mais d'une répétition intelligente et douce. L'objectif est de construire un rituel réaliste, compatible avec ton emploi du temps, tout en gardant le plaisir de bouger.</p>`,
+    `<h2>Pourquoi ce sujet change ta pratique</h2><p>${topicBrief} — ce thème revient souvent dans les blocages des élèves : manque de régularité, surcharge mentale ou difficulté à sentir les bons appuis. En pilates, les progrès ne viennent pas d'une séance parfaite, mais d'une répétition intelligente et douce. L'objectif est de construire un rituel réaliste, compatible avec ton emploi du temps, tout en gardant le plaisir de bouger.</p>`,
     `<h2>Le contexte concret</h2><p>Beaucoup de pratiquantes pensent qu'il faut faire plus longtemps pour obtenir des résultats. En réalité, des séances courtes mais fréquentes donnent souvent de meilleurs effets sur la posture, la mobilité et l'énergie générale. Le corps retient plus facilement des repères simples : respiration, alignement, activation du centre et qualité des transitions.</p>`,
     `<h3>3 actions simples à appliquer cette semaine</h3><ul><li><strong>Bloque un créneau fixe</strong> de 20 à 30 minutes, deux à trois fois par semaine.</li><li><strong>Choisis un objectif unique</strong> par séance : mobilité, renforcement ou récupération.</li><li><strong>Termine par 2 minutes de respiration</strong> pour ancrer le travail et faire redescendre le stress.</li></ul>`,
     `<h2>Exemple terrain</h2><p>Une élève qui reprenait après plusieurs mois d'arrêt a commencé avec deux séances de 25 minutes, centrées sur le gainage profond et les hanches. En trois semaines, elle a constaté moins de tensions lombaires et une meilleure stabilité sur ses exercices. Le point clé n'était pas la difficulté, mais la régularité et la précision du mouvement.</p>`,
@@ -18,8 +18,8 @@ function fallbackContent(title: string, category: string): GeneratedArticle {
   ];
 
   const contentHtml = paragraphs.join('\n\n');
-  const metaDescription = `${title} : conseils pilates pratiques, méthode progressive et routine concrète pour des résultats durables.`;
-  const seoKeywords = `${title}, pilates, ${category}, posture, respiration, bien-être`;
+  const metaDescription = `${topicBrief.slice(0, 120)} : conseils pilates pratiques, méthode progressive et routine concrète pour des résultats durables.`;
+  const seoKeywords = `pilates, ${category}, posture, respiration, bien-être`;
 
   return { contentHtml, description, metaDescription, seoKeywords };
 }
@@ -37,7 +37,7 @@ function extractJsonBlock(raw: string): Record<string, unknown> | null {
   }
 }
 
-function buildPrompts(params: { title: string; category: string; publishDateIso: string }): {
+function buildPrompts(params: { topicBrief: string; category: string; publishDateIso: string }): {
   system: string;
   user: string;
 } {
@@ -48,11 +48,12 @@ Retourne STRICTEMENT un JSON avec ces clés:
 - metaDescription (155 caractères max)
 - seoKeywords (liste séparée par virgules)`;
 
-  const user = `Titre: ${params.title}
+  const user = `Brief éditorial: ${params.topicBrief}
 Catégorie: ${params.category}
 Date publication: ${params.publishDateIso}
 
 Contraintes:
+- le contenu doit être spécifique au brief (pas de titre générique type "Article pilates X")
 - texte actionnable, motivant, sans jargon inutile
 - intro accrocheuse
 - 2-3 conseils concrets
@@ -64,7 +65,7 @@ Contraintes:
 
 function parseGeneratedArticle(
   raw: string,
-  title: string,
+  topicBrief: string,
   category: string,
 ): GeneratedArticle | null {
   const data = extractJsonBlock(raw);
@@ -79,7 +80,7 @@ function parseGeneratedArticle(
     return null;
   }
 
-  const fb = fallbackContent(title, category);
+  const fb = fallbackContent(topicBrief, category);
   return {
     contentHtml,
     description: description || fb.description,
@@ -89,7 +90,7 @@ function parseGeneratedArticle(
 }
 
 async function generateWithGemini(params: {
-  title: string;
+  topicBrief: string;
   category: string;
   publishDateIso: string;
   apiKey: string;
@@ -109,7 +110,7 @@ async function generateWithGemini(params: {
       },
     });
     const raw = response.text ?? '';
-    return parseGeneratedArticle(raw, params.title, params.category);
+    return parseGeneratedArticle(raw, params.topicBrief, params.category);
   } catch (e) {
     console.error('[generateFrenchArticle] Gemini', e);
     return null;
@@ -117,7 +118,7 @@ async function generateWithGemini(params: {
 }
 
 async function generateWithOpenAI(params: {
-  title: string;
+  topicBrief: string;
   category: string;
   publishDateIso: string;
   apiKey: string;
@@ -150,11 +151,11 @@ async function generateWithOpenAI(params: {
     choices?: Array<{ message?: { content?: string } }>;
   };
   const raw = json.choices?.[0]?.message?.content ?? '';
-  return parseGeneratedArticle(raw, params.title, params.category);
+  return parseGeneratedArticle(raw, params.topicBrief, params.category);
 }
 
 export async function generateFrenchArticle(params: {
-  title: string;
+  topicBrief: string;
   category: string;
   publishDateIso: string;
 }): Promise<GeneratedArticle> {
@@ -174,5 +175,5 @@ export async function generateFrenchArticle(params: {
     if (fromOpenai) return fromOpenai;
   }
 
-  return fallbackContent(params.title, params.category);
+  return fallbackContent(params.topicBrief, params.category);
 }

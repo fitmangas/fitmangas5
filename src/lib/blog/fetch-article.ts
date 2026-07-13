@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function fetchPublishedArticleBySlugParam(slug: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const decoded = decodeURIComponent(slug).trim();
   if (!decoded) return null;
+  const nowIso = new Date().toISOString();
 
   const select = `
       *,
@@ -16,6 +17,8 @@ export async function fetchPublishedArticleBySlugParam(slug: string) {
       .from('blog_articles')
       .select(select)
       .eq('status', 'published')
+      .not('published_at', 'is', null)
+      .lte('published_at', nowIso)
       .eq(col, decoded)
       .maybeSingle();
     if (data) return data;

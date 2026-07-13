@@ -103,7 +103,7 @@ export function SupportFloatingButton({ lang = 'fr' }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-[220] flex h-11 w-11 items-center justify-center rounded-full bg-luxury-ink text-white shadow-[0_8px_24px_rgba(15,23,42,0.24)] transition hover:scale-105 md:bottom-6 md:right-6 md:h-14 md:w-14 md:shadow-[0_10px_32px_rgba(15,23,42,0.28)]"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] right-4 z-[220] flex h-11 w-11 items-center justify-center rounded-full bg-luxury-ink text-white shadow-[0_8px_24px_rgba(15,23,42,0.24)] transition hover:scale-105 md:bottom-6 md:right-6 md:h-14 md:w-14 md:shadow-[0_10px_32px_rgba(15,23,42,0.28)]"
         aria-label={t.aria}
         title={t.aria}
       >

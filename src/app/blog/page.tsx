@@ -1,26 +1,26 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
+import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
-import { hasVisioClientAccess } from '@/lib/access-control';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
 
 export const metadata: Metadata = {
-  title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+  title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
   description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
   openGraph: {
-    title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+    title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
     description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
     images: ['/client-contact-photo.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog Pilates — Conseils, techniques et inspiration | FitMangas',
+    title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
     description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
     images: ['/client-contact-photo.png'],
   },
@@ -37,7 +37,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const copy =
     lang === 'es'
       ? {
-          title: 'Blog Pilates',
+          title: 'Blog Pilates de FitMangas',
           intro: 'Artículos, consejos e inspiración — barre y pilates.',
           search: 'Buscar...',
           submit: 'Buscar',
@@ -49,7 +49,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           next: 'Siguiente',
         }
       : {
-          title: 'Blog Pilates',
+          title: 'Blog Pilates de FitMangas',
           intro: 'Articles, conseils et inspiration — barre & pilates.',
           search: 'Rechercher…',
           submit: 'Rechercher',
@@ -61,14 +61,8 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           next: 'Suivant',
         };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/?compte=connexion-requise');
-  if (!(await hasVisioClientAccess(user.id))) {
-    redirect('/compte/blog');
-  }
+  const supabase = createAdminClient();
+  const nowIso = new Date().toISOString();
 
   let categoryId: string | null = null;
   if (categorySlug) {
@@ -94,7 +88,11 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
       { count: 'exact' },
     )
     .eq('status', 'published')
-    .order('published_at', { ascending: false });
+    .not('published_at', 'is', null)
+    .lte('published_at', nowIso)
+    .order('published_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false });
 
   if (categoryId) listQuery = listQuery.eq('category_id', categoryId);
 
@@ -133,12 +131,16 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">Blog</p>
-          <h1 className="hero-signature-title mt-2 text-4xl text-luxury-ink">{copy.title}</h1>
-          <p className="mt-3 max-w-xl text-sm text-luxury-muted">
-            {copy.intro}
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div>
+            <Image src="/logo.png" alt="FitMangas" width={76} height={76} className="h-16 w-16 object-contain sm:h-[76px] sm:w-[76px]" priority />
+          </div>
+          <div>
+            <h1 className="hero-signature-title text-4xl text-luxury-ink">{copy.title}</h1>
+            <p className="mt-3 max-w-xl text-sm text-luxury-muted">
+              {copy.intro}
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {(['fr', 'es'] as const).map((code) => (
@@ -205,6 +207,8 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           ) : null}
         </nav>
       ) : null}
+
+      <BlogConversionCta className="mt-16" />
 
       <div className="mt-16">
         <NewsletterCta />
@@ -281,9 +285,17 @@ function HeroArticle({
           ) : null}
           <span>👁 {article.view_count ?? 0}</span>
         </div>
-        <Link href={href} className="btn-luxury-primary mt-8 inline-flex w-fit items-center px-8 py-3 text-[11px] tracking-[0.14em]">
-          {copy.read}
-        </Link>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href={href} className="btn-luxury-primary inline-flex w-fit items-center px-8 py-3 text-[11px] tracking-[0.14em]">
+            {copy.read}
+          </Link>
+          <Link
+            href="/?offer=v-coll"
+            className="inline-flex w-fit items-center rounded-full border border-orange-300/70 bg-orange-50/70 px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-800 transition hover:border-orange-400 hover:bg-orange-100"
+          >
+            Découvrir l’offre Visio
+          </Link>
+        </div>
       </div>
     </article>
   );

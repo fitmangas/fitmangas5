@@ -1,5 +1,5 @@
 /**
- * Seed 104 articles + validations mensuelles (8 / mois).
+ * Seed articles depuis le planning + validations mensuelles (8 / mois).
  * Les variables sont lues depuis `.env.local` à la racine (voir `scripts/load-env-local.ts`).
  *
  * Usage : npm run seed:blog
@@ -84,20 +84,12 @@ async function main() {
     console.log(`Parsé ${parsed.length} article(s) depuis planning.`);
   }
 
-  const baseDate = new Date();
-  while (parsed.length < 104) {
-    const i = parsed.length + 1;
-    const d = addMonths(baseDate, Math.floor((i - 1) / 8));
-    parsed.push({
-      title: `Article pilates ${i} — mouvement & souffle`,
-      date: d,
-      categorySlug: ['technique', 'respiration', 'posture', 'renforcement', 'bien-etre', 'nutrition'][i % 6],
-      description: `Description courte pour l’article ${i}.`,
-      content: `Paragraphe intro article ${i}.\n\nParagraphe développement : respiration, alignement, régularité.`,
-    });
+  if (parsed.length === 0) {
+    console.warn(
+      'Aucun article dans le planning. Utilisez seed:blog:complete ou laissez le cron hebdomadaire créer les brouillons.',
+    );
+    return;
   }
-
-  parsed = parsed.slice(0, 104);
 
   const { data: categories } = await admin.from('blog_categories').select('id, slug');
   const catMap = new Map((categories ?? []).map((c) => [c.slug, c.id]));

@@ -1,0 +1,624 @@
+PROPOSITIONS DE TITRES — SIMULATION (aucune écriture en base)
+Commande: npm run blog:rewrite:titles
+Total articles concernés: 103
+
+NOTE: cette simulation a été partiellement limitée par le quota API Gemini (5 req/min).
+Relancer la commande avant --apply pour des titres ES de meilleure qualité (retry automatique).
+
+[1/103] article-pilates-100-mouvement-souffle-100 (draft)
+  FR: Article pilates 100 — mouvement & souffle
+   -> Description courte pour l’article 100. — bien-être
+  ES: Artículo pilates 100 — movimiento y respiración
+   -> Description courte pour l’article 100. — pilates
+
+[2/103] article-pilates-101-mouvement-souffle-101 (draft)
+  FR: Article pilates 101 — mouvement & souffle
+   -> Description courte pour l’article 101. — nutrition légère
+  ES: Artículo pilates 101 — movimiento y respiración
+   -> Description courte pour l’article 101. — pilates
+
+[3/103] article-pilates-102-mouvement-souffle-102 (draft)
+  FR: Article pilates 102 — mouvement & souffle
+   -> Description courte pour l’article 102. — technique
+  ES: Artículo pilates 102 — movimiento y respiración
+   -> Description courte pour l’article 102. — pilates
+
+[4/103] article-pilates-103-mouvement-souffle-103 (draft)
+  FR: Article pilates 103 — mouvement & souffle
+   -> Description courte pour l’article 103. — respiration
+  ES: Artículo pilates 103 — movimiento y respiración
+   -> Description courte pour l’article 103. — pilates
+
+[5/103] article-pilates-104-mouvement-souffle-104 (draft)
+  FR: Article pilates 104 — mouvement & souffle
+   -> Description courte pour l’article 104. — posture & alignemen
+  ES: Artículo pilates 104 — movimiento y respiración
+   -> Description courte pour l’article 104. — pilates
+
+[6/103] article-pilates-2-mouvement-souffle-002 (published)
+  FR: Article pilates 2 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 2 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[7/103] article-pilates-3-mouvement-souffle-003 (published)
+  FR: Article pilates 3 — mouvement & souffle
+   -> Article Pilates 3 — Mouvement & Souffle : L'Harm — renforcem
+  ES: Artículo pilates 3 — movimiento y respiración
+   -> Article Pilates 3 — Mouvement & Souffle : — pilates
+
+[8/103] article-pilates-4-mouvement-souffle-004 (published)
+  FR: Article pilates 4 — mouvement & souffle
+   -> Mouvement & Souffle : Le Cœur Battant de Votre P — bien-être
+  ES: Artículo pilates 4 — movimiento y respiración
+   -> Mouvement & Souffle : Le Cœur Battant de V — pilates
+
+[9/103] article-pilates-5-mouvement-souffle-005 (published)
+  FR: Article pilates 5 — mouvement & souffle
+   -> Pilates : L'Art Subtil de Connecter Mouvement et — nutrition
+  ES: Artículo pilates 5 — movimiento y respiración
+   -> Pilates : L'Art Subtil de Connecter Mouvem — pilates
+
+[10/103] article-pilates-6-mouvement-souffle-006 (published)
+  FR: Article pilates 6 — mouvement & souffle
+   -> Article pilates 6 — mouvement & souffle — technique
+  ES: Artículo pilates 6 — movimiento y respiración
+   -> Article pilates 6 — mouvement & souffle — pilates
+
+[11/103] article-pilates-7-mouvement-souffle-007 (validated)
+  FR: Article pilates 7 — mouvement & souffle
+   -> Le Souffle, Ancrage de Votre Pratique Pilates — respiration
+  ES: Artículo pilates 7 — movimiento y respiración
+   -> Le Souffle, Ancrage de Votre Pratique Pila — pilates
+
+[12/103] article-pilates-8-mouvement-souffle-008 (validated)
+  FR: Article pilates 8 — mouvement & souffle
+   -> Le Souffle et le Mouvement : L'Âme de Votre Post — posture &
+  ES: Artículo pilates 8 — movimiento y respiración
+   -> Le Souffle et le Mouvement : L'Âme de Votr — pilates
+
+[13/103] article-pilates-9-mouvement-souffle-009 (validated)
+  FR: Article pilates 9 — mouvement & souffle
+   -> Le Souffle : Votre Moteur Interne de Renforcemen — renforcem
+  ES: Artículo pilates 9 — movimiento y respiración
+   -> Le Souffle : Votre Moteur Interne de Renfo — pilates
+
+[14/103] article-pilates-10-mouvement-souffle-010 (published)
+  FR: Article pilates 10 — mouvement & souffle
+   -> Article pilates 10 — mouvement & souffle — bien-être
+  ES: Artículo pilates 10 — movimiento y respiración
+   -> Article pilates 10 — mouvement & souffle — pilates
+
+[15/103] article-pilates-11-mouvement-souffle-011 (published)
+  FR: Article pilates 11 — mouvement & souffle
+   -> Le Souffle, Ancrage de Votre Mouvement — nutrition légère
+  ES: Artículo pilates 11 — movimiento y respiración
+   -> Le Souffle, Ancrage de Votre Mouvement — pilates
+
+[16/103] article-pilates-12-mouvement-souffle-012 (published)
+  FR: Article pilates 12 — mouvement & souffle
+   -> Mouvement & Souffle : L'Harmonie Essentielle du — technique
+  ES: Artículo pilates 12 — movimiento y respiración
+   -> Mouvement & Souffle : L'Harmonie Essentiel — pilates
+
+[17/103] article-pilates-13-mouvement-souffle-013 (published)
+  FR: Article pilates 13 — mouvement & souffle
+   -> Le Souffle et le Mouvement : L'Essence du Pilate — respirati
+  ES: Artículo pilates 13 — movimiento y respiración
+   -> Le Souffle et le Mouvement : L'Essence du — pilates
+
+[18/103] article-pilates-14-mouvement-souffle-014 (published)
+  FR: Article pilates 14 — mouvement & souffle
+   -> Mouvement & Souffle : L'Harmonie Essentielle du — posture &
+  ES: Artículo pilates 14 — movimiento y respiración
+   -> Mouvement & Souffle : L'Harmonie Essentiel — pilates
+
+[19/103] article-pilates-15-mouvement-souffle-015 (published)
+  FR: Article pilates 15 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 15 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[20/103] article-pilates-16-mouvement-souffle-016 (published)
+  FR: Article pilates 16 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 16 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[21/103] article-pilates-17-mouvement-souffle-017 (published)
+  FR: Article pilates 17 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 17 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[22/103] article-pilates-18-mouvement-souffle-018 (validated)
+  FR: Article pilates 18 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 18 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[23/103] article-pilates-19-mouvement-souffle-019 (validated)
+  FR: Article pilates 19 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 19 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[24/103] article-pilates-20-mouvement-souffle-020 (validated)
+  FR: Article pilates 20 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 20 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[25/103] article-pilates-21-mouvement-souffle-021 (validated)
+  FR: Article pilates 21 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 21 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[26/103] article-pilates-22-mouvement-souffle-022 (validated)
+  FR: Article pilates 22 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 22 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[27/103] article-pilates-23-mouvement-souffle-023 (validated)
+  FR: Article pilates 23 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 23 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[28/103] article-pilates-24-mouvement-souffle-024 (validated)
+  FR: Article pilates 24 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 24 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[29/103] article-pilates-25-mouvement-souffle-025 (validated)
+  FR: Article pilates 25 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 25 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[30/103] article-pilates-26-mouvement-souffle-026 (draft)
+  FR: Article pilates 26 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 26 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[31/103] article-pilates-27-mouvement-souffle-027 (draft)
+  FR: Article pilates 27 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 27 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[32/103] article-pilates-28-mouvement-souffle-028 (draft)
+  FR: Article pilates 28 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 28 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[33/103] article-pilates-29-mouvement-souffle-029 (draft)
+  FR: Article pilates 29 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 29 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[34/103] article-pilates-30-mouvement-souffle-030 (draft)
+  FR: Article pilates 30 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 30 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[35/103] article-pilates-31-mouvement-souffle-031 (draft)
+  FR: Article pilates 31 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 31 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[36/103] article-pilates-32-mouvement-souffle-032 (draft)
+  FR: Article pilates 32 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 32 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[37/103] article-pilates-33-mouvement-souffle-033 (draft)
+  FR: Article pilates 33 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 33 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[38/103] article-pilates-34-mouvement-souffle-034 (draft)
+  FR: Article pilates 34 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 34 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[39/103] article-pilates-35-mouvement-souffle-035 (draft)
+  FR: Article pilates 35 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 35 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[40/103] article-pilates-36-mouvement-souffle-036 (draft)
+  FR: Article pilates 36 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 36 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[41/103] article-pilates-37-mouvement-souffle-037 (draft)
+  FR: Article pilates 37 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 37 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[42/103] article-pilates-38-mouvement-souffle-038 (draft)
+  FR: Article pilates 38 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 38 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[43/103] article-pilates-39-mouvement-souffle-039 (draft)
+  FR: Article pilates 39 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 39 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[44/103] article-pilates-40-mouvement-souffle-040 (draft)
+  FR: Article pilates 40 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 40 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[45/103] article-pilates-41-mouvement-souffle-041 (draft)
+  FR: Article pilates 41 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 41 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[46/103] article-pilates-42-mouvement-souffle-042 (draft)
+  FR: Article pilates 42 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 42 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[47/103] article-pilates-43-mouvement-souffle-043 (draft)
+  FR: Article pilates 43 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 43 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[48/103] article-pilates-44-mouvement-souffle-044 (draft)
+  FR: Article pilates 44 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 44 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[49/103] article-pilates-45-mouvement-souffle-045 (draft)
+  FR: Article pilates 45 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 45 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[50/103] article-pilates-46-mouvement-souffle-046 (draft)
+  FR: Article pilates 46 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 46 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[51/103] article-pilates-47-mouvement-souffle-047 (draft)
+  FR: Article pilates 47 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 47 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[52/103] article-pilates-48-mouvement-souffle-048 (draft)
+  FR: Article pilates 48 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 48 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[53/103] article-pilates-49-mouvement-souffle-049 (draft)
+  FR: Article pilates 49 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 49 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[54/103] article-pilates-50-mouvement-souffle-050 (draft)
+  FR: Article pilates 50 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 50 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[55/103] article-pilates-51-mouvement-souffle-051 (draft)
+  FR: Article pilates 51 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 51 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[56/103] article-pilates-52-mouvement-souffle-052 (draft)
+  FR: Article pilates 52 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 52 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[57/103] article-pilates-53-mouvement-souffle-053 (draft)
+  FR: Article pilates 53 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 53 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[58/103] article-pilates-54-mouvement-souffle-054 (draft)
+  FR: Article pilates 54 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 54 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[59/103] article-pilates-55-mouvement-souffle-055 (draft)
+  FR: Article pilates 55 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 55 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[60/103] article-pilates-56-mouvement-souffle-056 (draft)
+  FR: Article pilates 56 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 56 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[61/103] article-pilates-57-mouvement-souffle-057 (draft)
+  FR: Article pilates 57 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 57 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[62/103] article-pilates-58-mouvement-souffle-058 (draft)
+  FR: Article pilates 58 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 58 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[63/103] article-pilates-59-mouvement-souffle-059 (draft)
+  FR: Article pilates 59 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 59 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[64/103] article-pilates-60-mouvement-souffle-060 (draft)
+  FR: Article pilates 60 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 60 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[65/103] article-pilates-61-mouvement-souffle-061 (draft)
+  FR: Article pilates 61 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 61 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[66/103] article-pilates-62-mouvement-souffle-062 (draft)
+  FR: Article pilates 62 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 62 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[67/103] article-pilates-63-mouvement-souffle-063 (draft)
+  FR: Article pilates 63 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 63 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[68/103] article-pilates-64-mouvement-souffle-064 (draft)
+  FR: Article pilates 64 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 64 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[69/103] article-pilates-65-mouvement-souffle-065 (draft)
+  FR: Article pilates 65 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 65 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[70/103] article-pilates-66-mouvement-souffle-066 (draft)
+  FR: Article pilates 66 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 66 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[71/103] article-pilates-67-mouvement-souffle-067 (draft)
+  FR: Article pilates 67 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 67 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[72/103] article-pilates-68-mouvement-souffle-068 (draft)
+  FR: Article pilates 68 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 68 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[73/103] article-pilates-69-mouvement-souffle-069 (draft)
+  FR: Article pilates 69 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 69 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[74/103] article-pilates-70-mouvement-souffle-070 (draft)
+  FR: Article pilates 70 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 70 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[75/103] article-pilates-71-mouvement-souffle-071 (draft)
+  FR: Article pilates 71 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 71 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[76/103] article-pilates-72-mouvement-souffle-072 (draft)
+  FR: Article pilates 72 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 72 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[77/103] article-pilates-73-mouvement-souffle-073 (draft)
+  FR: Article pilates 73 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 73 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[78/103] article-pilates-74-mouvement-souffle-074 (draft)
+  FR: Article pilates 74 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 74 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[79/103] article-pilates-75-mouvement-souffle-075 (draft)
+  FR: Article pilates 75 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 75 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[80/103] article-pilates-76-mouvement-souffle-076 (draft)
+  FR: Article pilates 76 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 76 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[81/103] article-pilates-77-mouvement-souffle-077 (draft)
+  FR: Article pilates 77 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 77 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[82/103] article-pilates-78-mouvement-souffle-078 (draft)
+  FR: Article pilates 78 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 78 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[83/103] article-pilates-79-mouvement-souffle-079 (draft)
+  FR: Article pilates 79 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 79 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[84/103] article-pilates-80-mouvement-souffle-080 (draft)
+  FR: Article pilates 80 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 80 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[85/103] article-pilates-81-mouvement-souffle-081 (draft)
+  FR: Article pilates 81 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 81 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[86/103] article-pilates-82-mouvement-souffle-082 (draft)
+  FR: Article pilates 82 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 82 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[87/103] article-pilates-83-mouvement-souffle-083 (draft)
+  FR: Article pilates 83 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 83 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[88/103] article-pilates-84-mouvement-souffle-084 (draft)
+  FR: Article pilates 84 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 84 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[89/103] article-pilates-85-mouvement-souffle-085 (draft)
+  FR: Article pilates 85 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 85 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[90/103] article-pilates-86-mouvement-souffle-086 (draft)
+  FR: Article pilates 86 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 86 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[91/103] article-pilates-87-mouvement-souffle-087 (draft)
+  FR: Article pilates 87 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 87 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[92/103] article-pilates-88-mouvement-souffle-088 (draft)
+  FR: Article pilates 88 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 88 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[93/103] article-pilates-89-mouvement-souffle-089 (draft)
+  FR: Article pilates 89 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 89 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[94/103] article-pilates-90-mouvement-souffle-090 (draft)
+  FR: Article pilates 90 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 90 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[95/103] article-pilates-91-mouvement-souffle-091 (draft)
+  FR: Article pilates 91 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 91 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[96/103] article-pilates-92-mouvement-souffle-092 (draft)
+  FR: Article pilates 92 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 92 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[97/103] article-pilates-93-mouvement-souffle-093 (draft)
+  FR: Article pilates 93 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 93 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[98/103] article-pilates-94-mouvement-souffle-094 (draft)
+  FR: Article pilates 94 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — bien-être
+  ES: Artículo pilates 94 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[99/103] article-pilates-95-mouvement-souffle-095 (draft)
+  FR: Article pilates 95 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — nutrition légère
+  ES: Artículo pilates 95 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[100/103] article-pilates-96-mouvement-souffle-096 (draft)
+  FR: Article pilates 96 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — technique
+  ES: Artículo pilates 96 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[101/103] article-pilates-97-mouvement-souffle-097 (draft)
+  FR: Article pilates 97 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — respiration
+  ES: Artículo pilates 97 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[102/103] article-pilates-98-mouvement-souffle-098 (draft)
+  FR: Article pilates 98 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — posture & alignement
+  ES: Artículo pilates 98 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
+
+[103/103] article-pilates-99-mouvement-souffle-099 (draft)
+  FR: Article pilates 99 — mouvement & souffle
+   -> Pourquoi ce sujet change ta pratique — renforcement
+  ES: Artículo pilates 99 — movimiento y respiración
+   -> Pourquoi ce sujet change ta pratique — pilates
