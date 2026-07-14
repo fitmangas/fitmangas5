@@ -6,13 +6,13 @@ export const metadata = {
   openGraph: {
     title: 'Politique de confidentialité — FitMangas',
     description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Politique de confidentialité — FitMangas',
     description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
 };
 

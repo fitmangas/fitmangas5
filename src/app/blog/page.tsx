@@ -16,13 +16,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
     description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
     description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
 };
 

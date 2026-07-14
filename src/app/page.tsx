@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     url: APP_URL,
     siteName: 'FitMangas',
     type: 'website',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'FitMangas — Cours de Pilates & Barre en visio avec Alejandra',
     description: 'Cours de Pilates et Barre en visio avec Alejandra : live, replay, progression et coaching premium.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
 };
 

@@ -6,13 +6,13 @@ export const metadata = {
   openGraph: {
     title: 'Conditions générales — FitMangas',
     description: 'Conditions générales de vente et d’utilisation FitMangas.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Conditions générales — FitMangas',
     description: 'Conditions générales de vente et d’utilisation FitMangas.',
-    images: ['/client-contact-photo.png'],
+    images: ['/og-default.jpg'],
   },
 };
 

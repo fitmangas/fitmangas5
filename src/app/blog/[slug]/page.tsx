@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
     lang === 'es'
       ? article.meta_description_es ?? article.description_es ?? article.description_fr ?? undefined
       : article.meta_description_fr ?? article.description_fr ?? undefined;
-  const image = article.featured_image_url || '/client-contact-photo.png';
+  const image = article.featured_image_url || '/og-default.jpg';
   return {
     title,
     description,
