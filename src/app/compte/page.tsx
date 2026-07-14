@@ -19,6 +19,7 @@ import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
 
 function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
@@ -115,7 +116,12 @@ export default async function ComptePage({
     getNextAppointment(user.id),
     getReplayLibraryForUser(user.id),
     getStandaloneVimeoLibraryForUser(),
-    supabase.from('user_notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null),
+    supabase
+      .from('user_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('read_at', null)
+      .not('kind', 'in', clientHiddenNotificationKindsFilter()),
     supabase
       .from('user_notifications')
       .select('*', { count: 'exact', head: true })

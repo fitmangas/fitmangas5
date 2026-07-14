@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AvatarWithRibbon } from '@/components/ui/AvatarWithRibbon';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade } from '@/lib/gamification';
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
 
 import { NotificationBell, type NotificationRow } from './NotificationBell';
@@ -26,6 +27,7 @@ export async function CompteTopBar({ showNotifications = false }: { showNotifica
           .from('user_notifications')
           .select('id, kind, title, body, read_at, created_at')
           .eq('user_id', user.id)
+          .not('kind', 'in', clientHiddenNotificationKindsFilter())
           .order('created_at', { ascending: false })
           .limit(25)
       : Promise.resolve({ data: [], error: null }),

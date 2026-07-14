@@ -5,6 +5,7 @@ import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { SupportFloatingButton } from '@/components/Compte/SupportFloatingButton';
 import { getClientLang } from '@/lib/compte/i18n';
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -25,7 +26,8 @@ export default async function CompteLayout({ children }: { children: React.React
     .from('user_notifications')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .is('read_at', null);
+    .is('read_at', null)
+    .not('kind', 'in', clientHiddenNotificationKindsFilter());
 
   return (
     <div className="luxury-shell relative min-h-screen" lang={lang}>

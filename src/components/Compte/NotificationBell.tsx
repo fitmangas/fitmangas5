@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from 'react';
 
 import { markAllNotificationsReadAction, markNotificationReadAction } from '@/app/compte/actions';
 import { createClient } from '@/lib/supabase/client';
+import { isClientVisibleNotificationKind } from '@/lib/notifications/client-notification-filter';
 
 import { subscribeToUserNotifications } from './notificationRealtime';
 
@@ -20,17 +21,20 @@ export type NotificationRow = {
 
 export function NotificationBell({ userId, items }: { userId: string; items: NotificationRow[] }) {
   const router = useRouter();
-  const [localItems, setLocalItems] = useState(items);
+  const [localItems, setLocalItems] = useState(() =>
+    items.filter((item) => isClientVisibleNotificationKind(item.kind)),
+  );
   const [pending, startTransition] = useTransition();
   const unread = localItems.filter((i) => !i.read_at).length;
 
   useEffect(() => {
-    setLocalItems(items);
+    setLocalItems(items.filter((item) => isClientVisibleNotificationKind(item.kind)));
   }, [items]);
 
   useEffect(() => {
     const supabase = createClient();
     return subscribeToUserNotifications(supabase, userId, (row) => {
+      if (!isClientVisibleNotificationKind(row.kind)) return;
       setLocalItems((current) => [row, ...current.filter((item) => item.id !== row.id)].slice(0, 25));
     });
   }, [userId]);

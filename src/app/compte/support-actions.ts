@@ -73,7 +73,7 @@ export async function submitSupportTicketAction(
     const { data: admins } = await admin.from('profiles').select('id').eq('role', 'admin');
     const rows = (admins ?? []).map((a) => ({
       user_id: a.id,
-      kind: 'support_ticket',
+      kind: 'admin_support_ticket',
       title: 'Nouveau ticket support',
       body: `${adminFirstName} — ${typeLabel} : ${trimmed.slice(0, 200)}${trimmed.length > 200 ? '…' : ''}`,
     }));

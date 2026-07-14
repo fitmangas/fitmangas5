@@ -7,6 +7,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { markAllNotificationsReadAction, markNotificationReadAction } from '@/app/compte/actions';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { createClient } from '@/lib/supabase/client';
+import { isClientVisibleNotificationKind } from '@/lib/notifications/client-notification-filter';
 
 import type { NotificationRow } from './NotificationBell';
 import { subscribeToUserNotifications } from './notificationRealtime';
@@ -25,12 +26,14 @@ type Props = {
 
 export function NotificationsInbox({ userId, items, dateLocale, labels }: Props) {
   const router = useRouter();
-  const [localItems, setLocalItems] = useState(items);
+  const [localItems, setLocalItems] = useState(() =>
+    items.filter((item) => isClientVisibleNotificationKind(item.kind)),
+  );
   const [pending, startTransition] = useTransition();
   const unread = localItems.filter((i) => !i.read_at).length;
 
   useEffect(() => {
-    setLocalItems(items);
+    setLocalItems(items.filter((item) => isClientVisibleNotificationKind(item.kind)));
   }, [items]);
 
   // Rafraîchit le layout (badge sidebar) après marquage auto côté serveur au chargement.
@@ -41,6 +44,7 @@ export function NotificationsInbox({ userId, items, dateLocale, labels }: Props)
   useEffect(() => {
     const supabase = createClient();
     return subscribeToUserNotifications(supabase, userId, (row) => {
+      if (!isClientVisibleNotificationKind(row.kind)) return;
       setLocalItems((current) => [row, ...current.filter((item) => item.id !== row.id)].slice(0, 50));
     });
   }, [userId]);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 function isRlsOrPermissionError(message: string, code?: string): boolean {
@@ -23,7 +24,8 @@ export async function markAllUnreadNotificationsAsRead(
     .from('user_notifications')
     .update({ read_at: now })
     .eq('user_id', userId)
-    .is('read_at', null);
+    .is('read_at', null)
+    .not('kind', 'in', clientHiddenNotificationKindsFilter());
 
   if (!error) return;
 
@@ -42,7 +44,8 @@ export async function markAllUnreadNotificationsAsRead(
       .from('user_notifications')
       .update({ read_at: now })
       .eq('user_id', userId)
-      .is('read_at', null);
+      .is('read_at', null)
+      .not('kind', 'in', clientHiddenNotificationKindsFilter());
 
     if (adminError) {
       console.error('[compte/notifications] marquage lu (admin fallback)', {

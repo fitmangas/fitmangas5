@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { NotificationsInbox } from '@/components/Compte/NotificationsInbox';
 import type { NotificationRow } from '@/components/Compte/NotificationBell';
 import { getClientLang, localeFromClientLang } from '@/lib/compte/i18n';
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { markAllUnreadNotificationsAsRead } from '@/lib/notifications/mark-all-read';
 import { createClient } from '@/lib/supabase/server';
 
@@ -28,6 +29,7 @@ export default async function CompteNotificationsPage() {
     .from('user_notifications')
     .select('id, kind, title, body, read_at, created_at')
     .eq('user_id', user.id)
+    .not('kind', 'in', clientHiddenNotificationKindsFilter())
     .order('created_at', { ascending: false })
     .limit(50);
 

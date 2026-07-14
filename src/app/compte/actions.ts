@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
+import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 
 export type CompteActionResult = { ok: true } | { ok: false; message: string };
 
@@ -53,7 +54,8 @@ export async function markAllNotificationsReadAction(): Promise<CompteActionResu
     .from('user_notifications')
     .update({ read_at: now })
     .eq('user_id', user.id)
-    .is('read_at', null);
+    .is('read_at', null)
+    .not('kind', 'in', clientHiddenNotificationKindsFilter());
 
   if (error) return { ok: false, message: error.message };
 
