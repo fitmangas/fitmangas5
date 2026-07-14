@@ -196,3 +196,34 @@ commit;
 - Dans l’admin « Séances », le champ « Langue du cours » pourra enregistrer Français ou Espagnol.
 - Dans le calendrier client, les clientes verront le drapeau correspondant à droite de l’encadré du cours.
 - Tant que cette migration n’est pas appliquée, la création/édition de séances avec une langue choisie renverra une erreur Supabase (colonne absente) — le code est déjà prêt en attendant votre validation.
+
+## 6. Vignettes extraites par vidéo (replays)
+
+Contexte : le champ `thumbnail_url` existe déjà sur `video_recordings` et est enrichi à la volée via l’API Vimeo quand il manque. Aucune migration n’est requise pour afficher les vraies vignettes Vimeo.
+
+Proposition future éventuelle (non appliquée) : job périodique de rafraîchissement des vignettes, ou colonne dédiée `cover_image_url` si on veut stocker une variante locale — inutile tant que Vimeo + `thumbnail_url` suffisent.
+
+## 7. Colonne `is_hidden` sur `video_recordings` (masquage replays cours)
+
+**Problème :** aujourd’hui, « Masquer » existe proprement sur `standalone_vimeo_videos` (`is_hidden`), mais pas sur les replays de séances (`video_recordings`). Sans migration, le code utilise la convention **`is_ready = false` + `validation_status = 'approved'`** pour masquer un replay validé côté cliente, et synchronise aussi le masquage Vimeo standalone → même `vimeo_video_id` sur `video_recordings`.
+
+**Limite :** `is_ready=false` mélange « pas encore prêt / en transcodage » et « masqué volontairement », ce qui peut prêter à confusion en admin.
+
+**Proposition (non appliquée — attendre GO écrit) :**
+
+```sql
+begin;
+
+alter table public.video_recordings
+  add column if not exists is_hidden boolean not null default false;
+
+alter table public.video_recordings
+  add column if not exists hidden_at timestamptz;
+
+comment on column public.video_recordings.is_hidden is
+  'Masquage admin : true = invisible côté espace cliente (indépendant de is_ready / validation_status).';
+
+commit;
+```
+
+Ensuite : filtrer `.eq('is_hidden', false)` partout côté client, et remplacer le workaround `is_ready` pour le masquage volontaire.

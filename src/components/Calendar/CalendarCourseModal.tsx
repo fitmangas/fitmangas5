@@ -11,7 +11,7 @@ import { getCoachImage } from '@/lib/coach-images';
 
 import { effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
-import { AddToCalendarMenu } from './AddToCalendarMenu';
+import { SubscribeCalendarButton } from './SubscribeCalendarButton';
 import { CourseLanguageFlag } from './CourseLanguageFlag';
 
 type Props = {
@@ -19,11 +19,6 @@ type Props = {
   onClose: () => void;
   lang?: 'fr' | 'en' | 'es';
 };
-
-function courseCalendarUrl(courseId: string): string | null {
-  if (typeof window === 'undefined') return null;
-  return `${window.location.origin}/live/${courseId}`;
-}
 
 export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
   const isOpen = course != null;
@@ -191,18 +186,7 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
                   {t.replay}
                 </a>
               ) : null}
-              <AddToCalendarMenu
-                lang={lang}
-                event={{
-                  id: course.id,
-                  title: course.title,
-                  description: course.description,
-                  startsAt: course.starts_at,
-                  endsAt: course.ends_at,
-                  location: course.location,
-                  url: courseCalendarUrl(course.id),
-                }}
-              />
+              <SubscribeCalendarButton lang={lang} tone="ghost" />
             </div>
           </div>
         ) : (

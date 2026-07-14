@@ -240,10 +240,12 @@ export default async function ComptePage({
             openProgress: 'Ouvrir la progression détaillée',
           };
   const replayCount = replayItems.length;
-  const replayHoursAvailable = replayItems.reduce((sum, item) => sum + Math.max(0, item.durationSeconds ?? 0), 0) / 3600;
+  const replaySecondsTotal = replayItems.reduce((sum, item) => sum + Math.max(0, item.durationSeconds ?? 0), 0);
+  const replayHoursAvailable = replaySecondsTotal / 3600;
   const vimeoLibraryHours = standaloneVimeoItems.reduce((sum, item) => sum + Math.max(0, item.durationSeconds ?? 0), 0) / 3600;
   const replayHoursRounded = Math.ceil(replayHoursAvailable);
   const vimeoHoursRounded = Math.ceil(vimeoLibraryHours);
+  const replayStatIsCountFallback = replayHoursRounded <= 0 && replayCount > 0;
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
   const gaId = marketingSettings.google_analytics_id?.startsWith('G-') ? marketingSettings.google_analytics_id : null;
   const metaPixelId = marketingSettings.meta_pixel_id ?? null;
@@ -384,9 +386,17 @@ export default async function ComptePage({
                 <div className="mt-4 grid grid-cols-2 gap-3 md:mt-8 md:flex md:flex-col">
                   <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
-                      {replayHoursRounded}h
+                      {replayStatIsCountFallback ? replayCount : `${replayHoursRounded}h`}
                     </span>
-                    <span className="leading-snug">{t.replayHoursAvailable}</span>
+                    <span className="leading-snug">
+                      {replayStatIsCountFallback
+                        ? lang === 'en'
+                          ? 'Replays'
+                          : lang === 'es'
+                            ? 'Replays'
+                            : 'Replays'
+                        : t.replayHoursAvailable}
+                    </span>
                   </p>
                   <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
@@ -461,20 +471,20 @@ export default async function ComptePage({
       </section>
 
       <section id="replays" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
-        <div className="relative z-10 px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.library}</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.onDemand}</h2>
-        </div>
-        <div className="relative z-0">
         <VisioLock
           hasAccess={hasVisioAccess}
           locale={lang === 'es' ? 'es' : 'fr'}
           featureDescription_fr="La bibliothèque vidéo est incluse dans l’abonnement Visio collectif à 39€/mois."
           featureDescription_es="La biblioteca de videos está incluida en la suscripción Visio grupal a 39€/mes."
         >
-          <MyReplaysSection userId={user.id} lang={lang} />
+          <MyReplaysSection
+            userId={user.id}
+            lang={lang}
+            limitReplays={3}
+            limitLibrary={3}
+            showSeeAll
+          />
         </VisioLock>
-        </div>
       </section>
     </div>
   );

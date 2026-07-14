@@ -1,108 +1,112 @@
-import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 import { requireAuthenticatedUser } from '@/lib/api-auth';
-import { gateCalendarSyncForUser } from '@/lib/calendar-sync-eligibility';
+import { isCalendarFeedEligible } from '@/lib/calendar-feed-build';
+import {
+  calendarFeedGoogleSubscribeUrl,
+  calendarFeedHttpsUrl,
+  calendarFeedWebcalUrl,
+  createCalendarFeedToken,
+  getCalendarFeedSecret,
+} from '@/lib/calendar-feed-token';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
 
-function appUrlFromEnv() {
-  return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-}
+/**
+ * Renvoie les URL d’abonnement calendrier (jeton signé, sans écriture en base).
+ * Remplace l’ancienne synchro qui tentait de stocker un token dans profiles
+ * (colonnes non autorisées en UPDATE depuis le durcissement sécurité).
+ */
+async function buildSubscribePayload(userId: string) {
+  if (!getCalendarFeedSecret()) {
+    return {
+      response: NextResponse.json(
+        { error: 'Configuration calendrier incomplète sur le serveur.' },
+        { status: 503 },
+      ),
+    };
+  }
 
-function webcalUrlForToken(token: string) {
-  const base = appUrlFromEnv();
-  const httpUrl = `${base}/api/calendar/feed.ics?token=${encodeURIComponent(token)}`;
-  return httpUrl.replace(/^https?:\/\//, 'webcal://');
+  const admin = createAdminClient();
+  const eligible = await isCalendarFeedEligible(admin, userId);
+  if (!eligible) {
+    return {
+      response: NextResponse.json(
+        {
+          error:
+            'Abonnement calendrier indisponible : compte inactif, banni ou sans abonnement / accès en cours.',
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
+  const token = createCalendarFeedToken(userId);
+  const httpsUrl = calendarFeedHttpsUrl(token);
+  const webcalUrl = calendarFeedWebcalUrl(token);
+  const googleUrl = calendarFeedGoogleSubscribeUrl(token);
+
+  return {
+    response: null as null,
+    payload: {
+      enabled: true,
+      httpsUrl,
+      webcalUrl,
+      googleUrl,
+      /** @deprecated alias pour compat UI */
+      feedUrl: httpsUrl,
+    },
+  };
 }
 
 export async function GET() {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('calendar_sync_enabled, calendar_sync_token')
-    .eq('id', auth.user.id)
-    .maybeSingle();
-
-  if (error) {
-    return NextResponse.json({ error: 'Impossible de lire le statut de synchronisation.' }, { status: 500 });
+  try {
+    const result = await buildSubscribePayload(auth.user.id);
+    if (result.response) return result.response;
+    return NextResponse.json(result.payload);
+  } catch (error) {
+    console.error('[api/calendar/mobile-sync] GET', error);
+    return NextResponse.json(
+      { error: 'Impossible de préparer l’abonnement calendrier. Réessaie dans un instant.' },
+      { status: 500 },
+    );
   }
-
-  let enabled = data?.calendar_sync_enabled === true;
-  const token = data?.calendar_sync_token ?? null;
-
-  if (enabled) {
-    const admin = createAdminClient();
-    const gate = await gateCalendarSyncForUser(admin, auth.user.id);
-    enabled = gate.ok;
-  }
-
-  return NextResponse.json({
-    enabled,
-    webcalUrl: enabled && token ? webcalUrlForToken(token) : null,
-  });
 }
 
+/** Active / renvoie l’abonnement (plus d’écriture profiles). body.enabled=false → juste confirme). */
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
 
-  let body: unknown;
+  let enabled = true;
   try {
-    body = await request.json();
+    const body = (await request.json()) as { enabled?: unknown };
+    if (typeof body?.enabled === 'boolean') enabled = body.enabled;
   } catch {
-    return NextResponse.json({ error: 'Corps JSON invalide.' }, { status: 400 });
+    // corps optionnel
   }
 
-  const enabled =
-    typeof body === 'object' && body !== null && 'enabled' in body && typeof (body as { enabled: unknown }).enabled === 'boolean'
-      ? (body as { enabled: boolean }).enabled
-      : null;
-
-  if (enabled == null) {
-    return NextResponse.json({ error: 'Champ "enabled" requis.' }, { status: 400 });
+  if (!enabled) {
+    return NextResponse.json({
+      enabled: false,
+      httpsUrl: null,
+      webcalUrl: null,
+      googleUrl: null,
+      feedUrl: null,
+    });
   }
 
-  if (enabled) {
-    const admin = createAdminClient();
-    const gate = await gateCalendarSyncForUser(admin, auth.user.id);
-    if (!gate.ok) {
-      return NextResponse.json(
-        { error: 'Synchronisation indisponible : compte inactif, banni ou sans abonnement / accès en cours.' },
-        { status: 403 },
-      );
-    }
+  try {
+    const result = await buildSubscribePayload(auth.user.id);
+    if (result.response) return result.response;
+    return NextResponse.json(result.payload);
+  } catch (error) {
+    console.error('[api/calendar/mobile-sync] POST', error);
+    return NextResponse.json(
+      { error: 'Impossible de préparer l’abonnement calendrier. Réessaie dans un instant.' },
+      { status: 500 },
+    );
   }
-
-  const supabase = await createClient();
-  const { data: current, error: currentError } = await supabase
-    .from('profiles')
-    .select('calendar_sync_token')
-    .eq('id', auth.user.id)
-    .maybeSingle();
-
-  if (currentError) {
-    return NextResponse.json({ error: 'Impossible de mettre à jour la synchronisation.' }, { status: 500 });
-  }
-
-  const token = current?.calendar_sync_token || crypto.randomUUID();
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
-      calendar_sync_enabled: enabled,
-      calendar_sync_token: token,
-    })
-    .eq('id', auth.user.id);
-
-  if (updateError) {
-    return NextResponse.json({ error: 'Mise à jour impossible.' }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    enabled,
-    webcalUrl: webcalUrlForToken(token),
-  });
 }

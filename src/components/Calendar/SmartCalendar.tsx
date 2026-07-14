@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, ChevronDown, Download, ExternalLink, Smartphone } from 'lucide-react';
 import type { AccessType, SmartCourse } from '@/lib/domain/calendar-types';
 import {
   courseDayKeyInTimeZone,
@@ -10,14 +9,10 @@ import {
   getTwoWeekCalendarDayStarts,
 } from '@/lib/calendar-window';
 import { calendarDayKeyInTimeZone } from '@/lib/notifications/timezone';
-import {
-  downloadIcsCalendar,
-  openGoogleCalendar,
-  type CalendarEventInput,
-} from '@/lib/calendar-add-event';
 
 import { CalendarCourseModal } from './CalendarCourseModal';
 import { CourseLanguageFlag } from './CourseLanguageFlag';
+import { SubscribeCalendarButton } from './SubscribeCalendarButton';
 import { badgeForAccess, effectiveAccessForUi } from '@/lib/calendar-course-ui';
 
 type ApiResponse = {
@@ -63,31 +58,12 @@ function formatFortnightSubtitle(locale: string, lang: 'fr' | 'en' | 'es') {
   return `Semaine du ${from} au ${to}`;
 }
 
-function toCalendarInput(course: SmartCourse): CalendarEventInput {
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return {
-    id: course.id,
-    title: course.title,
-    description: course.description,
-    startsAt: course.starts_at,
-    endsAt: course.ends_at,
-    location: course.location,
-    url: origin ? `${origin}/live/${course.id}` : null,
-  };
-}
-
 export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [events, setEvents] = useState<SmartCourse[]>([]);
   const [tier, setTier] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<SmartCourse | null>(null);
-  const [syncEnabled, setSyncEnabled] = useState(false);
-  const [syncUrl, setSyncUrl] = useState<string | null>(null);
-  const [syncBusy, setSyncBusy] = useState(false);
-  const [showSyncInfo, setShowSyncInfo] = useState(false);
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [calendarActionError, setCalendarActionError] = useState('');
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const t =
     lang === 'en'
@@ -95,20 +71,9 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
           title: 'Smart calendar',
           upcoming: 'Next',
           days: 'days',
-          disableConfirm: 'Disable sync? New courses will no longer be sent automatically to phone.',
-          connected: 'Calendar connected',
-          addToCalendar: 'Add to my calendar',
-          downloadIcs: 'Download (.ics)',
-          google: 'Google Calendar',
-          phoneSync: 'Sync with phone',
-          needAccess: 'Phone sync is available with active access to at least one course.',
-          active: 'Sync active',
-          activeHint: 'Courses are automatically sent to your phone. If needed, open this link once on iPhone/Android:',
+          needAccess: 'Calendar subscription is available with active access to at least one course.',
           loadError: 'Unable to load events.',
           networkError: 'Network error. Try again in a moment.',
-          noEvents: 'No upcoming course to add to the calendar.',
-          addFailed: 'Unable to add these courses to the calendar for now.',
-          syncFailed: 'Unable to enable phone sync right now.',
           weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         }
       : lang === 'es'
@@ -116,40 +81,18 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
             title: 'Calendario inteligente',
             upcoming: 'Próximos',
             days: 'días',
-            disableConfirm: '¿Desactivar sincronización? Los nuevos cursos ya no se enviarán automáticamente al teléfono.',
-            connected: 'Calendario conectado',
-            addToCalendar: 'Añadir a mi calendario',
-            downloadIcs: 'Descargar (.ics)',
-            google: 'Google Calendar',
-            phoneSync: 'Sincronizar con el teléfono',
-            needAccess: 'La conexión móvil está disponible con acceso activo al menos a un curso.',
-            active: 'Sincronización activa',
-            activeHint: 'Los cursos se envían automáticamente a tu teléfono. Si hace falta, abre este enlace una vez en iPhone/Android:',
+            needAccess: 'La suscripción al calendario está disponible con acceso activo al menos a un curso.',
             loadError: 'No se pudieron cargar los eventos.',
             networkError: 'Error de red. Inténtalo en un momento.',
-            noEvents: 'No hay cursos próximos para añadir al calendario.',
-            addFailed: 'No se pueden añadir estos cursos al calendario por el momento.',
-            syncFailed: 'No se pudo activar la sincronización del teléfono.',
             weekdays: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
           }
         : {
             title: 'Calendrier intelligent',
             upcoming: 'Prochains',
             days: 'jours',
-            disableConfirm: 'Désactiver la synchronisation ? Les nouveaux cours ne seront plus envoyés automatiquement au téléphone.',
-            connected: 'Calendrier connecté',
-            addToCalendar: 'Ajouter à mon calendrier',
-            downloadIcs: 'Télécharger (.ics)',
-            google: 'Google Agenda',
-            phoneSync: 'Synchroniser mon téléphone',
-            needAccess: 'Connexion téléphone disponible avec un accès actif à au moins un cours.',
-            active: 'Synchronisation active',
-            activeHint: 'Les cours sont envoyés automatiquement sur ton téléphone. Si besoin, ouvre ce lien une fois sur iPhone/Android:',
+            needAccess: 'L’abonnement calendrier est disponible avec un accès actif à au moins un cours.',
             loadError: 'Impossible de charger les événements.',
             networkError: 'Erreur réseau. Réessaie dans un instant.',
-            noEvents: 'Aucun cours à venir à ajouter au calendrier.',
-            addFailed: 'Impossible d’ajouter ces cours au calendrier pour le moment.',
-            syncFailed: 'Impossible d’activer la synchronisation téléphone pour le moment.',
             weekdays: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
           };
 
@@ -157,15 +100,7 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
   const todayKey = calendarDayKeyInTimeZone(DEFAULT_CALENDAR_TIMEZONE);
 
   const hasUpcomingEvents = events.length > 0;
-  const canUseMobileSync = Boolean(tier) || hasUpcomingEvents;
-
-  const fullAccessEvents = useMemo(
-    () =>
-      events
-        .filter((event) => effectiveAccessForUi(event) === 'full')
-        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()),
-    [events],
-  );
+  const canSubscribe = Boolean(tier) || hasUpcomingEvents;
 
   async function fetchEvents() {
     setLoading(true);
@@ -189,87 +124,7 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
 
   useEffect(() => {
     void fetchEvents();
-    void (async () => {
-      try {
-        const res = await fetch('/api/calendar/mobile-sync');
-        if (!res.ok) return;
-        const json = (await res.json()) as { enabled?: boolean; webcalUrl?: string | null };
-        setSyncEnabled(json.enabled === true);
-        setSyncUrl(typeof json.webcalUrl === 'string' ? json.webcalUrl : null);
-      } catch {
-        // ignore
-      }
-    })();
   }, []);
-
-  async function setMobileSync(enabled: boolean) {
-    setSyncBusy(true);
-    setCalendarActionError('');
-    try {
-      const res = await fetch('/api/calendar/mobile-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        enabled?: boolean;
-        webcalUrl?: string | null;
-        error?: string;
-      };
-      if (!res.ok) {
-        console.error('[SmartCalendar] mobile-sync', res.status, json);
-        setCalendarActionError(typeof json.error === 'string' ? json.error : t.syncFailed);
-        return;
-      }
-      setSyncEnabled(json.enabled === true);
-      setSyncUrl(typeof json.webcalUrl === 'string' ? json.webcalUrl : null);
-      if (enabled) {
-        setShowSyncInfo(true);
-        // Ne plus forcer webcal:// (souvent ignoré par le navigateur) :
-        // on affiche le lien à ouvrir manuellement sur le téléphone.
-      }
-    } catch (e) {
-      console.error('[SmartCalendar] mobile-sync', e);
-      setCalendarActionError(t.syncFailed);
-    } finally {
-      setSyncBusy(false);
-    }
-  }
-
-  function handleDownloadAllIcs() {
-    setCalendarActionError('');
-    if (fullAccessEvents.length === 0) {
-      setCalendarActionError(t.noEvents);
-      setAddMenuOpen(false);
-      return;
-    }
-    try {
-      downloadIcsCalendar(fullAccessEvents.map(toCalendarInput));
-      setAddMenuOpen(false);
-    } catch (e) {
-      console.error('[SmartCalendar] download ics', e);
-      setCalendarActionError(t.addFailed);
-      setAddMenuOpen(false);
-    }
-  }
-
-  function handleGoogleNext() {
-    setCalendarActionError('');
-    const next = fullAccessEvents[0];
-    if (!next) {
-      setCalendarActionError(t.noEvents);
-      setAddMenuOpen(false);
-      return;
-    }
-    try {
-      openGoogleCalendar(toCalendarInput(next));
-      setAddMenuOpen(false);
-    } catch (e) {
-      console.error('[SmartCalendar] google', e);
-      setCalendarActionError(t.addFailed);
-      setAddMenuOpen(false);
-    }
-  }
 
   const groupedByDay = useMemo(() => {
     const map = new Map<string, SmartCourse[]>();
@@ -311,80 +166,8 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
           </p>
         </div>
         <div className="relative flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-end sm:pt-0.5">
-          {canUseMobileSync ? (
-            <>
-              {syncEnabled ? (
-                <button
-                  type="button"
-                  disabled={syncBusy}
-                  onClick={() => {
-                    const ok = window.confirm(t.disableConfirm);
-                    if (ok) void setMobileSync(false);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 backdrop-blur-md transition hover:bg-white/20 disabled:opacity-60 md:px-5 md:py-2.5"
-                >
-                  <Smartphone size={14} />
-                  {t.connected}
-                </button>
-              ) : null}
-              <div className="relative">
-                <button
-                  type="button"
-                  disabled={syncBusy}
-                  onClick={() => {
-                    setCalendarActionError('');
-                    setAddMenuOpen((prev) => !prev);
-                  }}
-                  className="btn-luxury-primary inline-flex items-center gap-2 px-4 py-2 text-[10px] tracking-[0.14em] disabled:opacity-60 md:px-5 md:py-2.5"
-                  aria-expanded={addMenuOpen}
-                  aria-haspopup="menu"
-                >
-                  <CalendarPlus size={14} />
-                  {t.addToCalendar}
-                  <ChevronDown size={12} className={`transition ${addMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {addMenuOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-full z-30 mt-2 min-w-[240px] overflow-hidden rounded-2xl border border-white/20 bg-[#3a3f45] shadow-[0_14px_30px_rgba(0,0,0,0.28)]"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleDownloadAllIcs}
-                      className="flex w-full items-center gap-2 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-white/90 transition hover:bg-white/10"
-                    >
-                      <Download size={14} aria-hidden />
-                      {t.downloadIcs}
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleGoogleNext}
-                      className="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-white/90 transition hover:bg-white/10"
-                    >
-                      <ExternalLink size={14} aria-hidden />
-                      {t.google}
-                    </button>
-                    {!syncEnabled ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={syncBusy}
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          void setMobileSync(true);
-                        }}
-                        className="flex w-full items-center gap-2 border-t border-white/10 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-white/90 transition hover:bg-white/10 disabled:opacity-60"
-                      >
-                        <Smartphone size={14} aria-hidden />
-                        {t.phoneSync}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            </>
+          {canSubscribe ? (
+            <SubscribeCalendarButton lang={lang} tone="primary" />
           ) : (
             <p className="max-w-[220px] text-right text-[11px] leading-snug text-white/60 sm:text-right">
               {t.needAccess}
@@ -392,28 +175,6 @@ export function SmartCalendar({ lang = 'fr' }: { lang?: 'fr' | 'en' | 'es' }) {
           )}
         </div>
       </div>
-
-      {calendarActionError ? (
-        <div className="mb-4 rounded-2xl border border-amber-300/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-50" role="alert">
-          {calendarActionError}
-        </div>
-      ) : null}
-
-      {canUseMobileSync && syncEnabled && showSyncInfo && syncUrl ? (
-        <div className="mb-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-100">
-          <p className="font-semibold">{t.active}</p>
-          <p className="mt-1">{t.activeHint}</p>
-          <a href={syncUrl} className="mt-1 block break-all text-emerald-200 underline underline-offset-2">
-            {syncUrl}
-          </a>
-          <a
-            href={syncUrl.replace(/^webcal:\/\//, 'https://')}
-            className="mt-2 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-100 underline underline-offset-2"
-          >
-            HTTPS
-          </a>
-        </div>
-      ) : null}
 
       {error ? (
         <div className="mb-4 rounded-2xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-100">{error}</div>

@@ -22,8 +22,13 @@ export type LiveBackLink = {
 function labelForPath(path: string): string {
   if (path === '/admin') return 'Tableau de bord';
   if (path.startsWith('/admin/courses')) return 'Séances';
+  if (path.startsWith('/admin/replays')) return 'Replays';
   if (path.startsWith('/admin')) return 'Administration';
   if (path === '/compte/planning') return 'Planning';
+  if (path.startsWith('/compte/replays')) return 'Mes replays & ma bibliothèque';
+  if (path.startsWith('/compte/blog')) return 'Blog';
+  if (path.startsWith('/compte/boutique')) return 'Boutique';
+  if (path.startsWith('/compte/profil')) return 'Profil';
   return 'Calendrier';
 }
 

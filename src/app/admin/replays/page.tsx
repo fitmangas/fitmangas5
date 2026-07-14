@@ -2,6 +2,10 @@ import {
   AdminCourseReplaysPending,
   type PendingCourseReplayCard,
 } from '@/components/Admin/AdminCourseReplaysPending';
+import {
+  AdminCourseReplaysManaged,
+  type ManagedCourseReplayCard,
+} from '@/components/Admin/AdminCourseReplaysManaged';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -15,6 +19,7 @@ type RecordingRow = {
   upload_status: string;
   created_at: string;
   course_id: string;
+  is_ready?: boolean;
   courses:
     | { title: string; starts_at: string }
     | { title: string; starts_at: string }[]
@@ -27,39 +32,59 @@ function resolveCourse(row: RecordingRow) {
   return c;
 }
 
+function toCard(row: RecordingRow): PendingCourseReplayCard | null {
+  const course = resolveCourse(row);
+  if (!course) return null;
+  return {
+    id: row.id,
+    vimeo_video_id: row.vimeo_video_id,
+    title: row.title,
+    thumbnail_url: row.thumbnail_url,
+    embed_url: row.embed_url,
+    duration_seconds: row.duration_seconds,
+    upload_status: row.upload_status,
+    created_at: row.created_at,
+    course_id: row.course_id,
+    course_title: course.title,
+    course_starts_at: course.starts_at,
+  };
+}
+
 export default async function AdminCourseReplaysPage() {
   await requireAdmin();
 
   const admin = createAdminClient();
-  const { data: rows, error } = await admin
-    .from('video_recordings')
-    .select(
-      'id, vimeo_video_id, title, thumbnail_url, embed_url, duration_seconds, upload_status, created_at, course_id, courses ( title, starts_at )',
-    )
-    .eq('validation_status', 'pending')
-    .order('created_at', { ascending: false });
+  const selectCols =
+    'id, vimeo_video_id, title, thumbnail_url, embed_url, duration_seconds, upload_status, created_at, course_id, is_ready, courses ( title, starts_at )';
 
-  if (error) {
-    console.error('[admin/replays]', error);
-  }
+  const [pendingRes, approvedRes] = await Promise.all([
+    admin
+      .from('video_recordings')
+      .select(selectCols)
+      .eq('validation_status', 'pending')
+      .order('created_at', { ascending: false }),
+    admin
+      .from('video_recordings')
+      .select(selectCols)
+      .eq('validation_status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(80),
+  ]);
+
+  if (pendingRes.error) console.error('[admin/replays] pending', pendingRes.error);
+  if (approvedRes.error) console.error('[admin/replays] approved', approvedRes.error);
 
   const pending: PendingCourseReplayCard[] = [];
-  for (const row of (rows ?? []) as RecordingRow[]) {
-    const course = resolveCourse(row);
-    if (!course) continue;
-    pending.push({
-      id: row.id,
-      vimeo_video_id: row.vimeo_video_id,
-      title: row.title,
-      thumbnail_url: row.thumbnail_url,
-      embed_url: row.embed_url,
-      duration_seconds: row.duration_seconds,
-      upload_status: row.upload_status,
-      created_at: row.created_at,
-      course_id: row.course_id,
-      course_title: course.title,
-      course_starts_at: course.starts_at,
-    });
+  for (const row of (pendingRes.data ?? []) as RecordingRow[]) {
+    const card = toCard(row);
+    if (card) pending.push(card);
+  }
+
+  const approved: ManagedCourseReplayCard[] = [];
+  for (const row of (approvedRes.data ?? []) as RecordingRow[]) {
+    const card = toCard(row);
+    if (!card) continue;
+    approved.push({ ...card, is_ready: row.is_ready === true });
   }
 
   return (
@@ -69,10 +94,11 @@ export default async function AdminCourseReplaysPage() {
           <h1 className="text-2xl font-semibold text-luxury-ink md:text-3xl">Replays séances</h1>
           <p className="mt-2 max-w-xl text-sm text-luxury-muted">
             Validez les replays des lives avant publication dans l’espace cliente. Les emails et notifications partent
-            à la validation.
+            à la validation. Les replays déjà validés restent visibles ici pour les masquer ou les réafficher.
           </p>
         </header>
         <AdminCourseReplaysPending pending={pending} />
+        <AdminCourseReplaysManaged items={approved} />
       </div>
     </div>
   );

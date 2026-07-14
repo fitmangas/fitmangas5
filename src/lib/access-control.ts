@@ -135,6 +135,36 @@ export async function hasVisioClientAccess(userId: string): Promise<boolean> {
   return isOnlineCustomerTier(await getUserTier(userId));
 }
 
+/**
+ * Accès « espace membre » au sens des cours : même fondation que `course_access_level`
+ * (`current_customer_tier` non null), ou profil admin.
+ * Utilisable hors session (service role) — notamment pour le flux calendrier tokenisé.
+ * Ne dépend PAS de Stripe ni de la RPC `customer_calendar_feed_eligible`.
+ */
+export async function hasMemberCourseAccessByUserId(userId: string): Promise<boolean> {
+  const safeUserId = sanitizeUuid(userId);
+  const admin = createAdminClient();
+
+  const { data: profile, error: profileError } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', safeUserId)
+    .maybeSingle();
+  if (profileError) {
+    console.error('[access-control] profile role', profileError);
+  }
+  if ((profile?.role ?? '').toLowerCase() === 'admin') return true;
+
+  const { data: tier, error: tierError } = await admin.rpc('current_customer_tier', {
+    target_user_id: safeUserId,
+  });
+  if (tierError) {
+    console.error('[access-control] current_customer_tier', tierError);
+    return false;
+  }
+  return tier != null;
+}
+
 export async function getAccessType(userId: string, courseId: string): Promise<AccessType> {
   if (await canBypassClientRestrictionsForAdmin(userId)) {
     return 'full';

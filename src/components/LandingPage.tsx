@@ -591,7 +591,7 @@ export function LandingPage({
             onClick={() => setSegment('VISIO')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
               segment === 'VISIO'
-                ? 'bg-white text-brand-ink shadow-[0_6px_18px_rgba(0,0,0,0.14)]'
+                ? 'bg-brand-accent text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
                 : 'text-brand-ink/60 hover:text-brand-ink'
             }`}
           >
@@ -601,7 +601,7 @@ export function LandingPage({
             onClick={() => setSegment('NANTES')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
               segment === 'NANTES'
-                ? 'bg-white text-brand-ink shadow-[0_6px_18px_rgba(0,0,0,0.14)]'
+                ? 'bg-brand-accent text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
                 : 'text-brand-ink/60 hover:text-brand-ink'
             }`}
           >

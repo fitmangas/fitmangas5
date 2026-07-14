@@ -78,3 +78,51 @@ export async function rejectCourseReplayAction(recordingId: string): Promise<Rep
     return { ok: false, message: msg };
   }
 }
+
+/**
+ * Masquer / réafficher un replay validé sans migration :
+ * is_ready=false conserve validation_status='approved' mais retire l’accès client.
+ */
+export async function setCourseReplayClientVisibilityAction(
+  recordingId: string,
+  visible: boolean,
+): Promise<ReplayActionResult> {
+  try {
+    await requireAdmin();
+    const idParsed = recordingIdSchema.safeParse(recordingId);
+    if (!idParsed.success) return { ok: false, message: 'Identifiant invalide.' };
+
+    const admin = createAdminClient();
+    const { data: row, error: fetchError } = await admin
+      .from('video_recordings')
+      .select('id, validation_status, is_ready')
+      .eq('id', idParsed.data)
+      .maybeSingle();
+
+    if (fetchError) return { ok: false, message: fetchError.message };
+    if (!row) return { ok: false, message: 'Replay introuvable.' };
+    if (row.validation_status !== 'approved') {
+      return { ok: false, message: 'Seuls les replays validés peuvent être masqués ici.' };
+    }
+
+    const { error } = await admin
+      .from('video_recordings')
+      .update({
+        is_ready: visible,
+        available_at: visible ? new Date().toISOString() : null,
+      })
+      .eq('id', idParsed.data)
+      .eq('validation_status', 'approved');
+
+    if (error) return { ok: false, message: error.message };
+
+    revalidatePath('/admin/replays');
+    revalidatePath('/admin/courses');
+    revalidatePath('/compte/replays');
+    revalidatePath('/compte');
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Mise à jour impossible.';
+    return { ok: false, message: msg };
+  }
+}

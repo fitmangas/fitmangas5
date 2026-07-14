@@ -41,6 +41,12 @@ describe('live-back-url', () => {
     ).toEqual({ href: '/compte/planning', label: 'Planning' });
   });
 
+  it('client depuis replays → retour page replays avec bon label', () => {
+    expect(
+      resolveLiveBackLink({ from: '/compte/replays', realAdmin: false, studentPreviewFromUrl: false }),
+    ).toEqual({ href: '/compte/replays', label: 'Mes replays & ma bibliothèque' });
+  });
+
   it('liveCourseHref encode from et preview', () => {
     expect(liveCourseHref('abc', { from: '/admin/courses' })).toBe('/live/abc?from=%2Fadmin%2Fcourses');
     expect(liveCourseHref('abc', { from: '/admin/courses', preview: 'client' })).toBe(

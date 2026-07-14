@@ -13,6 +13,8 @@ import {
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { isLiveAdminEntry, resolveLiveBackLink } from '@/lib/live/live-back-url';
+import { resolvePlayableCourseReplay } from '@/lib/replay-availability';
+import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -149,7 +151,7 @@ export default async function LiveCoursePage({
   const { data: replay } = useAdminReplayFetch
     ? await createAdminClient()
         .from('video_recordings')
-        .select('id, embed_url, title')
+        .select('id, embed_url, title, vimeo_video_id')
         .eq('course_id', idParsed.data)
         .eq('is_ready', true)
         .eq('validation_status', 'approved')
@@ -158,7 +160,7 @@ export default async function LiveCoursePage({
         .maybeSingle()
     : await supabase
         .from('video_recordings')
-        .select('id, embed_url, title')
+        .select('id, embed_url, title, vimeo_video_id')
         .eq('course_id', idParsed.data)
         .eq('is_ready', true)
         .eq('validation_status', 'approved')
@@ -166,17 +168,28 @@ export default async function LiveCoursePage({
         .limit(1)
         .maybeSingle();
 
-  const replayEmbedUrl = replay?.embed_url?.trim() ?? '';
-  const showVimeoReplay = courseIsPast && replayEmbedUrl.length > 0;
+  const availability = resolvePlayableCourseReplay({ recording: replay ?? null });
+
+  let showVimeoReplay = courseIsPast && availability.status === 'ready';
+  if (showVimeoReplay && replay?.vimeo_video_id) {
+    const probe = await probeVimeoPlayback(String(replay.vimeo_video_id));
+    if (!probe.isPlayable) {
+      showVimeoReplay = false;
+    }
+  }
+
+  const replayEmbedUrl = showVimeoReplay && availability.status === 'ready' ? availability.embedUrl : '';
+  const replayTitle = showVimeoReplay && availability.status === 'ready' ? availability.title : null;
+  const replayRecordingId = showVimeoReplay && availability.status === 'ready' ? availability.recordingId : null;
   const hasJitsi = !!course.jitsi_link?.trim();
   const spotifyUrl = course.spotify_playlist_url?.trim() ?? '';
 
   let initialReplaySeconds = 0;
-  if (replay?.id && showVimeoReplay) {
+  if (replayRecordingId && showVimeoReplay) {
     const { data: prog, error: progErr } = await supabase
       .from('replay_playback_progress')
       .select('position_seconds')
-      .eq('recording_id', replay.id)
+      .eq('recording_id', replayRecordingId)
       .eq('user_id', user.id)
       .maybeSingle();
     if (!progErr && prog) {
@@ -233,12 +246,12 @@ export default async function LiveCoursePage({
         ) : null}
         {showVimeoReplay ? (
           <>
-            {replay?.id ? <ReplayViewTracker recordingId={replay.id} /> : null}
+            {replayRecordingId ? <ReplayViewTracker recordingId={replayRecordingId} /> : null}
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-accent">Replay</p>
             <VimeoReplayWithResume
               embedUrl={replayEmbedUrl}
-              title={replay?.title?.trim() || `Replay — ${course.title}`}
-              recordingId={replay?.id ?? null}
+              title={replayTitle?.trim() || `Replay — ${course.title}`}
+              recordingId={replayRecordingId}
               initialSeconds={initialReplaySeconds}
             />
             {spotifyUrl ? (
@@ -262,6 +275,13 @@ export default async function LiveCoursePage({
             <p className="mt-3 text-sm text-brand-ink/70">
               La vidéo sera disponible ici dès qu’elle aura été traitée. Repasse un peu plus tard.
             </p>
+            <Link
+              href={backLink.href}
+              className="mt-8 inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white/70 px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-brand-ink/70 hover:text-brand-ink"
+            >
+              <ArrowLeft size={14} />
+              ← {backLink.label}
+            </Link>
           </div>
         ) : (
           <>
