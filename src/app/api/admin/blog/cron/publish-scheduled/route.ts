@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
-import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
-import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
+import { publishDueBlogArticles } from '@/lib/blog/publish-due';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
@@ -21,66 +20,29 @@ async function handlePublish(request: Request) {
 
   try {
     const admin = createAdminClient();
-    const nowIso = now.toISOString();
-
-    const { data: due, error } = await admin
-      .from('blog_articles')
-      .select('id, title_fr, slug_fr')
-      .eq('status', 'validated')
-      .lte('scheduled_publication_at', nowIso);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    const publishedIds: string[] = [];
-    let notificationsSent = 0;
-    let newsletterTargeted = 0;
-    let newsletterSent = 0;
-
-    for (const row of due ?? []) {
-      const { error: upErr } = await admin
-        .from('blog_articles')
-        .update({
-          status: 'published',
-          published_at: nowIso,
-          updated_at: nowIso,
-        })
-        .eq('id', row.id)
-        .eq('status', 'validated');
-
-      if (!upErr) {
-        publishedIds.push(row.id);
-        await notifyMembersNewBlogArticle(admin, {
-          articleId: row.id,
-          title: row.title_fr,
-          slugFr: row.slug_fr,
-        });
-        notificationsSent += 1;
-
-        const newsletter = await sendPublicationNewsletter({
-          articleId: row.id,
-          title: row.title_fr,
-          slugFr: row.slug_fr,
-        });
-        newsletterTargeted += newsletter.targeted;
-        newsletterSent += newsletter.sent;
-      }
-    }
+    const result = await publishDueBlogArticles(admin, { now, includeDraft: false });
 
     await admin.from('blog_cron_logs').insert({
       cron_name: 'blog_publish_scheduled',
       status: 'ok',
-      message: `published=${publishedIds.length}`,
-      meta: { articleIds: publishedIds, notificationsSent, newsletterTargeted, newsletterSent },
+      message: `published=${result.publishedIds.length} skipped=${result.skippedIds.length}`,
+      meta: {
+        articleIds: result.publishedIds,
+        skippedIds: result.skippedIds,
+        notificationsSent: result.notificationsSent,
+        newsletterTargeted: result.newsletterTargeted,
+        newsletterSent: result.newsletterSent,
+      },
     });
 
     return NextResponse.json({
-      published: publishedIds.length,
-      articleIds: publishedIds,
-      notificationsSent,
-      newsletterTargeted,
-      newsletterSent,
+      published: result.publishedIds.length,
+      articleIds: result.publishedIds,
+      skipped: result.skippedIds.length,
+      skippedIds: result.skippedIds,
+      notificationsSent: result.notificationsSent,
+      newsletterTargeted: result.newsletterTargeted,
+      newsletterSent: result.newsletterSent,
     });
   } catch (e) {
     console.error('[cron publish]', e);

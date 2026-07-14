@@ -16,7 +16,8 @@ import { createClient } from '@supabase/supabase-js';
 
 import { collectUsedPhotoIdsFromUrls, fetchUnsplashImage } from '../src/lib/blog/blog-image-fetcher';
 import { generateFrenchArticle } from '../src/lib/blog/blog-content-generator';
-import { buildTopicBrief, generateBlogTitlesFromContent } from '../src/lib/blog/blog-title-generator';
+import { looksLikeFallbackTemplate } from '../src/lib/blog/blog-content-guards';
+import { buildTopicBrief, tryGenerateBlogTitlesFromContent } from '../src/lib/blog/blog-title-generator';
 import { slugifyBlog } from '../src/lib/blog/slugify';
 
 type ParsedArticle = {
@@ -70,13 +71,7 @@ function monthYearFromDate(d: Date): string {
 }
 
 function looksLikeFallbackContent(contentHtml: string, description: string): boolean {
-  const markers = [
-    'Pourquoi ce sujet change ta pratique',
-    "3 actions simples à appliquer cette semaine",
-    'mini-story réaliste',
-    'Un guide concret pour progresser en pilates autour de',
-  ];
-  return markers.some((m) => contentHtml.includes(m) || description.includes(m));
+  return looksLikeFallbackTemplate(contentHtml, description);
 }
 
 async function ensureUniqueSlug(
@@ -224,12 +219,20 @@ async function main() {
       category: p.categorySlug,
       publishDateIso: p.date.toISOString(),
     });
+    if (!generated) {
+      console.error(`Article ${p.index}: generation_failed (cascade IA) — non créé.`);
+      continue;
+    }
 
-    const titles = await generateBlogTitlesFromContent({
+    const titles = await tryGenerateBlogTitlesFromContent({
       contentHtmlFr: generated.contentHtml,
       descriptionFr: generated.description,
       categorySlug: p.categorySlug,
     });
+    if (!titles) {
+      console.error(`Article ${p.index}: titres IA échoués — non créé.`);
+      continue;
+    }
     const titleFr = titles.title_fr;
     const titleEs = titles.title_es;
 

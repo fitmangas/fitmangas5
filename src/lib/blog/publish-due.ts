@@ -1,14 +1,29 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { assertContentSafeToPublish } from '@/lib/blog/blog-content-guards';
 import { sendPublicationNewsletter } from '@/lib/blog/newsletter-double-optin';
 import { notifyMembersNewBlogArticle } from '@/lib/blog/publish-notifications';
 
 type PublishDueResult = {
   publishedIds: string[];
+  skippedIds: string[];
   notificationsSent: number;
   newsletterTargeted: number;
   newsletterSent: number;
 };
+
+async function loadPublishedContentsForGuard(
+  client: SupabaseClient,
+): Promise<Array<{ id: string; contentHtml: string }>> {
+  const { data } = await client
+    .from('blog_articles')
+    .select('id, content_fr')
+    .eq('status', 'published');
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    contentHtml: (row.content_fr as string) ?? '',
+  }));
+}
 
 export async function publishDueBlogArticles(
   client: SupabaseClient,
@@ -19,7 +34,7 @@ export async function publishDueBlogArticles(
 
   let query = client
     .from('blog_articles')
-    .select('id, title_fr, slug_fr')
+    .select('id, title_fr, slug_fr, content_fr, description_fr')
     .lte('scheduled_publication_at', nowIso);
 
   query = params.includeDraft ? query.in('status', ['draft', 'validated']) : query.eq('status', 'validated');
@@ -31,12 +46,32 @@ export async function publishDueBlogArticles(
   const { data, error } = await query;
   if (error) throw error;
 
+  const existingContents = await loadPublishedContentsForGuard(client);
   const publishedIds: string[] = [];
+  const skippedIds: string[] = [];
   let notificationsSent = 0;
   let newsletterTargeted = 0;
   let newsletterSent = 0;
 
-  for (const row of (data ?? []) as { id: string; title_fr: string; slug_fr: string }[]) {
+  for (const row of (data ?? []) as {
+    id: string;
+    title_fr: string;
+    slug_fr: string;
+    content_fr: string | null;
+    description_fr: string | null;
+  }[]) {
+    const guard = assertContentSafeToPublish({
+      contentHtml: row.content_fr ?? '',
+      description: row.description_fr,
+      existingContents,
+      excludeArticleId: row.id,
+    });
+    if (!guard.allowed) {
+      console.warn(`[publishDue] skip ${row.id}: ${guard.reason}`);
+      skippedIds.push(row.id);
+      continue;
+    }
+
     const { error: updateError } = await client
       .from('blog_articles')
       .update({ status: 'published', published_at: nowIso, updated_at: nowIso })
@@ -46,6 +81,8 @@ export async function publishDueBlogArticles(
     if (updateError) throw updateError;
 
     publishedIds.push(row.id);
+    existingContents.push({ id: row.id, contentHtml: row.content_fr ?? '' });
+
     const memberNotifications = await notifyMembersNewBlogArticle(client, {
       articleId: row.id,
       title: row.title_fr,
@@ -63,7 +100,7 @@ export async function publishDueBlogArticles(
     newsletterSent += newsletter.sent;
   }
 
-  return { publishedIds, notificationsSent, newsletterTargeted, newsletterSent };
+  return { publishedIds, skippedIds, notificationsSent, newsletterTargeted, newsletterSent };
 }
 
 export async function reconcileValidatedBlogArticles(
@@ -110,11 +147,18 @@ export async function reconcileValidatedBlogArticles(
   const published =
     dueArticleIds.length > 0
       ? await publishDueBlogArticles(client, { articleIds: dueArticleIds, now, includeDraft: true })
-      : { publishedIds: [], notificationsSent: 0, newsletterTargeted: 0, newsletterSent: 0 };
+      : {
+          publishedIds: [],
+          skippedIds: [],
+          notificationsSent: 0,
+          newsletterTargeted: 0,
+          newsletterSent: 0,
+        };
 
   return {
     futureValidated: futureArticleIds.length,
     published: published.publishedIds.length,
     publishedIds: published.publishedIds,
+    skippedIds: published.skippedIds,
   };
 }

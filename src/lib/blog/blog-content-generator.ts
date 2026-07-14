@@ -1,28 +1,29 @@
-import { GoogleGenAI } from '@google/genai';
+import {
+  runBlogAiCascade,
+  type BlogAiProviderId,
+} from '@/lib/blog/ai-providers';
+import {
+  looksLikeFallbackTemplate,
+  sanitizeBlogContentHtml,
+} from '@/lib/blog/blog-content-guards';
 
-type GeneratedArticle = {
+export type GeneratedArticle = {
   contentHtml: string;
   description: string;
   metaDescription: string;
   seoKeywords: string;
+  /** Provider IA qui a produit cet article (jamais « fallback »). */
+  provider: BlogAiProviderId;
+  model: string;
 };
 
-function fallbackContent(topicBrief: string, category: string): GeneratedArticle {
-  const description = `Un guide concret pour progresser en pilates : ${topicBrief}`;
-  const paragraphs = [
-    `<h2>Pourquoi ce sujet change ta pratique</h2><p>${topicBrief} — ce thème revient souvent dans les blocages des élèves : manque de régularité, surcharge mentale ou difficulté à sentir les bons appuis. En pilates, les progrès ne viennent pas d'une séance parfaite, mais d'une répétition intelligente et douce. L'objectif est de construire un rituel réaliste, compatible avec ton emploi du temps, tout en gardant le plaisir de bouger.</p>`,
-    `<h2>Le contexte concret</h2><p>Beaucoup de pratiquantes pensent qu'il faut faire plus longtemps pour obtenir des résultats. En réalité, des séances courtes mais fréquentes donnent souvent de meilleurs effets sur la posture, la mobilité et l'énergie générale. Le corps retient plus facilement des repères simples : respiration, alignement, activation du centre et qualité des transitions.</p>`,
-    `<h3>3 actions simples à appliquer cette semaine</h3><ul><li><strong>Bloque un créneau fixe</strong> de 20 à 30 minutes, deux à trois fois par semaine.</li><li><strong>Choisis un objectif unique</strong> par séance : mobilité, renforcement ou récupération.</li><li><strong>Termine par 2 minutes de respiration</strong> pour ancrer le travail et faire redescendre le stress.</li></ul>`,
-    `<h2>Exemple terrain</h2><p>Une élève qui reprenait après plusieurs mois d'arrêt a commencé avec deux séances de 25 minutes, centrées sur le gainage profond et les hanches. En trois semaines, elle a constaté moins de tensions lombaires et une meilleure stabilité sur ses exercices. Le point clé n'était pas la difficulté, mais la régularité et la précision du mouvement.</p>`,
-    `<h2>Ce que tu peux retenir</h2><p>Sur le thème <strong>${category}</strong>, l'important est d'avancer pas à pas : une structure claire, des objectifs mesurables, et une pratique régulière. Garde une trace de tes séances et observe ton ressenti. C'est cette constance qui transforme le corps, la posture et la confiance au quotidien.</p><p>Si cet article t'aide, note-le et partage-le à une amie qui veut reprendre en douceur.</p>`,
-  ];
-
-  const contentHtml = paragraphs.join('\n\n');
-  const metaDescription = `${topicBrief.slice(0, 120)} : conseils pilates pratiques, méthode progressive et routine concrète pour des résultats durables.`;
-  const seoKeywords = `pilates, ${category}, posture, respiration, bien-être`;
-
-  return { contentHtml, description, metaDescription, seoKeywords };
-}
+export type ArticleGenerationAttemptResult =
+  | { ok: true; article: GeneratedArticle }
+  | {
+      ok: false;
+      reason: 'generation_failed';
+      detail: string;
+    };
 
 function extractJsonBlock(raw: string): Record<string, unknown> | null {
   const start = raw.indexOf('{');
@@ -30,8 +31,7 @@ function extractJsonBlock(raw: string): Record<string, unknown> | null {
   if (start < 0 || end <= start) return null;
   const slice = raw.slice(start, end + 1);
   try {
-    const parsed = JSON.parse(slice) as Record<string, unknown>;
-    return parsed;
+    return JSON.parse(slice) as Record<string, unknown>;
   } catch {
     return null;
   }
@@ -58,15 +58,16 @@ Contraintes:
 - intro accrocheuse
 - 2-3 conseils concrets
 - une mini-story réaliste
-- conclusion avec CTA doux`;
+- conclusion avec CTA doux
+- INTERDIT: textes génériques type "Pourquoi ce sujet change ta pratique" ou "Un guide concret pour progresser en pilates"`;
 
   return { system, user };
 }
 
 function parseGeneratedArticle(
   raw: string,
-  topicBrief: string,
-  category: string,
+  provider: BlogAiProviderId,
+  model: string,
 ): GeneratedArticle | null {
   const data = extractJsonBlock(raw);
   if (!data) return null;
@@ -76,104 +77,116 @@ function parseGeneratedArticle(
   const metaDescription = typeof data.metaDescription === 'string' ? data.metaDescription.trim() : '';
   const seoKeywords = typeof data.seoKeywords === 'string' ? data.seoKeywords.trim() : '';
 
-  if (!contentHtml || contentHtml.length < 600) {
-    return null;
-  }
+  const cleanedHtml = sanitizeBlogContentHtml(contentHtml);
+  if (!cleanedHtml || cleanedHtml.length < 600) return null;
+  if (looksLikeFallbackTemplate(cleanedHtml, description)) return null;
 
-  const fb = fallbackContent(topicBrief, category);
   return {
-    contentHtml,
-    description: description || fb.description,
-    metaDescription: metaDescription || fb.metaDescription,
-    seoKeywords: seoKeywords || fb.seoKeywords,
+    contentHtml: cleanedHtml,
+    description:
+      description || cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+    metaDescription:
+      metaDescription ||
+      description.slice(0, 155) ||
+      cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 155),
+    seoKeywords: seoKeywords || 'pilates, posture, respiration, bien-être',
+    provider,
+    model,
   };
 }
 
-async function generateWithGemini(params: {
+/**
+ * Génère un article via la cascade Gemini → Mistral → Groq → OpenAI.
+ * Ne renvoie JAMAIS le template de secours : en cas d’échec total → generation_failed.
+ */
+/** Qualité éditoriale prioritaire : Gemini puis Mistral (sans Groq). */
+export const PREMIUM_BLOG_AI_ORDER: BlogAiProviderId[] = ['gemini', 'mistral'];
+
+export async function tryGenerateFrenchArticle(params: {
   topicBrief: string;
   category: string;
   publishDateIso: string;
-  apiKey: string;
-}): Promise<GeneratedArticle | null> {
-  const model = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+  /** Ordre de cascade optionnel (ex. PREMIUM_BLOG_AI_ORDER). */
+  providerOrder?: BlogAiProviderId[];
+}): Promise<ArticleGenerationAttemptResult> {
   const { system, user } = buildPrompts(params);
-  const ai = new GoogleGenAI({ apiKey: params.apiKey });
-  const combined = `${system}\n\n${user}\n\nRéponds uniquement avec le JSON, sans markdown ni texte avant ou après.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: combined,
-      config: {
-        temperature: 0.8,
-        maxOutputTokens: 8192,
-      },
-    });
-    const raw = response.text ?? '';
-    return parseGeneratedArticle(raw, params.topicBrief, params.category);
-  } catch (e) {
-    console.error('[generateFrenchArticle] Gemini', e);
-    return null;
-  }
-}
-
-async function generateWithOpenAI(params: {
-  topicBrief: string;
-  category: string;
-  publishDateIso: string;
-  apiKey: string;
-}): Promise<GeneratedArticle | null> {
-  const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-  const { system, user } = buildPrompts(params);
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${params.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
+  const cascade = await runBlogAiCascade(
+    {
+      system,
+      user,
       temperature: 0.8,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-  });
+      maxOutputTokens: 8192,
+    },
+    params.providerOrder,
+  );
 
-  if (!response.ok) {
-    console.error('[generateFrenchArticle] OpenAI', response.status, await response.text());
-    return null;
+  if (!cascade.ok) {
+    return {
+      ok: false,
+      reason: 'generation_failed',
+      detail: cascade.detail,
+    };
   }
 
-  const json = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const raw = json.choices?.[0]?.message?.content ?? '';
-  return parseGeneratedArticle(raw, params.topicBrief, params.category);
+  const article = parseGeneratedArticle(cascade.text, cascade.provider, cascade.model);
+  if (!article) {
+    // Un provider a répondu mais JSON invalide → tenter encore les providers suivants serait idéal ;
+    // runBlogAiCascade s’arrête au premier texte. On relance en excluant le provider fautif via
+    // une 2e passe manuelle sur les providers restants.
+    const retry = await retryParseAcrossProviders(params, cascade.provider, params.providerOrder);
+    if (retry) return { ok: true, article: retry };
+    return {
+      ok: false,
+      reason: 'generation_failed',
+      detail: `Réponse JSON invalide ou contenu template de ${cascade.provider}.`,
+    };
+  }
+
+  console.info(
+    `[generateFrenchArticle] contenu généré par ${article.provider}/${article.model}`,
+  );
+  return { ok: true, article };
 }
 
+async function retryParseAcrossProviders(
+  params: {
+    topicBrief: string;
+    category: string;
+    publishDateIso: string;
+  },
+  skipProvider: BlogAiProviderId,
+  providerOrder?: BlogAiProviderId[],
+): Promise<GeneratedArticle | null> {
+  const { completeWithProvider, listConfiguredBlogAiProviders } = await import('@/lib/blog/ai-providers');
+  const { system, user } = buildPrompts(params);
+  for (const provider of listConfiguredBlogAiProviders(providerOrder)) {
+    if (provider === skipProvider) continue;
+    const result = await completeWithProvider(provider, {
+      system,
+      user,
+      temperature: 0.8,
+      maxOutputTokens: 8192,
+    });
+    if (!result.ok) continue;
+    const parsed = parseGeneratedArticle(result.text, result.provider, result.model);
+    if (parsed) {
+      console.info(
+        `[generateFrenchArticle] contenu généré par ${parsed.provider}/${parsed.model} (retry)`,
+      );
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * @deprecated Préférer tryGenerateFrenchArticle. Renvoie null si échec (plus de fallback template).
+ */
 export async function generateFrenchArticle(params: {
   topicBrief: string;
   category: string;
   publishDateIso: string;
-}): Promise<GeneratedArticle> {
-  const geminiKey =
-    process.env.GEMINI_API_KEY?.trim() ||
-    process.env.GOOGLE_GENAI_API_KEY?.trim() ||
-    process.env.GOOGLE_API_KEY?.trim();
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
-
-  if (geminiKey) {
-    const fromGemini = await generateWithGemini({ ...params, apiKey: geminiKey });
-    if (fromGemini) return fromGemini;
-  }
-
-  if (openaiKey) {
-    const fromOpenai = await generateWithOpenAI({ ...params, apiKey: openaiKey });
-    if (fromOpenai) return fromOpenai;
-  }
-
-  return fallbackContent(params.topicBrief, params.category);
+}): Promise<GeneratedArticle | null> {
+  const result = await tryGenerateFrenchArticle(params);
+  return result.ok ? result.article : null;
 }

@@ -1,13 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { generateFrenchArticle } from '@/lib/blog/blog-content-generator';
+import {
+  PREMIUM_BLOG_AI_ORDER,
+  tryGenerateFrenchArticle,
+} from '@/lib/blog/blog-content-generator';
+import { looksLikeFallbackTemplate } from '@/lib/blog/blog-content-guards';
 import { collectUsedPhotoIdsFromUrls, fetchUnsplashImage } from '@/lib/blog/blog-image-fetcher';
 import {
   isGenericPilatesTitle,
-  tryGenerateBlogTitlesFromContent,
   tryGenerateBlogTitlesFromContentDetailed,
   type TitleGenerationFailureReason,
 } from '@/lib/blog/blog-title-generator';
+import { BLOG_AI_PROVIDER_ORDER } from '@/lib/blog/ai-providers';
 import {
   extractTopicIdsFromRows,
   formatSeoKeywordsWithTopic,
@@ -89,6 +93,8 @@ function failureLabel(reason: TitleGenerationFailureReason): string {
       return 'clé IA absente — titre conservé';
     case 'invalid_response':
       return 'réponse IA invalide — titre conservé';
+    case 'generation_failed':
+      return 'cascade IA en échec — titre conservé';
     default:
       return 'erreur fournisseur IA — titre conservé';
   }
@@ -163,13 +169,6 @@ function schedulePublicationDate(): Date {
   d.setUTCDate(d.getUTCDate() + 21);
   d.setUTCHours(12, 0, 0, 0);
   return d;
-}
-
-function fallbackTitleFromBrief(briefFr: string): string {
-  const clean = briefFr.replace(/\s+/g, ' ').trim();
-  if (clean.length <= 72) return clean;
-  const cut = clean.slice(0, 69).trim();
-  return `${cut}…`;
 }
 
 export async function rewriteBlogTitlesBatch(
@@ -331,27 +330,68 @@ export async function generateDraftArticlesBatch(
       break;
     }
 
-    usedTopicIds.add(topic.id);
-    usedBriefs.push(topic.briefFr);
-
     const scheduledAt = schedulePublicationDate();
     await limiter.waitTurn();
-    const generated = await generateFrenchArticle({
+    // Qualité d’abord (Gemini→Mistral), puis cascade complète si besoin (Groq/OpenAI).
+    let contentResult = await tryGenerateFrenchArticle({
       topicBrief: topic.briefFr,
       category: topic.categorySlug,
       publishDateIso: scheduledAt.toISOString(),
+      providerOrder: PREMIUM_BLOG_AI_ORDER,
     });
+    if (!contentResult.ok) {
+      contentResult = await tryGenerateFrenchArticle({
+        topicBrief: topic.briefFr,
+        category: topic.categorySlug,
+        publishDateIso: scheduledAt.toISOString(),
+        providerOrder: BLOG_AI_PROVIDER_ORDER,
+      });
+    }
+
+    if (!contentResult.ok) {
+      result.errors.push(
+        `generation_failed topic=${topic.id}: ${contentResult.detail ?? 'cascade IA vide'}`,
+      );
+      continue;
+    }
+
+    const generated = contentResult.article;
+    if (looksLikeFallbackTemplate(generated.contentHtml, generated.description)) {
+      result.errors.push(`generation_failed topic=${topic.id}: template de secours refusé.`);
+      continue;
+    }
 
     await limiter.waitTurn();
-    const titles =
-      (await tryGenerateBlogTitlesFromContent({
+    let titleResult = await tryGenerateBlogTitlesFromContentDetailed({
+      contentHtmlFr: generated.contentHtml,
+      descriptionFr: generated.description,
+      categorySlug: topic.categorySlug,
+      providerOrder: PREMIUM_BLOG_AI_ORDER,
+    });
+    if (!titleResult.ok) {
+      titleResult = await tryGenerateBlogTitlesFromContentDetailed({
         contentHtmlFr: generated.contentHtml,
         descriptionFr: generated.description,
         categorySlug: topic.categorySlug,
-      })) ?? {
-        title_fr: fallbackTitleFromBrief(topic.briefFr),
-        title_es: fallbackTitleFromBrief(topic.briefFr),
-      };
+        providerOrder: BLOG_AI_PROVIDER_ORDER,
+      });
+    }
+
+    if (!titleResult.ok) {
+      result.errors.push(
+        `generation_failed titles topic=${topic.id}: ${titleResult.detail ?? titleResult.reason}`,
+      );
+      continue;
+    }
+
+    const titles = titleResult.titles;
+    // Brief réservé uniquement après succès contenu + titres
+    usedTopicIds.add(topic.id);
+    usedBriefs.push(topic.briefFr);
+
+    console.info(
+      `[generateDraftArticlesBatch] article via contenu=${generated.provider}/${generated.model} titres=${titles.provider ?? '?'}/${titles.model ?? '?'}`,
+    );
 
     const categoryId = await ensureCategoryId(admin, topic.categorySlug, categoryCache);
     if (!categoryId) {
