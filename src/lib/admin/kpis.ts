@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { computeMemberHealth } from '@/lib/admin/member-health';
+import { computeMemberHealth, isRealStripeSubscriptionId } from '@/lib/admin/member-health';
 import { getPrintfulOrders, parseMoney } from '@/lib/printful';
 
 type TrendPoint = {
@@ -25,6 +25,8 @@ export type AdminKpis = {
     atRisk: number;
     newMembers: number;
     watch: number;
+    /** Inscriptions sans abonnement Stripe réel (checkout non finalisé, seeds exclus de la cohorte payante). */
+    incomplete: number;
   };
   trend: TrendPoint[];
 };
@@ -99,7 +101,7 @@ async function mrrFromSubscriptionsDb(): Promise<{ mrrEur: number; activeSubscri
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('subscriptions')
-    .select('user_id, price_cents, interval, status, ends_at')
+    .select('user_id, price_cents, interval, status, ends_at, stripe_subscription_id')
     .in('status', ['active', 'trialing']);
 
   if (error || !data?.length) return { mrrEur: 0, activeSubscribers: 0 };
@@ -107,6 +109,8 @@ async function mrrFromSubscriptionsDb(): Promise<{ mrrEur: number; activeSubscri
   let cents = 0;
   const activeUsers = new Set<string>();
   for (const row of data) {
+    // Exclure seeds (seed_*), demos (manual_*) et stubs hors Stripe — sinon MRR DB gonflé (ex. 733 €).
+    if (!isRealStripeSubscriptionId(row.stripe_subscription_id)) continue;
     if (row.ends_at && new Date(row.ends_at).getTime() < now) continue;
     if (row.user_id) activeUsers.add(row.user_id);
     const p = row.price_cents ?? 0;
@@ -346,32 +350,39 @@ async function boutiqueRevenueCurrentMonth(): Promise<{ revenueEur: number; orde
   }
 }
 
-async function mrrFromStripe(): Promise<number | null> {
+async function mrrFromStripe(): Promise<{ mrrEur: number; activeSubscribers: number } | null> {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) return null;
   const stripe = new Stripe(key);
   let mrrCents = 0;
-  let startingAfter: string | undefined;
-  for (;;) {
-    const list = await stripe.subscriptions.list({
-      status: 'active',
-      limit: 100,
-      starting_after: startingAfter,
-    });
-    for (const sub of list.data) {
-      for (const item of sub.items.data) {
-        const price = item.price;
-        const unit = price.unit_amount ?? 0;
-        const interval = price.recurring?.interval;
-        const qty = item.quantity ?? 1;
-        if (interval === 'month') mrrCents += unit * qty;
-        else if (interval === 'year') mrrCents += Math.round((unit * qty) / 12);
+  const customerIds = new Set<string>();
+
+  for (const status of ['active', 'trialing'] as const) {
+    let startingAfter: string | undefined;
+    for (;;) {
+      const list = await stripe.subscriptions.list({
+        status,
+        limit: 100,
+        starting_after: startingAfter,
+      });
+      for (const sub of list.data) {
+        const cust = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
+        if (cust) customerIds.add(cust);
+        for (const item of sub.items.data) {
+          const price = item.price;
+          const unit = price.unit_amount ?? 0;
+          const interval = price.recurring?.interval;
+          const qty = item.quantity ?? 1;
+          if (interval === 'month') mrrCents += unit * qty;
+          else if (interval === 'year') mrrCents += Math.round((unit * qty) / 12);
+        }
       }
+      if (!list.has_more || list.data.length === 0) break;
+      startingAfter = list.data[list.data.length - 1].id;
     }
-    if (!list.has_more || list.data.length === 0) break;
-    startingAfter = list.data[list.data.length - 1].id;
   }
-  return mrrCents / 100;
+
+  return { mrrEur: mrrCents / 100, activeSubscribers: customerIds.size };
 }
 
 async function churnRate30d(activeSubscribers: number): Promise<number | null> {
@@ -486,13 +497,16 @@ async function healthScoreBuckets(): Promise<{
   atRisk: number;
   newMembers: number;
   watch: number;
+  incomplete: number;
 }> {
   const admin = createAdminClient();
   const now = Date.now();
 
   const { data: members } = await admin.from('profiles').select('id, created_at').eq('role', 'member').eq('archived', false);
   const ids = (members ?? []).map((m) => m.id);
-  if (!ids.length) return { healthy: 0, fragile: 0, atRisk: 0, newMembers: 0, watch: 0 };
+  if (!ids.length) {
+    return { healthy: 0, fragile: 0, atRisk: 0, newMembers: 0, watch: 0, incomplete: 0 };
+  }
 
   const createdAtById = new Map<string, number>();
   for (const m of members ?? []) {
@@ -500,11 +514,30 @@ async function healthScoreBuckets(): Promise<{
     createdAtById.set(m.id, ts);
   }
 
-  const { data: attendedEnrollments } = await admin
-    .from('enrollments')
-    .select('user_id, course_id, status')
+  const { data: subs } = await admin
+    .from('subscriptions')
+    .select('user_id, status, ends_at, created_at, stripe_subscription_id')
     .in('user_id', ids)
-    .eq('status', 'attended');
+    .in('status', ['active', 'trialing']);
+
+  const payingByUser = new Map<string, number>();
+  for (const s of subs ?? []) {
+    if (!isRealStripeSubscriptionId(s.stripe_subscription_id)) continue;
+    if (s.ends_at && new Date(s.ends_at).getTime() < now) continue;
+    const started = s.created_at ? new Date(s.created_at).getTime() : now;
+    const prev = payingByUser.get(s.user_id);
+    if (prev == null || started < prev) payingByUser.set(s.user_id, started);
+  }
+
+  const payingIds = [...payingByUser.keys()];
+
+  const { data: attendedEnrollments } = payingIds.length
+    ? await admin
+        .from('enrollments')
+        .select('user_id, course_id, status')
+        .in('user_id', payingIds)
+        .eq('status', 'attended')
+    : { data: [] as { user_id: string; course_id: string; status: string }[] };
 
   const courseIds = [...new Set((attendedEnrollments ?? []).map((e) => e.course_id))];
   const { data: courses } = courseIds.length
@@ -521,10 +554,9 @@ async function healthScoreBuckets(): Promise<{
     if (startTs > prev) lastLive.set(e.user_id, startTs);
   }
 
-  const { data: replay } = await admin
-    .from('replay_playback_progress')
-    .select('user_id, updated_at')
-    .in('user_id', ids);
+  const { data: replay } = payingIds.length
+    ? await admin.from('replay_playback_progress').select('user_id, updated_at').in('user_id', payingIds)
+    : { data: [] as { user_id: string; updated_at: string }[] };
   const lastReplay = new Map<string, number>();
   for (const r of replay ?? []) {
     const ts = new Date(r.updated_at).getTime();
@@ -537,19 +569,28 @@ async function healthScoreBuckets(): Promise<{
   let atRisk = 0;
   let newMembers = 0;
   let watch = 0;
+  let incomplete = 0;
 
   for (const id of ids) {
+    const isPaying = payingByUser.has(id);
     const last = Math.max(lastLive.get(id) ?? 0, lastReplay.get(id) ?? 0);
     const createdTs = createdAtById.get(id) ?? now;
-    const bucket = computeMemberHealth({ lastActivityTs: last, accountCreatedTs: createdTs, now });
-    if (bucket === 'new') newMembers += 1;
+    const bucket = computeMemberHealth({
+      lastActivityTs: last,
+      accountCreatedTs: createdTs,
+      now,
+      isPayingMember: isPaying,
+      subscriptionStartedTs: payingByUser.get(id) ?? null,
+    });
+    if (bucket === 'incomplete') incomplete += 1;
+    else if (bucket === 'new') newMembers += 1;
     else if (bucket === 'watch') watch += 1;
     else if (bucket === 'green') healthy += 1;
     else if (bucket === 'orange') fragile += 1;
     else atRisk += 1;
   }
 
-  return { healthy, fragile, atRisk, newMembers, watch };
+  return { healthy, fragile, atRisk, newMembers, watch, incomplete };
 }
 
 async function refreshDailySnapshot(): Promise<void> {
@@ -598,7 +639,7 @@ export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
       .order('updated_at', { ascending: false }),
     admin
       .from('subscriptions')
-      .select('user_id, tier, status, ends_at')
+      .select('user_id, tier, status, ends_at, stripe_subscription_id')
       .in('status', ['active', 'trialing'])
       .order('created_at', { ascending: false }),
     admin.from('profiles').select('id, first_name, last_name'),
@@ -625,6 +666,7 @@ export async function getAdminKpiDrilldowns(): Promise<AdminKpiDrilldowns> {
   const activeByTierMap = new Map<string, number>();
   const activeUsers: SubscriberUserDetail[] = [];
   for (const row of activeRows ?? []) {
+    if (!isRealStripeSubscriptionId(row.stripe_subscription_id)) continue;
     if (row.ends_at && new Date(row.ends_at).getTime() < now) continue;
     activeByTierMap.set(row.tier, (activeByTierMap.get(row.tier) ?? 0) + 1);
     activeUsers.push({
@@ -665,7 +707,8 @@ export async function getAdminKpis(): Promise<AdminKpis> {
   try {
     const stripeMrr = await mrrFromStripe();
     if (stripeMrr != null) {
-      mrrEur = stripeMrr;
+      mrrEur = stripeMrr.mrrEur;
+      activeSubscribers = stripeMrr.activeSubscribers;
       mrrSource = 'stripe';
     }
   } catch {
@@ -700,7 +743,22 @@ export async function getAdminKpis(): Promise<AdminKpis> {
   ]);
   const churnRate = await churnRate30d(activeSubscribers);
   await refreshDailySnapshot();
-  const trend = await trendFromDailySnapshots();
+  let trend = await trendFromDailySnapshots();
+
+  // Alignement « Dernière valeur » : le snapshot SQL (RPC) somme encore toute la table subscriptions
+  // (seeds inclus → 733 €). On écrase le point du jour avec le MRR live (Stripe ou DB filtrée).
+  if (mrrEur != null && trend.length > 0) {
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const last = trend[trend.length - 1];
+    if (last.date === todayUtc || trend.length === 1) {
+      trend = [
+        ...trend.slice(0, -1),
+        { ...last, mrrEur, activeSubscribers },
+      ];
+    } else {
+      trend = [...trend, { date: todayUtc, mrrEur, activeSubscribers }];
+    }
+  }
 
   return {
     mrrEur,

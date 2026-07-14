@@ -529,6 +529,9 @@ export default async function AdminPage() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
               <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Tendance MRR</h2>
+              <p className="mt-1 text-[11px] text-luxury-muted">
+                Historique snapshots · jour courant aligné sur MRR {mrrHint}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.16em] text-luxury-soft">Dernière valeur</p>

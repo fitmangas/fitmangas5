@@ -58,6 +58,7 @@ export type BusinessAdvisorSnapshot = {
       atRisk: number;
       newMembers: number;
       watch: number;
+      incomplete: number;
     };
     occupancyPercent: number | null;
     replayCompletionRate30d: number | null;
@@ -196,6 +197,7 @@ async function gatherBusinessAdvisorSnapshot(): Promise<BusinessAdvisorSnapshot>
     count,
   }));
 
+  // Cohorte payante uniquement (hors « Pas finalisé »)
   const totalMembers =
     kpis.health.healthy +
     kpis.health.fragile +

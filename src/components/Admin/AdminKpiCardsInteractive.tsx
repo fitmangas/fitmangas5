@@ -121,6 +121,7 @@ export function AdminKpiCardsInteractive({
                     href={CLIENTS_HREF}
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                    title="Abonnées Stripe réelles (hors comptes non finalisés)"
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
                     <span className="font-medium">
@@ -145,7 +146,7 @@ export function AdminKpiCardsInteractive({
                     href="/admin/clients?health=watch"
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
-                    title="Inscrite 7–14 j, pas encore de cours ni replay"
+                    title="Abonnée depuis 14–30 j sans cours ni replay"
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
                     <span className="font-medium">{kpis.health.watch}</span>
@@ -178,6 +179,16 @@ export function AdminKpiCardsInteractive({
                     <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
                     <span className="font-medium">{kpis.health.atRisk}</span>
                     <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.red}</span>
+                  </Link>
+                  <Link
+                    href="/admin/clients?health=incomplete"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-sm text-luxury-ink hover:underline"
+                    title="Compte créé sans abonnement Stripe finalisé"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-stone-400" />
+                    <span className="font-medium">{kpis.health.incomplete}</span>
+                    <span className="text-luxury-muted">{MEMBER_HEALTH_LABELS.incomplete}</span>
                   </Link>
               </div>
             </div>

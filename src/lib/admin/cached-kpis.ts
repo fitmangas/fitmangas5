@@ -4,13 +4,13 @@ import { getAdminKpiDrilldowns, getAdminKpis, stripeCollectedCurrentMonthEur } f
 
 const REVALIDATE_SECONDS = 300;
 
-export const getCachedAdminKpis = unstable_cache(async () => getAdminKpis(), ['admin-kpis-v1'], {
+export const getCachedAdminKpis = unstable_cache(async () => getAdminKpis(), ['admin-kpis-v2'], {
   revalidate: REVALIDATE_SECONDS,
 });
 
 export const getCachedAdminKpiDrilldowns = unstable_cache(
   async () => getAdminKpiDrilldowns(),
-  ['admin-kpi-drilldowns-v1'],
+  ['admin-kpi-drilldowns-v2'],
   { revalidate: REVALIDATE_SECONDS },
 );
 

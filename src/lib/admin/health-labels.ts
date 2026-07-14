@@ -1,18 +1,20 @@
 import type { MemberHealthBadge } from '@/lib/admin/member-health';
 
-/** Libellés UI — « À surveiller » = pas encore d’activité (7–14 j) ; « À relancer » = inactivité 4–14 j. */
+/** Libellés UI santé client. */
 export const MEMBER_HEALTH_LABELS: Record<MemberHealthBadge, string> = {
   new: 'Nouveau',
-  watch: 'En attente',
+  watch: 'Sans activité',
   green: 'Actif',
   orange: 'À relancer',
   red: 'À risque',
+  incomplete: 'Pas finalisé',
 };
 
 export const MEMBER_HEALTH_DESCRIPTIONS: Record<MemberHealthBadge, string> = {
-  new: 'Compte créé il y a moins de 7 jours',
-  watch: 'Inscrite depuis 7–14 j, pas encore de cours ni replay',
+  new: 'Abonnée récente (< 14 j) — première séance / replay encore à venir',
+  watch: 'Abonnée depuis 14–30 j sans cours ni replay',
   green: 'Activité dans les 4 derniers jours',
   orange: 'Dernière activité entre 4 et 14 jours',
-  red: 'Aucune activité depuis plus de 14 jours',
+  red: 'Aucune activité depuis plus de 14 jours (ou abonnée inactive > 30 j)',
+  incomplete: 'Compte créé sans abonnement Stripe finalisé (pas de carte / checkout incomplet)',
 };
