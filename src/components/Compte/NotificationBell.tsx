@@ -41,16 +41,18 @@ export function NotificationBell({ userId, items }: { userId: string; items: Not
 
   return (
     <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink shadow-sm backdrop-blur-xl transition hover:bg-white/65 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink shadow-sm backdrop-blur-xl transition hover:bg-white/65 [&::-webkit-details-marker]:hidden">
         <Bell size={18} aria-hidden />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">Notifications</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] max-[380px]:sr-only">
+          Notifications
+        </span>
         {unread > 0 ? (
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br from-luxury-orange to-luxury-orange-deep px-1.5 text-[10px] font-bold text-white shadow-md shadow-orange-500/30">
             {unread > 9 ? '9+' : unread}
           </span>
         ) : null}
       </summary>
-      <div className="absolute right-0 z-50 mt-2 max-w-[calc(100vw-2rem)] w-[22rem] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
+      <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-[2rem] border border-white/70 bg-white/40 py-2 shadow-[0_24px_56px_rgba(29,29,31,0.1)] backdrop-blur-xl">
         {localItems.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-luxury-muted">Aucune notification.</p>
         ) : (

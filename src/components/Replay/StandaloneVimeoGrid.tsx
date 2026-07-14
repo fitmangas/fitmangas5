@@ -207,7 +207,7 @@ export function StandaloneVimeoGrid({
           </button>
           <div className="flex flex-col justify-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
-            <h2 className="hero-signature-title mt-3 text-3xl">{featured.displayTitle}</h2>
+            <h2 className="hero-signature-title mt-3 break-words text-3xl">{featured.displayTitle}</h2>
             {featured.publishedAt ? (
               <p className="mt-2 text-sm font-medium text-luxury-ink/80">
                 {new Date(featured.publishedAt).toLocaleDateString(
@@ -248,7 +248,7 @@ export function StandaloneVimeoGrid({
                     e.stopPropagation();
                     void toggleFavorite(video.id);
                   }}
-                  className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/45 text-white shadow-lg backdrop-blur-md"
+                  className="absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/45 text-white shadow-lg backdrop-blur-md"
                   aria-label={favorites[video.id] ? t.removeFav : t.addFav}
                 >
                   <Heart size={16} className={favorites[video.id] ? 'fill-rose-400 text-rose-400' : 'text-white'} />

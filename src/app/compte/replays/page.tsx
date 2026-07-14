@@ -349,7 +349,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             </div>
             <div className="flex flex-col justify-center">
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
-              <h2 className="hero-signature-title mt-3 text-3xl">{hero.courseTitle}</h2>
+              <h2 className="hero-signature-title mt-3 break-words text-3xl">{hero.courseTitle}</h2>
               {heroDate ? <p className="mt-2 text-sm font-medium text-luxury-ink/80">{heroDate}</p> : null}
               <p className="mt-3 text-sm leading-relaxed text-luxury-muted">{heroDescription}</p>
               <div className="mt-5">

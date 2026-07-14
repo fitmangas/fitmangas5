@@ -73,7 +73,7 @@ export function StandaloneVimeoFlatCards({
                   e.stopPropagation();
                   void toggleFavorite(video.id);
                 }}
-                className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/45 text-white shadow-lg backdrop-blur-md"
+                className="absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/45 text-white shadow-lg backdrop-blur-md"
                 aria-label={favorites[video.id] ? t.removeFav : t.addFav}
               >
                 <Heart size={16} className={favorites[video.id] ? 'fill-rose-400 text-rose-400' : 'text-white'} />
@@ -114,11 +114,13 @@ export function StandaloneVimeoFlatCards({
         >
           <div className="relative flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/40 bg-white/95 shadow-[0_24px_80px_rgba(0,0,0,0.25)]">
             <div className="flex items-start justify-between gap-4 border-b border-black/10 px-5 py-4">
-              <h2 className="text-lg font-semibold text-luxury-ink">{selected.displayTitle}</h2>
+              <div className="min-w-0 flex-1">
+                <h2 className="break-words text-lg font-semibold text-luxury-ink">{selected.displayTitle}</h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                className="rounded-full border border-black/10 bg-white p-2"
+                className="shrink-0 rounded-full border border-black/10 bg-white p-2.5"
                 aria-label={t.close}
               >
                 <X size={20} />

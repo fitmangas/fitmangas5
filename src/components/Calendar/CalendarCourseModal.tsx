@@ -100,7 +100,7 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm sm:p-6">
       <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label={t.closeModal} />
       <div
-        className="relative z-10 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/80 bg-brand-beige p-6 shadow-[0_14px_32px_rgba(31,27,22,0.2),0_32px_64px_-28px_rgba(21,18,15,0.4)]"
+        className="relative z-10 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/80 bg-brand-beige p-6 shadow-[0_14px_32px_rgba(31,27,22,0.2),0_32px_64px_-28px_rgba(21,18,15,0.4)] sm:pb-28"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -108,17 +108,17 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
               {course.course_format === 'online' ? t.online : t.inPerson} ·{' '}
               {course.course_category === 'group' ? t.group : t.solo}
             </p>
-            <h3 className="mt-1 text-2xl font-semibold tracking-tight text-luxury-ink">{course.title}</h3>
+            <h3 className="mt-1 break-words text-2xl font-semibold tracking-tight text-luxury-ink">{course.title}</h3>
           </div>
           <div className="flex shrink-0 items-start gap-2">
             <CourseLanguageFlag language={course.course_language} uiLang={lang} className="mt-1" />
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-brand-ink/10 bg-white p-2 text-luxury-soft shadow-sm transition hover:bg-white/90 hover:text-luxury-ink"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-ink/10 bg-white text-luxury-soft shadow-sm transition hover:bg-white/90 hover:text-luxury-ink"
               aria-label={t.close}
             >
-              <X size={14} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -211,16 +211,7 @@ export function CalendarCourseModal({ course, onClose, lang = 'fr' }: Props) {
           src={coachImageSrc}
           alt=""
           aria-hidden
-          style={{
-            position: 'absolute',
-            bottom: '0px',
-            right: '8px',
-            height: '120px',
-            width: 'auto',
-            objectFit: 'contain',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
+          className="pointer-events-none absolute bottom-0 right-2 z-[1] hidden h-[100px] w-auto object-contain opacity-80 sm:block sm:h-[120px]"
         />
       </div>
     </div>
