@@ -162,7 +162,6 @@ function LanguageToggle({
   onChange: (value: FormState['courseLanguage']) => void;
 }) {
   const options: Array<{ value: FormState['courseLanguage']; label: string; display: string }> = [
-    { value: '', label: 'Non définie', display: '—' },
     { value: 'fr', label: 'Français', display: '🇫🇷' },
     { value: 'es', label: 'Espagnol', display: '🇪🇸' },
   ];
@@ -287,23 +286,6 @@ function inferCourseTypeFromTitle(title: string, options: CourseTypeOption[]): s
   return 'pilates-mat';
 }
 
-function courseTitleOptions(courses: AdminCourseRow[]): CourseTypeOption[] {
-  const defaultLabels = new Set(COURSE_TYPE_OPTIONS.map((opt) => opt.label.trim().toLowerCase()));
-  const seen = new Set<string>();
-  const options: CourseTypeOption[] = [];
-
-  for (const course of courses) {
-    const label = course.title.trim();
-    if (!label) continue;
-    const normalized = label.toLowerCase();
-    if (defaultLabels.has(normalized) || seen.has(normalized)) continue;
-    seen.add(normalized);
-    options.push({ value: slugifyCourseType(label), label, custom: true });
-  }
-
-  return options;
-}
-
 function buildAutoJitsiLink(title: string, startsAtIso: string): string | null {
   const cleanTitle = title
     .trim()
@@ -352,7 +334,7 @@ function emptyCreateForm(): FormState {
     jitsiLink: '',
     replayUrl: '',
     spotifyPlaylistUrl: '',
-    courseLanguage: '',
+    courseLanguage: 'fr',
   };
 }
 
@@ -429,14 +411,11 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
   const courseTypeOptions = useMemo(() => {
     const byValue = new Map<string, CourseTypeOption>();
     for (const opt of COURSE_TYPE_OPTIONS) byValue.set(opt.value, opt);
-    for (const opt of courseTitleOptions(courses)) {
-      if (!byValue.has(opt.value)) byValue.set(opt.value, opt);
-    }
     for (const opt of customCourseTypes) {
       if (!byValue.has(opt.value)) byValue.set(opt.value, opt);
     }
     return Array.from(byValue.values());
-  }, [courses, customCourseTypes]);
+  }, [customCourseTypes]);
 
   const { upcoming: upcomingCourses, history: historyCourses } = useMemo(
     () => splitCoursesByTab(courses, Date.now()),
@@ -485,15 +464,19 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
     }
   }
 
-  function saveTemplate(type: string, description: string) {
-    const next = { ...templates, [type]: description };
+  function persistTemplates(next: Record<string, string>) {
     setTemplates(next);
     try {
       window.localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(next));
-      setNotice({ type: 'ok', text: `Template enregistré pour ${getCourseTypeLabel(type, courseTypeOptions)}.` });
     } catch {
       setNotice({ type: 'err', text: 'Impossible d’enregistrer le template localement.' });
     }
+  }
+
+  function saveTemplate(type: string, description: string) {
+    const next = { ...templates, [type]: description };
+    persistTemplates(next);
+    setNotice({ type: 'ok', text: `Template enregistré pour ${getCourseTypeLabel(type, courseTypeOptions)}.` });
   }
 
   function startNewType(target: 'create' | 'edit') {
@@ -527,6 +510,33 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
 
     setNotice({ type: 'ok', text: `Type « ${label} » ajouté.` });
     cancelNewType();
+  }
+
+  function isCustomCourseType(type: string): boolean {
+    return customCourseTypes.some((opt) => opt.value === type);
+  }
+
+  function deleteCustomCourseType(type: string) {
+    const option = customCourseTypes.find((opt) => opt.value === type);
+    if (!option) return;
+    if (!window.confirm(`Supprimer le type « ${option.label} » de la liste ?`)) return;
+
+    persistCustomCourseTypes(customCourseTypes.filter((opt) => opt.value !== type));
+    const nextTemplates = { ...templates };
+    delete nextTemplates[type];
+    persistTemplates(nextTemplates);
+
+    setCreateForm((s) =>
+      s.courseType === type
+        ? { ...s, courseType: 'pilates-mat', title: 'Pilates Mat', description: nextTemplates['pilates-mat'] ?? '' }
+        : s,
+    );
+    setEditForm((s) =>
+      s?.courseType === type
+        ? { ...s, courseType: 'pilates-mat', title: 'Pilates Mat', description: nextTemplates['pilates-mat'] ?? '' }
+        : s,
+    );
+    setNotice({ type: 'ok', text: `Type « ${option.label} » supprimé de la liste.` });
   }
 
   function refreshData() {
@@ -649,6 +659,15 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 <option disabled>──────────</option>
                 <option value={NEW_COURSE_TYPE_VALUE}>+ Nouveau type de cours…</option>
               </select>
+              {isCustomCourseType(createForm.courseType) ? (
+                <button
+                  type="button"
+                  onClick={() => deleteCustomCourseType(createForm.courseType)}
+                  className="mt-2 block text-left text-[11px] font-semibold normal-case tracking-normal text-rose-700 underline-offset-4 hover:underline"
+                >
+                  Supprimer ce type
+                </button>
+              ) : null}
             </label>
             {newTypeTarget === 'create' ? (
               <div className="rounded-3xl border border-white/60 bg-white/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md">
@@ -1005,6 +1024,15 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                   <option disabled>──────────</option>
                   <option value={NEW_COURSE_TYPE_VALUE}>+ Nouveau type de cours…</option>
                 </select>
+                {isCustomCourseType(editForm.courseType) ? (
+                  <button
+                    type="button"
+                    onClick={() => deleteCustomCourseType(editForm.courseType)}
+                    className="mt-2 block text-left text-[11px] font-semibold normal-case tracking-normal text-rose-700 underline-offset-4 hover:underline"
+                  >
+                    Supprimer ce type
+                  </button>
+                ) : null}
               </label>
               {newTypeTarget === 'edit' ? (
                 <div className="rounded-3xl border border-white/60 bg-white/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md">
