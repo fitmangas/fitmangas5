@@ -172,7 +172,7 @@ export function paymentBadgeClass(badge: MemberPaymentBadge): string {
     return 'bg-[#f4d4c8] text-[#7a2e1a] ring-1 ring-[#c45c3e]/35';
   }
   if (badge === 'trial') return 'bg-amber-100 text-amber-950';
-  if (badge === 'paid') return 'bg-stone-100 text-stone-800';
+  if (badge === 'paid') return 'bg-emerald-50/80 text-emerald-900 ring-1 ring-emerald-300/55';
   if (badge === 'canceled') return 'bg-slate-100 text-slate-700';
   if (badge === 'paused') return 'bg-indigo-100 text-indigo-900';
   if (badge === 'incomplete' || badge === 'incomplete_expired') return 'bg-orange-100 text-orange-950';

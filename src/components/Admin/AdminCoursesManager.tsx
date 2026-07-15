@@ -62,7 +62,7 @@ function courseTimezone(row?: Pick<AdminCourseRow, 'timezone'> | null): string {
 type FormState = {
   title: string;
   description: string;
-  courseType: 'pilates-mat' | 'yoga-flow' | 'postural' | 'renfo-core';
+  courseType: string;
   timeZone: string;
   startsLocal: string;
   endsLocal: string;
@@ -79,14 +79,16 @@ type FormState = {
   courseLanguage: '' | 'fr' | 'es';
 };
 
-const COURSE_TYPE_OPTIONS: Array<{ value: FormState['courseType']; label: string }> = [
+type CourseTypeOption = { value: string; label: string; custom?: boolean };
+
+const COURSE_TYPE_OPTIONS: CourseTypeOption[] = [
   { value: 'pilates-mat', label: 'Pilates Mat' },
   { value: 'yoga-flow', label: 'Yoga Flow' },
   { value: 'postural', label: 'Postural' },
   { value: 'renfo-core', label: 'Renfo Core' },
 ];
 
-const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
+const DESCRIPTION_TEMPLATES: Record<string, string> = {
   'pilates-mat':
     'Session Pilates Mat axee sur le centre, la posture et la fluidite des mouvements. Travail progressif pour renforcer en profondeur et gagner en stabilite.',
   'yoga-flow':
@@ -98,9 +100,13 @@ const DESCRIPTION_TEMPLATES: Record<FormState['courseType'], string> = {
 };
 
 const TEMPLATE_STORAGE_KEY = 'admin-course-description-templates-v1';
+const CUSTOM_TYPES_STORAGE_KEY = 'admin-course-custom-types-v1';
+const NEW_COURSE_TYPE_VALUE = '__new_course_type__';
 
 const REFINED_SELECT =
   'admin-form-refined mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-5 py-3.5 text-sm shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25';
+const REFINED_SELECT_COMPACT =
+  'admin-form-refined mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25 sm:w-auto';
 
 const REFINED_TEXTAREA =
   'admin-form-refined admin-form-refined--textarea mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-5 py-4 text-sm shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25';
@@ -210,16 +216,56 @@ function CourseRowActions({
   );
 }
 
-function getCourseTypeLabel(courseType: FormState['courseType']): string {
-  return COURSE_TYPE_OPTIONS.find((opt) => opt.value === courseType)?.label ?? 'Cours';
+function slugifyCourseType(label: string): string {
+  const base = label
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
+  return base || 'cours';
 }
 
-function inferCourseTypeFromTitle(title: string): FormState['courseType'] {
+function uniqueCourseTypeValue(label: string, options: CourseTypeOption[]): string {
+  const base = slugifyCourseType(label);
+  const existing = new Set(options.map((opt) => opt.value));
+  if (!existing.has(base)) return base;
+  let index = 2;
+  while (existing.has(`${base}-${index}`)) index += 1;
+  return `${base}-${index}`;
+}
+
+function getCourseTypeLabel(courseType: string, options: CourseTypeOption[]): string {
+  return options.find((opt) => opt.value === courseType)?.label ?? 'Cours';
+}
+
+function inferCourseTypeFromTitle(title: string, options: CourseTypeOption[]): string {
+  const exact = options.find((opt) => opt.label.trim().toLowerCase() === title.trim().toLowerCase());
+  if (exact) return exact.value;
   const normalized = title.toLowerCase();
   if (normalized.includes('yoga')) return 'yoga-flow';
   if (normalized.includes('postural')) return 'postural';
   if (normalized.includes('renfo') || normalized.includes('core')) return 'renfo-core';
   return 'pilates-mat';
+}
+
+function courseTitleOptions(courses: AdminCourseRow[]): CourseTypeOption[] {
+  const defaultLabels = new Set(COURSE_TYPE_OPTIONS.map((opt) => opt.label.trim().toLowerCase()));
+  const seen = new Set<string>();
+  const options: CourseTypeOption[] = [];
+
+  for (const course of courses) {
+    const label = course.title.trim();
+    if (!label) continue;
+    const normalized = label.toLowerCase();
+    if (defaultLabels.has(normalized) || seen.has(normalized)) continue;
+    seen.add(normalized);
+    options.push({ value: slugifyCourseType(label), label, custom: true });
+  }
+
+  return options;
 }
 
 function buildAutoJitsiLink(title: string, startsAtIso: string): string | null {
@@ -254,7 +300,7 @@ function emptyCreateForm(): FormState {
     `${toCourseDatetimeLocalValue(new Date().toISOString()).slice(0, 14)}00`,
   );
   return {
-    title: getCourseTypeLabel('pilates-mat'),
+    title: 'Pilates Mat',
     description: DESCRIPTION_TEMPLATES['pilates-mat'],
     courseType: 'pilates-mat',
     timeZone: DEFAULT_COURSE_TIMEZONE,
@@ -274,8 +320,8 @@ function emptyCreateForm(): FormState {
   };
 }
 
-function courseToFormState(c: AdminCourseRow): FormState {
-  const inferredType = inferCourseTypeFromTitle(c.title);
+function courseToFormState(c: AdminCourseRow, courseTypeOptions: CourseTypeOption[]): FormState {
+  const inferredType = inferCourseTypeFromTitle(c.title, courseTypeOptions);
   return {
     title: c.title,
     description: c.description ?? '',
@@ -304,12 +350,12 @@ function parseCapacity(cap: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function formToPayload(f: FormState) {
+function formToPayload(f: FormState, courseTypeOptions: CourseTypeOption[]) {
   if (!isCompleteCourseDatetimeLocal(f.startsLocal) || !isCompleteCourseDatetimeLocal(f.endsLocal)) {
     throw new Error('Renseigne une date et une heure valides (format 24 h, ex. 19:00).');
   }
   const normalizedDescription = f.description.trim();
-  const autoTitle = getCourseTypeLabel(f.courseType);
+  const autoTitle = getCourseTypeLabel(f.courseType, courseTypeOptions);
   const startsAt = isoFromCourseDatetimeLocal(f.startsLocal, f.timeZone);
   const autoJitsi = buildAutoJitsiLink(autoTitle, startsAt);
   return {
@@ -337,9 +383,24 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
   const [editing, setEditing] = useState<AdminCourseRow | null>(null);
   const [editForm, setEditForm] = useState<FormState | null>(null);
   const [createForm, setCreateForm] = useState<FormState>(() => emptyCreateForm());
-  const [templates, setTemplates] = useState<Record<FormState['courseType'], string>>(DESCRIPTION_TEMPLATES);
+  const [templates, setTemplates] = useState<Record<string, string>>(DESCRIPTION_TEMPLATES);
+  const [customCourseTypes, setCustomCourseTypes] = useState<CourseTypeOption[]>([]);
+  const [newTypeTarget, setNewTypeTarget] = useState<'create' | 'edit' | null>(null);
+  const [newTypeName, setNewTypeName] = useState('');
   const [listTab, setListTab] = useState<CourseListTab>('upcoming');
   const [isPending, startTransition] = useTransition();
+
+  const courseTypeOptions = useMemo(() => {
+    const byValue = new Map<string, CourseTypeOption>();
+    for (const opt of COURSE_TYPE_OPTIONS) byValue.set(opt.value, opt);
+    for (const opt of courseTitleOptions(courses)) {
+      if (!byValue.has(opt.value)) byValue.set(opt.value, opt);
+    }
+    for (const opt of customCourseTypes) {
+      if (!byValue.has(opt.value)) byValue.set(opt.value, opt);
+    }
+    return Array.from(byValue.values());
+  }, [courses, customCourseTypes]);
 
   const { upcoming: upcomingCourses, history: historyCourses } = useMemo(
     () => splitCoursesByTab(courses, Date.now()),
@@ -352,24 +413,84 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
     try {
       const raw = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<Record<FormState['courseType'], string>>;
-      const merged = { ...DESCRIPTION_TEMPLATES, ...parsed };
+      const parsed = JSON.parse(raw) as Partial<Record<string, string>>;
+      const merged: Record<string, string> = { ...DESCRIPTION_TEMPLATES };
+      for (const [key, value] of Object.entries(parsed)) {
+        if (typeof value === 'string') merged[key] = value;
+      }
       setTemplates(merged);
-      setCreateForm((s) => ({ ...s, description: merged[s.courseType] }));
+      setCreateForm((s) => ({ ...s, description: merged[s.courseType] ?? '' }));
     } catch {
       // ignore parse issues
     }
   }, []);
 
-  function saveTemplate(type: FormState['courseType'], description: string) {
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CUSTOM_TYPES_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as CourseTypeOption[];
+      setCustomCourseTypes(
+        parsed
+          .filter((opt) => typeof opt?.value === 'string' && typeof opt?.label === 'string')
+          .map((opt) => ({ value: opt.value, label: opt.label, custom: true })),
+      );
+    } catch {
+      // ignore parse issues
+    }
+  }, []);
+
+  function persistCustomCourseTypes(next: CourseTypeOption[]) {
+    setCustomCourseTypes(next);
+    try {
+      window.localStorage.setItem(CUSTOM_TYPES_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      setNotice({ type: 'err', text: 'Impossible d’enregistrer le nouveau type localement.' });
+    }
+  }
+
+  function saveTemplate(type: string, description: string) {
     const next = { ...templates, [type]: description };
     setTemplates(next);
     try {
       window.localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(next));
-      setNotice({ type: 'ok', text: `Template enregistré pour ${getCourseTypeLabel(type)}.` });
+      setNotice({ type: 'ok', text: `Template enregistré pour ${getCourseTypeLabel(type, courseTypeOptions)}.` });
     } catch {
       setNotice({ type: 'err', text: 'Impossible d’enregistrer le template localement.' });
     }
+  }
+
+  function startNewType(target: 'create' | 'edit') {
+    setNewTypeTarget(target);
+    setNewTypeName('');
+  }
+
+  function cancelNewType() {
+    setNewTypeTarget(null);
+    setNewTypeName('');
+  }
+
+  function createCustomCourseType(target: 'create' | 'edit') {
+    const label = newTypeName.trim();
+    if (!label) {
+      setNotice({ type: 'err', text: 'Renseigne le nom du nouveau type de cours.' });
+      return;
+    }
+
+    const value = uniqueCourseTypeValue(label, courseTypeOptions);
+    const option: CourseTypeOption = { value, label, custom: true };
+    const nextCustom = [...customCourseTypes.filter((opt) => opt.value !== value), option];
+    persistCustomCourseTypes(nextCustom);
+    setTemplates((current) => ({ ...current, [value]: current[value] ?? '' }));
+
+    if (target === 'create') {
+      setCreateForm((s) => ({ ...s, courseType: value, title: label, description: templates[value] ?? '' }));
+    } else {
+      setEditForm((s) => (s ? { ...s, courseType: value, title: label, description: templates[value] ?? s.description } : s));
+    }
+
+    setNotice({ type: 'ok', text: `Type « ${label} » ajouté.` });
+    cancelNewType();
   }
 
   function refreshData() {
@@ -381,7 +502,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
     setNotice(null);
     startTransition(async () => {
       try {
-        const res = await createCourseAction(formToPayload(createForm));
+        const res = await createCourseAction(formToPayload(createForm, courseTypeOptions));
         if (res.ok) {
           setNotice({ type: 'ok', text: 'Séance créée.' });
           setCreateForm((s) => ({ ...emptyCreateForm(), description: templates[s.courseType] ?? templates['pilates-mat'] }));
@@ -397,7 +518,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
 
   function openEdit(c: AdminCourseRow) {
     setEditing(c);
-    setEditForm(courseToFormState(c));
+    setEditForm(courseToFormState(c, courseTypeOptions));
     setNotice(null);
   }
 
@@ -407,7 +528,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
     setNotice(null);
     startTransition(async () => {
       try {
-        const res = await updateCourseAction(editing.id, formToPayload(editForm));
+        const res = await updateCourseAction(editing.id, formToPayload(editForm, courseTypeOptions));
         if (res.ok) {
           setNotice({ type: 'ok', text: 'Séance mise à jour.' });
           setEditing(null);
@@ -463,25 +584,67 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
       ) : null}
 
       <section className={ADMIN_PANEL_CLASS}>
-        <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
+        <form onSubmit={handleCreate} className="space-y-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Type de cours
+              <select
+                value={createForm.courseType}
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  if (selected === NEW_COURSE_TYPE_VALUE) {
+                    startNewType('create');
+                    return;
+                  }
+                  setCreateForm((s) => ({
+                    ...s,
+                    courseType: selected,
+                    description: templates[selected] ?? '',
+                    title: getCourseTypeLabel(selected, courseTypeOptions),
+                  }));
+                }}
+                className={`${REFINED_SELECT_COMPACT} sm:min-w-[14rem]`}
+              >
+                {courseTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+                <option disabled>──────────</option>
+                <option value={NEW_COURSE_TYPE_VALUE}>+ Nouveau type de cours…</option>
+              </select>
+            </label>
+            {newTypeTarget === 'create' ? (
+              <div className="rounded-3xl border border-white/60 bg-white/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md">
+                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                  Nom du nouveau type
+                  <input
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    placeholder="Ex. Pilates doux"
+                    className={`${REFINED_SELECT_COMPACT} sm:w-[15rem]`}
+                  />
+                </label>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => createCustomCourseType('create')}
+                    className="rounded-full bg-[#C9A96E]/30 px-4 py-2 text-xs font-semibold text-luxury-ink ring-1 ring-[#C9A96E]/45 transition hover:bg-[#C9A96E]/40"
+                  >
+                    Créer ce type
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelNewType}
+                    className="rounded-full px-4 py-2 text-xs font-semibold text-luxury-muted transition hover:bg-white/50"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Type de cours
-            <select
-              value={createForm.courseType}
-              onChange={(e) => {
-                const selected = e.target.value as FormState['courseType'];
-                setCreateForm((s) => ({ ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) }));
-              }}
-              className={REFINED_SELECT}
-            >
-              {COURSE_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="md:col-span-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
             Description
             <textarea
               rows={3}
@@ -497,49 +660,50 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               💾 Enregistrer comme description par défaut pour ce type
             </button>
           </label>
-          <div className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Format
-            <div className="mt-2 inline-flex rounded-full border border-white/80 bg-white/45 p-1">
-              <button
-                type="button"
-                onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'online', capacityMax: '' }))}
-                className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
-                  createForm.courseFormat === 'online'
-                    ? TAB_ACTIVE
-                    : 'text-luxury-muted'
-                }`}
-              >
-                Visio
-              </button>
-              <button
-                type="button"
-                onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'onsite' }))}
-                className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
-                  createForm.courseFormat === 'onsite'
-                    ? TAB_ACTIVE
-                    : 'text-luxury-muted'
-                }`}
-              >
-                Présentiel
-              </button>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+            <div className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Format
+              <div className="mt-2 inline-flex rounded-full border border-white/80 bg-white/45 p-1">
+                <button
+                  type="button"
+                  onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'online', capacityMax: '' }))}
+                  className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
+                    createForm.courseFormat === 'online'
+                      ? TAB_ACTIVE
+                      : 'text-luxury-muted'
+                  }`}
+                >
+                  Visio
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateForm((s) => ({ ...s, courseFormat: 'onsite' }))}
+                  className={`rounded-full px-4 py-1.5 text-[11px] font-semibold normal-case transition ${
+                    createForm.courseFormat === 'onsite'
+                      ? TAB_ACTIVE
+                      : 'text-luxury-muted'
+                  }`}
+                >
+                  Présentiel
+                </button>
+              </div>
             </div>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Langue du cours
+              <select
+                value={createForm.courseLanguage}
+                onChange={(e) =>
+                  setCreateForm((s) => ({ ...s, courseLanguage: e.target.value as FormState['courseLanguage'] }))
+                }
+                className={`${REFINED_SELECT_COMPACT} sm:w-[11rem]`}
+              >
+                <option value="">— Non définie</option>
+                <option value="fr">Français</option>
+                <option value="es">Espagnol</option>
+              </select>
+            </label>
           </div>
-          <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-            Langue du cours
-            <select
-              value={createForm.courseLanguage}
-              onChange={(e) =>
-                setCreateForm((s) => ({ ...s, courseLanguage: e.target.value as FormState['courseLanguage'] }))
-              }
-              className={REFINED_SELECT}
-            >
-              <option value="">— Non définie</option>
-              <option value="fr">Français</option>
-              <option value="es">Espagnol</option>
-            </select>
-          </label>
           <CourseDatetimeFields
-            className="md:col-span-2"
             timeZone={createForm.timeZone}
             onTimeZoneChange={(nextTimeZone) =>
               setCreateForm((s) => ({ ...s, ...applyTimezoneChange(s, nextTimeZone) }))
@@ -556,32 +720,32 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
             onEndsLocalChange={(endsLocal) => setCreateForm((s) => ({ ...s, endsLocal }))}
           />
           {createForm.courseFormat === 'onsite' ? (
-            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-              Ville
-              <select
-                value={createForm.city}
-                onChange={(e) => setCreateForm((s) => ({ ...s, city: e.target.value as 'Nantes' | 'Mexico' }))}
-                className={REFINED_SELECT}
-              >
-                <option value="Nantes">Nantes</option>
-                <option value="Mexico">Mexico</option>
-              </select>
-            </label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                Ville
+                <select
+                  value={createForm.city}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, city: e.target.value as 'Nantes' | 'Mexico' }))}
+                  className={`${REFINED_SELECT_COMPACT} sm:w-[10rem]`}
+                >
+                  <option value="Nantes">Nantes</option>
+                  <option value="Mexico">Mexico</option>
+                </select>
+              </label>
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                Capacité (places)
+                <input
+                  type="number"
+                  min={1}
+                  value={createForm.capacityMax}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, capacityMax: e.target.value }))}
+                  placeholder="Illimité si vide"
+                  className={`${REFINED_SELECT_COMPACT} sm:w-[12rem]`}
+                />
+              </label>
+            </div>
           ) : null}
-          {createForm.courseFormat === 'onsite' ? (
-            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-              Capacité (places)
-              <input
-                type="number"
-                min={1}
-                value={createForm.capacityMax}
-                onChange={(e) => setCreateForm((s) => ({ ...s, capacityMax: e.target.value }))}
-                placeholder="Illimité si vide"
-                className={REFINED_SELECT}
-              />
-            </label>
-          ) : null}
-          <label className="md:col-span-2 flex items-center gap-2 text-sm text-brand-ink/70">
+          <label className="flex items-center gap-2 text-sm text-brand-ink/70">
             <input
               type="checkbox"
               checked={!createForm.isPublished}
@@ -590,7 +754,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
             />
             Enregistrer comme Brouillon
           </label>
-          <div className="md:col-span-2">
+          <div>
             <button
               type="submit"
               disabled={isPending}
@@ -789,18 +953,62 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 <select
                   value={editForm.courseType}
                   onChange={(e) => {
-                    const selected = e.target.value as FormState['courseType'];
-                    setEditForm((s) => (s ? { ...s, courseType: selected, description: templates[selected], title: getCourseTypeLabel(selected) } : s));
+                    const selected = e.target.value;
+                    if (selected === NEW_COURSE_TYPE_VALUE) {
+                      startNewType('edit');
+                      return;
+                    }
+                    setEditForm((s) =>
+                      s
+                        ? {
+                            ...s,
+                            courseType: selected,
+                            description: templates[selected] ?? '',
+                            title: getCourseTypeLabel(selected, courseTypeOptions),
+                          }
+                        : s,
+                    );
                   }}
                   className={REFINED_SELECT}
                 >
-                  {COURSE_TYPE_OPTIONS.map((opt) => (
+                  {courseTypeOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
                   ))}
+                  <option disabled>──────────</option>
+                  <option value={NEW_COURSE_TYPE_VALUE}>+ Nouveau type de cours…</option>
                 </select>
               </label>
+              {newTypeTarget === 'edit' ? (
+                <div className="rounded-3xl border border-white/60 bg-white/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-md">
+                  <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                    Nom du nouveau type
+                    <input
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      placeholder="Ex. Pilates doux"
+                      className={REFINED_SELECT}
+                    />
+                  </label>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => createCustomCourseType('edit')}
+                      className="rounded-full bg-[#C9A96E]/30 px-4 py-2 text-xs font-semibold text-luxury-ink ring-1 ring-[#C9A96E]/45 transition hover:bg-[#C9A96E]/40"
+                    >
+                      Créer ce type
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelNewType}
+                      className="rounded-full px-4 py-2 text-xs font-semibold text-luxury-muted transition hover:bg-white/50"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                 Description
                 <textarea
