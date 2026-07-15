@@ -165,6 +165,8 @@ Règles STRICTES:
 - title_fr: OBLIGATOIREMENT 45 à 60 caractères (compte-les), français naturel, accrocheur, bénéfice ou angle clair, avec un mot-clé longue traîne utile
 - title_es: OBLIGATOIREMENT 45 à 60 caractères, espagnol naturel (PAS une traduction mot à mot du français)
 - Viser une requête précise, pas seulement "pilates" (ex: respiration pilates, posture bureau, mal de dos, abdos profonds, routine débutant)
+- Prioriser les clusters FitMangas quand c'est cohérent: pilates en ligne, cours pilates visio, pilates débutant maison
+- Éviter de cannibaliser les pages piliers: le titre doit cibler un sous-sujet précis, pas reprendre seulement "Pilates en ligne" ou "Cours de Pilates en visio"
 - Donner envie de cliquer sans promesse médicale ni sensationnalisme
 - Cohérent avec la catégorie et le contenu réel
 - INTERDIT: "Article pilates", numéros d'article, formulations génériques vagues ("mouvement & souffle"), titres trop courts

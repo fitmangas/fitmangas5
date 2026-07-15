@@ -13,6 +13,7 @@ import { getClientLang } from '@/lib/compte/i18n';
 import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
 import { getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 import { saveMarketingSettings, toggleMarketingChecklist } from './actions';
@@ -253,6 +254,12 @@ export default async function AdminMarketingPage() {
     gaSummary,
     subscriptionStats,
   });
+  const seoExcellencePlan = buildSeoExcellencePlan({
+    articlesPublished: articles.length,
+    searchConsoleSummary,
+    gaSummary,
+    subscriptionStats,
+  });
 
   return (
     <main className="mx-auto max-w-[1280px] space-y-8 px-2 pb-20 pt-3 md:px-6 md:pt-6">
@@ -278,6 +285,8 @@ export default async function AdminMarketingPage() {
           <KpiSummaryCard key={card.label} {...card} />
         ))}
       </section>
+
+      <SeoExcellencePlanCard plan={seoExcellencePlan} />
 
       <MarketingGlobalAiAdvisor />
 
@@ -846,6 +855,197 @@ function buildMarketingKpis({
   ] satisfies Array<{ label: string; value: string; detail: string; info: string; tone: KpiTone }>;
 }
 
+type SeoExcellencePlan = {
+  score: number;
+  level: string;
+  summary: string;
+  milestones: Array<{ label: string; current: string; target: string; done: boolean; tone: KpiTone }>;
+  pillars: Array<{ title: string; goal: string; actions: string[] }>;
+};
+
+function buildSeoExcellencePlan({
+  articlesPublished,
+  searchConsoleSummary,
+  gaSummary,
+  subscriptionStats,
+}: {
+  articlesPublished: number;
+  searchConsoleSummary: SearchConsoleSummary;
+  gaSummary: GaSummary;
+  subscriptionStats: SubscriptionStats;
+}): SeoExcellencePlan {
+  const overview = searchConsoleSummary.overview;
+  const avgPosition = overview?.position ?? null;
+  const impressions = overview?.impressions ?? 0;
+  const clicks = overview?.clicks ?? 0;
+  const keyEvents = gaSummary.keyEvents30d ?? 0;
+  const completedChecks = [
+    articlesPublished >= 40,
+    articlesPublished >= 80,
+    impressions >= 500,
+    clicks >= 50,
+    avgPosition != null && avgPosition <= 10,
+    keyEvents > 0,
+    subscriptionStats.activeSubscribers >= 10,
+    subscriptionStats.failedPayments === 0,
+  ].filter(Boolean).length;
+  const score = Math.round((completedChecks / 8) * 100);
+
+  const level =
+    score >= 80
+      ? 'Excellence en approche'
+      : score >= 55
+        ? 'Accélération'
+        : score >= 30
+          ? 'Fondations solides'
+          : 'Démarrage SEO';
+
+  return {
+    score,
+    level,
+    summary:
+      "Objectif réaliste : devenir une référence sur les requêtes longues autour du Pilates en ligne avant de viser les mots ultra concurrentiels comme \"Pilates\" seul.",
+    milestones: [
+      {
+        label: 'Bibliothèque éditoriale',
+        current: `${articlesPublished} articles`,
+        target: '60 à 100 articles experts',
+        done: articlesPublished >= 60,
+        tone: articlesPublished >= 60 ? 'good' : articlesPublished >= 30 ? 'watch' : 'bad',
+      },
+      {
+        label: 'Visibilité Google',
+        current: `${formatCompact(impressions)} impressions / 28j`,
+        target: '500+ impressions / 28j',
+        done: impressions >= 500,
+        tone: impressions >= 500 ? 'good' : impressions > 0 ? 'watch' : 'bad',
+      },
+      {
+        label: 'Trafic SEO',
+        current: `${formatCompact(clicks)} clics / 28j`,
+        target: '50+ clics / 28j',
+        done: clicks >= 50,
+        tone: clicks >= 50 ? 'good' : clicks > 0 ? 'watch' : 'bad',
+      },
+      {
+        label: 'Position moyenne',
+        current: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
+        target: 'Top 10 stable',
+        done: avgPosition != null && avgPosition <= 10,
+        tone: avgPosition == null ? 'neutral' : avgPosition <= 10 ? 'good' : avgPosition <= 30 ? 'watch' : 'bad',
+      },
+      {
+        label: 'Conversions mesurées',
+        current: `${formatCompact(keyEvents)} key events GA4`,
+        target: 'Inscription + abonnement suivis',
+        done: keyEvents > 0,
+        tone: keyEvents > 0 ? 'good' : 'watch',
+      },
+    ],
+    pillars: [
+      {
+        title: '1. Pages piliers',
+        goal: 'Créer les pages qui doivent ranker sur les grosses intentions.',
+        actions: [
+          'Créer une page dédiée “Pilates en ligne”.',
+          'Créer une page “Cours de Pilates en visio”.',
+          'Créer une page “Pilates débutant à la maison”.',
+          'Relier chaque page pilier à 8-12 articles du blog.',
+        ],
+      },
+      {
+        title: '2. Doubler puis tripler le contenu',
+        goal: 'Couvrir toutes les recherches longues avant les mots génériques.',
+        actions: [
+          'Passer de 21 à 60 articles de qualité, puis viser 100.',
+          'Faire des séries : respiration, posture, dos, débutant, barre, mobilité, ventre plat sans promesse médicale.',
+          'Mettre à jour chaque mois les articles qui ont des impressions mais peu de clics.',
+        ],
+      },
+      {
+        title: '3. Autorité externe',
+        goal: 'Google doit voir que d’autres sites fiables parlent de FitMangas.',
+        actions: [
+          'Obtenir des liens depuis partenaires bien-être, studios, annuaires locaux qualitatifs et articles invités.',
+          'Publier des contenus invités sur Pilates, posture, visio et routine maison.',
+          'Transformer Instagram/YouTube/Pinterest en portes d’entrée vers les pages piliers.',
+        ],
+      },
+      {
+        title: '4. Conversion et preuve',
+        goal: 'Transformer le trafic en clientes, pas seulement faire des vues.',
+        actions: [
+          'Configurer les conversions GA4 : inscription, clic “On démarre”, checkout, abonnement.',
+          'Ajouter FAQ, avis clientes, bénéfices concrets et captures de l’expérience visio.',
+          'Tester Google Ads sur les mots-clés qui convertissent, sans croire que payer améliore le SEO naturel.',
+        ],
+      },
+      {
+        title: '5. Routine mensuelle',
+        goal: 'Gagner par régularité, pas par action unique.',
+        actions: [
+          'Chaque mois : analyser Search Console, améliorer 5 articles, publier 4 nouveaux contenus.',
+          'Demander l’indexation des pages importantes après gros changements.',
+          'Suivre les requêtes où FitMangas est positions 11-30 : ce sont les victoires les plus proches.',
+        ],
+      },
+    ],
+  };
+}
+
+function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
+  return (
+    <section className="rounded-[2rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_18px_42px_rgba(120,80,20,0.08)] backdrop-blur-xl md:p-6">
+      <div className="grid gap-5 lg:grid-cols-[0.85fr_1.4fr]">
+        <div className="rounded-[1.6rem] border border-white/70 bg-white/70 p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Objectif SEO excellence</p>
+          <div className="mt-4 flex items-end gap-3">
+            <p className="text-5xl font-semibold leading-none text-luxury-ink">{plan.score}%</p>
+            <p className="pb-1 text-sm font-semibold text-[#C45D3E]">{plan.level}</p>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-brand-sand/70">
+            <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${plan.score}%` }} />
+          </div>
+          <p className="mt-4 text-sm leading-6 text-luxury-muted">{plan.summary}</p>
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950">
+            Payer peut aider à tester et vendre plus vite via Google Ads, mais ne fait pas monter directement le SEO naturel.
+            Pour “top partout”, il faut surtout contenu + pages piliers + liens externes + patience.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {plan.milestones.map((item) => (
+              <div key={item.label} className="rounded-[1.35rem] border border-white/70 bg-white/65 p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">{item.label}</p>
+                <p className="mt-2 text-lg font-semibold text-luxury-ink">{item.current}</p>
+                <p className="mt-1 text-xs leading-5 text-luxury-muted">Cible : {item.target}</p>
+                <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${item.done ? 'bg-white text-luxury-ink ring-1 ring-[#C45D3E]/20' : item.tone === 'bad' ? 'bg-[#f4d4c8] text-[#7a2e1a]' : 'bg-amber-100 text-amber-950'}`}>
+                  {item.done ? '✅ Atteint' : item.tone === 'bad' ? '🔴 À construire' : '⚠️ En cours'}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {plan.pillars.map((pillar) => (
+              <article key={pillar.title} className="rounded-[1.35rem] border border-white/70 bg-white/65 p-4">
+                <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
+                <p className="mt-2 text-xs leading-5 text-luxury-muted">{pillar.goal}</p>
+                <ul className="mt-3 space-y-2 text-xs leading-5 text-luxury-muted">
+                  {pillar.actions.map((action) => (
+                    <li key={action}>• {action}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function formatCompact(value: number): string {
   return new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
@@ -906,6 +1106,12 @@ function publicSeoPages(t: (typeof copy)['fr']) {
       description: t.blogDescription,
       complete: true,
     },
+    ...SEO_PILLAR_PAGES.map((page) => ({
+      path: `/${page.slug}`,
+      title: `${page.shortTitle} — FitMangas`,
+      description: page.description,
+      complete: true,
+    })),
     { path: '/blog/[slug]', title: t.articleMeta, description: t.articleMetaDescription, complete: true },
     { path: '/privacy', title: 'Politique de confidentialité — FitMangas', description: t.privacyDescription, complete: true },
     { path: '/terms', title: 'Conditions générales — FitMangas', description: t.termsDescription, complete: true },

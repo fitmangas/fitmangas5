@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
 
@@ -22,6 +23,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    ...SEO_PILLAR_PAGES.map((page) => ({
+      url: `${APP_URL}/${page.slug}`,
+      lastModified: HOME_LAST_MODIFIED,
+      changeFrequency: 'weekly' as const,
+      priority: 0.92,
+    })),
     {
       url: `${APP_URL}/boutique`,
       lastModified: HOME_LAST_MODIFIED,

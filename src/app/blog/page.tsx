@@ -6,6 +6,7 @@ import { pickLocalizedArticle } from '@/lib/blog/localize';
 import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
@@ -181,6 +182,30 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           </FilterChip>
         ))}
       </div>
+
+      <section className="mt-8 rounded-[2rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_16px_38px_rgba(120,80,20,0.08)] md:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">
+          {lang === 'es' ? 'Guías SEO esenciales' : 'Guides essentiels Pilates'}
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink">
+          {lang === 'es' ? 'Empezar por las bases' : 'Commencer par les pages piliers'}
+        </h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {SEO_PILLAR_PAGES.map((pillar) => (
+            <Link
+              key={pillar.slug}
+              href={`/${pillar.slug}`}
+              className="rounded-[1.5rem] border border-white/70 bg-white/70 p-5 transition hover:border-[#C45D3E]/30 hover:bg-white"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#C45D3E]">
+                {lang === 'es' ? 'Guía Pilates' : 'Guide Pilates'}
+              </p>
+              <h3 className="mt-2 text-base font-semibold leading-snug text-luxury-ink">{pillar.shortTitle}</h3>
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-luxury-muted">{pillar.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {page === 1 && hero ? <HeroArticle article={asListArticle(hero)} lang={lang} copy={copy} /> : null}
 

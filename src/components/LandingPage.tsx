@@ -21,6 +21,7 @@ import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 import { SHOW_MEXICO } from '@/lib/landing/feature-flags';
 import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 
 const HERO_IMAGE_URL = process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL || LANDING_HERO_IMAGE;
 
@@ -924,6 +925,32 @@ export function LandingPage({
             </div>
           </section>
         ) : null}
+
+        <section className="py-12 md:py-16">
+          <div className="mb-8 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">
+              {lang === 'ES' ? 'Guías Pilates' : 'Guides Pilates'}
+            </p>
+            <h2 className="mt-3 font-serif text-3xl italic text-brand-ink md:text-4xl">
+              {lang === 'ES' ? 'Practicar mejor desde casa' : 'Mieux pratiquer depuis chez soi'}
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {SEO_PILLAR_PAGES.map((pillar) => (
+              <Link
+                key={pillar.slug}
+                href={`/${pillar.slug}`}
+                className="rounded-[28px] border border-brand-ink/[0.06] bg-white/65 p-5 text-left shadow-[0_18px_50px_rgba(48,35,28,0.07)] transition hover:-translate-y-1 hover:bg-white/85"
+              >
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">
+                  {lang === 'ES' ? 'Guía esencial' : 'Guide essentiel'}
+                </p>
+                <h3 className="mt-2 font-serif text-xl italic text-brand-ink">{pillar.shortTitle}</h3>
+                <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{pillar.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Footer */}
         <footer className="text-center">

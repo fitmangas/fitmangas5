@@ -11,6 +11,7 @@ import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import type { BlogLang } from '@/types/blog';
 
 type ArticleRow = Parameters<typeof pickLocalizedArticle>[0];
@@ -117,6 +118,30 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
         ) : null}
         <ArticleProse text={loc.content} />
       </div>
+
+      <section className="mb-10 rounded-[1.75rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.07)] backdrop-blur-xl">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
+          {lang === 'es' ? 'Guías esenciales' : 'Guides essentiels'}
+        </p>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">
+          {lang === 'es' ? 'Profundizar tu práctica de Pilates' : 'Approfondir ta pratique du Pilates'}
+        </h2>
+        <div className="mt-4 grid gap-3">
+          {SEO_PILLAR_PAGES.map((pillar) => (
+            <Link
+              key={pillar.slug}
+              href={`/${pillar.slug}`}
+              className="rounded-2xl border border-white/70 bg-white/65 p-4 transition hover:border-orange-200 hover:bg-white"
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                {lang === 'es' ? 'Guía Pilates' : 'Guide Pilates'}
+              </span>
+              <h3 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{pillar.shortTitle}</h3>
+              <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{pillar.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {relatedArticles.length > 0 ? (
         <section className="mb-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">

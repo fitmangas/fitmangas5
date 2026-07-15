@@ -14,6 +14,7 @@ import {
 } from '@/lib/google/analytics';
 import { getCrawlErrors, getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
+import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
@@ -171,6 +172,12 @@ function publicMetaPages() {
   return [
     { path: '/', title: 'FitMangas — Cours de Pilates & Barre en visio', description: 'Landing principale', complete: true },
     { path: '/blog', title: 'Blog Pilates FitMangas', description: 'Index blog', complete: true },
+    ...SEO_PILLAR_PAGES.map((page) => ({
+      path: `/${page.slug}`,
+      title: page.title,
+      description: page.description,
+      complete: true,
+    })),
     { path: '/blog/[slug]', title: 'Meta dynamiques par article', description: 'OG + Twitter Card', complete: true },
     { path: '/privacy', title: 'Politique de confidentialité', description: 'Page légale', complete: true },
     { path: '/terms', title: 'Conditions générales', description: 'Page légale', complete: true },

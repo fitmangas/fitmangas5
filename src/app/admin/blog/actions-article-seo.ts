@@ -36,7 +36,12 @@ Réponds STRICTEMENT en JSON avec les clés:
 - score: nombre 0-100 (score SEO estimé)
 - title_suggestion: titre optimisé, moins de 60 caractères
 - meta_description: meta description entre 140 et 155 caractères
-- content_advice: paragraphe court (structure, longueur, mots-clés manquants)
+- content_advice: paragraphe court (structure, longueur, mots-clés manquants, cluster pilier à soutenir: Pilates en ligne, Pilates en visio ou Pilates débutant maison)
+
+Règles:
+- privilégier les requêtes longues liées aux pages piliers FitMangas
+- éviter de conseiller un titre trop général qui cannibalise une page pilier
+- ne pas promettre de bénéfice médical ou de résultat garanti
 
 Sans markdown ni texte hors JSON.`;
 
@@ -97,8 +102,13 @@ Réponds STRICTEMENT en JSON avec les clés:
 
 Contraintes SEO:
 - viser une intention de recherche précise (ex: respiration pilates débutant, posture bureau, mal de dos, abdos profonds)
+- rattacher l'article à UN cluster principal FitMangas: Pilates en ligne (/pilates-en-ligne), Cours de Pilates en visio (/cours-pilates-visio), ou Pilates débutant à la maison (/pilates-debutant-maison)
+- traiter un sous-sujet longue traîne du cluster, sans cannibaliser la page pilier (pas de guide général si le sujet doit être spécifique)
+- exemples d'angles utiles: routine pilates débutant maison, respiration pilates en ligne, posture pilates visio, abdos profonds pilates débutant, mobilité dos pilates maison
 - intégrer le mot-clé principal dans l’introduction, un <h2> et la conclusion
+- inclure une FAQ qui répond à une vraie question Google autour du cluster choisi
 - ne pas inventer de liens HTML externes ; le site ajoute le maillage interne automatiquement
+- ne pas promettre de guérison, transformation médicale, perte de poids garantie ou résultat irréaliste
 
 Sans markdown ni texte hors JSON.`;
 

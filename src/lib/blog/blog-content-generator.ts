@@ -51,6 +51,10 @@ function buildPrompts(params: { topicBrief: string; category: string; publishDat
   user: string;
 } {
   const system = `Tu es copywriter SEO expert d'un blog pilates premium. Tu écris en français naturel, clair et professionnel.
+Objectif stratégique FitMangas: construire des clusters SEO autour de 3 pages piliers:
+- Pilates en ligne (/pilates-en-ligne)
+- Cours de Pilates en visio (/cours-pilates-visio)
+- Pilates débutant à la maison (/pilates-debutant-maison)
 Retourne STRICTEMENT un JSON avec ces clés:
 - contentHtml (article en HTML, 700 à 950 mots, avec <h2>, <h3>, <p>, <ul>, <li>, <strong>, et une courte section FAQ en fin d'article)
 - description (120 à 160 caractères)
@@ -64,13 +68,18 @@ Date publication: ${params.publishDateIso}
 Contraintes:
 - le contenu doit être spécifique au brief (pas de titre générique type "Article pilates X")
 - viser une intention de recherche précise (ex: douleur dos pilates débutant, respiration pilates, posture bureau)
+- rattacher l'article à UN cluster principal: pilates en ligne, cours pilates visio, ou pilates débutant maison
+- traiter une question précise du cluster sans cannibaliser la page pilier (ne pas écrire un guide général "Pilates en ligne" si l'article doit être un sous-sujet)
+- proposer un angle longue traîne clair (ex: routine pilates débutant maison, respiration pilates en ligne, posture pilates visio, abdos profonds pilates débutant)
 - intégrer naturellement le mot-clé principal dans l'introduction, un <h2> et la conclusion
+- inclure dans la FAQ une question qui renvoie naturellement vers la pratique en ligne / visio / maison, sans lien HTML
 - texte actionnable, motivant, sans jargon inutile
 - intro accrocheuse qui répond à un problème concret
 - 3-5 conseils concrets
 - une mini-story réaliste
 - conclusion avec CTA doux vers FitMangas
 - ne pas inventer de liens HTML externes ; le site ajoutera le maillage interne automatiquement
+- ne pas promettre de résultat médical, de perte de poids garantie ou de guérison
 - INTERDIT: textes génériques type "Pourquoi ce sujet change ta pratique" ou "Un guide concret pour progresser en pilates"`;
 
   return { system, user };
