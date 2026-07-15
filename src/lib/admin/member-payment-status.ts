@@ -119,6 +119,14 @@ export function computeMemberPaymentStatus(args: {
   const now = args.now ?? Date.now();
   const realSubs = args.subscriptions.filter((row) => isRealStripeSubscriptionId(row.stripe_subscription_id));
   const primary = pickPrimarySubscription(realSubs);
+  const profileStatus = normalizeStatus(args.profileSubscriptionStatus);
+
+  // Ces statuts Stripe ne rentrent pas tous dans l’enum subscriptions.status.
+  // Le webhook les conserve dans profiles.subscription_status pour l’affichage admin.
+  if (profileStatus === 'unpaid' || profileStatus === 'incomplete' || profileStatus === 'incomplete_expired') {
+    const fromProfile = mapStripeStatusToBadge(profileStatus);
+    if (fromProfile) return { badge: fromProfile, detail: null };
+  }
 
   if (primary) {
     const badge = mapStripeStatusToBadge(normalizeStatus(primary.status));
@@ -127,7 +135,6 @@ export function computeMemberPaymentStatus(args: {
     }
   }
 
-  const profileStatus = normalizeStatus(args.profileSubscriptionStatus);
   if (profileStatus) {
     const fromProfile = mapStripeStatusToBadge(profileStatus);
     if (fromProfile) {

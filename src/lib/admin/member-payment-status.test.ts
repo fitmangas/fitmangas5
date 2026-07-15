@@ -113,4 +113,21 @@ describe('computeMemberPaymentStatus', () => {
       }),
     ).toEqual({ badge: 'incomplete', detail: null });
   });
+
+  it('préfère le statut Stripe brut du profil pour les statuts non supportés par l’enum', () => {
+    expect(
+      computeMemberPaymentStatus({
+        subscriptions: [
+          {
+            status: 'canceled',
+            ends_at: null,
+            stripe_subscription_id: 'sub_expired',
+          },
+        ],
+        stripeCustomerId: 'cus_expired',
+        profileSubscriptionStatus: 'incomplete_expired',
+        now,
+      }),
+    ).toEqual({ badge: 'incomplete_expired', detail: null });
+  });
 });

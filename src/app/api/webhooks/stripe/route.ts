@@ -8,6 +8,7 @@ import { syncReferralRewardForReferrer, syncReferrerRewardAfterReferredUserChang
 import { buildProfileSubscriptionUpdate } from '@/lib/stripe/profile-subscription-sync';
 import { findUserIdByEmail } from '@/lib/stripe/find-user-by-email';
 import { resolveStripeCustomerIdFromSession } from '@/lib/stripe/resolve-checkout-customer';
+import { syncStripeSubscriptionStatus } from '@/lib/stripe/subscription-status-sync';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   dispatchCheckoutAbandoned,
@@ -31,6 +32,57 @@ function stripeClient() {
 function asString(value: string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined) {
   if (!value) return null;
   return typeof value === 'string' ? value : value.id;
+}
+
+function eventCreatedAt(event: Stripe.Event): string {
+  return new Date(event.created * 1000).toISOString();
+}
+
+function readSubscriptionReference(value: unknown): string | Stripe.Subscription | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && 'id' in value) {
+    const id = (value as { id?: unknown }).id;
+    if (typeof id === 'string' && id.startsWith('sub_')) {
+      return value as Stripe.Subscription;
+    }
+  }
+  return null;
+}
+
+function invoiceSubscriptionReference(invoice: Stripe.Invoice): string | Stripe.Subscription | null {
+  const direct = readSubscriptionReference((invoice as unknown as { subscription?: unknown }).subscription);
+  if (direct) return direct;
+
+  const parent = invoice as unknown as {
+    parent?: { subscription_details?: { subscription?: unknown } | null } | null;
+  };
+  const fromParent = readSubscriptionReference(parent.parent?.subscription_details?.subscription);
+  if (fromParent) return fromParent;
+
+  const withLines = invoice as unknown as {
+    lines?: {
+      data?: Array<{
+        subscription?: unknown;
+        parent?: { subscription_item_details?: { subscription?: unknown } | null } | null;
+      }>;
+    };
+  };
+  for (const line of withLines.lines?.data ?? []) {
+    const fromLine = readSubscriptionReference(line.subscription);
+    if (fromLine) return fromLine;
+    const fromLineParent = readSubscriptionReference(line.parent?.subscription_item_details?.subscription);
+    if (fromLineParent) return fromLineParent;
+  }
+
+  return null;
+}
+
+async function retrieveInvoiceSubscription(stripe: Stripe, invoice: Stripe.Invoice): Promise<Stripe.Subscription | null> {
+  const ref = invoiceSubscriptionReference(invoice);
+  if (!ref) return null;
+  if (typeof ref !== 'string') return ref;
+  return stripe.subscriptions.retrieve(ref);
 }
 
 async function findUserIdByCustomer(admin: ReturnType<typeof createAdminClient>, customerId: string | null) {
@@ -202,6 +254,26 @@ export async function POST(request: Request) {
         }
         break;
       }
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId =
+          subscription.metadata?.supabase_user_id ?? (await findUserIdByCustomer(admin, asString(subscription.customer)));
+        if (userId) {
+          await syncStripeSubscriptionStatus({
+            client: admin,
+            userId,
+            subscription,
+            source: event.type,
+            eventCreatedAt: eventCreatedAt(event),
+          });
+        } else {
+          console.warn('[stripe webhook] customer.subscription.updated skip — utilisateur introuvable', {
+            subscriptionId: subscription.id,
+            customerId: asString(subscription.customer),
+          });
+        }
+        break;
+      }
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const userId =
@@ -237,14 +309,41 @@ export async function POST(request: Request) {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = asString(invoice.customer);
         const userId = await findUserIdByCustomer(admin, customerId);
-        if (userId && customerId) await dispatchPaymentFailed(admin, stripe, customerId, userId, invoice.id);
+        if (userId && customerId) {
+          const subscription = await retrieveInvoiceSubscription(stripe, invoice);
+          if (subscription) {
+            await syncStripeSubscriptionStatus({
+              client: admin,
+              userId,
+              subscription,
+              source: event.type,
+              eventCreatedAt: eventCreatedAt(event),
+            });
+          } else {
+            console.warn('[stripe webhook] invoice.payment_failed sans abonnement lié', { invoiceId: invoice.id, userId });
+          }
+          await dispatchPaymentFailed(admin, stripe, customerId, userId, invoice.id);
+        }
         break;
       }
+      case 'invoice.paid':
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.billing_reason === 'subscription_create') break;
         const userId = await findUserIdByCustomer(admin, asString(invoice.customer));
         if (userId) {
+          const subscription = await retrieveInvoiceSubscription(stripe, invoice);
+          if (subscription) {
+            await syncStripeSubscriptionStatus({
+              client: admin,
+              userId,
+              subscription,
+              source: event.type,
+              eventCreatedAt: eventCreatedAt(event),
+            });
+          } else {
+            console.warn('[stripe webhook] invoice.payment_succeeded sans abonnement lié', { invoiceId: invoice.id, userId });
+          }
+          if (invoice.billing_reason === 'subscription_create') break;
           await dispatchSubscriptionRenewed(admin, userId, invoice.id);
           await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);
           const { data: profile } = await admin
