@@ -771,57 +771,75 @@ function buildMarketingKpis({
       detail: indexing
         ? `${indexing.searchAnalyticsUrlsWithImpressions} URLs avec impressions Search`
         : searchConsoleSummary.error ?? 'Search Console indisponible',
+      info:
+        'Nombre de pages que Google a réellement enregistrées dans son index. Une page non indexée est invisible dans les résultats de recherche : elle ne peut générer aucune visite, quelle que soit sa qualité.',
       tone: indexing?.indexedUrlsSource === 'url_inspection' ? 'good' : indexing?.indexedUrlsSource === 'search_analytics_estimate' ? 'watch' : 'neutral',
     },
     {
       label: 'Clics Search 28j',
       value: formatCompact(searchClicks),
       detail: 'Search Console live',
+      info:
+        "Nombre de visiteurs venus depuis Google sur les 28 derniers jours. C'est le résultat concret du SEO : le trafic gratuit et régulier qui ne dépend d'aucune publicité.",
       tone: searchClicks > 0 ? 'good' : 'watch',
     },
     {
       label: 'Impressions 28j',
       value: formatCompact(searchImpressions),
       detail: 'Search Console live',
+      info:
+        "Nombre de fois où le site est apparu dans les résultats Google, même sans clic. Mesure la visibilité : beaucoup d'impressions mais peu de clics = les titres et descriptions ne donnent pas envie de cliquer.",
       tone: searchImpressions > 0 ? 'good' : 'watch',
     },
     {
       label: 'Position moyenne',
       value: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
       detail: avgPosition == null ? 'requêtes anonymisées ou absentes' : 'mots-clés disponibles',
+      info:
+        "Position moyenne dans les résultats Google. Environ 98% des clics se font sur la 1re page (positions 1 à 10). Au-delà de 20, le site est en page 3 ou plus : quasi invisible, d'où très peu de clics malgré les impressions.",
       tone: avgPosition == null ? 'neutral' : avgPosition <= 30 ? 'watch' : 'bad',
     },
     {
       label: 'Articles publiés',
       value: String(articlesPublished),
       detail: "status='published' uniquement",
+      info:
+        "Nombre d'articles de blog en ligne. Chaque article est une porte d'entrée supplémentaire vers le site depuis Google, sur un mot-clé différent. Plus il y a de contenu de qualité, plus la surface de captation augmente.",
       tone: articlesPublished >= 20 ? 'good' : 'watch',
     },
     {
       label: 'Visiteurs GA4 30j',
       value: gaSummary.users30d == null ? 'Non disponible' : formatCompact(gaSummary.users30d),
       detail: gaSummary.available ? `${formatCompact(gaSummary.pageViews30d ?? 0)} pages vues` : gaSummary.error ?? 'GA4 indisponible',
+      info:
+        "Nombre de personnes uniques venues sur le site sur 30 jours, toutes sources confondues (Google, Instagram, direct, etc.). C'est le haut de l'entonnoir : sans visiteurs, pas d'inscriptions.",
       tone: gaSummary.available ? 'good' : 'neutral',
     },
     {
       label: 'Conversions GA4',
       value: gaSummary.keyEvents30d == null ? 'Non disponible' : formatCompact(gaSummary.keyEvents30d),
       detail: gaSummary.conversionRatePercent == null ? 'taux non disponible' : `${gaSummary.conversionRatePercent}% key events / sessions`,
+      info:
+        "Nombre d'actions clés réalisées par les visiteurs (inscription, clic sur On démarre, etc.). Sans conversions configurées dans GA4, impossible de savoir ce qui transforme un visiteur en cliente : on pilote à l'aveugle.",
       tone: gaSummary.available ? 'watch' : 'neutral',
     },
     {
       label: 'Abonnés actifs',
       value: String(subscriptionStats.activeSubscribers),
       detail: `MRR calculé : ${subscriptionStats.mrrEur} €`,
+      info:
+        "Nombre de clientes avec un abonnement Stripe actif ou en essai. C'est le KPI de survie de la plateforme : tout le reste (trafic, SEO, contenu) n'existe que pour faire monter ce chiffre.",
       tone: subscriptionStats.activeSubscribers > 0 ? 'good' : 'watch',
     },
     {
       label: 'Paiements échoués',
       value: String(subscriptionStats.failedPayments),
       detail: 'past_due / unpaid synchronisés',
+      info:
+        "Clientes dont le prélèvement a échoué (carte refusée, expirée). Ce sont des abonnées qui VEULENT payer mais dont le paiement bloque : chaque ligne ici est du chiffre d'affaires récupérable en un simple message. À traiter en priorité.",
       tone: subscriptionStats.failedPayments > 0 ? 'bad' : 'good',
     },
-  ] satisfies Array<{ label: string; value: string; detail: string; tone: KpiTone }>;
+  ] satisfies Array<{ label: string; value: string; detail: string; info: string; tone: KpiTone }>;
 }
 
 function formatCompact(value: number): string {
@@ -920,21 +938,60 @@ function StatusCard({ title, value, ok, href }: { title: string; value: string; 
   );
 }
 
-function KpiSummaryCard({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: KpiTone }) {
+function KpiSummaryCard({
+  label,
+  value,
+  detail,
+  info,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  info: string;
+  tone: KpiTone;
+}) {
   const toneClass =
     tone === 'bad'
       ? 'border-[#C45D3E]/35 bg-[#f4d4c8]/70 text-[#7a2e1a]'
       : tone === 'watch'
         ? 'border-amber-300/70 bg-amber-50/75 text-amber-950'
         : tone === 'good'
-          ? 'border-[#C45D3E]/25 bg-white/75 text-luxury-ink'
+          ? 'border-[#C45D3E]/25 bg-[#fffaf5] text-luxury-ink'
           : 'border-white/65 bg-white/60 text-luxury-ink';
+  const status =
+    tone === 'bad'
+      ? { label: 'Problème', emoji: '🔴', className: 'bg-[#f4d4c8] text-[#7a2e1a] ring-1 ring-[#C45D3E]/25' }
+      : tone === 'watch'
+        ? { label: 'À surveiller', emoji: '⚠️', className: 'bg-amber-100 text-amber-950 ring-1 ring-amber-300/70' }
+        : tone === 'good'
+          ? { label: 'Bon', emoji: '✅', className: 'bg-white text-luxury-ink ring-1 ring-[#C45D3E]/20' }
+          : { label: 'Info', emoji: 'ℹ️', className: 'bg-white/80 text-luxury-muted ring-1 ring-black/10' };
 
   return (
-    <article className={`flex aspect-square min-h-[170px] flex-col justify-between rounded-[2rem] border p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-xl ${toneClass}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{label}</p>
-      <p className="mt-4 break-words text-4xl font-semibold leading-none md:text-5xl">{value}</p>
-      <p className="mt-4 text-xs leading-5 text-luxury-muted">{detail}</p>
+    <article className={`relative flex h-[140px] flex-col rounded-[1.6rem] border p-4 shadow-[0_12px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl md:h-[152px] ${toneClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="pr-8 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">{label}</p>
+        <div className="group absolute right-3 top-3 z-20">
+          <button
+            type="button"
+            className="flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full border border-black/10 bg-white/75 text-[13px] font-bold text-luxury-muted shadow-sm transition hover:bg-white hover:text-luxury-ink [&::-webkit-details-marker]:hidden"
+            aria-label={`Pourquoi suivre le KPI ${label}`}
+          >
+            i
+          </button>
+          <div className="invisible absolute right-0 top-9 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-white/70 bg-white/95 p-4 text-xs font-medium leading-5 text-luxury-muted opacity-0 shadow-[0_18px_42px_rgba(15,23,42,0.16)] transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+            {info}
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 break-words text-3xl font-semibold leading-none md:text-[2.55rem]">{value}</p>
+      <div className="mt-auto flex items-end justify-between gap-2">
+        <p className="line-clamp-2 text-xs leading-5 text-luxury-muted">{detail}</p>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${status.className}`}>
+          <span aria-hidden>{status.emoji}</span> {status.label}
+        </span>
+      </div>
     </article>
   );
 }

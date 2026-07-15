@@ -140,6 +140,8 @@ Règles :
 - Ne produis PAS de tableau markdown. Utilise uniquement des listes numérotées et des puces.
 - Si une donnée vaut null, "Non disponible" ou source=unavailable, ne la transforme JAMAIS en 0 et ne conclus JAMAIS à un problème sur cette base.
 - Pour l’indexation Google : URL Inspection = fiable ; search_analytics_estimate = estimation ; unavailable = aucune conclusion possible.
+- Ne calcule JAMAIS un "taux d'indexation" en divisant indexedUrlsLabel par submittedUrls : indexedUrlsLabel peut être un échantillon URL Inspection (ex. "3/3 vérifiées"), alors que submittedUrls est le total du sitemap. Si indexedUrlsSource=url_inspection et que les URLs inspectées sont indexées, ne parle PAS de faible indexation.
+- Les champs contents[].indexed de l'API sitemaps.list sont considérés comme non fiables/dépréciés : ne les utilise pas pour conclure que les pages ne sont pas indexées.
 - Ne mets JAMAIS la réponse dans un bloc code (\`\`\`) : le markdown doit être brut et simple.`;
 
 function scoreArticleSeo(article: ArticleSeoRow) {

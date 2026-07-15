@@ -28,7 +28,7 @@ export function parseServiceAccountJson(): ParsedServiceAccount | null {
 }
 
 export function ga4PropertyResourceName(): string | null {
-  const id = process.env.GA4_PROPERTY_ID?.trim() || '14875490391';
+  const id = process.env.GA4_PROPERTY_ID?.trim() || '537748245';
   if (!/^\d+$/.test(id)) return null;
   return `properties/${id}`;
 }

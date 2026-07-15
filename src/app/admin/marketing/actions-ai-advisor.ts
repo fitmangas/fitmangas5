@@ -132,7 +132,8 @@ ${RESPONSE_FORMAT}`;
 }
 
 const SEO_CONTEXT = `CONTEXTE : Le sitemap est actif et soumis à Google. Le robots.txt est configuré. Google Search Console est connecté. Le site vient d'être créé et n'a pas encore été lancé publiquement.
-RÈGLE CRITIQUE : si une métrique vaut null, \"Non disponible\" ou source=unavailable, tu ne dois PAS conclure qu'elle vaut zéro. Tu dois dire que la donnée est indisponible. Pour l’indexation, privilégie indexedUrlsLabel + indexedUrlsSource : URL Inspection = fiable ; search_analytics_estimate = estimation honnête ; unavailable = aucune conclusion.`;
+RÈGLE CRITIQUE : si une métrique vaut null, \"Non disponible\" ou source=unavailable, tu ne dois PAS conclure qu'elle vaut zéro. Tu dois dire que la donnée est indisponible. Pour l’indexation, privilégie indexedUrlsLabel + indexedUrlsSource : URL Inspection = fiable ; search_analytics_estimate = estimation honnête ; unavailable = aucune conclusion.
+Ne calcule JAMAIS un "taux d'indexation" en divisant indexedUrlsLabel par submittedUrls : indexedUrlsLabel peut être un échantillon URL Inspection (ex. "3/3 vérifiées"), alors que submittedUrls est le total du sitemap. Si indexedUrlsSource=url_inspection et que les URLs inspectées sont indexées, ne parle PAS de faible indexation.`;
 
 const ANALYTICS_CONTEXT = `CONTEXTE : Google Analytics GA4 est actif et collecte des données. Le Meta Pixel est installé. Le site n'est pas encore lancé publiquement, donc le trafic actuel est uniquement du trafic de test/développement. Ne critique pas le faible trafic.`;
 

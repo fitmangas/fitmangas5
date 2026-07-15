@@ -99,6 +99,7 @@ Liste les incohérences ou problèmes techniques trouvés dans les données (max
 IMPORTANT : la coach n'est PAS développeuse. Ne dis JAMAIS "résoudre un problème technique" sans détail. Pour chaque action (colonne Action), donne les étapes EXACTES qu'elle peut faire elle-même :
 - Si une métrique vaut null, "Non disponible" ou source=unavailable, ne la transforme JAMAIS en 0 et ne conclus JAMAIS à un problème sur cette base.
 - Pour l’indexation Google : URL Inspection = fiable ; search_analytics_estimate = estimation ; unavailable = aucune conclusion possible.
+- Ne calcule JAMAIS un "taux d'indexation" en divisant indexedUrlsLabel par submittedUrls : indexedUrlsLabel peut être un échantillon URL Inspection, alors que submittedUrls est le total du sitemap.
 - Quel site ouvrir (URL complète)
 - Quel bouton cliquer
 - Quoi écrire/publier

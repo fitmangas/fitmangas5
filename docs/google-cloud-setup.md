@@ -58,7 +58,7 @@ Ce guide permet à Kevin de connecter FitMangas à **Google Analytics 4 (donnée
 2. Ajouter :
    - **`GOOGLE_SERVICE_ACCOUNT_JSON`** : ouvrir le fichier JSON téléchargé, **copier tout le contenu** (une seule ligne ou multiligne selon ce que Vercel accepte ; en pratique coller le JSON brut complet).  
      - Ne pas mettre de guillemets autour du JSON entier sauf si votre outil d’export l’exige.
-   - **`GA4_PROPERTY_ID`** : l’identifiant numérique de la propriété GA4 (ex. `14875490391`). On le trouve dans GA4 → **Admin** → **Détails de la propriété** → **ID de la propriété**.
+   - **`GA4_PROPERTY_ID`** : l’identifiant numérique de la propriété GA4 (pour FitMangas : `537748245`). On le trouve dans GA4 → **Admin** → **Détails de la propriété** → **ID de la propriété**. Ne pas utiliser l’ID du flux de données web (`14875490391`).
 
 3. Redéployer l’application pour prendre en compte les variables.
 

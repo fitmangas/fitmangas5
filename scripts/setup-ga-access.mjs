@@ -16,7 +16,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-const PROPERTY_ID = process.env.GA4_PROPERTY_ID?.trim() || '14875490391';
+const PROPERTY_ID = process.env.GA4_PROPERTY_ID?.trim() || '537748245';
 const SERVICE_ACCOUNT_EMAIL = 'fitmangas-analytics@fitmangas.iam.gserviceaccount.com';
 const DOWNLOADS_JSON = 'fitmangas-84d22a11609a.json';
 
