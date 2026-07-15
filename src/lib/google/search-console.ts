@@ -40,17 +40,56 @@ export async function getSearchQueries(days: number, rowLimit = 50): Promise<Sea
       endDate: end.toISOString().slice(0, 10),
       dimensions: ['query'],
       rowLimit,
+      dataState: 'all',
+      searchType: 'web',
       dimensionFilterGroups: [],
     },
   });
 
-  return (res.data.rows ?? []).map((row) => ({
+  const directRows = (res.data.rows ?? []).map((row) => ({
     query: row.keys?.[0] ?? '',
     clicks: row.clicks ?? 0,
     impressions: row.impressions ?? 0,
     ctr: Math.round((row.ctr ?? 0) * 10000) / 100,
     position: Math.round((row.position ?? 0) * 10) / 10,
   }));
+  if (directRows.length > 0) return directRows;
+
+  // Search Console peut masquer la dimension query seule (requêtes anonymisées),
+  // alors que query+page retourne encore quelques lignes exploitables.
+  const fallback = await client.searchanalytics.query({
+    siteUrl,
+    requestBody: {
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      dimensions: ['query', 'page'],
+      rowLimit,
+      dataState: 'all',
+      searchType: 'web',
+    },
+  });
+  const byQuery = new Map<string, { clicks: number; impressions: number; weightedPosition: number }>();
+  for (const row of fallback.data.rows ?? []) {
+    const query = row.keys?.[0]?.trim();
+    if (!query) continue;
+    const clicks = row.clicks ?? 0;
+    const impressions = row.impressions ?? 0;
+    const current = byQuery.get(query) ?? { clicks: 0, impressions: 0, weightedPosition: 0 };
+    current.clicks += clicks;
+    current.impressions += impressions;
+    current.weightedPosition += (row.position ?? 0) * Math.max(impressions, 1);
+    byQuery.set(query, current);
+  }
+  return [...byQuery.entries()]
+    .map(([query, row]) => ({
+      query,
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.impressions > 0 ? Math.round((row.clicks / row.impressions) * 10000) / 100 : 0,
+      position: Math.round((row.weightedPosition / Math.max(row.impressions, 1)) * 10) / 10,
+    }))
+    .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions)
+    .slice(0, rowLimit);
 }
 
 export type SearchTopPageRow = { page: string; clicks: number; impressions: number };
@@ -71,6 +110,8 @@ export async function getSearchTopPages(days: number, rowLimit = 25): Promise<Se
       endDate: end.toISOString().slice(0, 10),
       dimensions: ['page'],
       rowLimit,
+      dataState: 'all',
+      searchType: 'web',
     },
   });
 
@@ -83,7 +124,11 @@ export async function getSearchTopPages(days: number, rowLimit = 25): Promise<Se
 
 export type IndexingStatus = {
   submittedUrls: number;
-  indexedUrls: number;
+  indexedUrls: number | null;
+  indexedUrlsLabel: string;
+  indexedUrlsSource: 'url_inspection' | 'search_analytics_estimate' | 'unavailable';
+  searchAnalyticsUrlsWithImpressions: number;
+  inspectedUrls: Array<{ url: string; verdict: string | null; coverageState: string | null; indexed: boolean | null }>;
   sitemapErrors: number;
   sitemapWarnings: number;
 };
@@ -91,12 +136,21 @@ export type IndexingStatus = {
 export async function getIndexingStatus(): Promise<IndexingStatus> {
   const client = await getSearchConsoleClient();
   if (!client) {
-    return { submittedUrls: 0, indexedUrls: 0, sitemapErrors: 0, sitemapWarnings: 0 };
+    return {
+      submittedUrls: 0,
+      indexedUrls: null,
+      indexedUrlsLabel: 'Non disponible',
+      indexedUrlsSource: 'unavailable',
+      searchAnalyticsUrlsWithImpressions: 0,
+      inspectedUrls: [],
+      sitemapErrors: 0,
+      sitemapWarnings: 0,
+    };
   }
   const siteUrl = searchConsoleSiteUrl();
   const list = await client.sitemaps.list({ siteUrl });
   let submittedUrls = 0;
-  let indexedUrls = 0;
+  let deprecatedIndexedUrls = 0;
   let sitemapErrors = 0;
   let sitemapWarnings = 0;
   for (const sm of list.data.sitemap ?? []) {
@@ -106,10 +160,95 @@ export async function getIndexingStatus(): Promise<IndexingStatus> {
       const submitted = Number(c.submitted ?? 0);
       const indexed = Number(c.indexed ?? 0);
       submittedUrls += submitted;
-      indexedUrls += indexed;
+      deprecatedIndexedUrls += indexed;
     }
   }
-  return { submittedUrls, indexedUrls, sitemapErrors, sitemapWarnings };
+
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 28);
+  const pages = await client.searchanalytics.query({
+    siteUrl,
+    requestBody: {
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      dimensions: ['page'],
+      rowLimit: 100,
+      dataState: 'all',
+      searchType: 'web',
+    },
+  });
+  const pagesWithImpressions = (pages.data.rows ?? [])
+    .filter((row) => (row.impressions ?? 0) > 0)
+    .map((row) => row.keys?.[0])
+    .filter((url): url is string => Boolean(url));
+
+  const inspectionCandidates = [
+    'https://fitmangas.com/',
+    'https://fitmangas.com/blog',
+    ...pagesWithImpressions.slice(0, 3),
+  ];
+  const uniqueCandidates = [...new Set(inspectionCandidates)].slice(0, 5);
+  const inspectedUrls: IndexingStatus['inspectedUrls'] = [];
+  for (const url of uniqueCandidates) {
+    try {
+      const inspect = await client.urlInspection.index.inspect({
+        requestBody: {
+          inspectionUrl: url,
+          siteUrl,
+        },
+      });
+      const status = inspect.data.inspectionResult?.indexStatusResult;
+      const coverageState = status?.coverageState ?? null;
+      const verdict = status?.verdict ?? null;
+      inspectedUrls.push({
+        url,
+        verdict,
+        coverageState,
+        indexed: verdict === 'PASS' || coverageState?.toLowerCase().includes('indexed') || false,
+      });
+    } catch {
+      inspectedUrls.push({ url, verdict: null, coverageState: null, indexed: null });
+    }
+  }
+
+  const inspectedIndexed = inspectedUrls.filter((row) => row.indexed === true).length;
+  if (inspectedUrls.length > 0 && inspectedIndexed > 0) {
+    return {
+      submittedUrls,
+      indexedUrls: inspectedIndexed,
+      indexedUrlsLabel: `${inspectedIndexed}/${inspectedUrls.length} vérifiées`,
+      indexedUrlsSource: 'url_inspection',
+      searchAnalyticsUrlsWithImpressions: pagesWithImpressions.length,
+      inspectedUrls,
+      sitemapErrors,
+      sitemapWarnings,
+    };
+  }
+
+  if (pagesWithImpressions.length > 0) {
+    return {
+      submittedUrls,
+      indexedUrls: pagesWithImpressions.length,
+      indexedUrlsLabel: `${pagesWithImpressions.length}+ estimées`,
+      indexedUrlsSource: 'search_analytics_estimate',
+      searchAnalyticsUrlsWithImpressions: pagesWithImpressions.length,
+      inspectedUrls,
+      sitemapErrors,
+      sitemapWarnings,
+    };
+  }
+
+  return {
+    submittedUrls,
+    indexedUrls: deprecatedIndexedUrls > 0 ? deprecatedIndexedUrls : null,
+    indexedUrlsLabel: deprecatedIndexedUrls > 0 ? String(deprecatedIndexedUrls) : 'Non disponible',
+    indexedUrlsSource: deprecatedIndexedUrls > 0 ? 'search_analytics_estimate' : 'unavailable',
+    searchAnalyticsUrlsWithImpressions: 0,
+    inspectedUrls,
+    sitemapErrors,
+    sitemapWarnings,
+  };
 }
 
 export type CrawlErrorItem = { type: string; detail: string };

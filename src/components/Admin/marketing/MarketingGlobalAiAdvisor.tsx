@@ -8,7 +8,7 @@ import { analyzeGlobalMarketingDiagnostic } from '@/app/admin/marketing/actions-
 import { AdvisorMarkdownRenderer } from '@/components/Admin/AdvisorMarkdownRenderer';
 
 const CACHE_MS = 30 * 60 * 1000;
-const CACHE_KEY = 'admin-marketing-global-diagnostic-v2';
+const CACHE_KEY = 'admin-marketing-global-diagnostic-v3';
 const TERRACOTTA = '#C45D3E';
 
 type CacheEntry = { text: string; at: number };

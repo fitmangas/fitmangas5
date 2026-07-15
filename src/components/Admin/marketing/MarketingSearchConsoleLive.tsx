@@ -52,9 +52,17 @@ export function MarketingSearchConsoleLive({ docFileLabel, connected }: Props) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-[1.6rem] border border-white/65 bg-white/70 p-6 shadow-[0_12px_30px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Pages indexées (sitemaps)</p>
-          <p className="mt-3 text-3xl font-bold text-luxury-ink">{data.indexing.indexedUrls}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Indexation vérifiée</p>
+          <p className="mt-3 text-3xl font-bold text-luxury-ink">{data.indexing.indexedUrlsLabel}</p>
           <p className="mt-1 text-xs text-luxury-muted">Soumises : {data.indexing.submittedUrls}</p>
+          <p className="mt-1 text-xs text-luxury-muted">
+            Source :{' '}
+            {data.indexing.indexedUrlsSource === 'url_inspection'
+              ? 'URL Inspection'
+              : data.indexing.indexedUrlsSource === 'search_analytics_estimate'
+                ? 'URLs avec impressions Search'
+                : 'non disponible'}
+          </p>
         </div>
         <div className="rounded-[1.6rem] border border-white/65 bg-white/70 p-6 shadow-[0_12px_30px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Erreurs / avertissements sitemap</p>
@@ -96,6 +104,13 @@ export function MarketingSearchConsoleLive({ docFileLabel, connected }: Props) {
                   <td className="px-2 py-2">{row.position}</td>
                 </tr>
               ))}
+              {data.queries.length === 0 ? (
+                <tr className="border-t border-white/50">
+                  <td colSpan={5} className="px-2 py-4 text-luxury-muted">
+                    Aucune requête non anonymisée disponible sur 28 jours. Les pages ci-dessous confirment quand même des impressions.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>

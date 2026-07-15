@@ -10,6 +10,8 @@ import { MarketingSearchConsoleLive } from '@/components/Admin/marketing/Marketi
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
+import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
+import { getIndexingStatus, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -46,6 +48,14 @@ type ChecklistRow = {
   category: 'seo' | 'social' | 'ads' | 'community';
   sort_order: number;
 };
+
+type DynamicChecklistRow = ChecklistRow & {
+  effectiveCompleted: boolean;
+  auto: boolean;
+  source: string;
+};
+
+type KpiTone = 'good' | 'watch' | 'bad' | 'neutral';
 
 const fallbackChecklist: ChecklistRow[] = [
   ['search_console_connected', 'Google Search Console connecté', 'Google Search Console conectado', 'seo', 10],
@@ -89,6 +99,8 @@ export default async function AdminMarketingPage() {
     { count: newsletterConfirmed },
     { data: notificationRows },
     { data: checklistRaw },
+    { count: memberCount },
+    { data: subscriptionRows },
   ] = await Promise.all([
     admin.from('business_stats_daily').select('*').order('stat_date', { ascending: true }).limit(30),
     admin
@@ -106,6 +118,11 @@ export default async function AdminMarketingPage() {
       .eq('confirmed', true),
     admin.from('notification_log').select('channel,created_at').gte('created_at', sinceIso),
     admin.from('admin_marketing_checklist').select('key,label_fr,label_es,completed,category,sort_order').order('category').order('sort_order'),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'member').eq('archived', false),
+    admin
+      .from('subscriptions')
+      .select('status, price_cents, ends_at, stripe_subscription_id')
+      .like('stripe_subscription_id', 'sub_%'),
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
@@ -128,6 +145,48 @@ export default async function AdminMarketingPage() {
   const seoPages = publicSeoPages(t);
   const googleApisConnected = hasGoogleServiceAccountJson();
   const googleSetupDocLabel = 'docs/google-cloud-setup.md';
+  const subscriptionStats = summarizeSubscriptions(
+    (subscriptionRows ?? []) as Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
+  );
+  const liveBusinessData =
+    businessData.length > 0
+      ? businessData.map((row, index) =>
+          index === businessData.length - 1
+            ? { ...row, mrr: subscriptionStats.mrrEur, activeSubscribers: subscriptionStats.activeSubscribers }
+            : row,
+        )
+      : [
+          {
+            date: new Date().toISOString().slice(5, 10),
+            mrr: subscriptionStats.mrrEur,
+            activeSubscribers: subscriptionStats.activeSubscribers,
+            newSubscribers: 0,
+            unsubscribed: 0,
+            churn: 0,
+            liveShowUp: 0,
+            replayCompletion: 0,
+          },
+        ];
+
+  const searchConsoleSummary = googleApisConnected
+    ? await fetchSearchConsoleSummary()
+    : {
+        available: false,
+        error: 'Credentials Google non configurés',
+        queries: [],
+        topPages: [],
+        indexing: null,
+      };
+  const gaSummary = googleApisConnected
+    ? await fetchGaSummary()
+    : {
+        available: false,
+        error: 'Credentials Google non configurés',
+        users30d: null,
+        pageViews30d: null,
+        keyEvents30d: null,
+        conversionRatePercent: null,
+      };
 
   const nowIsoMarketing = new Date().toISOString();
   const { data: scheduledRaw } = await admin
@@ -172,12 +231,27 @@ export default async function AdminMarketingPage() {
     }),
     { email: 0, push: 0, inApp: 0 },
   );
-  const checklistForAdvisor = checklist.map((item) => ({
+  const dynamicChecklist = buildDynamicChecklist(checklist, {
+    allSeoAbove80,
+    googleApisConnected,
+    searchConsoleSummary,
+    gaSummary,
+    settings,
+    publishedCount: articles.length,
+    memberCount: memberCount ?? 0,
+  });
+  const dynamicChecklistForAdvisor = dynamicChecklist.map((item) => ({
     key: item.key,
     label: lang === 'es' ? item.label_es : item.label_fr,
     category: item.category,
-    completed: item.completed,
+    completed: item.effectiveCompleted,
   }));
+  const kpiCards = buildMarketingKpis({
+    articlesPublished: articles.length,
+    searchConsoleSummary,
+    gaSummary,
+    subscriptionStats,
+  });
 
   return (
     <main className="mx-auto max-w-[1280px] space-y-8 px-2 pb-20 pt-3 md:px-6 md:pt-6">
@@ -197,6 +271,12 @@ export default async function AdminMarketingPage() {
           </nav>
         </div>
       </header>
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {kpiCards.map((card) => (
+          <KpiSummaryCard key={card.label} {...card} />
+        ))}
+      </section>
 
       <MarketingGlobalAiAdvisor />
 
@@ -284,9 +364,27 @@ export default async function AdminMarketingPage() {
           }))}
         />
         <div className="grid gap-4 md:grid-cols-3">
-          <StatusCard title="Google Analytics" ok={Boolean(settings.google_analytics_id)} value={settings.google_analytics_id ? t.active : t.notConfigured} />
-          <StatusCard title="Google Search Console" ok value={t.searchConsoleDnsStatus} />
-          <StatusCard title="Meta Pixel" ok={Boolean(settings.meta_pixel_id)} value={settings.meta_pixel_id ? t.active : t.notConfigured} />
+          <StatusCard
+            title="Google Analytics"
+            ok={Boolean(settings.google_analytics_id) && gaSummary.available}
+            value={
+              gaSummary.available
+                ? t.active
+                : settings.google_analytics_id
+                  ? 'ID installé, API GA4 indisponible'
+                  : t.notConfigured
+            }
+          />
+          <StatusCard
+            title="Google Search Console"
+            ok={searchConsoleSummary.available}
+            value={searchConsoleSummary.available ? t.searchConsoleDnsStatus : 'API indisponible'}
+          />
+          <StatusCard
+            title="Meta Pixel"
+            ok={Boolean(settings.meta_pixel_id)}
+            value={settings.meta_pixel_id ? 'Installé sur pages publiques' : t.notConfigured}
+          />
         </div>
 
         <Panel title={t.gaLiveTitle}>
@@ -308,7 +406,7 @@ export default async function AdminMarketingPage() {
           <p className="mt-3 text-sm leading-6 text-luxury-muted">{t.searchConsoleNote}</p>
         </div>
 
-        <BusinessCharts data={businessData} />
+        <BusinessCharts data={liveBusinessData} />
         <Panel title={t.blogTraffic}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
@@ -360,8 +458,8 @@ export default async function AdminMarketingPage() {
           marketingInput={{
             business: latestBusiness
               ? {
-                  mrr: latestBusiness.mrr,
-                  activeSubscribers: latestBusiness.activeSubscribers,
+                  mrr: subscriptionStats.mrrEur,
+                  activeSubscribers: subscriptionStats.activeSubscribers,
                   churn30d: latestBusiness.churn,
                   newSubscribers30d: latestBusiness.newSubscribers,
                   unsubscribed30d: latestBusiness.unsubscribed,
@@ -384,8 +482,8 @@ export default async function AdminMarketingPage() {
               topAmbassadors: referralLeaderboard.slice(0, 5).map((r) => ({ name: r.name, count: r.count })),
             },
             checklist: {
-              completed: checklistForAdvisor.filter((i) => i.completed).map(({ key, label, category }) => ({ key, label, category })),
-              pending: checklistForAdvisor.filter((i) => !i.completed).map(({ key, label, category }) => ({ key, label, category })),
+              completed: dynamicChecklistForAdvisor.filter((i) => i.completed).map(({ key, label, category }) => ({ key, label, category })),
+              pending: dynamicChecklistForAdvisor.filter((i) => !i.completed).map(({ key, label, category }) => ({ key, label, category })),
             },
           }}
         />
@@ -456,19 +554,42 @@ export default async function AdminMarketingPage() {
               <div key={category} className="rounded-2xl border border-white/55 bg-white/50 p-4">
                 <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-luxury-ink">{t.categories[category]}</h3>
                 <div className="space-y-2">
-                  {checklist
+                  {dynamicChecklist
                     .filter((item) => item.category === category)
                     .sort((a, b) => a.sort_order - b.sort_order)
-                    .map((item) => (
-                      <form key={item.key} action={toggleMarketingChecklist}>
-                        <input type="hidden" name="key" value={item.key} />
-                        <input type="hidden" name="completed" value={String(!item.completed)} />
-                        <button type="submit" className="flex w-full items-start gap-2 rounded-xl px-2 py-2 text-left text-sm text-luxury-muted transition hover:bg-white/70">
-                          {item.completed ? <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={17} /> : <Circle className="mt-0.5 shrink-0 text-luxury-soft" size={17} />}
-                          <span>{lang === 'es' ? item.label_es : item.label_fr}</span>
-                        </button>
-                      </form>
-                    ))}
+                    .map((item) => {
+                      const content = (
+                        <>
+                          {item.effectiveCompleted ? (
+                            <CheckCircle2 className="mt-0.5 shrink-0 text-[#C45D3E]" size={17} />
+                          ) : (
+                            <Circle className="mt-0.5 shrink-0 text-luxury-soft" size={17} />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block">{lang === 'es' ? item.label_es : item.label_fr}</span>
+                            <span className="mt-0.5 block text-[11px] leading-4 text-luxury-muted/75">
+                              {item.auto ? `Auto : ${item.source}` : `Manuel : ${item.source}`}
+                            </span>
+                          </span>
+                        </>
+                      );
+                      if (item.auto) {
+                        return (
+                          <div key={item.key} className="flex w-full items-start gap-2 rounded-xl px-2 py-2 text-left text-sm text-luxury-muted">
+                            {content}
+                          </div>
+                        );
+                      }
+                      return (
+                        <form key={item.key} action={toggleMarketingChecklist}>
+                          <input type="hidden" name="key" value={item.key} />
+                          <input type="hidden" name="completed" value={String(!item.completed)} />
+                          <button type="submit" className="flex w-full items-start gap-2 rounded-xl px-2 py-2 text-left text-sm text-luxury-muted transition hover:bg-white/70">
+                            {content}
+                          </button>
+                        </form>
+                      );
+                    })}
                 </div>
               </div>
             ))}
@@ -477,6 +598,234 @@ export default async function AdminMarketingPage() {
       </section>
     </main>
   );
+}
+
+type SearchConsoleSummary = {
+  available: boolean;
+  error?: string;
+  queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
+  topPages: Array<{ page: string; clicks: number; impressions: number }>;
+  indexing: Awaited<ReturnType<typeof getIndexingStatus>> | null;
+};
+
+type GaSummary = {
+  available: boolean;
+  error?: string;
+  users30d: number | null;
+  pageViews30d: number | null;
+  keyEvents30d: number | null;
+  conversionRatePercent: number | null;
+};
+
+type SubscriptionStats = {
+  activeSubscribers: number;
+  failedPayments: number;
+  mrrEur: number;
+};
+
+async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
+  try {
+    const [queries, topPages, indexing] = await Promise.all([
+      getSearchQueries(28, 50),
+      getSearchTopPages(28, 50),
+      getIndexingStatus(),
+    ]);
+    return { available: true, queries, topPages, indexing };
+  } catch (e) {
+    return {
+      available: false,
+      error: e instanceof Error ? e.message : 'Erreur Search Console',
+      queries: [],
+      topPages: [],
+      indexing: null,
+    };
+  }
+}
+
+async function fetchGaSummary(): Promise<GaSummary> {
+  try {
+    const [pageViews, countries, conversion] = await Promise.all([
+      getPageViews(30),
+      getUsersByCountry(30),
+      getConversionRate(30),
+    ]);
+    return {
+      available: true,
+      users30d: countries.reduce((sum, row) => sum + row.users, 0),
+      pageViews30d: pageViews.reduce((sum, row) => sum + row.views, 0),
+      keyEvents30d: conversion.keyEvents,
+      conversionRatePercent: conversion.ratePercent,
+    };
+  } catch (e) {
+    return {
+      available: false,
+      error: e instanceof Error ? e.message : 'Erreur GA4',
+      users30d: null,
+      pageViews30d: null,
+      keyEvents30d: null,
+      conversionRatePercent: null,
+    };
+  }
+}
+
+function summarizeSubscriptions(
+  rows: Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
+): SubscriptionStats {
+  let activeSubscribers = 0;
+  let failedPayments = 0;
+  let mrrCents = 0;
+  const now = Date.now();
+
+  for (const row of rows) {
+    if (!row.stripe_subscription_id?.startsWith('sub_')) continue;
+    const status = (row.status ?? '').toLowerCase();
+    const hasAccess = !row.ends_at || new Date(row.ends_at).getTime() > now;
+    if ((status === 'active' || status === 'trialing') && hasAccess) {
+      activeSubscribers += 1;
+      mrrCents += row.price_cents ?? 0;
+    }
+    if (status === 'past_due' || status === 'unpaid') failedPayments += 1;
+  }
+
+  return { activeSubscribers, failedPayments, mrrEur: Math.round(mrrCents / 100) };
+}
+
+function buildDynamicChecklist(
+  checklist: ChecklistRow[],
+  context: {
+    allSeoAbove80: boolean;
+    googleApisConnected: boolean;
+    searchConsoleSummary: SearchConsoleSummary;
+    gaSummary: GaSummary;
+    settings: Awaited<ReturnType<typeof getMarketingSettings>>;
+    publishedCount: number;
+    memberCount: number;
+  },
+): DynamicChecklistRow[] {
+  return checklist.map((item) => {
+    const manual = (source: string): DynamicChecklistRow => ({
+      ...item,
+      effectiveCompleted: item.completed,
+      auto: false,
+      source,
+    });
+    const auto = (completed: boolean, source: string): DynamicChecklistRow => ({
+      ...item,
+      effectiveCompleted: completed,
+      auto: true,
+      source,
+    });
+
+    switch (item.key) {
+      case 'search_console_connected':
+        return auto(context.searchConsoleSummary.available, context.searchConsoleSummary.available ? 'API Search Console répond' : context.searchConsoleSummary.error ?? 'API indisponible');
+      case 'google_analytics_configured':
+        return auto(
+          Boolean(context.settings.google_analytics_id) && context.gaSummary.available,
+          context.gaSummary.available ? 'GA4 API remonte des données' : context.gaSummary.error ?? 'GA4 API indisponible',
+        );
+      case 'sitemap_submitted':
+        return auto(
+          (context.searchConsoleSummary.indexing?.submittedUrls ?? 0) > 0,
+          `${context.searchConsoleSummary.indexing?.submittedUrls ?? 0} URL soumises dans le sitemap`,
+        );
+      case 'seo_scores_above_80':
+        return auto(context.allSeoAbove80, `${context.publishedCount} articles publiés contrôlés`);
+      case 'instagram_linked':
+        return auto(Boolean(context.settings.instagram_handle), context.settings.instagram_handle ? String(context.settings.instagram_handle) : 'Handle Instagram absent');
+      case 'tiktok_linked':
+        return auto(Boolean(context.settings.tiktok_handle), context.settings.tiktok_handle ? String(context.settings.tiktok_handle) : 'Handle TikTok absent');
+      case 'meta_pixel_installed':
+        return auto(Boolean(context.settings.meta_pixel_id), context.settings.meta_pixel_id ? 'ID Pixel configuré et script injecté sur les pages publiques' : 'ID Pixel absent');
+      case 'ten_clients_registered':
+        return auto(context.memberCount >= 10, `${context.memberCount} clientes non archivées`);
+      default:
+        return manual('action humaine hors plateforme, à cocher manuellement');
+    }
+  });
+}
+
+function buildMarketingKpis({
+  articlesPublished,
+  searchConsoleSummary,
+  gaSummary,
+  subscriptionStats,
+}: {
+  articlesPublished: number;
+  searchConsoleSummary: SearchConsoleSummary;
+  gaSummary: GaSummary;
+  subscriptionStats: SubscriptionStats;
+}) {
+  const searchClicks = searchConsoleSummary.topPages.reduce((sum, row) => sum + row.clicks, 0);
+  const searchImpressions = searchConsoleSummary.topPages.reduce((sum, row) => sum + row.impressions, 0);
+  const avgPosition =
+    searchConsoleSummary.queries.length > 0
+      ? searchConsoleSummary.queries.reduce((sum, row) => sum + row.position, 0) / searchConsoleSummary.queries.length
+      : null;
+  const indexing = searchConsoleSummary.indexing;
+
+  return [
+    {
+      label: 'Indexation',
+      value: indexing?.indexedUrlsLabel ?? 'Non disponible',
+      detail: indexing
+        ? `${indexing.searchAnalyticsUrlsWithImpressions} URLs avec impressions Search`
+        : searchConsoleSummary.error ?? 'Search Console indisponible',
+      tone: indexing?.indexedUrlsSource === 'url_inspection' ? 'good' : indexing?.indexedUrlsSource === 'search_analytics_estimate' ? 'watch' : 'neutral',
+    },
+    {
+      label: 'Clics Search 28j',
+      value: formatCompact(searchClicks),
+      detail: 'Search Console live',
+      tone: searchClicks > 0 ? 'good' : 'watch',
+    },
+    {
+      label: 'Impressions 28j',
+      value: formatCompact(searchImpressions),
+      detail: 'Search Console live',
+      tone: searchImpressions > 0 ? 'good' : 'watch',
+    },
+    {
+      label: 'Position moyenne',
+      value: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
+      detail: avgPosition == null ? 'requêtes anonymisées ou absentes' : 'mots-clés disponibles',
+      tone: avgPosition == null ? 'neutral' : avgPosition <= 30 ? 'watch' : 'bad',
+    },
+    {
+      label: 'Articles publiés',
+      value: String(articlesPublished),
+      detail: "status='published' uniquement",
+      tone: articlesPublished >= 20 ? 'good' : 'watch',
+    },
+    {
+      label: 'Visiteurs GA4 30j',
+      value: gaSummary.users30d == null ? 'Non disponible' : formatCompact(gaSummary.users30d),
+      detail: gaSummary.available ? `${formatCompact(gaSummary.pageViews30d ?? 0)} pages vues` : gaSummary.error ?? 'GA4 indisponible',
+      tone: gaSummary.available ? 'good' : 'neutral',
+    },
+    {
+      label: 'Conversions GA4',
+      value: gaSummary.keyEvents30d == null ? 'Non disponible' : formatCompact(gaSummary.keyEvents30d),
+      detail: gaSummary.conversionRatePercent == null ? 'taux non disponible' : `${gaSummary.conversionRatePercent}% key events / sessions`,
+      tone: gaSummary.available ? 'watch' : 'neutral',
+    },
+    {
+      label: 'Abonnés actifs',
+      value: String(subscriptionStats.activeSubscribers),
+      detail: `MRR calculé : ${subscriptionStats.mrrEur} €`,
+      tone: subscriptionStats.activeSubscribers > 0 ? 'good' : 'watch',
+    },
+    {
+      label: 'Paiements échoués',
+      value: String(subscriptionStats.failedPayments),
+      detail: 'past_due / unpaid synchronisés',
+      tone: subscriptionStats.failedPayments > 0 ? 'bad' : 'good',
+    },
+  ] satisfies Array<{ label: string; value: string; detail: string; tone: KpiTone }>;
+}
+
+function formatCompact(value: number): string {
+  return new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
 
 function scoreArticleSeo(article: ArticleSeoRow) {
@@ -568,6 +917,25 @@ function StatusCard({ title, value, ok, href }: { title: string; value: string; 
       </p>
       {href ? <a href={href} className="mt-2 block text-xs text-luxury-muted underline underline-offset-2">{href}</a> : null}
     </div>
+  );
+}
+
+function KpiSummaryCard({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: KpiTone }) {
+  const toneClass =
+    tone === 'bad'
+      ? 'border-[#C45D3E]/35 bg-[#f4d4c8]/70 text-[#7a2e1a]'
+      : tone === 'watch'
+        ? 'border-amber-300/70 bg-amber-50/75 text-amber-950'
+        : tone === 'good'
+          ? 'border-[#C45D3E]/25 bg-white/75 text-luxury-ink'
+          : 'border-white/65 bg-white/60 text-luxury-ink';
+
+  return (
+    <article className={`flex aspect-square min-h-[170px] flex-col justify-between rounded-[2rem] border p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-xl ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{label}</p>
+      <p className="mt-4 break-words text-4xl font-semibold leading-none md:text-5xl">{value}</p>
+      <p className="mt-4 text-xs leading-5 text-luxury-muted">{detail}</p>
+    </article>
   );
 }
 

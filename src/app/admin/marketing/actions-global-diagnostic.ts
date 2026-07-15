@@ -44,7 +44,15 @@ export type GlobalMarketingSnapshot = {
       error?: string;
       queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
       topPages: Array<{ page: string; clicks: number; impressions: number }>;
-      indexing: { indexedUrls: number; submittedUrls: number; sitemapErrors: number; sitemapWarnings: number } | null;
+      indexing: {
+        indexedUrls: number | null;
+        indexedUrlsLabel: string;
+        indexedUrlsSource: string;
+        searchAnalyticsUrlsWithImpressions: number;
+        submittedUrls: number;
+        sitemapErrors: number;
+        sitemapWarnings: number;
+      } | null;
       crawlErrors: Array<{ type: string; detail: string }>;
     };
   };
@@ -64,6 +72,7 @@ export type GlobalMarketingSnapshot = {
     blogTopArticles: Array<{ title: string; views: number; avgTimeSeconds: number; scrollPercent: number }>;
   };
   marketing: {
+    business: { activeSubscribers: number; failedPayments: number; mrrEur: number };
     newsletter: { total: number; confirmed: number; confirmationRatePercent: number };
     notifications30d: { email: number; push: number; inApp: number; total: number };
     referral: {
@@ -72,8 +81,8 @@ export type GlobalMarketingSnapshot = {
       topAmbassadors: Array<{ name: string; count: number }>;
     };
     checklist: {
-      completed: Array<{ key: string; label: string; category: string }>;
-      pending: Array<{ key: string; label: string; category: string }>;
+      completed: Array<{ key: string; label: string; category: string; source: string; auto: boolean }>;
+      pending: Array<{ key: string; label: string; category: string; source: string; auto: boolean }>;
     };
     social: { instagram: string | null; tiktok: string | null };
   };
@@ -90,13 +99,21 @@ Analyse l'ensemble des données SEO, Analytics et Marketing fournies et réponds
 
 ## 5 actions prioritaires cette semaine
 
-| # | Action | Intérêt | Objectif |
-|---|--------|---------|----------|
-| 1 | [Étapes concrètes — voir règles ci-dessous] | [Pourquoi en 1 phrase] | [Résultat mesurable] |
-| 2 | ... | ... | ... |
-| 3 | ... | ... | ... |
-| 4 | ... | ... | ... |
-| 5 | ... | ... | ... |
+1. **Action** : [étapes concrètes]
+   **Intérêt** : [pourquoi en 1 phrase]
+   **Objectif** : [résultat mesurable]
+2. **Action** : ...
+   **Intérêt** : ...
+   **Objectif** : ...
+3. **Action** : ...
+   **Intérêt** : ...
+   **Objectif** : ...
+4. **Action** : ...
+   **Intérêt** : ...
+   **Objectif** : ...
+5. **Action** : ...
+   **Intérêt** : ...
+   **Objectif** : ...
 
 ---
 
@@ -119,8 +136,11 @@ Règles :
 - Si développeur requis : commencer par "⚙️ Demande à ton développeur de..."
 - Ne suggère JAMAIS de réductions, promos ou mois gratuits (offre déjà à 39€/mois).
 - Le site peut être en pré-lancement : ne critique pas un faible trafic de test.
-- Colonnes Intérêt et Objectif = 1 phrase max. Pas d'intro ni conclusion hors sections.
-- Ne mets JAMAIS la réponse dans un bloc code (\`\`\`) : le markdown doit être brut pour que les tableaux GFM soient rendus en HTML.`;
+- Intérêt et Objectif = 1 phrase max. Pas d'intro ni conclusion hors sections.
+- Ne produis PAS de tableau markdown. Utilise uniquement des listes numérotées et des puces.
+- Si une donnée vaut null, "Non disponible" ou source=unavailable, ne la transforme JAMAIS en 0 et ne conclus JAMAIS à un problème sur cette base.
+- Pour l’indexation Google : URL Inspection = fiable ; search_analytics_estimate = estimation ; unavailable = aucune conclusion possible.
+- Ne mets JAMAIS la réponse dans un bloc code (\`\`\`) : le markdown doit être brut et simple.`;
 
 function scoreArticleSeo(article: ArticleSeoRow) {
   const title = article.title_fr ?? '';
@@ -153,6 +173,69 @@ function publicMetaPages() {
   ];
 }
 
+function summarizeSubscriptions(
+  rows: Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
+) {
+  let activeSubscribers = 0;
+  let failedPayments = 0;
+  let mrrCents = 0;
+  const now = Date.now();
+
+  for (const row of rows) {
+    if (!row.stripe_subscription_id?.startsWith('sub_')) continue;
+    const status = (row.status ?? '').toLowerCase();
+    const hasAccess = !row.ends_at || new Date(row.ends_at).getTime() > now;
+    if ((status === 'active' || status === 'trialing') && hasAccess) {
+      activeSubscribers += 1;
+      mrrCents += row.price_cents ?? 0;
+    }
+    if (status === 'past_due' || status === 'unpaid') failedPayments += 1;
+  }
+
+  return { activeSubscribers, failedPayments, mrrEur: Math.round(mrrCents / 100) };
+}
+
+function buildChecklistSnapshot(
+  rows: Array<{ key: string; label_fr: string; category: string; completed: boolean }>,
+  context: {
+    allArticlesAbove80: boolean;
+    publishedCount: number;
+    memberCount: number;
+    settings: Awaited<ReturnType<typeof getMarketingSettings>>;
+    searchConsole: GlobalMarketingSnapshot['seo']['searchConsole'];
+    ga4: GlobalMarketingSnapshot['analytics']['ga4'];
+  },
+) {
+  return rows.map((item) => {
+    const manual = (source: string) => ({ key: item.key, label: item.label_fr, category: item.category, completed: item.completed, source, auto: false });
+    const auto = (completed: boolean, source: string) => ({ key: item.key, label: item.label_fr, category: item.category, completed, source, auto: true });
+
+    switch (item.key) {
+      case 'search_console_connected':
+        return auto(context.searchConsole.available, context.searchConsole.available ? 'API Search Console répond' : context.searchConsole.error ?? 'API indisponible');
+      case 'google_analytics_configured':
+        return auto(
+          Boolean(context.settings.google_analytics_id) && context.ga4.available,
+          context.ga4.available ? 'GA4 API remonte des données' : context.ga4.error ?? 'GA4 API indisponible',
+        );
+      case 'sitemap_submitted':
+        return auto((context.searchConsole.indexing?.submittedUrls ?? 0) > 0, `${context.searchConsole.indexing?.submittedUrls ?? 0} URL soumises dans le sitemap`);
+      case 'seo_scores_above_80':
+        return auto(context.allArticlesAbove80, `${context.publishedCount} articles publiés contrôlés`);
+      case 'instagram_linked':
+        return auto(Boolean(context.settings.instagram_handle), context.settings.instagram_handle ? String(context.settings.instagram_handle) : 'Handle Instagram absent');
+      case 'tiktok_linked':
+        return auto(Boolean(context.settings.tiktok_handle), context.settings.tiktok_handle ? String(context.settings.tiktok_handle) : 'Handle TikTok absent');
+      case 'meta_pixel_installed':
+        return auto(Boolean(context.settings.meta_pixel_id), context.settings.meta_pixel_id ? 'ID Pixel configuré et script injecté sur les pages publiques' : 'ID Pixel absent');
+      case 'ten_clients_registered':
+        return auto(context.memberCount >= 10, `${context.memberCount} clientes non archivées`);
+      default:
+        return manual('action humaine hors plateforme, à cocher manuellement');
+    }
+  });
+}
+
 async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot> {
   const admin = createAdminClient();
   const settings = await getMarketingSettings();
@@ -169,6 +252,8 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
     { data: checklistRaw },
     { data: referralRows },
     { data: scheduledRaw },
+    { data: subscriptionRows },
+    { count: memberCount },
   ] = await Promise.all([
     admin
       .from('blog_articles')
@@ -191,6 +276,11 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
       .select('id')
       .gte('scheduled_publication_at', nowIso)
       .in('status', ['draft', 'validated']),
+    admin
+      .from('subscriptions')
+      .select('status, price_cents, ends_at, stripe_subscription_id')
+      .like('stripe_subscription_id', 'sub_%'),
+    admin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'member').eq('archived', false),
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
@@ -218,6 +308,9 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
         topPages: topPages.slice(0, 10),
         indexing: {
           indexedUrls: indexing.indexedUrls,
+          indexedUrlsLabel: indexing.indexedUrlsLabel,
+          indexedUrlsSource: indexing.indexedUrlsSource,
+          searchAnalyticsUrlsWithImpressions: indexing.searchAnalyticsUrlsWithImpressions,
           submittedUrls: indexing.submittedUrls,
           sitemapErrors: indexing.sitemapErrors,
           sitemapWarnings: indexing.sitemapWarnings,
@@ -300,9 +393,17 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
     count,
   }));
 
-  const checklist = (checklistRaw ?? []) as Array<{ key: string; label_fr: string; category: string; completed: boolean }>;
-  const checklistCompleted = checklist.filter((i) => i.completed).map(({ key, label_fr, category }) => ({ key, label: label_fr, category }));
-  const checklistPending = checklist.filter((i) => !i.completed).map(({ key, label_fr, category }) => ({ key, label: label_fr, category }));
+  const business = summarizeSubscriptions(
+    (subscriptionRows ?? []) as Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
+  );
+  const checklist = buildChecklistSnapshot((checklistRaw ?? []) as Array<{ key: string; label_fr: string; category: string; completed: boolean }>, {
+    allArticlesAbove80,
+    publishedCount: articles.length,
+    memberCount: memberCount ?? 0,
+    settings,
+    searchConsole,
+    ga4,
+  });
 
   const total = newsletterTotal ?? 0;
   const confirmed = newsletterConfirmed ?? 0;
@@ -334,6 +435,7 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
       })),
     },
     marketing: {
+      business,
       newsletter: {
         total,
         confirmed,
@@ -345,7 +447,10 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
         totalReferrals: refList.length,
         topAmbassadors,
       },
-      checklist: { completed: checklistCompleted, pending: checklistPending },
+      checklist: {
+        completed: checklist.filter((item) => item.completed).map(({ completed, ...item }) => item),
+        pending: checklist.filter((item) => !item.completed).map(({ completed, ...item }) => item),
+      },
       social: {
         instagram: settings.instagram_handle ?? null,
         tiktok: settings.tiktok_handle ?? null,

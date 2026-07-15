@@ -18,7 +18,15 @@ export type SeoAdvisorInput = {
     error?: string;
     queries?: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
     topPages?: Array<{ page: string; clicks: number; impressions: number }>;
-    indexing?: { indexedUrls: number; submittedUrls: number; sitemapErrors: number; sitemapWarnings: number };
+    indexing?: {
+      indexedUrls: number | null;
+      indexedUrlsLabel: string;
+      indexedUrlsSource: string;
+      searchAnalyticsUrlsWithImpressions: number;
+      submittedUrls: number;
+      sitemapErrors: number;
+      sitemapWarnings: number;
+    };
     crawlErrors?: Array<{ type: string; detail: string }>;
   };
 };
@@ -123,7 +131,8 @@ ${RESPONSE_FORMAT}`;
   }
 }
 
-const SEO_CONTEXT = `CONTEXTE : Le sitemap est actif et soumis à Google. Le robots.txt est configuré. Google Search Console est connecté. Le site vient d'être créé et n'a pas encore été lancé publiquement.`;
+const SEO_CONTEXT = `CONTEXTE : Le sitemap est actif et soumis à Google. Le robots.txt est configuré. Google Search Console est connecté. Le site vient d'être créé et n'a pas encore été lancé publiquement.
+RÈGLE CRITIQUE : si une métrique vaut null, \"Non disponible\" ou source=unavailable, tu ne dois PAS conclure qu'elle vaut zéro. Tu dois dire que la donnée est indisponible. Pour l’indexation, privilégie indexedUrlsLabel + indexedUrlsSource : URL Inspection = fiable ; search_analytics_estimate = estimation honnête ; unavailable = aucune conclusion.`;
 
 const ANALYTICS_CONTEXT = `CONTEXTE : Google Analytics GA4 est actif et collecte des données. Le Meta Pixel est installé. Le site n'est pas encore lancé publiquement, donc le trafic actuel est uniquement du trafic de test/développement. Ne critique pas le faible trafic.`;
 

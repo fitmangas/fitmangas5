@@ -38,7 +38,7 @@ export type BusinessAdvisorSnapshot = {
     error?: string;
     topQueries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
     topPages: Array<{ page: string; clicks: number; impressions: number }>;
-    indexing: { indexedUrls: number; submittedUrls: number } | null;
+    indexing: { indexedUrls: number | null; indexedUrlsLabel: string; indexedUrlsSource: string; submittedUrls: number } | null;
   };
   analytics: {
     available: boolean;
@@ -97,6 +97,8 @@ Liste les incohérences ou problèmes techniques trouvés dans les données (max
 ---
 
 IMPORTANT : la coach n'est PAS développeuse. Ne dis JAMAIS "résoudre un problème technique" sans détail. Pour chaque action (colonne Action), donne les étapes EXACTES qu'elle peut faire elle-même :
+- Si une métrique vaut null, "Non disponible" ou source=unavailable, ne la transforme JAMAIS en 0 et ne conclus JAMAIS à un problème sur cette base.
+- Pour l’indexation Google : URL Inspection = fiable ; search_analytics_estimate = estimation ; unavailable = aucune conclusion possible.
 - Quel site ouvrir (URL complète)
 - Quel bouton cliquer
 - Quoi écrire/publier
@@ -224,6 +226,8 @@ async function gatherBusinessAdvisorSnapshot(): Promise<BusinessAdvisorSnapshot>
         topPages: topPages.slice(0, 10),
         indexing: {
           indexedUrls: indexing.indexedUrls,
+          indexedUrlsLabel: indexing.indexedUrlsLabel,
+          indexedUrlsSource: indexing.indexedUrlsSource,
           submittedUrls: indexing.submittedUrls,
         },
       };
