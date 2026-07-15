@@ -12,7 +12,7 @@ import {
   getTrafficSources,
   getUsersByCountry,
 } from '@/lib/google/analytics';
-import { getCrawlErrors, getIndexingStatus, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
+import { getCrawlErrors, getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -42,6 +42,7 @@ export type GlobalMarketingSnapshot = {
     searchConsole: {
       available: boolean;
       error?: string;
+      overview: { clicks: number; impressions: number; ctr: number; position: number | null } | null;
       queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
       topPages: Array<{ page: string; clicks: number; impressions: number }>;
       indexing: {
@@ -140,6 +141,7 @@ Règles :
 - Ne produis PAS de tableau markdown. Utilise uniquement des listes numérotées et des puces.
 - Si une donnée vaut null, "Non disponible" ou source=unavailable, ne la transforme JAMAIS en 0 et ne conclus JAMAIS à un problème sur cette base.
 - Pour l’indexation Google : URL Inspection = fiable ; search_analytics_estimate = estimation ; unavailable = aucune conclusion possible.
+- Pour la position moyenne Google, utilise en priorité searchConsole.overview.position : c'est l'agrégat Search Console global. Les listes queries/topPages sont partielles et servent au détail, pas au calcul global.
 - Ne calcule JAMAIS un "taux d'indexation" en divisant indexedUrlsLabel par submittedUrls : indexedUrlsLabel peut être un échantillon URL Inspection (ex. "3/3 vérifiées"), alors que submittedUrls est le total du sitemap. Si indexedUrlsSource=url_inspection et que les URLs inspectées sont indexées, ne parle PAS de faible indexation.
 - Les champs contents[].indexed de l'API sitemaps.list sont considérés comme non fiables/dépréciés : ne les utilise pas pour conclure que les pages ne sont pas indexées.
 - Ne mets JAMAIS la réponse dans un bloc code (\`\`\`) : le markdown doit être brut et simple.`;
@@ -238,6 +240,28 @@ function buildChecklistSnapshot(
   });
 }
 
+function extractAiErrorMessage(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  let message = raw;
+  try {
+    const parsed = JSON.parse(raw) as { error?: { code?: number; message?: string; status?: string } };
+    if (parsed.error?.message) message = parsed.error.message;
+    if (parsed.error?.code === 503 || parsed.error?.status === 'UNAVAILABLE') {
+      return "Le service IA est temporairement saturé. Les données marketing sont bien collectées, mais le diagnostic n'a pas pu être généré. Réessaie dans quelques minutes.";
+    }
+  } catch {
+    // Certains SDK renvoient un texte brut au lieu d'un JSON.
+  }
+
+  if (/503|UNAVAILABLE|high demand|temporarily|overloaded/i.test(message)) {
+    return "Le service IA est temporairement saturé. Les données marketing sont bien collectées, mais le diagnostic n'a pas pu être généré. Réessaie dans quelques minutes.";
+  }
+  if (/429|quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(message)) {
+    return 'Le quota IA est temporairement atteint. Réessaie plus tard ou vérifie la limite de la clé Gemini.';
+  }
+  return `Diagnostic IA indisponible : ${message.slice(0, 220)}`;
+}
+
 async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot> {
   const admin = createAdminClient();
   const settings = await getMarketingSettings();
@@ -291,6 +315,7 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
 
   let searchConsole: GlobalMarketingSnapshot['seo']['searchConsole'] = {
     available: false,
+    overview: null,
     queries: [],
     topPages: [],
     indexing: null,
@@ -298,7 +323,8 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
   };
   if (hasGoogleServiceAccountJson()) {
     try {
-      const [queries, topPages, indexing, crawlErrors] = await Promise.all([
+      const [overview, queries, topPages, indexing, crawlErrors] = await Promise.all([
+        getSearchOverview(28),
         getSearchQueries(28, 15),
         getSearchTopPages(28, 10),
         getIndexingStatus(),
@@ -306,6 +332,7 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
       ]);
       searchConsole = {
         available: true,
+        overview,
         queries: [...queries].sort((a, b) => b.clicks - a.clicks).slice(0, 15),
         topPages: topPages.slice(0, 10),
         indexing: {
@@ -323,6 +350,7 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
       searchConsole = {
         available: false,
         error: e instanceof Error ? e.message : 'Erreur Search Console',
+        overview: null,
         queries: [],
         topPages: [],
         indexing: null,
@@ -488,6 +516,6 @@ ${JSON.stringify(snapshot, null, 2)}`;
     return { ok: true, text, snapshot };
   } catch (e) {
     console.error('[analyzeGlobalMarketingDiagnostic]', e);
-    return { ok: false, error: e instanceof Error ? e.message : 'Erreur Gemini.' };
+    return { ok: false, error: extractAiErrorMessage(e) };
   }
 }

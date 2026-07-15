@@ -41,6 +41,12 @@ describe('live-back-url', () => {
     ).toEqual({ href: '/compte/planning', label: 'Planning' });
   });
 
+  it('client avec ancienne provenance admin → jamais de retour admin', () => {
+    expect(
+      resolveLiveBackLink({ from: '/admin/courses', realAdmin: false, studentPreviewFromUrl: false }),
+    ).toEqual({ href: '/compte', label: 'Calendrier' });
+  });
+
   it('client depuis replays → retour page replays avec bon label', () => {
     expect(
       resolveLiveBackLink({ from: '/compte/replays', realAdmin: false, studentPreviewFromUrl: false }),

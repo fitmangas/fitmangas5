@@ -24,6 +24,37 @@ async function getSearchConsoleClient() {
 
 export type SearchQueryRow = { query: string; clicks: number; impressions: number; ctr: number; position: number };
 
+export type SearchOverview = { clicks: number; impressions: number; ctr: number; position: number | null };
+
+export async function getSearchOverview(days: number): Promise<SearchOverview> {
+  const client = await getSearchConsoleClient();
+  if (!client) return { clicks: 0, impressions: 0, ctr: 0, position: null };
+  const safeDays = Math.min(Math.max(days, 1), 448);
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - safeDays);
+  const siteUrl = searchConsoleSiteUrl();
+
+  const res = await client.searchanalytics.query({
+    siteUrl,
+    requestBody: {
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      rowLimit: 1,
+      dataState: 'all',
+      searchType: 'web',
+    },
+  });
+
+  const row = res.data.rows?.[0];
+  return {
+    clicks: row?.clicks ?? 0,
+    impressions: row?.impressions ?? 0,
+    ctr: Math.round((row?.ctr ?? 0) * 10000) / 100,
+    position: row?.position == null ? null : Math.round(row.position * 10) / 10,
+  };
+}
+
 export async function getSearchQueries(days: number, rowLimit = 50): Promise<SearchQueryRow[]> {
   const client = await getSearchConsoleClient();
   if (!client) return [];

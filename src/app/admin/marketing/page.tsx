@@ -11,7 +11,7 @@ import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
 import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
-import { getIndexingStatus, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
+import { getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -173,6 +173,7 @@ export default async function AdminMarketingPage() {
     : {
         available: false,
         error: 'Credentials Google non configurés',
+        overview: null,
         queries: [],
         topPages: [],
         indexing: null,
@@ -603,6 +604,7 @@ export default async function AdminMarketingPage() {
 type SearchConsoleSummary = {
   available: boolean;
   error?: string;
+  overview: Awaited<ReturnType<typeof getSearchOverview>> | null;
   queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
   topPages: Array<{ page: string; clicks: number; impressions: number }>;
   indexing: Awaited<ReturnType<typeof getIndexingStatus>> | null;
@@ -625,16 +627,18 @@ type SubscriptionStats = {
 
 async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
   try {
-    const [queries, topPages, indexing] = await Promise.all([
+    const [overview, queries, topPages, indexing] = await Promise.all([
+      getSearchOverview(28),
       getSearchQueries(28, 50),
       getSearchTopPages(28, 50),
       getIndexingStatus(),
     ]);
-    return { available: true, queries, topPages, indexing };
+    return { available: true, overview, queries, topPages, indexing };
   } catch (e) {
     return {
       available: false,
       error: e instanceof Error ? e.message : 'Erreur Search Console',
+      overview: null,
       queries: [],
       topPages: [],
       indexing: null,
@@ -756,12 +760,12 @@ function buildMarketingKpis({
   gaSummary: GaSummary;
   subscriptionStats: SubscriptionStats;
 }) {
-  const searchClicks = searchConsoleSummary.topPages.reduce((sum, row) => sum + row.clicks, 0);
-  const searchImpressions = searchConsoleSummary.topPages.reduce((sum, row) => sum + row.impressions, 0);
-  const avgPosition =
-    searchConsoleSummary.queries.length > 0
-      ? searchConsoleSummary.queries.reduce((sum, row) => sum + row.position, 0) / searchConsoleSummary.queries.length
-      : null;
+  const searchClicks =
+    searchConsoleSummary.overview?.clicks ?? searchConsoleSummary.topPages.reduce((sum, row) => sum + row.clicks, 0);
+  const searchImpressions =
+    searchConsoleSummary.overview?.impressions ??
+    searchConsoleSummary.topPages.reduce((sum, row) => sum + row.impressions, 0);
+  const avgPosition = searchConsoleSummary.overview?.position ?? null;
   const indexing = searchConsoleSummary.indexing;
 
   return [
@@ -794,10 +798,10 @@ function buildMarketingKpis({
     {
       label: 'Position moyenne',
       value: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
-      detail: avgPosition == null ? 'requêtes anonymisées ou absentes' : 'mots-clés disponibles',
+      detail: avgPosition == null ? 'donnée Search Console absente' : 'Search Console global 28j',
       info:
         "Position moyenne dans les résultats Google. Environ 98% des clics se font sur la 1re page (positions 1 à 10). Au-delà de 20, le site est en page 3 ou plus : quasi invisible, d'où très peu de clics malgré les impressions.",
-      tone: avgPosition == null ? 'neutral' : avgPosition <= 30 ? 'watch' : 'bad',
+      tone: avgPosition == null ? 'neutral' : avgPosition <= 10 ? 'good' : avgPosition <= 30 ? 'watch' : 'bad',
     },
     {
       label: 'Articles publiés',

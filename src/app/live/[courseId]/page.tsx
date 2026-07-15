@@ -12,7 +12,7 @@ import {
 } from '@/lib/access-control';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
-import { isLiveAdminEntry, resolveLiveBackLink } from '@/lib/live/live-back-url';
+import { resolveLiveBackLink } from '@/lib/live/live-back-url';
 import { resolvePlayableCourseReplay } from '@/lib/replay-availability';
 import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 import { createClient } from '@/lib/supabase/server';
@@ -96,9 +96,13 @@ export default async function LiveCoursePage({
 
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
   const globalDemo = (await getDemoClientMode()) && realAdmin;
-  /** Aperçu élève : ?preview=client explicite, ou cookie Vue Client hors navigation admin. */
-  const effectiveStudentPreview = studentPreview || (globalDemo && !isLiveAdminEntry(fromParam));
-  const backLink = resolveLiveBackLink({ from: fromParam, realAdmin, studentPreviewFromUrl: studentPreview });
+  /** Aperçu élève : ?preview=client explicite, ou cookie Vue Client admin. */
+  const effectiveStudentPreview = studentPreview || globalDemo;
+  const backLink = resolveLiveBackLink({
+    from: fromParam,
+    realAdmin,
+    studentPreviewFromUrl: effectiveStudentPreview,
+  });
 
   let allowed = false;
   let isModerator = false;
@@ -146,7 +150,7 @@ export default async function LiveCoursePage({
   const courseEndedAt = new Date(course.ends_at);
   const courseIsPast = !Number.isNaN(courseEndedAt.getTime()) && courseEndedAt < new Date();
 
-  const useAdminReplayFetch = realAdmin;
+  const useAdminReplayFetch = realAdmin && !effectiveStudentPreview;
 
   const { data: replay } = useAdminReplayFetch
     ? await createAdminClient()
