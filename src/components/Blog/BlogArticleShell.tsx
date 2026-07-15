@@ -8,6 +8,7 @@ import { BlogRatingBlock } from '@/components/Blog/BlogRatingBlock';
 import { BlogScrollTracker } from '@/components/Blog/BlogScrollTracker';
 import { BlogViewBeacon } from '@/components/Blog/BlogViewBeacon';
 import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
+import { BlogShareButtons } from '@/components/Blog/BlogShareButtons';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
@@ -118,6 +119,8 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
         ) : null}
         <ArticleProse text={loc.content} />
       </div>
+
+      <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
 
       <section className="mb-10 rounded-[1.75rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.07)] backdrop-blur-xl">
         <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
