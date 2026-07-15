@@ -154,6 +154,42 @@ function PublishedBadge({ published }: { published: boolean }) {
   );
 }
 
+function LanguageToggle({
+  value,
+  onChange,
+}: {
+  value: FormState['courseLanguage'];
+  onChange: (value: FormState['courseLanguage']) => void;
+}) {
+  const options: Array<{ value: FormState['courseLanguage']; label: string; display: string }> = [
+    { value: '', label: 'Non définie', display: '—' },
+    { value: 'fr', label: 'Français', display: '🇫🇷' },
+    { value: 'es', label: 'Espagnol', display: '🇪🇸' },
+  ];
+
+  return (
+    <div className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+      Langue du cours
+      <div className="mt-2 inline-flex rounded-full border border-white/80 bg-white/45 p-1">
+        {options.map((option) => (
+          <button
+            key={option.value || 'none'}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`flex h-8 min-w-10 items-center justify-center rounded-full px-3 text-sm font-semibold normal-case transition ${
+              value === option.value ? TAB_ACTIVE : 'text-luxury-muted'
+            }`}
+            aria-label={option.label}
+            title={option.label}
+          >
+            {option.display}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CourseRowActions({
   c,
   coursePast,
@@ -688,20 +724,10 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 </button>
               </div>
             </div>
-            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-              Langue du cours
-              <select
-                value={createForm.courseLanguage}
-                onChange={(e) =>
-                  setCreateForm((s) => ({ ...s, courseLanguage: e.target.value as FormState['courseLanguage'] }))
-                }
-                className={`${REFINED_SELECT_COMPACT} sm:w-[11rem]`}
-              >
-                <option value="">— Non définie</option>
-                <option value="fr">Français</option>
-                <option value="es">Espagnol</option>
-              </select>
-            </label>
+            <LanguageToggle
+              value={createForm.courseLanguage}
+              onChange={(courseLanguage) => setCreateForm((s) => ({ ...s, courseLanguage }))}
+            />
           </div>
           <CourseDatetimeFields
             timeZone={createForm.timeZone}
@@ -745,16 +771,7 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               </label>
             </div>
           ) : null}
-          <label className="flex items-center gap-2 text-sm text-brand-ink/70">
-            <input
-              type="checkbox"
-              checked={!createForm.isPublished}
-              onChange={(e) => setCreateForm((s) => ({ ...s, isPublished: !e.target.checked }))}
-              className="rounded border-brand-ink/20"
-            />
-            Enregistrer comme Brouillon
-          </label>
-          <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="submit"
               disabled={isPending}
@@ -762,6 +779,15 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
             >
               Créer la séance
             </button>
+            <label className="flex items-center gap-2 text-sm text-brand-ink/70">
+              <input
+                type="checkbox"
+                checked={!createForm.isPublished}
+                onChange={(e) => setCreateForm((s) => ({ ...s, isPublished: !e.target.checked }))}
+                className="rounded border-brand-ink/20"
+              />
+              Enregistrer comme Brouillon
+            </label>
           </div>
         </form>
       </section>
@@ -1083,22 +1109,10 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                   </select>
                 </label>
               </div>
-              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
-                Langue du cours
-                <select
-                  value={editForm.courseLanguage}
-                  onChange={(e) =>
-                    setEditForm((s) =>
-                      s ? { ...s, courseLanguage: e.target.value as FormState['courseLanguage'] } : s,
-                    )
-                  }
-                  className={REFINED_SELECT}
-                >
-                  <option value="">— Non définie</option>
-                  <option value="fr">Français</option>
-                  <option value="es">Espagnol</option>
-                </select>
-              </label>
+              <LanguageToggle
+                value={editForm.courseLanguage}
+                onChange={(courseLanguage) => setEditForm((s) => (s ? { ...s, courseLanguage } : s))}
+              />
               {editForm.courseFormat === 'onsite' ? (
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Ville
