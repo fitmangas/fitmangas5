@@ -162,8 +162,10 @@ ${esExcerpt ? `Contenu ES (texte extrait, pour inspirer le titre espagnol):\n${e
 ${descEs ? `Chapo ES: ${descEs}\n` : ''}
 
 Règles STRICTES:
-- title_fr: OBLIGATOIREMENT 45 à 60 caractères (compte-les), français naturel, accrocheur, bénéfice ou angle clair, avec mots-clés pilates utiles
+- title_fr: OBLIGATOIREMENT 45 à 60 caractères (compte-les), français naturel, accrocheur, bénéfice ou angle clair, avec un mot-clé longue traîne utile
 - title_es: OBLIGATOIREMENT 45 à 60 caractères, espagnol naturel (PAS une traduction mot à mot du français)
+- Viser une requête précise, pas seulement "pilates" (ex: respiration pilates, posture bureau, mal de dos, abdos profonds, routine débutant)
+- Donner envie de cliquer sans promesse médicale ni sensationnalisme
 - Cohérent avec la catégorie et le contenu réel
 - INTERDIT: "Article pilates", numéros d'article, formulations génériques vagues ("mouvement & souffle"), titres trop courts
 - Pas de guillemets autour des titres`;

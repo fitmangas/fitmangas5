@@ -14,6 +14,16 @@ import { pickLocalizedArticle } from '@/lib/blog/localize';
 import type { BlogLang } from '@/types/blog';
 
 type ArticleRow = Parameters<typeof pickLocalizedArticle>[0];
+type RelatedBlogArticle = {
+  id: string;
+  title_fr: string;
+  title_es: string | null;
+  slug_fr: string;
+  slug_es: string | null;
+  description_fr: string | null;
+  description_es: string | null;
+  blog_categories?: { slug: string; label_fr: string; label_es: string | null } | null;
+};
 
 type Props = {
   article: ArticleRow & {
@@ -27,6 +37,7 @@ type Props = {
   };
   defaultLang: BlogLang;
   isLoggedIn: boolean;
+  relatedArticles?: RelatedBlogArticle[];
 };
 
 function readingMinutes(text: string) {
@@ -34,7 +45,7 @@ function readingMinutes(text: string) {
   return Math.max(1, Math.round(words / 200));
 }
 
-export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
+export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArticles = [] }: Props) {
   const [lang, setLang] = useBlogLanguagePref(defaultLang, isLoggedIn);
 
   const loc = useMemo(() => pickLocalizedArticle(article, lang), [article, lang]);
@@ -106,6 +117,45 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn }: Props) {
         ) : null}
         <ArticleProse text={loc.content} />
       </div>
+
+      {relatedArticles.length > 0 ? (
+        <section className="mb-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
+            {lang === 'es' ? 'Para seguir leyendo' : 'À lire ensuite'}
+          </p>
+          <div className="mt-4 grid gap-3">
+            {relatedArticles.map((related) => {
+              const relatedLoc = pickLocalizedArticle(
+                {
+                  title_fr: related.title_fr,
+                  title_es: related.title_es,
+                  description_fr: related.description_fr,
+                  description_es: related.description_es,
+                  content_fr: '',
+                  content_es: null,
+                  meta_description_fr: null,
+                  meta_description_es: null,
+                  slug_fr: related.slug_fr,
+                  slug_es: related.slug_es,
+                },
+                lang,
+              );
+              const href = lang === 'es' ? `/blog/${related.slug_es ?? related.slug_fr}` : `/blog/${related.slug_fr}`;
+              return (
+                <Link key={related.id} href={href} className="rounded-2xl border border-white/50 bg-white/55 p-4 transition hover:border-orange-200 hover:bg-white/80">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                    {lang === 'es'
+                      ? related.blog_categories?.label_es ?? related.blog_categories?.label_fr ?? 'Pilates'
+                      : related.blog_categories?.label_fr ?? 'Pilates'}
+                  </span>
+                  <h2 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{relatedLoc.title}</h2>
+                  {relatedLoc.description ? <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{relatedLoc.description}</p> : null}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <BlogRatingBlock
         articleId={article.id}

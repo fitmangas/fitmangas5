@@ -35,7 +35,7 @@ Réponds STRICTEMENT en JSON avec les clés:
 - keywords: tableau de 5 strings (mots-clés à intégrer)
 - score: nombre 0-100 (score SEO estimé)
 - title_suggestion: titre optimisé, moins de 60 caractères
-- meta_description: meta description, moins de 160 caractères
+- meta_description: meta description entre 140 et 155 caractères
 - content_advice: paragraphe court (structure, longueur, mots-clés manquants)
 
 Sans markdown ni texte hors JSON.`;
@@ -88,12 +88,17 @@ Thème demandé: ${themeTrim}
 
 Génère un article de blog bilingue FR + ES.
 Réponds STRICTEMENT en JSON avec les clés:
-- title_fr, title_es (titres SEO < 60 caractères chacun)
-- meta_description_fr, meta_description_es (< 160 caractères)
+- title_fr, title_es (titres SEO 45 à 60 caractères chacun, avec requête longue traîne précise)
+- meta_description_fr, meta_description_es (140 à 155 caractères)
 - description_fr, description_es (chapo 1-2 phrases, texte brut sans HTML)
-- content_fr, content_es (article complet ~800 mots en FR et sa traduction ES complète ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement)
-- seo_keywords: string (3 à 5 mots-clés séparés par virgules)
+- content_fr, content_es (article complet 800 à 1000 mots en FR et sa traduction ES complète ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; inclure une courte FAQ en fin d'article)
+- seo_keywords: string (5 à 8 mots-clés longue traîne séparés par virgules)
 - slug_suggestion: slug latin minuscules tirets, sans accents
+
+Contraintes SEO:
+- viser une intention de recherche précise (ex: respiration pilates débutant, posture bureau, mal de dos, abdos profonds)
+- intégrer le mot-clé principal dans l’introduction, un <h2> et la conclusion
+- ne pas inventer de liens HTML externes ; le site ajoute le maillage interne automatiquement
 
 Sans markdown ni texte hors JSON.`;
 

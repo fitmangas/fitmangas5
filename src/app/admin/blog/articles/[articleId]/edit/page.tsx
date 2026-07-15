@@ -10,7 +10,7 @@ export default async function AdminArticleEditPage({ params }: { params: Promise
   const admin = createAdminClient();
   const { data: article } = await admin
     .from('blog_articles')
-    .select('id, title_fr, description_fr, content_fr, meta_description_fr, seo_keywords, slug_fr')
+    .select('id, title_fr, description_fr, content_fr, meta_description_fr, seo_keywords, slug_fr, status')
     .eq('id', articleId)
     .maybeSingle();
 

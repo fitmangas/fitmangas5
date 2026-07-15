@@ -25,6 +25,15 @@ export type ArticleGenerationAttemptResult =
       detail: string;
     };
 
+function truncateAtSentence(value: string, maxLength: number): string {
+  const text = value.replace(/\s+/g, ' ').trim();
+  if (text.length <= maxLength) return text;
+  const slice = text.slice(0, maxLength + 1);
+  const sentenceEnd = Math.max(slice.lastIndexOf('.'), slice.lastIndexOf('!'), slice.lastIndexOf('?'));
+  if (sentenceEnd >= Math.floor(maxLength * 0.65)) return slice.slice(0, sentenceEnd + 1).trim();
+  return `${slice.slice(0, maxLength - 1).replace(/[\s,;:.-]+$/g, '')}…`;
+}
+
 function extractJsonBlock(raw: string): Record<string, unknown> | null {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
@@ -41,12 +50,12 @@ function buildPrompts(params: { topicBrief: string; category: string; publishDat
   system: string;
   user: string;
 } {
-  const system = `Tu es copywriter expert d'un blog pilates premium. Tu écris en français naturel, clair et professionnel.
+  const system = `Tu es copywriter SEO expert d'un blog pilates premium. Tu écris en français naturel, clair et professionnel.
 Retourne STRICTEMENT un JSON avec ces clés:
-- contentHtml (article en HTML, 350 à 500 mots, avec <h2>, <h3>, <p>, <ul>, <li>, <strong>)
-- description (160 caractères max)
-- metaDescription (155 caractères max)
-- seoKeywords (liste séparée par virgules)`;
+- contentHtml (article en HTML, 700 à 950 mots, avec <h2>, <h3>, <p>, <ul>, <li>, <strong>, et une courte section FAQ en fin d'article)
+- description (120 à 160 caractères)
+- metaDescription (140 à 155 caractères)
+- seoKeywords (5 à 8 mots-clés longue traîne séparés par virgules, sans répéter le titre complet)`;
 
   const user = `Brief éditorial: ${params.topicBrief}
 Catégorie: ${params.category}
@@ -54,11 +63,14 @@ Date publication: ${params.publishDateIso}
 
 Contraintes:
 - le contenu doit être spécifique au brief (pas de titre générique type "Article pilates X")
+- viser une intention de recherche précise (ex: douleur dos pilates débutant, respiration pilates, posture bureau)
+- intégrer naturellement le mot-clé principal dans l'introduction, un <h2> et la conclusion
 - texte actionnable, motivant, sans jargon inutile
-- intro accrocheuse
-- 2-3 conseils concrets
+- intro accrocheuse qui répond à un problème concret
+- 3-5 conseils concrets
 - une mini-story réaliste
-- conclusion avec CTA doux
+- conclusion avec CTA doux vers FitMangas
+- ne pas inventer de liens HTML externes ; le site ajoutera le maillage interne automatiquement
 - INTERDIT: textes génériques type "Pourquoi ce sujet change ta pratique" ou "Un guide concret pour progresser en pilates"`;
 
   return { system, user };
@@ -84,11 +96,17 @@ function parseGeneratedArticle(
   return {
     contentHtml: cleanedHtml,
     description:
-      description || cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+      truncateAtSentence(
+        description || cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+        160,
+      ),
     metaDescription:
-      metaDescription ||
-      description.slice(0, 155) ||
-      cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 155),
+      truncateAtSentence(
+        metaDescription ||
+          description ||
+          cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+        155,
+      ),
     seoKeywords: seoKeywords || 'pilates, posture, respiration, bien-être',
     provider,
     model,

@@ -40,12 +40,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
-    {
-      url: `${APP_URL}/connexion`,
-      lastModified: LEGAL_LAST_MODIFIED,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
   ];
 
   let blogPages: MetadataRoute.Sitemap = [];

@@ -14,6 +14,7 @@ type Article = {
   meta_description_fr: string | null;
   seo_keywords: string | null;
   slug_fr: string;
+  status: string;
 };
 
 function SeoPanelContent({
@@ -89,6 +90,7 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
     meta_description: string;
     content_advice: string;
   } | null>(null);
+  const slugLocked = article.status === 'published';
 
   const save = useCallback(() => {
     setErr(null);
@@ -103,7 +105,7 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
           content_fr: content,
           meta_description_fr: meta,
           seo_keywords: keywords,
-          slug_fr: slug,
+          ...(slugLocked ? {} : { slug_fr: slug }),
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };
@@ -113,7 +115,7 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
       }
       setSaved('Enregistré');
     });
-  }, [article.id, title, description, content, meta, keywords, slug]);
+  }, [article.id, title, description, content, meta, keywords, slug, slugLocked]);
 
   async function runSeo() {
     setSeoLoading(true);
@@ -166,7 +168,17 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
           </label>
           <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">
             Slug FR
-            <input value={slug} onChange={(e) => setSlug(e.target.value)} className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 font-mono text-xs" />
+            <input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              disabled={slugLocked}
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 font-mono text-xs disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500"
+            />
+            {slugLocked ? (
+              <span className="mt-2 block text-[11px] normal-case leading-4 tracking-normal text-luxury-muted">
+                Slug verrouillé : cet article est publié, son URL Google ne doit pas changer.
+              </span>
+            ) : null}
           </label>
           <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">
             Chapô / description

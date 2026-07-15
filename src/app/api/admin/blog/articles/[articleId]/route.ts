@@ -24,6 +24,11 @@ const PATCHABLE = new Set([
   'meta_description_en',
   'meta_description_es',
 ]);
+const SLUG_FIELDS = ['slug_fr', 'slug_en', 'slug_es'] as const;
+
+function normalizedSlug(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export async function PATCH(request: Request, context: { params: Promise<{ articleId: string }> }) {
   const gate = await requireAdminApi();
@@ -51,6 +56,37 @@ export async function PATCH(request: Request, context: { params: Promise<{ artic
 
   try {
     const admin = createAdminClient();
+    const { data: current, error: readError } = await admin
+      .from('blog_articles')
+      .select('status, slug_fr, slug_en, slug_es')
+      .eq('id', articleId)
+      .maybeSingle();
+
+    if (readError) {
+      return NextResponse.json({ error: readError.message }, { status: 400 });
+    }
+    if (!current) {
+      return NextResponse.json({ error: 'Article introuvable.' }, { status: 404 });
+    }
+
+    if (current.status === 'published') {
+      for (const field of SLUG_FIELDS) {
+        if (!(field in payload)) continue;
+        const incoming = normalizedSlug(payload[field]);
+        const existing = normalizedSlug(current[field]);
+        if (incoming !== existing) {
+          return NextResponse.json(
+            {
+              error:
+                'Slug verrouillé : cet article est déjà publié. Modifier son slug casserait son URL Google. Modifie le titre ou la meta description, pas le slug.',
+            },
+            { status: 400 },
+          );
+        }
+        delete payload[field];
+      }
+    }
+
     const { error } = await admin.from('blog_articles').update(payload).eq('id', articleId);
 
     if (error) {

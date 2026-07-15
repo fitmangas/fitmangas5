@@ -11,17 +11,17 @@ import type { BlogLang } from '@/types/blog';
 const PAGE = 12;
 
 export const metadata: Metadata = {
-  title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
-  description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+  title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
+  description: 'Blog Pilates FitMangas : exercices simples, respiration, posture, souplesse et conseils pour progresser à la maison avec Alejandra.',
   openGraph: {
-    title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
-    description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+    title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
+    description: 'Exercices Pilates, respiration, posture et conseils concrets pour progresser à la maison avec FitMangas.',
     images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog Pilates de FitMangas — Conseils, techniques et inspiration',
-    description: 'Conseils Pilates, techniques, respiration, posture et inspiration pour progresser avec FitMangas.',
+    title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
+    description: 'Exercices Pilates, respiration, posture et conseils concrets pour progresser à la maison.',
     images: ['/og-default.jpg'],
   },
 };
