@@ -438,18 +438,19 @@ export default async function ComptePage({
           >
           <GlassCard className="relative order-2 flex h-full flex-col p-3 md:order-none md:p-6">
             <div className="flex items-start justify-between gap-2 md:gap-3">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
-                <p className="mt-2 hidden text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:mt-3 md:block md:text-3xl">{t.articles}</p>
+                <p className="mt-2 flex flex-col items-center gap-1 text-center text-[11px] text-luxury-muted md:mt-4 md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                  <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-3xl">
+                    {publishedBlogCount ?? 0}
+                  </span>
+                  <span className="leading-snug">{t.articles}</span>
+                </p>
                 <p className="mt-2 hidden text-xs text-luxury-muted md:block">{t.blogHint}</p>
               </div>
               <span className="kpi-icon-wrap kpi-icon-wrap--logo shrink-0 scale-90 md:scale-100">
                 <BookOpenText size={20} aria-hidden strokeWidth={2} />
               </span>
-            </div>
-            <div className="flex flex-1 flex-col items-center justify-center py-3 md:hidden">
-              <p className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink">{publishedBlogCount ?? 0}</p>
-              <p className="mt-1 text-center text-[10px] leading-snug text-luxury-muted">{t.publishedArticles}</p>
             </div>
             {blogUnread && blogUnread > 0 ? (
               <span className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff3b30] px-1.5 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,59,48,0.45)] ring-2 ring-white">
