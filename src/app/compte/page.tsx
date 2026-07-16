@@ -144,7 +144,7 @@ export default async function ComptePage({
   ]);
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
-  const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
+  const firstName = resolveFirstName(profile?.first_name, user.user_metadata, user.email);
   const greeting = formatCompteGreeting(lang, firstName);
   const grade = profile?.gamification_grade ??
     computeGamificationGrade({

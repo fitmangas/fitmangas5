@@ -79,12 +79,38 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
         )
       : '';
 
+  const pillarLinks = (
+    <section className="rounded-[1.75rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.07)] backdrop-blur-xl">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
+        {lang === 'es' ? 'Guías esenciales' : 'Guides essentiels'}
+      </p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">
+        {lang === 'es' ? 'Profundizar tu práctica de Pilates' : 'Approfondir ta pratique du Pilates'}
+      </h2>
+      <div className="mt-4 grid gap-3">
+        {SEO_PILLAR_PAGES.map((pillar) => (
+          <Link
+            key={pillar.slug}
+            href={`/${pillar.slug}`}
+            className="rounded-2xl border border-white/70 bg-white/65 p-4 transition hover:border-orange-200 hover:bg-white"
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
+              {lang === 'es' ? 'Guía Pilates' : 'Guide Pilates'}
+            </span>
+            <h3 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{pillar.shortTitle}</h3>
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{pillar.description}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+
   return (
-    <article className="mx-auto max-w-3xl px-4 pb-20 pt-8 sm:px-6">
+    <article className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6">
       <BlogViewBeacon articleId={article.id} />
       {isLoggedIn ? <BlogScrollTracker articleId={article.id} /> : null}
 
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="mx-auto mb-6 flex max-w-4xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <BlogLanguageBar value={lang} onChange={setLang} />
         <Link
           href="/blog"
@@ -94,12 +120,12 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
         </Link>
       </div>
 
-      <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-white/40 shadow-lg">
+      <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-[1.75rem] border border-white/40 shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageUrl} alt="" className="h-auto w-full object-cover" />
       </div>
 
-      <header className="border-b border-white/40 pb-8">
+      <header className="mx-auto max-w-4xl border-b border-white/40 pb-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{catLabel ?? 'Blog'}</p>
         <h1 className="hero-signature-title mt-4 text-3xl sm:text-4xl">{loc.title}</h1>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-luxury-muted">
@@ -108,94 +134,86 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
           <span>⏱ ~{readingMinutes(loc.content)} min</span>
           <span>·</span>
           <span>👁 {article.view_count ?? 0} vues</span>
+          <span className="hidden sm:inline">·</span>
+          <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
+        </div>
+        <div className="mt-6 rounded-[1.5rem] border border-orange-200/70 bg-orange-50/80 p-5 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-800">Envie de pratiquer ?</p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-luxury-muted">
+              Continue avec Alejandra en live, replay et espace membre FitMangas.
+            </p>
+            <Link href="/?offer=v-coll" className="btn-luxury-primary shrink-0 px-6 py-2.5 text-[11px] tracking-[0.14em]">
+              Découvrir l’offre Visio
+            </Link>
+          </div>
         </div>
       </header>
 
-      <div className="py-10">
-        {loc.isContentFallback ? (
-          <p className="mb-6 inline-flex rounded-full border border-amber-200 bg-amber-50/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
-            {lang === 'es' ? 'Traducción no disponible' : 'Traduction non disponible'}
-          </p>
-        ) : null}
-        <ArticleProse text={loc.content} />
-      </div>
-
-      <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
-
-      <section className="mb-10 rounded-[1.75rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.07)] backdrop-blur-xl">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
-          {lang === 'es' ? 'Guías esenciales' : 'Guides essentiels'}
-        </p>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">
-          {lang === 'es' ? 'Profundizar tu práctica de Pilates' : 'Approfondir ta pratique du Pilates'}
-        </h2>
-        <div className="mt-4 grid gap-3">
-          {SEO_PILLAR_PAGES.map((pillar) => (
-            <Link
-              key={pillar.slug}
-              href={`/${pillar.slug}`}
-              className="rounded-2xl border border-white/70 bg-white/65 p-4 transition hover:border-orange-200 hover:bg-white"
-            >
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
-                {lang === 'es' ? 'Guía Pilates' : 'Guide Pilates'}
-              </span>
-              <h3 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{pillar.shortTitle}</h3>
-              <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{pillar.description}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {relatedArticles.length > 0 ? (
-        <section className="mb-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
-            {lang === 'es' ? 'Para seguir leyendo' : 'À lire ensuite'}
-          </p>
-          <div className="mt-4 grid gap-3">
-            {relatedArticles.map((related) => {
-              const relatedLoc = pickLocalizedArticle(
-                {
-                  title_fr: related.title_fr,
-                  title_es: related.title_es,
-                  description_fr: related.description_fr,
-                  description_es: related.description_es,
-                  content_fr: '',
-                  content_es: null,
-                  meta_description_fr: null,
-                  meta_description_es: null,
-                  slug_fr: related.slug_fr,
-                  slug_es: related.slug_es,
-                },
-                lang,
-              );
-              const href = lang === 'es' ? `/blog/${related.slug_es ?? related.slug_fr}` : `/blog/${related.slug_fr}`;
-              return (
-                <Link key={related.id} href={href} className="rounded-2xl border border-white/50 bg-white/55 p-4 transition hover:border-orange-200 hover:bg-white/80">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
-                    {lang === 'es'
-                      ? related.blog_categories?.label_es ?? related.blog_categories?.label_fr ?? 'Pilates'
-                      : related.blog_categories?.label_fr ?? 'Pilates'}
-                  </span>
-                  <h2 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{relatedLoc.title}</h2>
-                  {relatedLoc.description ? <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{relatedLoc.description}</p> : null}
-                </Link>
-              );
-            })}
+      <div className="mx-auto grid max-w-6xl gap-8 py-10 lg:grid-cols-[minmax(0,46rem)_20rem] lg:items-start">
+        <div className="min-w-0">
+          <div>
+            {loc.isContentFallback ? (
+              <p className="mb-6 inline-flex rounded-full border border-amber-200 bg-amber-50/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+                {lang === 'es' ? 'Traducción no disponible' : 'Traduction non disponible'}
+              </p>
+            ) : null}
+            <ArticleProse text={loc.content} />
           </div>
-        </section>
-      ) : null}
 
-      <BlogRatingBlock
-        articleId={article.id}
-        initialAverage={article.average_rating}
-        initialCount={article.rating_count ?? 0}
-        isLoggedIn={isLoggedIn}
-      />
+          {relatedArticles.length > 0 ? (
+            <section className="mt-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
+                {lang === 'es' ? 'Para seguir leyendo' : 'À lire ensuite'}
+              </p>
+              <div className="mt-4 grid gap-3">
+                {relatedArticles.map((related) => {
+                  const relatedLoc = pickLocalizedArticle(
+                    {
+                      title_fr: related.title_fr,
+                      title_es: related.title_es,
+                      description_fr: related.description_fr,
+                      description_es: related.description_es,
+                      content_fr: '',
+                      content_es: null,
+                      meta_description_fr: null,
+                      meta_description_es: null,
+                      slug_fr: related.slug_fr,
+                      slug_es: related.slug_es,
+                    },
+                    lang,
+                  );
+                  const href = lang === 'es' ? `/blog/${related.slug_es ?? related.slug_fr}` : `/blog/${related.slug_fr}`;
+                  return (
+                    <Link key={related.id} href={href} className="rounded-2xl border border-white/50 bg-white/55 p-4 transition hover:border-orange-200 hover:bg-white/80">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                        {lang === 'es'
+                          ? related.blog_categories?.label_es ?? related.blog_categories?.label_fr ?? 'Pilates'
+                          : related.blog_categories?.label_fr ?? 'Pilates'}
+                      </span>
+                      <h2 className="mt-1 text-base font-semibold leading-snug text-luxury-ink">{relatedLoc.title}</h2>
+                      {relatedLoc.description ? <p className="mt-1 line-clamp-2 text-sm leading-5 text-luxury-muted">{relatedLoc.description}</p> : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
-      <BlogConversionCta className="mt-10" />
+          <BlogRatingBlock
+            articleId={article.id}
+            initialAverage={article.average_rating}
+            initialCount={article.rating_count ?? 0}
+            isLoggedIn={isLoggedIn}
+          />
 
-      <div className="mt-10">
-        <NewsletterCta articleId={article.id} />
+          <BlogConversionCta className="mt-10" />
+        </div>
+
+        <aside className="space-y-5 lg:sticky lg:top-8">
+          {pillarLinks}
+          <NewsletterCta articleId={article.id} />
+        </aside>
       </div>
     </article>
   );

@@ -201,7 +201,7 @@ export default async function CompteProgressionPage() {
 
   const completionRatio = clamp01(monthly.goal > 0 ? monthly.followedCount / monthly.goal : 0);
   const percent = Math.round(completionRatio * 100);
-  const firstName = resolveFirstName(profile?.first_name, user.user_metadata);
+  const firstName = resolveFirstName(profile?.first_name, user.user_metadata, user.email);
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const monthLabel = now.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
