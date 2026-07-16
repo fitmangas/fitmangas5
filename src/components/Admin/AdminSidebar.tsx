@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, Clapperboard, Film, Inbox, Rocket, ShoppingBag, TicketPercent, Users, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Film, Inbox, Megaphone, Rocket, ShoppingBag, TicketPercent, Users, Video } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -16,6 +16,7 @@ const links = [
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
   { href: '/admin/marketing', label: 'Marketing', icon: Rocket },
+  { href: '/admin/community', label: 'Com’ réseaux', icon: Megaphone },
 ];
 
 export function AdminSidebar() {

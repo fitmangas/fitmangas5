@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Euro, Video } from 'lucide-react';
+import { Euro, Megaphone, Video } from 'lucide-react';
 
 import { AiBusinessAdvisor } from '@/components/Admin/AiBusinessAdvisor';
 import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
@@ -14,6 +14,7 @@ import {
   getCachedAdminKpis,
   getCachedStripeCollectedCurrentMonthEur,
 } from '@/lib/admin/cached-kpis';
+import { getSocialCommsBoard, SOCIAL_NETWORK_LABELS, upcomingSocialPosts } from '@/lib/admin/social-comms';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
@@ -40,55 +41,9 @@ type UpcomingCourseRow = {
   course_language: CourseLanguage | null;
 };
 
-type Point = { x: number; y: number };
-
 function pctLabel(value: number | null): string {
   if (value == null) return '—';
   return `${value.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}%`;
-}
-
-function sparkPoints(values: number[]): Point[] {
-  if (!values.length) return [];
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  return values.map((v, i) => {
-    const x = (i / Math.max(values.length - 1, 1)) * 100;
-    const y = 90 - ((v - min) / range) * 70;
-    return { x, y };
-  });
-}
-
-function sparkSmoothPath(points: Point[]): string {
-  if (!points.length) return '';
-  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
-  let d = `M ${points[0].x},${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    const cx1 = p0.x + (p1.x - p0.x) * 0.4;
-    const cy1 = p0.y;
-    const cx2 = p0.x + (p1.x - p0.x) * 0.6;
-    const cy2 = p1.y;
-    d += ` C ${cx1},${cy1} ${cx2},${cy2} ${p1.x},${p1.y}`;
-  }
-  return d;
-}
-
-function sparkAreaPath(points: Point[]): string {
-  if (!points.length) return '';
-  const linePath = sparkSmoothPath(points);
-  const first = points[0];
-  const last = points[points.length - 1];
-  return `${linePath} L ${last.x},90 L ${first.x},90 Z`;
-}
-
-function trendDayLabel(isoDate: string): string {
-  try {
-    return new Date(isoDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-  } catch {
-    return isoDate;
-  }
 }
 
 function RingGauge({
@@ -197,6 +152,7 @@ export default async function AdminPage() {
     { count: pendingBlogValidationCount },
     stripeMonthEur,
     kpiDrilldowns,
+    socialBoard,
   ] = await Promise.all([
     adminDb
       .from('profiles')
@@ -223,7 +179,9 @@ export default async function AdminPage() {
       .eq('status', 'pending'),
     getCachedStripeCollectedCurrentMonthEur(),
     getCachedAdminKpiDrilldowns(),
+    getSocialCommsBoard(),
   ]);
+  const nextSocialPosts = upcomingSocialPosts(socialBoard, 3);
 
   const upcomingCourses = (upcomingCoursesData ?? []) as UpcomingCourseRow[];
   const nextThree = upcomingCourses.slice(0, 3);
@@ -251,17 +209,6 @@ export default async function AdminPage() {
         ? 'Base (fallback)'
         : 'Non disponible';
   const occupancyLabel = pctLabel(kpis.occupancyPercent);
-  const trendValues = kpis.trend.map((p) => p.mrrEur);
-  const trendPoints = sparkPoints(trendValues);
-  const trendPath = sparkSmoothPath(trendPoints);
-  const trendArea = sparkAreaPath(trendPoints);
-  const latestPoint = kpis.trend[kpis.trend.length - 1] ?? null;
-  const firstPoint = kpis.trend[0] ?? null;
-  const firstLabel = firstPoint ? trendDayLabel(firstPoint.date) : '—';
-  const lastLabel = latestPoint ? trendDayLabel(latestPoint.date) : '—';
-  const lastMrrLabel = latestPoint
-    ? `${latestPoint.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-    : '—';
   const clientsHeadTr = 'bg-white/85 text-[10px] uppercase tracking-wider text-luxury-ink/65 backdrop-blur';
   const combinedRevenueMonthEur =
     stripeMonthEur == null && kpiDrilldowns.boutiqueRevenueEur <= 0
@@ -531,70 +478,50 @@ export default async function AdminPage() {
 
       <section className="relative z-10 grid gap-5 xl:grid-cols-[2fr_1fr]">
         <GlassCard elevated className="p-5 md:p-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Revenus</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Tendance MRR</h2>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Com’ réseaux</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-luxury-ink">Prochains posts</h2>
               <p className="mt-1 text-[11px] text-luxury-muted">
-                Historique snapshots · jour courant aligné sur MRR {mrrHint}
+                Plan Instagram / WhatsApp / Facebook — pilotage depuis Community Manager.
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-luxury-soft">Dernière valeur</p>
-              <p className="mt-1 text-base font-semibold tabular-nums text-luxury-ink">{lastMrrLabel}</p>
-            </div>
+            <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
+              <Megaphone size={20} aria-hidden strokeWidth={2} />
+            </span>
           </div>
-          <div className="mt-5">
-            {trendPath ? (
-              <div>
-                <svg viewBox="0 0 100 100" className="h-44 w-full">
-                  <defs>
-                    <linearGradient id="mrrAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ff7a00" stopOpacity="0.34" />
-                      <stop offset="100%" stopColor="#ff7a00" stopOpacity="0" />
-                    </linearGradient>
-                    <linearGradient id="mrrLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#ff9a3d" />
-                      <stop offset="100%" stopColor="#C45D3E" />
-                    </linearGradient>
-                    <filter id="mrrGlow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.4" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <path d={trendArea} fill="url(#mrrAreaGrad)" />
-                  <path
-                    d={trendPath}
-                    fill="none"
-                    stroke="url(#mrrLineGrad)"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#mrrGlow)"
-                  />
-                  <circle
-                    cx="100"
-                    cy={trendPoints[trendPoints.length - 1]?.y ?? 90}
-                    r="2.8"
-                    fill="#C45D3E"
-                    stroke="rgba(255,255,255,0.9)"
-                    strokeWidth="1.1"
-                  />
-                </svg>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-luxury-soft">
-                  <span>{firstLabel}</span>
-                  <span>{lastLabel}</span>
+          <div className="mt-5 space-y-3">
+            {nextSocialPosts.map((post) => (
+              <div key={post.id} className="rounded-2xl border border-white/70 bg-white/55 px-3 py-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7a2e1a]">
+                    {SOCIAL_NETWORK_LABELS[post.network]}
+                  </span>
+                  <span className="text-xs text-luxury-muted">
+                    {post.plannedAt
+                      ? new Date(post.plannedAt).toLocaleDateString('fr-FR', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'short',
+                        })
+                      : 'À planifier'}
+                  </span>
                 </div>
+                <p className="mt-1 truncate text-sm font-semibold text-luxury-ink">{post.title}</p>
               </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-white/70 bg-white/35 px-4 py-16 text-center text-sm text-luxury-muted">
-                Les snapshots quotidiens seront visibles dès demain.
-              </div>
-            )}
+            ))}
+            {nextSocialPosts.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-[#C45D3E]/20 bg-[#fffaf5]/70 px-4 py-8 text-center text-sm text-luxury-muted">
+                Aucun post prévu. Ouvre Community Manager pour générer la semaine.
+              </p>
+            ) : null}
           </div>
+          <Link
+            href="/admin/community"
+            className="btn-luxury-primary mt-5 inline-flex w-full justify-center px-5 py-2.5 text-[11px] tracking-[0.14em]"
+          >
+            Ouvrir Community Manager
+          </Link>
         </GlassCard>
 
         <GlassCard elevated className="p-5 md:p-6">
