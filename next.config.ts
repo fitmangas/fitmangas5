@@ -82,10 +82,15 @@ const nextConfig: NextConfig = {
       { source: '/blog/article-pilates-21', destination: '/blog/article-pilates-21-mouvement-souffle-021' },
     ];
 
-    return blogSlugRedirects.map((item) => ({
-      ...item,
-      permanent: true,
-    }));
+    return [
+      // URL cassée indexée par Google : https://fitmangas.com/&
+      { source: '/&', destination: '/', permanent: true },
+      { source: '/%26', destination: '/', permanent: true },
+      ...blogSlugRedirects.map((item) => ({
+        ...item,
+        permanent: true,
+      })),
+    ];
   },
 };
 

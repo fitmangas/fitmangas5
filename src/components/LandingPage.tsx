@@ -552,6 +552,15 @@ export function LandingPage({
               <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 pt-10 text-center md:p-10">
                 <h2 className="mb-3 break-words font-serif text-4xl font-normal italic leading-none tracking-tighter sm:text-5xl md:text-7xl">{t.title}</h2>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:tracking-[0.4em]">{t.subtitle}</p>
+                <Link
+                  href="/cours-pilates-visio"
+                  className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-[11px]"
+                >
+                  <span>{lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}</span>
+                  <span aria-hidden className="text-[#C45D3E] transition group-hover:translate-x-0.5">
+                    →
+                  </span>
+                </Link>
                 <div className="mt-3 flex items-center justify-center gap-5 md:hidden">
                   <a
                     href={getWaLink(t.waMsg)}
@@ -587,7 +596,11 @@ export function LandingPage({
 
         <section id="offers" className="scroll-mt-24">
         {/* Segment Toggle — même terracotta que « On démarre » */}
-        <div className="mb-4 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <div
+          className={`flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)] ${
+            segment === 'NANTES' ? 'mb-4' : 'mb-12'
+          }`}
+        >
           <button 
             onClick={() => setSegment('VISIO')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
@@ -609,19 +622,6 @@ export function LandingPage({
             {lang === 'FR' ? 'Présentiel' : 'Presencial'}
           </button>
         </div>
-        {segment === 'VISIO' ? (
-          <div className="mb-10 flex justify-center">
-            <Link
-              href="/cours-pilates-visio"
-              className="group inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/25 bg-[#fffaf5]/90 px-5 py-2.5 text-[11px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_22px_rgba(196,93,62,0.08)] transition hover:-translate-y-0.5 hover:border-[#C45D3E]/45 hover:bg-white hover:shadow-[0_12px_28px_rgba(196,93,62,0.14)]"
-            >
-              <span>{lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}</span>
-              <span aria-hidden className="text-[#C45D3E] transition group-hover:translate-x-0.5">
-                →
-              </span>
-            </Link>
-          </div>
-        ) : null}
         {segment === 'NANTES' ? (
           <div className="mb-12 flex justify-center gap-2">
             <button
@@ -647,9 +647,7 @@ export function LandingPage({
               </button>
             ) : null}
           </div>
-        ) : segment === 'VISIO' ? null : (
-          <div className="mb-12" />
-        )}
+        ) : null}
 
         {/* Offers Grid */}
         <div className="space-y-12 mb-20">
