@@ -12,6 +12,8 @@ import {
 } from '@/lib/access-control';
 import { checkIsAdmin } from '@/lib/auth/admin';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
+import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
+import { isCourseLanguage } from '@/lib/course-language';
 import { resolveLiveBackLink } from '@/lib/live/live-back-url';
 import { resolvePlayableCourseReplay } from '@/lib/replay-availability';
 import { probeVimeoPlayback } from '@/lib/vimeo-playback';
@@ -138,7 +140,7 @@ export default async function LiveCoursePage({
 
   const { data: course, error } = await supabase
     .from('courses')
-    .select('id, title, jitsi_link, ends_at, spotify_playlist_url')
+    .select('id, title, jitsi_link, ends_at, spotify_playlist_url, course_language')
     .eq('id', idParsed.data)
     .eq('is_published', true)
     .maybeSingle();
@@ -237,7 +239,13 @@ export default async function LiveCoursePage({
               <ArrowLeft size={14} />
               {backLink.label}
             </Link>
-            <h1 className="mt-2 truncate font-serif text-xl italic text-brand-ink sm:text-2xl">{course.title}</h1>
+            <h1 className="mt-2 flex min-w-0 items-center gap-2 font-serif text-xl italic text-brand-ink sm:text-2xl">
+              <span className="truncate">{course.title}</span>
+              <CourseLanguageFlag
+                language={isCourseLanguage(course.course_language) ? course.course_language : null}
+                className="text-xl not-italic sm:text-2xl"
+              />
+            </h1>
           </div>
         </div>
       </header>

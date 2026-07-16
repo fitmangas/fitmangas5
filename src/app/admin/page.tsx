@@ -16,7 +16,9 @@ import {
 } from '@/lib/admin/cached-kpis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { DEFAULT_COURSE_TIMEZONE, formatCourseInstant } from '@/lib/course-datetime';
+import type { CourseLanguage } from '@/lib/course-language';
 import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { LIVE_FROM_ADMIN, liveCourseHref } from '@/lib/live/live-back-url';
 
@@ -35,6 +37,7 @@ type UpcomingCourseRow = {
   title: string;
   starts_at: string;
   timezone: string | null;
+  course_language: CourseLanguage | null;
 };
 
 type Point = { x: number; y: number };
@@ -207,7 +210,7 @@ export default async function AdminPage() {
     supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle(),
     adminDb
       .from('courses')
-      .select('id, title, starts_at, timezone')
+      .select('id, title, starts_at, timezone, course_language')
       .eq('is_published', true)
       .gte('ends_at', nowIso)
       .order('starts_at', { ascending: true })
@@ -417,7 +420,10 @@ export default async function AdminPage() {
                 className="block cursor-pointer rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 transition hover:border-white/30 hover:bg-white/20"
                 title="Rejoindre le live"
               >
-                <p className="truncate text-sm font-semibold text-white">{course.title}</p>
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 truncate text-sm font-semibold text-white">{course.title}</p>
+                  <CourseLanguageFlag language={course.course_language} className="text-base" />
+                </div>
                 <p className="mt-1 text-xs text-white/70">
                   {formatCourseInstant(
                     course.starts_at,

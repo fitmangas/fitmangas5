@@ -610,12 +610,15 @@ export function LandingPage({
           </button>
         </div>
         {segment === 'VISIO' ? (
-          <div className="mb-10 text-center">
+          <div className="mb-10 flex justify-center">
             <Link
               href="/cours-pilates-visio"
-              className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c45d3e] underline-offset-4 transition hover:underline"
+              className="group inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/25 bg-[#fffaf5]/90 px-5 py-2.5 text-[11px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_22px_rgba(196,93,62,0.08)] transition hover:-translate-y-0.5 hover:border-[#C45D3E]/45 hover:bg-white hover:shadow-[0_12px_28px_rgba(196,93,62,0.14)]"
             >
-              {lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}
+              <span>{lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}</span>
+              <span aria-hidden className="text-[#C45D3E] transition group-hover:translate-x-0.5">
+                →
+              </span>
             </Link>
           </div>
         ) : null}
