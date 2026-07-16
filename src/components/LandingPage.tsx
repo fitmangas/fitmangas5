@@ -586,13 +586,13 @@ export function LandingPage({
         </section>
 
         <section id="offers" className="scroll-mt-24">
-        {/* Segment Toggle */}
-        <div className="mb-8 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        {/* Segment Toggle — même terracotta que « On démarre » */}
+        <div className="mb-4 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <button 
             onClick={() => setSegment('VISIO')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
               segment === 'VISIO'
-                ? 'bg-brand-accent text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
+                ? 'bg-[#c45d3e] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
                 : 'text-brand-ink/60 hover:text-brand-ink'
             }`}
           >
@@ -602,20 +602,30 @@ export function LandingPage({
             onClick={() => setSegment('NANTES')}
             className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
               segment === 'NANTES'
-                ? 'bg-brand-accent text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
+                ? 'bg-[#c45d3e] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
                 : 'text-brand-ink/60 hover:text-brand-ink'
             }`}
           >
             {lang === 'FR' ? 'Présentiel' : 'Presencial'}
           </button>
         </div>
+        {segment === 'VISIO' ? (
+          <div className="mb-10 text-center">
+            <Link
+              href="/cours-pilates-visio"
+              className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c45d3e] underline-offset-4 transition hover:underline"
+            >
+              {lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}
+            </Link>
+          </div>
+        ) : null}
         {segment === 'NANTES' ? (
           <div className="mb-12 flex justify-center gap-2">
             <button
               onClick={() => setOnsiteCity('NANTES')}
               className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
                 onsiteCity === 'NANTES'
-                  ? 'bg-brand-accent text-white shadow-sm'
+                  ? 'bg-[#c45d3e] text-white shadow-sm'
                   : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
               }`}
             >
@@ -626,7 +636,7 @@ export function LandingPage({
                 onClick={() => setOnsiteCity('MEXICO')}
                 className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
                   onsiteCity === 'MEXICO'
-                    ? 'bg-brand-accent text-white shadow-sm'
+                    ? 'bg-[#c45d3e] text-white shadow-sm'
                     : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
                 }`}
               >
@@ -634,7 +644,7 @@ export function LandingPage({
               </button>
             ) : null}
           </div>
-        ) : (
+        ) : segment === 'VISIO' ? null : (
           <div className="mb-12" />
         )}
 

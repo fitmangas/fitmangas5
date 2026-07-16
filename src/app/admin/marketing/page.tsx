@@ -945,12 +945,12 @@ function buildSeoExcellencePlan({
     pillars: [
       {
         title: '1. Pages piliers',
-        goal: 'Créer les pages qui doivent ranker sur les grosses intentions.',
+        goal: 'Les 3 pages existent déjà : les renforcer et les faire indexer.',
         actions: [
-          'Créer une page dédiée “Pilates en ligne”.',
-          'Créer une page “Cours de Pilates en visio”.',
-          'Créer une page “Pilates débutant à la maison”.',
-          'Relier chaque page pilier à 8-12 articles du blog.',
+          'Demander l’indexation GSC de /pilates-en-ligne, /cours-pilates-visio et /pilates-debutant-maison.',
+          'Partager chaque page pilier sur Instagram / Stories avec un lien clair.',
+          'Relier chaque page pilier à 8-12 articles du blog (maillage interne).',
+          'Suivre impressions + clics de ces 3 URLs dans Search Console chaque mois.',
         ],
       },
       {

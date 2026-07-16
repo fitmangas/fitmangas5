@@ -8,6 +8,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https
 /** Dates stables pour les pages légales (évite lastModified = build time). */
 const LEGAL_LAST_MODIFIED = new Date('2026-05-01T00:00:00.000Z');
 const HOME_LAST_MODIFIED = new Date('2026-05-16T00:00:00.000Z');
+const PILLAR_LAST_MODIFIED = new Date('2026-07-15T00:00:00.000Z');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -25,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     ...SEO_PILLAR_PAGES.map((page) => ({
       url: `${APP_URL}/${page.slug}`,
-      lastModified: HOME_LAST_MODIFIED,
+      lastModified: PILLAR_LAST_MODIFIED,
       changeFrequency: 'weekly' as const,
       priority: 0.92,
     })),
