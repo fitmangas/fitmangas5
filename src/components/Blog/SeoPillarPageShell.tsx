@@ -8,7 +8,18 @@ type Props = {
 };
 
 export function SeoPillarPageShell({ page, relatedPages }: Props) {
-  const heroImage = page.slug === 'pilates-debutant-maison' ? '/landing/offer-v-coll.jpg' : '/alejandra.png';
+  const heroImage =
+    page.slug === 'pilates-debutant-maison'
+      ? '/Photo Alejandra exercice avec anneau.PNG'
+      : page.slug === 'cours-pilates-visio'
+        ? '/Photo Alejandra pose pour photographe.JPG'
+        : '/Photo Alejandra exercice sur la plage.JPG';
+  const appPreviewImage =
+    page.slug === 'cours-pilates-visio'
+      ? '/espace cliente replays.png'
+      : page.slug === 'pilates-debutant-maison'
+        ? '/Espace client sur Mobile Dashboard.jpg'
+        : '/espace cliente dashboard.png';
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">
@@ -33,11 +44,11 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
             </p>
             <h1 className="hero-signature-title mt-4 max-w-4xl text-4xl text-luxury-ink md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-luxury-muted">{page.intro}</p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/?offer=v-coll" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
+            <div className="mt-7 flex max-w-xl flex-col gap-3 xl:flex-row">
+              <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
                 Découvrir l’offre visio à 39 €/mois
               </Link>
-              <Link href="/blog" className="btn-luxury-ghost px-7 py-3 text-[11px] tracking-[0.14em]">
+              <Link href="/blog" className="btn-luxury-ghost justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
                 Lire le blog Pilates
               </Link>
             </div>
@@ -87,34 +98,18 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
               Voir l’offre visio
             </Link>
           </div>
-          <div className="rounded-[1.75rem] border border-slate-800/15 bg-slate-900 p-4 text-white shadow-[0_18px_42px_rgba(15,23,42,0.18)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[9px] uppercase tracking-[0.25em] text-white/45">Espace cliente</p>
-                <p className="mt-1 font-serif text-2xl italic">Bonjour Margaux</p>
-              </div>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">
-                Démo
-              </span>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {['Live', 'Replay', 'Blog'].map((label, index) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                  <p className="text-[9px] uppercase tracking-[0.2em] text-white/45">{label}</p>
-                  <p className="mt-3 text-2xl font-semibold">{index === 0 ? '1' : index === 1 ? '4h' : '21'}</p>
-                  <p className="mt-1 text-xs text-white/55">{index === 0 ? 'prochain cours' : index === 1 ? 'replays' : 'articles'}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-              <p className="text-[9px] uppercase tracking-[0.2em] text-emerald-100/65">Planning intelligent</p>
-              <div className="mt-3 grid grid-cols-7 gap-1.5">
-                {Array.from({ length: 14 }, (_, index) => (
-                  <span
-                    key={index}
-                    className={`h-8 rounded-lg ${[2, 5, 8, 11].includes(index) ? 'bg-emerald-400/70' : 'bg-white/10'}`}
-                  />
-                ))}
+          <div className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/70 p-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
+            <div className="relative overflow-hidden rounded-[1.35rem] bg-brand-beige">
+              <Image
+                src={appPreviewImage}
+                alt="Aperçu de l'espace cliente FitMangas"
+                width={1200}
+                height={760}
+                className="h-full max-h-[360px] w-full object-cover object-top"
+              />
+              <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Aperçu espace cliente</p>
+                <p className="mt-1 text-sm font-semibold text-luxury-ink">Planning, replays, blog et progression</p>
               </div>
             </div>
           </div>

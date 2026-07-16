@@ -137,16 +137,10 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
           <span className="hidden sm:inline">·</span>
           <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
         </div>
-        <div className="mt-6 rounded-[1.5rem] border border-orange-200/70 bg-orange-50/80 p-5 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-800">Envie de pratiquer ?</p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-6 text-luxury-muted">
-              Continue avec Alejandra en live, replay et espace membre FitMangas.
-            </p>
-            <Link href="/?offer=v-coll" className="btn-luxury-primary shrink-0 px-6 py-2.5 text-[11px] tracking-[0.14em]">
-              Découvrir l’offre Visio
-            </Link>
-          </div>
+        <div className="mt-5">
+          <Link href="/?offer=v-coll" className="btn-luxury-primary inline-flex px-6 py-2.5 text-[11px] tracking-[0.14em]">
+            Découvrir l’offre Visio
+          </Link>
         </div>
       </header>
 
