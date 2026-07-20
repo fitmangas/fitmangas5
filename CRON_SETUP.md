@@ -36,7 +36,25 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 
 ### Autres crons Vercel (inchangés)
 
-- `daily-jobs` — 6h UTC (`0 6 * * *`) : onboarding, win-back, digest, filet rappels cours
-- `prepare-monthly-validation` — 1er du mois 6h UTC
+- `daily-jobs` — 5h UTC : onboarding, win-back, digest, filet rappels cours + filet posts IG dus
+- `community/publish-scheduled` — 5h45 UTC : publie les posts Instagram `scheduled` dont l’heure est passée (filet)
+- `prepare-monthly-validation` — 1er du mois 7h UTC
 
 Ne pas ajouter `course-reminders` dans `vercel.json` si vous utilisez cron-job.org (évite les doubles appels inutiles, l’idempotence reste garantie).
+
+### Community Manager (Instagram programmé)
+
+Facebook utilise la programmation native Meta. Instagram passe par la file FitMangas + cron.
+
+Pour une précision ~15 min (recommandé), ajouter sur cron-job.org :
+
+- **URL** : `https://fitmangas.com/api/admin/community/cron/publish-scheduled`
+- **Schedule** : toutes les **15 minutes**
+- **Header** : `Authorization: Bearer <CRON_SECRET>`
+
+Test manuel :
+
+```bash
+curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+  "https://fitmangas.com/api/admin/community/cron/publish-scheduled"
+```
