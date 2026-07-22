@@ -5,6 +5,9 @@ export type SocialPostFormat = 'feed' | 'story' | 'reel' | 'carousel' | 'text';
 export type SocialPostStatus = 'idea' | 'ready' | 'scheduled' | 'published' | 'skipped';
 export type SocialPostSource = 'manual' | 'ai' | 'blog' | 'pillar' | 'course';
 
+export type SocialImageSource = 'library' | 'ai' | 'unsplash' | 'pollinations' | 'none';
+export type SocialVideoStatus = 'brief' | 'raw_uploaded' | 'editing' | 'edited' | 'ready';
+
 export type SocialPost = {
   id: string;
   network: SocialNetwork;
@@ -15,8 +18,19 @@ export type SocialPost = {
   cta: string;
   imageHint: string;
   imagePath: string | null;
+  imageSource: SocialImageSource;
+  aiImagePrompt: string;
+  imageFeedback: string;
   overlayText: string | null;
   useOverlay: boolean;
+  /** Reel / vidéo */
+  hookTitle: string;
+  reelScript: string;
+  shotList: string;
+  rawVideoPath: string | null;
+  editedVideoPath: string | null;
+  videoStatus: SocialVideoStatus | null;
+  carouselPaths: string[];
   plannedAt: string | null;
   status: SocialPostStatus;
   sourceType: SocialPostSource;
@@ -113,6 +127,41 @@ export function pickLibraryImage(seed = 0): string {
   return list[Math.abs(seed) % list.length]!;
 }
 
+/** Exclut les chemins déjà utilisés (publiés, programmés, ou dans le board). */
+export function pickUnusedLibraryImage(
+  usedPaths: Set<string>,
+  seed = 0,
+): string | null {
+  const list = [...SOCIAL_LIBRARY_IMAGES];
+  const start = Math.abs(seed) % list.length;
+  for (let i = 0; i < list.length; i += 1) {
+    const path = list[(start + i) % list.length]!;
+    if (!usedPaths.has(path)) return path;
+  }
+  return null;
+}
+
+export function collectUsedLibraryPaths(posts: SocialPost[]): Set<string> {
+  const used = new Set<string>();
+  for (const post of posts) {
+    if (post.status === 'skipped') continue;
+    if (post.imagePath && (SOCIAL_LIBRARY_IMAGES as readonly string[]).includes(post.imagePath)) {
+      used.add(post.imagePath);
+    }
+    for (const path of post.carouselPaths ?? []) {
+      if ((SOCIAL_LIBRARY_IMAGES as readonly string[]).includes(path)) used.add(path);
+    }
+  }
+  return used;
+}
+
+function normalizeVideoStatus(value: unknown): SocialVideoStatus | null {
+  if (value === 'brief' || value === 'raw_uploaded' || value === 'editing' || value === 'edited' || value === 'ready') {
+    return value;
+  }
+  return null;
+}
+
 function normalizePost(raw: unknown, index = 0): SocialPost | null {
   if (!raw || typeof raw !== 'object') return null;
   const row = raw as Record<string, unknown>;
@@ -120,12 +169,21 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     return null;
   }
   const rawImage = typeof row.imagePath === 'string' ? row.imagePath : null;
+  const isKnownLibrary = rawImage && (SOCIAL_LIBRARY_IMAGES as readonly string[]).includes(rawImage);
+  const isRemoteImage =
+    rawImage &&
+    (rawImage.startsWith('http') ||
+      rawImage.startsWith('/library/social/') ||
+      rawImage.includes('/storage/v1/object/public/'));
+  const isReel = row.format === 'reel';
   const imagePath =
-    rawImage && (SOCIAL_LIBRARY_IMAGES as readonly string[]).includes(rawImage)
-      ? rawImage
-      : row.network === 'whatsapp' && row.format === 'text'
-        ? null
-        : pickLibraryImage(index + row.id.length);
+    isReel && !rawImage
+      ? null
+      : isKnownLibrary || isRemoteImage
+        ? rawImage
+        : row.network === 'whatsapp' && row.format === 'text' && !rawImage
+          ? null
+          : rawImage || (isReel ? null : pickLibraryImage(index + row.id.length));
 
   return {
     id: row.id,
@@ -137,8 +195,27 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     cta: typeof row.cta === 'string' ? row.cta : '',
     imageHint: typeof row.imageHint === 'string' ? row.imageHint : '',
     imagePath,
+    imageSource:
+      row.imageSource === 'ai' ||
+      row.imageSource === 'unsplash' ||
+      row.imageSource === 'pollinations' ||
+      row.imageSource === 'library' ||
+      row.imageSource === 'none'
+        ? row.imageSource
+        : isReel && !imagePath
+          ? 'none'
+          : 'library',
+    aiImagePrompt: typeof row.aiImagePrompt === 'string' ? row.aiImagePrompt : '',
+    imageFeedback: typeof row.imageFeedback === 'string' ? row.imageFeedback : '',
     overlayText: typeof row.overlayText === 'string' ? row.overlayText : typeof row.title === 'string' ? row.title : null,
-    useOverlay: Boolean(row.useOverlay),
+    useOverlay: row.useOverlay === undefined ? false : Boolean(row.useOverlay),
+    hookTitle: typeof row.hookTitle === 'string' ? row.hookTitle : '',
+    reelScript: typeof row.reelScript === 'string' ? row.reelScript : '',
+    shotList: typeof row.shotList === 'string' ? row.shotList : '',
+    rawVideoPath: typeof row.rawVideoPath === 'string' ? row.rawVideoPath : null,
+    editedVideoPath: typeof row.editedVideoPath === 'string' ? row.editedVideoPath : null,
+    videoStatus: normalizeVideoStatus(row.videoStatus) ?? (isReel ? 'brief' : null),
+    carouselPaths: Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String).filter(Boolean) : [],
     plannedAt: typeof row.plannedAt === 'string' ? row.plannedAt : null,
     status: row.status,
     sourceType:

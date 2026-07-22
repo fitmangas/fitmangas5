@@ -429,22 +429,41 @@ export function LandingPage({
               {l.start}
             </button>
 
-            {/* Encadré stats — mobile : un seul cadre arrondi, 2 colonnes + séparateur */}
+            {/* Encadré stats — mobile : 2 colonnes ; 180 + avatars à droite ; cours centrés */}
             <div className="mt-5 flex w-full items-stretch rounded-2xl border border-brand-ink/[0.06] bg-white/60 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.03)] md:hidden">
-              <div className="flex flex-1 flex-col items-center px-2">
+              <div className="flex flex-1 flex-col items-center justify-center px-2">
                 <span className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
                   {count.toLocaleString()}
                 </span>
-                <span className="mt-1.5 text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+                <span className="mt-1.5 text-center text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofGiven}
                 </span>
               </div>
               <div className="my-1 w-px shrink-0 bg-brand-ink/10" />
-              <div className="flex flex-1 flex-col items-center px-2">
-                <span className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
-                  180
-                </span>
-                <span className="mt-1.5 inline-flex items-center justify-center gap-1 text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-2">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                    180
+                  </span>
+                  <div className="flex items-center -space-x-2" aria-hidden>
+                    {t.testimonials.slice(0, 3).map((testimonial, i) => (
+                      <span
+                        key={`m-av-${i}`}
+                        className="relative inline-block h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
+                        style={{ zIndex: 3 - i }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={testimonial.avatar}
+                          alt=""
+                          className="h-full w-full object-cover object-center"
+                          referrerPolicy="no-referrer"
+                        />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <span className="inline-flex items-center justify-center gap-1 text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofPeople}
                   <span className="relative group">
                     <span
@@ -512,9 +531,28 @@ export function LandingPage({
                 </span>
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
-                  180
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                    180
+                  </span>
+                  <div className="flex items-center -space-x-3" aria-hidden>
+                    {t.testimonials.slice(0, 3).map((testimonial, i) => (
+                      <span
+                        key={`d-av-${i}`}
+                        className="relative inline-block h-12 w-12 shrink-0 overflow-hidden rounded-full ring-[3px] ring-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                        style={{ zIndex: 3 - i }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={testimonial.avatar}
+                          alt=""
+                          className="h-full w-full object-cover object-center"
+                          referrerPolicy="no-referrer"
+                        />
+                      </span>
+                    ))}
+                  </div>
+                </div>
                 <span className="mt-3 inline-flex items-center justify-start gap-2 text-[12px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
                   {l.proofPeople}
                   <span className="relative group">
@@ -551,7 +589,7 @@ export function LandingPage({
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/8 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 pt-10 text-center md:p-10">
                 <h2 className="mb-3 break-words font-serif text-4xl font-normal italic leading-none tracking-tighter sm:text-5xl md:text-7xl">{t.title}</h2>
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:tracking-[0.4em]">{t.subtitle}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#5c554c] sm:tracking-[0.4em] md:text-brand-accent">{t.subtitle}</p>
                 <Link
                   href="/cours-pilates-visio"
                   className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-[11px]"

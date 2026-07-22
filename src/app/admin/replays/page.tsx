@@ -8,6 +8,7 @@ import {
 } from '@/components/Admin/AdminCourseReplaysManaged';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { probeVimeoPlaybackMany } from '@/lib/vimeo-playback';
 
 type RecordingRow = {
   id: string;
@@ -80,12 +81,25 @@ export default async function AdminCourseReplaysPage() {
     if (card) pending.push(card);
   }
 
+  const approvedRows = (approvedRes.data ?? []) as RecordingRow[];
+  const probes = await probeVimeoPlaybackMany(
+    approvedRows.map((r) => r.vimeo_video_id).filter(Boolean),
+  );
+
   const approved: ManagedCourseReplayCard[] = [];
-  for (const row of (approvedRes.data ?? []) as RecordingRow[]) {
+  for (const row of approvedRows) {
     const card = toCard(row);
     if (!card) continue;
-    approved.push({ ...card, is_ready: row.is_ready === true });
+    const probe = probes.get(String(row.vimeo_video_id).trim());
+    approved.push({
+      ...card,
+      is_ready: row.is_ready === true,
+      vimeoPlayable: probe ? probe.isPlayable : null,
+      vimeoStatus: probe?.status ?? null,
+    });
   }
+
+  const brokenCount = approved.filter((item) => item.vimeoPlayable === false).length;
 
   return (
     <div className="min-h-screen px-6 py-10 md:py-14">
@@ -96,6 +110,12 @@ export default async function AdminCourseReplaysPage() {
             Validez les replays des lives avant publication dans l’espace cliente. Les emails et notifications partent
             à la validation. Les replays déjà validés restent visibles ici pour les masquer ou les réafficher.
           </p>
+          {brokenCount > 0 ? (
+            <p className="mt-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              {brokenCount} replay(s) validé(s) mais <strong>non lisible(s) sur Vimeo</strong> (upload incomplet ou
+              fichier manquant). Ils n’apparaissent pas côté cliente tant que l’asset n’est pas re-uploadé.
+            </p>
+          ) : null}
         </header>
         <AdminCourseReplaysPending pending={pending} />
         <AdminCourseReplaysManaged items={approved} />

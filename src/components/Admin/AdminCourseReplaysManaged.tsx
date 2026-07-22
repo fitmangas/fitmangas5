@@ -11,6 +11,9 @@ import type { AdminVimeoVideoCard } from '@/types/vimeo';
 
 export type ManagedCourseReplayCard = PendingCourseReplayCard & {
   is_ready: boolean;
+  /** null = non sondé / erreur API non bloquante */
+  vimeoPlayable?: boolean | null;
+  vimeoStatus?: string | null;
 };
 
 function formatDuration(seconds: number | null): string {
@@ -121,6 +124,11 @@ export function AdminCourseReplaysManaged({ items }: Props) {
                       Visible cliente
                     </span>
                   )}
+                  {v.vimeoPlayable === false ? (
+                    <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                      Vimeo HS ({v.vimeoStatus || 'upload'})
+                    </span>
+                  ) : null}
                 </div>
                 <p className="mt-1 truncate text-sm text-luxury-muted">{v.title ?? `Vidéo ${v.vimeo_video_id}`}</p>
                 <p className="mt-2 text-xs text-luxury-muted">

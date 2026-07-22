@@ -15,6 +15,7 @@ import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { isCourseLanguage } from '@/lib/course-language';
 import { resolveLiveBackLink } from '@/lib/live/live-back-url';
+import { isCoursePastForReplay } from '@/lib/live/replay-switch';
 import { resolvePlayableCourseReplay } from '@/lib/replay-availability';
 import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 import { createClient } from '@/lib/supabase/server';
@@ -151,6 +152,10 @@ export default async function LiveCoursePage({
 
   const courseEndedAt = new Date(course.ends_at);
   const courseIsPast = !Number.isNaN(courseEndedAt.getTime()) && courseEndedAt < new Date();
+  // Ne bascule pas vers le replay Vimeo dès la seconde où ends_at est dépassé :
+  // une déco Jitsi en fin de séance + refresh affichait le replay et empêchait de
+  // rejoindre le live encore ouvert. Marge de grâce = voir LIVE_TO_REPLAY_GRACE_MS.
+  const courseIsPastForReplay = isCoursePastForReplay(courseEndedAt);
 
   const useAdminReplayFetch = realAdmin && !effectiveStudentPreview;
 
@@ -176,7 +181,7 @@ export default async function LiveCoursePage({
 
   const availability = resolvePlayableCourseReplay({ recording: replay ?? null });
 
-  let showVimeoReplay = courseIsPast && availability.status === 'ready';
+  let showVimeoReplay = courseIsPastForReplay && availability.status === 'ready';
   if (showVimeoReplay && replay?.vimeo_video_id) {
     const probe = await probeVimeoPlayback(String(replay.vimeo_video_id));
     if (!probe.isPlayable) {
@@ -280,7 +285,7 @@ export default async function LiveCoursePage({
               </p>
             ) : null}
           </>
-        ) : courseIsPast ? (
+        ) : !(hasJitsi && !courseIsPastForReplay) ? (
           <div className="glass-card px-6 py-10 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-ink/45">Séance terminée</p>
             <h2 className="mt-3 font-serif text-xl italic text-brand-ink">Replay en préparation</h2>

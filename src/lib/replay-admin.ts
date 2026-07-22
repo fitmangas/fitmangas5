@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { dispatchReplayReady } from '@/lib/notifications/phase2';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseVimeoVideoId } from '@/lib/vimeo-parse-id';
+import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 import { getVideoMetadata, normalizeDurationSeconds, type VimeoVideoMetadata } from '@/lib/vimeo';
 
 export type CourseRecordingValidationStatus = 'pending' | 'approved' | 'rejected';
@@ -97,17 +98,40 @@ export async function approveCourseReplay(
 ): Promise<{ ok: true; already?: boolean } | { ok: false; error: string; status: number }> {
   const { data: rec, error: fetchError } = await admin
     .from('video_recordings')
-    .select('id, course_id, validation_status')
+    .select('id, course_id, validation_status, vimeo_video_id')
     .eq('id', recordingId)
     .maybeSingle();
   if (fetchError) throw fetchError;
   if (!rec) return { ok: false, error: 'Replay introuvable.', status: 404 };
   if (rec.validation_status === 'approved') return { ok: true, already: true };
 
+  const vimeoId = typeof rec.vimeo_video_id === 'string' ? rec.vimeo_video_id.trim() : '';
+  if (!vimeoId) {
+    return { ok: false, error: 'Aucun identifiant Vimeo sur ce replay.', status: 400 };
+  }
+
+  const probe = await probeVimeoPlayback(vimeoId);
+  if (!probe.isPlayable) {
+    return {
+      ok: false,
+      error:
+        probe.status === 'not_found' || probe.status === 'uploading' || probe.status === 'invalid'
+          ? `Vimeo non prêt (statut: ${probe.status ?? 'inconnu'}). L’upload est incomplet ou la vidéo est introuvable — ne pas valider.`
+          : `Vimeo non lisible pour le moment (statut: ${probe.status ?? 'inconnu'}). Réessaie quand le transcodage est terminé.`,
+      status: 409,
+    };
+  }
+
   const now = new Date().toISOString();
   const { error } = await admin
     .from('video_recordings')
-    .update({ validation_status: 'approved', is_ready: true, available_at: now })
+    .update({
+      validation_status: 'approved',
+      is_ready: true,
+      available_at: now,
+      upload_status: 'ready',
+      duration_seconds: probe.durationSeconds ?? undefined,
+    })
     .eq('id', recordingId);
   if (error) throw error;
 

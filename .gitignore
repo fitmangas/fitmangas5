@@ -12,6 +12,9 @@ coverage/
 recordings-local/*
 !recordings-local/.gitkeep
 
+# Projet HyperFrames local (Claude Code sur le Mac) — ne pas versionner
+FitMangas-Reels/
+
 # Auto-générés (à ne jamais commiter)
 next-env.d.ts
 tsconfig.tsbuildinfo

@@ -169,43 +169,51 @@ export default async function AdminMarketingPage() {
           },
         ];
 
-  const searchConsoleSummary = googleApisConnected
-    ? await fetchSearchConsoleSummary()
-    : {
+  const searchConsoleSummaryPromise = googleApisConnected
+    ? fetchSearchConsoleSummary()
+    : Promise.resolve({
         available: false,
         error: 'Credentials Google non configurés',
         overview: null,
         queries: [],
         topPages: [],
         indexing: null,
-      };
-  const gaSummary = googleApisConnected
-    ? await fetchGaSummary()
-    : {
+      });
+  const gaSummaryPromise = googleApisConnected
+    ? fetchGaSummary()
+    : Promise.resolve({
         available: false,
         error: 'Credentials Google non configurés',
         users30d: null,
         pageViews30d: null,
         keyEvents30d: null,
         conversionRatePercent: null,
-      };
+      });
 
   const nowIsoMarketing = new Date().toISOString();
-  const { data: scheduledRaw } = await admin
-    .from('blog_articles')
-    .select('id, title_fr, scheduled_publication_at, status')
-    .gte('scheduled_publication_at', nowIsoMarketing)
-    .in('status', ['draft', 'validated'])
-    .order('scheduled_publication_at', { ascending: true })
-    .limit(8);
-
-  const { data: suggestionsRaw } = await admin
-    .from('marketing_editorial_suggestions')
-    .select('id, suggestion_fr, suggestion_es, topics_hint, created_at')
-    .order('created_at', { ascending: false })
-    .limit(12);
-
-  const { data: referralRows } = await admin.from('referrals').select('referrer_user_id');
+  const [
+    searchConsoleSummary,
+    gaSummary,
+    { data: scheduledRaw },
+    { data: suggestionsRaw },
+    { data: referralRows },
+  ] = await Promise.all([
+    searchConsoleSummaryPromise,
+    gaSummaryPromise,
+    admin
+      .from('blog_articles')
+      .select('id, title_fr, scheduled_publication_at, status')
+      .gte('scheduled_publication_at', nowIsoMarketing)
+      .in('status', ['draft', 'validated'])
+      .order('scheduled_publication_at', { ascending: true })
+      .limit(8),
+    admin
+      .from('marketing_editorial_suggestions')
+      .select('id, suggestion_fr, suggestion_es, topics_hint, created_at')
+      .order('created_at', { ascending: false })
+      .limit(12),
+    admin.from('referrals').select('referrer_user_id'),
+  ]);
   const refList = (referralRows ?? []) as { referrer_user_id: string }[];
   const countMap = new Map<string, number>();
   for (const r of refList) {

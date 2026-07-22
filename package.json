@@ -31,6 +31,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google-analytics/data": "^6.0.0",
     "@google/genai": "^1.29.0",
     "@supabase/ssr": "^0.6.1",

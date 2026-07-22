@@ -35,6 +35,12 @@ describe('live-back-url', () => {
     ).toEqual({ href: '/compte', label: 'Calendrier' });
   });
 
+  it('admin depuis /compte/replays → retour replays (pas Séances admin)', () => {
+    expect(
+      resolveLiveBackLink({ from: '/compte/replays', realAdmin: true, studentPreviewFromUrl: false }),
+    ).toEqual({ href: '/compte/replays', label: 'Mes replays & ma bibliothèque' });
+  });
+
   it('client → retour compte', () => {
     expect(
       resolveLiveBackLink({ from: '/compte/planning', realAdmin: false, studentPreviewFromUrl: false }),

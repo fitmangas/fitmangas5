@@ -73,17 +73,17 @@ export const translations: Record<Language, Content> = {
       { 
         text: "“Séances fluides, efficaces et agréables.”", 
         author: "Karla — Mexico",
-        avatar: "https://www.dropbox.com/scl/fi/4cwoxuwzourdv5rw4q92b/Spreadshop-Logo-8.png?rlkey=ydnyy8emq627bwz132x9ds4wp&st=18y1w3jl&raw=1"
+        avatar: "/library/landing/avatars/karla.png"
       },
       { 
         text: "“Un accompagnement premium qui change tout.”", 
         author: "Léa — Nantes",
-        avatar: "https://www.dropbox.com/scl/fi/7zic5m7zizghd2rtk7xr7/Spreadshop-Logo-10.png?rlkey=5epsn6ajvskswrorvbf1btrd7&st=6l0241gr&raw=1"
+        avatar: "/library/landing/avatars/lea.png"
       },
       { 
         text: "“Le Pilates à la maison n’a jamais été aussi motivant.”", 
         author: "Mélodie — Pornic",
-        avatar: "https://www.dropbox.com/scl/fi/6pysu0buam1lvnkjxu7z5/Spreadshop-Logo-9.png?rlkey=mqkhpt6h2z3ejkq1u968okwz2&st=cx051en2&raw=1"
+        avatar: "/library/landing/avatars/melodie.png"
       }
     ],
     courses: {
@@ -126,17 +126,17 @@ export const translations: Record<Language, Content> = {
       { 
         text: "“Sesiones fluidas, eficaces y agradables.”", 
         author: "Karla — México",
-        avatar: "https://www.dropbox.com/scl/fi/4cwoxuwzourdv5rw4q92b/Spreadshop-Logo-8.png?rlkey=ydnyy8emq627bwz132x9ds4wp&st=18y1w3jl&raw=1"
+        avatar: "/library/landing/avatars/karla.png"
       },
       { 
         text: "“Un acompañamiento premium que lo cambia todo.”", 
         author: "Léa — Nantes",
-        avatar: "https://www.dropbox.com/scl/fi/7zic5m7zizghd2rtk7xr7/Spreadshop-Logo-10.png?rlkey=5epsn6ajvskswrorvbf1btrd7&st=6l0241gr&raw=1"
+        avatar: "/library/landing/avatars/lea.png"
       },
       { 
         text: "“El Pilates en casa nunca fue tan motivador.”", 
         author: "Mélodie — Pornic",
-        avatar: "https://www.dropbox.com/scl/fi/6pysu0buam1lvnkjxu7z5/Spreadshop-Logo-9.png?rlkey=mqkhpt6h2z3ejkq1u968okwz2&st=cx051en2&raw=1"
+        avatar: "/library/landing/avatars/melodie.png"
       }
     ],
     courses: {

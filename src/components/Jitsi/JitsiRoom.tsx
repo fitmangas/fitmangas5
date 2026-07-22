@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import { EndLiveControls } from '@/components/Live/EndLiveControls';
 import { buildJitsiConfigOverwrite, buildJitsiInterfaceConfigOverwrite } from '@/lib/jitsi/embed-config';
 import { resolveJitsiEmbedFromRoomUrl } from '@/lib/jitsi/embed-from-room-url';
 
@@ -62,6 +63,10 @@ export type JitsiRoomProps = {
   isModerator: boolean;
   /** JWT Jitsi (JaaS ou serveur auto-heberge avec auth token). */
   jwt?: string;
+  /** Si fourni avec isModerator : bouton « Fin du live » sous la vidéo. */
+  courseId?: string;
+  /** Masque le bouton (ex. aperçu élève). */
+  hideEndLive?: boolean;
 };
 
 type JitsiMeetApi = {
@@ -96,12 +101,36 @@ export function JitsiRoom({
   email,
   isModerator,
   jwt,
+  courseId,
+  hideEndLive,
 }: JitsiRoomProps) {
   const shellRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAppFullscreen, setIsAppFullscreen] = useState(false);
   const apiRef = useRef<JitsiMeetApi | null>(null);
+
+  const stopRecordingAndEndConference = useCallback(async () => {
+    const api = apiRef.current;
+    if (!api) return;
+    try {
+      api.executeCommand('stopRecording', 'file');
+    } catch (e) {
+      console.warn('[JitsiRoom] stopRecording', e);
+    }
+    // Laisse Jibri encaisser le stop avant de fermer la salle.
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      api.executeCommand('endConference');
+    } catch (e) {
+      console.warn('[JitsiRoom] endConference — fallback hangup', e);
+      try {
+        api.executeCommand('hangup');
+      } catch (e2) {
+        console.warn('[JitsiRoom] hangup', e2);
+      }
+    }
+  }, []);
 
   /** Force les wrappers Jitsi + iframe à remplir le conteneur 16:9. */
   const jitsiFillClass =
@@ -228,34 +257,41 @@ export function JitsiRoom({
     );
   }
 
+  const showEndLive = Boolean(isModerator && courseId && !hideEndLive);
+
   return (
-    <div
-      ref={shellRef}
-      className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-brand-ink/[0.08] bg-brand-ink/[0.04] shadow-inner ${isAppFullscreen ? 'flex-1' : ''}`}
-    >
-      <div className="flex items-center justify-end gap-2 border-b border-brand-ink/[0.06] bg-white/40 px-3 py-2">
-        <button
-          type="button"
-          onClick={() => void toggleAppFullscreen()}
-          className="inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-brand-ink/70 transition hover:border-brand-accent/35 hover:text-brand-ink"
-          aria-pressed={isAppFullscreen}
-        >
-          {isAppFullscreen ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
-          {isAppFullscreen ? 'Quitter plein écran' : 'Plein écran'}
-        </button>
-      </div>
-      <p className="sr-only" role="status">
-        {title}
-      </p>
+    <div className="flex flex-col gap-4">
       <div
-        ref={containerRef}
-        className={
-          isAppFullscreen
-            ? `relative w-full min-h-0 flex-1 overflow-hidden bg-black ${jitsiFillClass}`
-            : `relative mx-auto aspect-video w-full max-w-6xl overflow-hidden bg-black ${jitsiFillClass}`
-        }
-        aria-label="Visioconférence Jitsi"
-      />
+        ref={shellRef}
+        className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-brand-ink/[0.08] bg-brand-ink/[0.04] shadow-inner ${isAppFullscreen ? 'flex-1' : ''}`}
+      >
+        <div className="flex items-center justify-end gap-2 border-b border-brand-ink/[0.06] bg-white/40 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => void toggleAppFullscreen()}
+            className="inline-flex items-center gap-2 rounded-full border border-brand-ink/10 bg-white/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-brand-ink/70 transition hover:border-brand-accent/35 hover:text-brand-ink"
+            aria-pressed={isAppFullscreen}
+          >
+            {isAppFullscreen ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
+            {isAppFullscreen ? 'Quitter plein écran' : 'Plein écran'}
+          </button>
+        </div>
+        <p className="sr-only" role="status">
+          {title}
+        </p>
+        <div
+          ref={containerRef}
+          className={
+            isAppFullscreen
+              ? `relative w-full min-h-0 flex-1 overflow-hidden bg-black ${jitsiFillClass}`
+              : `relative mx-auto aspect-video w-full max-w-6xl overflow-hidden bg-black ${jitsiFillClass}`
+          }
+          aria-label="Visioconférence Jitsi"
+        />
+      </div>
+      {showEndLive && courseId ? (
+        <EndLiveControls courseId={courseId} onBeforeEnd={stopRecordingAndEndConference} />
+      ) : null}
     </div>
   );
 }

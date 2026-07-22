@@ -41,10 +41,13 @@ export function resolveLiveBackLink(params: {
 }): LiveBackLink {
   const from = sanitizeLiveFromParam(params.from);
 
+  // Provenance espace client explicite : toujours la respecter,
+  // y compris si l’utilisateur est aussi admin (sinon « Séances » → /admin/courses).
+  if (from?.startsWith('/compte')) {
+    return { href: from, label: labelForPath(from) };
+  }
+
   if (params.studentPreviewFromUrl || !params.realAdmin) {
-    if (from?.startsWith('/compte')) {
-      return { href: from, label: labelForPath(from) };
-    }
     return { href: '/compte', label: 'Calendrier' };
   }
 

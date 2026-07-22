@@ -88,6 +88,8 @@ export function JitsiRoomLoader({
       email={email}
       isModerator={isModerator}
       jwt={token}
+      courseId={courseId}
+      hideEndLive={Boolean(studentPreview)}
     />
   );
 }
