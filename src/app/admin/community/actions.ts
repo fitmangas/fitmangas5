@@ -11,7 +11,7 @@ import {
   publishInstagramNow,
 } from '@/lib/admin/meta-social';
 import { collectUsedUnsplashIdsFromPosts, generateSocialAiImage, generateSocialPhotoForPost, imageSourceFromProvider } from '@/lib/admin/social-ai-image';
-import { CAPTION_BY_FORMAT, SOCIAL_CM_GUIDELINES } from '@/lib/admin/social-cm-playbook';
+import { CAPTION_BY_FORMAT, fallbackReelBrief, SOCIAL_CM_GUIDELINES } from '@/lib/admin/social-cm-playbook';
 import {
   buildWeeklySlots,
   plannedAtParis,
@@ -42,6 +42,26 @@ import { createAdminClient } from '@/lib/supabase/admin';
 function revalidateCommunity() {
   revalidatePath('/admin/community');
   revalidatePath('/admin');
+}
+
+/** Nettoie les légendes IA (surtout carousel) pour coller aux bandes idéales. */
+function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax: number): string {
+  let c = raw
+    .replace(/\*\*/g, '')
+    .replace(/^Slide\s*\d+\s*[:：]\s*/gim, '')
+    .replace(/\n?\s*Slide\s*\d+\s*[:：]\s*/gi, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const idealMax = CAPTION_BY_FORMAT[format]?.idealMax ?? hardMax;
+  const targetMax = format === 'carousel' ? Math.min(hardMax, idealMax) : hardMax;
+
+  if (c.length > targetMax) {
+    const sliced = c.slice(0, targetMax);
+    const lastStop = Math.max(sliced.lastIndexOf('.'), sliced.lastIndexOf('!'), sliced.lastIndexOf('?'), sliced.lastIndexOf('\n'));
+    c = lastStop > targetMax * 0.55 ? sliced.slice(0, lastStop + 1).trim() : sliced.trim();
+  }
+  return c.slice(0, hardMax);
 }
 
 function extractJsonObject(text: string): unknown {
@@ -625,17 +645,23 @@ Règles:
 - NE PAS renvoyer network, format, plannedAt, imagePath, whyItWorks
 - REEL (mediaKind=video_brief):
   - caption 70–150 caractères (hook + CTA), PAS un pavé
-  - hookTitle OBLIGATOIRE: gros titre viral FR MAJUSCULES max 8 mots (ex: "MAL AU DOS AU BUREAU ? 30 SEC")
-  - reelScript: 4–6 phrases orales pour Alejandra (15–40 s)
-  - shotList: 3 plans (face cam / démo / CTA)
+  - hookTitle OBLIGATOIRE: gros titre viral FR MAJUSCULES max 8 mots (ex: "MAL AU DOS AU BUREAU ?")
+  - reelScript OBLIGATOIRE: AIDE-MÉMOIRE 3 puces max (PAS un script à lire à l’écran). Format exact:
+    "1) ...\\n2) ...\\n3) ..."
+  - shotList OBLIGATOIRE: 2–3 lignes face cam téléphone (phase actuelle = face cam only, pas de plan exercice filmé)
   - imageHint: laisser vide ou "n/a"
 - FEED photo marque: caption 100–180 car.
-- CAROUSEL: caption 200–900 car., éducatif, hook dans les 125 premiers caractères
+- CAROUSEL:
+  - caption OBLIGATOIRE entre 200 et 900 caractères (cible idéale 400–700). Hook dans les 125 premiers caractères.
+  - Une SEULE légende Instagram fluide (2–4 courts paragraphes). INTERDIT: "Slide 1", "Slide 2", "Slide 3", markdown **, plan de slides dans le texte.
+  - Le contenu éducatif des slides est dans les IMAGES, pas recopié dans la légende.
+  - CTA save / FitMangas en fin, discret
+  - imageHint EN ANGLAIS (scène editorial Pilates 4:5 cream/beige/terracotta, no text)
 - FACEBOOK: 40–120 car., question ouverte, max 2 hashtags
 - WHATSAPP: 180–280 car., 0 hashtag, ton communauté
 - Hashtags dans le champ hashtags seulement
 - useOverlay: false (sauf carousel slide 1 si utile)
-- imageHint (feed/carousel/whatsapp) EN ANGLAIS: scène editorial Pilates unique 4:5 cream/beige/terracotta, no text
+- imageHint (feed/whatsapp) EN ANGLAIS: scène editorial Pilates unique 4:5 cream/beige/terracotta, no text
 - Réponds UNIQUEMENT JSON: {"posts":[{slotId,title,caption,hashtags,cta,imageHint,overlayText,useOverlay,hookTitle,reelScript,shotList,sourceType,sourceRef}]}`;
 
   try {
@@ -675,13 +701,25 @@ Règles:
           : isReel
             ? title.slice(0, 90).toUpperCase()
             : '';
+      const briefFallback = isReel ? fallbackReelBrief(hookTitle, title) : { reelScript: '', shotList: '' };
+      const reelScriptRaw =
+        typeof row.reelScript === 'string' && row.reelScript.trim()
+          ? row.reelScript.trim()
+          : briefFallback.reelScript;
+      const shotListRaw =
+        typeof row.shotList === 'string' && row.shotList.trim()
+          ? row.shotList.trim()
+          : briefFallback.shotList;
 
       generated.push({
         id: createSocialPostId(),
         network: slot.network,
         format: slot.format,
         title,
-        caption: typeof row.caption === 'string' ? row.caption.slice(0, captionMax) : '',
+        caption:
+          typeof row.caption === 'string'
+            ? sanitizeCaptionForFormat(row.caption, slot.format, captionMax)
+            : '',
         hashtags: Array.isArray(row.hashtags)
           ? row.hashtags.map(String).filter(Boolean).slice(0, SOCIAL_CM_GUIDELINES[slot.network].hashtagMax)
           : [],
@@ -697,8 +735,8 @@ Règles:
             : title.slice(0, 90),
         useOverlay: row.useOverlay === true,
         hookTitle,
-        reelScript: typeof row.reelScript === 'string' ? row.reelScript.slice(0, 2000) : '',
-        shotList: typeof row.shotList === 'string' ? row.shotList.slice(0, 800) : '',
+        reelScript: reelScriptRaw.slice(0, 2000),
+        shotList: shotListRaw.slice(0, 800),
         rawVideoPath: null,
         editedVideoPath: null,
         videoStatus: isReel ? 'brief' : null,

@@ -31,7 +31,9 @@ Sur ton Mac, le projet est ici (Finder) :
 À l’intérieur :
 - `README.md` (ce guide)
 - `PROMPTS.md` (textes à copier-coller)
+- `STRATEGY.md` (stratégie publication + motion LMDM — **à lire / sync**)
 - `skills/` (règles pour Claude Code)
+- `assets/dashboard-desktop.png` (CTA desktop, pas mobile)
 
 ---
 

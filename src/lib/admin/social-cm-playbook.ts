@@ -134,8 +134,27 @@ export const CM_STRATEGY_NOTES = [
   'Carousels pour l’éducation Pilates (saves). Photos réelles pour Feed marque et WhatsApp.',
   'IA editorial (Gemini → Pollinations) quand la bibliothèque est saturée ; Unsplash = dernier recours Feed uniquement.',
   'Légendes adaptées au format (Reel court / Feed court / Carousel plus long). Facebook = court + communauté.',
-  'Format viral Reel : méthode Claude Code + HyperFrames local (dérush Whisper/ffmpeg, motion, sous-titres 2–3 mots) — kit reel-monteur-fitmangas/ — puis import MP4 dans FitMangas.',
+  'Format viral Reel : Claude Code + HyperFrames local (kit reel-monteur-fitmangas/) — parole naturelle, Whisper local, sous-titres blanc/contour + mot-clé terracotta.',
+  'CTA produit : dashboard desktop en carte flottante sur fond gris (style LMDM) — jamais screenshot mobile plein cadre coupé. Voir docs/cm-reels-strategy.md.',
+  'Audio : voix stable ~−16 dB ; jamais RNNoise si la voix s’affaiblit.',
 ];
+
+/** Fallback si l’IA omet le brief Reel — aide-mémoire 3 idées + plan face cam. */
+export function fallbackReelBrief(hookTitle: string, title: string): { reelScript: string; shotList: string } {
+  const topic = (hookTitle || title || 'Sujet Pilates').trim();
+  return {
+    reelScript: [
+      `1) Accroche : ${topic}`,
+      '2) Erreur fréquente + geste / souffle clé (1 idée claire)',
+      '3) Invitation FitMangas / fitmangas.com',
+    ].join('\n'),
+    shotList: [
+      '1) Face cam téléphone — parole naturelle (HD Normal, pas HDR)',
+      '2) Rester face cam (phase actuelle : pas de plan exercice filmé)',
+      '3) CTA oral : fitmangas.com / classes',
+    ].join('\n'),
+  };
+}
 
 export function analyzeCaptionForPost(
   caption: string,

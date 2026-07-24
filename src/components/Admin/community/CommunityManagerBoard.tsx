@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
   CalendarDays,
   Check,
+  CircleHelp,
   Copy,
   Download,
   Eye,
@@ -18,7 +19,6 @@ import {
 
 import {
   attachSocialEditedVideoAction,
-  attachSocialRawVideoAction,
   deleteSocialPostAction,
   disconnectMetaAction,
   generateSocialImageAction,
@@ -95,6 +95,7 @@ export function CommunityManagerBoard({ board, meta, metaAppReady }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showMetaPanel, setShowMetaPanel] = useState(false);
+  const [showStrategyPanel, setShowStrategyPanel] = useState(false);
   const [tokenForm, setTokenForm] = useState({
     pageId: meta.pageId || '',
     pageName: meta.pageName || '',
@@ -148,11 +149,6 @@ export function CommunityManagerBoard({ board, meta, metaAppReady }: Props) {
 
   const generationNetworks = useMemo(() => resolveGenerationNetworks(networkFilter), [networkFilter]);
   const generationSummary = useMemo(() => weekPlanSummary(generationNetworks), [generationNetworks]);
-
-  const visibleGuidelines = useMemo(() => {
-    if (networkFilter === 'all') return NETWORKS;
-    return [networkFilter];
-  }, [networkFilter]);
 
   const whatsappDue = useMemo(() => {
     const now = Date.now();
@@ -263,7 +259,7 @@ export function CommunityManagerBoard({ board, meta, metaAppReady }: Props) {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap items-center gap-2">
           <FilterChip active={networkFilter === 'all'} onClick={() => setNetworkFilter('all')} label={`Tous (${board.posts.length})`} />
           {NETWORKS.map((network) => (
             <FilterChip
@@ -273,96 +269,121 @@ export function CommunityManagerBoard({ board, meta, metaAppReady }: Props) {
               label={`${SOCIAL_NETWORK_LABELS[network]} (${counts[network]})`}
             />
           ))}
+          <button
+            type="button"
+            title="Stratégie CM"
+            aria-label="Ouvrir la stratégie community manager"
+            onClick={() => setShowStrategyPanel(true)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E8D9C8] bg-white text-[#7a2e1a] shadow-sm transition hover:border-[#C45D3E]/50 hover:bg-[#FBF7F2]"
+          >
+            <CircleHelp size={16} strokeWidth={2} />
+          </button>
+          <span className="text-[10px] text-luxury-muted">
+            Meta {meta.connected ? '· connecté' : '· à connecter'}
+            <button type="button" className="ml-1 underline decoration-[#C45D3E]/40" onClick={() => setShowMetaPanel((v) => !v)}>
+              {showMetaPanel ? 'masquer' : 'régler'}
+            </button>
+          </span>
         </div>
 
-        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-2">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {visibleGuidelines.map((network) => {
-                const g = SOCIAL_CM_GUIDELINES[network];
-                return (
-                  <div
-                    key={network}
-                    className="min-w-[210px] shrink-0 rounded-2xl border border-white/70 bg-white/60 p-3"
-                  >
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">{g.label}</p>
-                    <p className="mt-1 text-[11px] text-luxury-muted">{formatBestHours(network)}</p>
-                    <p className="mt-1 text-[11px] leading-5 text-luxury-soft">{g.weeklyTarget}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <ul className="rounded-2xl border border-white/70 bg-white/50 px-3 py-2 text-[10px] leading-snug text-luxury-soft">
-              {CM_STRATEGY_NOTES.map((n) => (
-                <li key={n}>• {n}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="rounded-2xl border border-white/70 bg-white/60 p-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between text-left"
-              onClick={() => setShowMetaPanel((v) => !v)}
-            >
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</span>
-              <span className="text-[11px] text-luxury-muted">{meta.connected ? 'Connecté' : 'Non connecté'}</span>
-            </button>
-            {showMetaPanel ? (
-              <div className="mt-3 space-y-2">
-                <p className="text-[11px] text-luxury-muted">
-                  {meta.connected
-                    ? `${meta.pageName || meta.pageId}${meta.igUsername ? ` · @${meta.igUsername}` : ''}`
-                    : 'Token Page ou OAuth'}
-                </p>
-                <input className={ADMIN_FIELD_CLASS} placeholder="Page ID" value={tokenForm.pageId} onChange={(e) => setTokenForm((s) => ({ ...s, pageId: e.target.value }))} />
-                <input className={ADMIN_FIELD_CLASS} placeholder="IG User ID" value={tokenForm.igUserId} onChange={(e) => setTokenForm((s) => ({ ...s, igUserId: e.target.value }))} />
-                <input className={ADMIN_FIELD_CLASS} placeholder="Page Access Token" value={tokenForm.accessToken} onChange={(e) => setTokenForm((s) => ({ ...s, accessToken: e.target.value }))} />
-                <div className="flex flex-wrap gap-2">
+        {showMetaPanel ? (
+          <div className="mt-3 max-w-xl rounded-2xl border border-[#E8D9C8]/80 bg-white/80 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</p>
+            <p className="mt-1 text-[11px] text-luxury-muted">
+              {meta.connected
+                ? `${meta.pageName || meta.pageId}${meta.igUsername ? ` · @${meta.igUsername}` : ''}`
+                : 'Token Page ou OAuth'}
+            </p>
+            <div className="mt-2 space-y-2">
+              <input className={ADMIN_FIELD_CLASS} placeholder="Page ID" value={tokenForm.pageId} onChange={(e) => setTokenForm((s) => ({ ...s, pageId: e.target.value }))} />
+              <input className={ADMIN_FIELD_CLASS} placeholder="IG User ID" value={tokenForm.igUserId} onChange={(e) => setTokenForm((s) => ({ ...s, igUserId: e.target.value }))} />
+              <input className={ADMIN_FIELD_CLASS} placeholder="Page Access Token" value={tokenForm.accessToken} onChange={(e) => setTokenForm((s) => ({ ...s, accessToken: e.target.value }))} />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="btn-luxury-primary px-3 py-2 text-[10px]"
+                  onClick={() =>
+                    run(
+                      () =>
+                        saveMetaConnectionManualAction({
+                          pageId: tokenForm.pageId,
+                          pageName: tokenForm.pageName,
+                          igUserId: tokenForm.igUserId,
+                          igUsername: tokenForm.igUsername,
+                          accessToken: tokenForm.accessToken || meta.accessToken || '',
+                        }),
+                      'Meta enregistré.',
+                    )
+                  }
+                >
+                  Enregistrer
+                </button>
+                {metaAppReady ? (
                   <button
                     type="button"
-                    disabled={pending}
-                    className="btn-luxury-primary px-3 py-2 text-[10px]"
+                    className="btn-luxury-ghost px-3 py-2 text-[10px]"
                     onClick={() =>
-                      run(
-                        () =>
-                          saveMetaConnectionManualAction({
-                            pageId: tokenForm.pageId,
-                            pageName: tokenForm.pageName,
-                            igUserId: tokenForm.igUserId,
-                            igUsername: tokenForm.igUsername,
-                            accessToken: tokenForm.accessToken || meta.accessToken || '',
-                          }),
-                        'Meta enregistré.',
-                      )
+                      void getMetaConnectUrlAction().then((res) => {
+                        if (res.ok && res.url) window.location.href = res.url;
+                        else setMessage(res.error || 'OAuth indisponible.');
+                      })
                     }
                   >
-                    Enregistrer
+                    OAuth Meta
                   </button>
-                  {metaAppReady ? (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      className="btn-luxury-ghost px-3 py-2 text-[10px]"
-                      onClick={() =>
-                        run(async () => {
-                          const res = await getMetaConnectUrlAction();
-                          if (res.ok && 'url' in res && res.url) {
-                            window.location.href = res.url;
-                            return { ok: true };
-                          }
-                          return res;
-                        }, 'Redirection Meta…')
-                      }
-                    >
-                      OAuth
-                    </button>
-                  ) : null}
-                </div>
+                ) : null}
+                {meta.connected ? (
+                  <button
+                    type="button"
+                    className="btn-luxury-ghost px-3 py-2 text-[10px] text-red-800"
+                    onClick={() => run(() => disconnectMetaAction(), 'Meta déconnecté.')}
+                  >
+                    Déconnecter
+                  </button>
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
+
+        {showStrategyPanel ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4" role="dialog" aria-modal="true">
+            <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-[#E8D9C8] bg-[#FFFAF5] p-5 shadow-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a2e1a]">Stratégie CM</p>
+                  <h3 className="mt-1 text-lg font-semibold text-luxury-ink">Mix & horaires Paris</h3>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E8D9C8] bg-white"
+                  onClick={() => setShowStrategyPanel(false)}
+                  aria-label="Fermer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="mt-4 space-y-3">
+                {NETWORKS.map((network) => {
+                  const g = SOCIAL_CM_GUIDELINES[network];
+                  return (
+                    <div key={network} className="rounded-2xl bg-white/80 px-3 py-2.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7a2e1a]">{g.label}</p>
+                      <p className="mt-0.5 text-[11px] text-luxury-muted">{formatBestHours(network)}</p>
+                      <p className="mt-1 text-[12px] leading-5 text-luxury-soft">{g.weeklyTarget}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <ul className="mt-4 space-y-1.5 text-[12px] leading-snug text-luxury-soft">
+                {CM_STRATEGY_NOTES.map((n) => (
+                  <li key={n}>• {n}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
 
         {message ? <p className="mt-4 text-sm text-luxury-muted">{message}</p> : null}
       </section>
@@ -634,6 +655,14 @@ function PostCard({
   const isCarousel = post.format === 'carousel';
   const showAiImageTools = !isReel && (post.imageSource === 'ai' || post.imageSource === 'pollinations');
   const previewVideo = post.editedVideoPath || post.rawVideoPath;
+  const carouselSlides =
+    isCarousel && post.carouselPaths?.length
+      ? post.carouselPaths
+      : post.imagePath
+        ? [post.imagePath]
+        : [];
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const activeCarouselSrc = carouselSlides[Math.min(carouselIndex, Math.max(carouselSlides.length - 1, 0))] || null;
   const videoStatusLabel: Record<string, string> = {
     brief: 'Vidéo à créer',
     raw_uploaded: 'Brute uploadée',
@@ -643,11 +672,61 @@ function PostCard({
   };
 
   return (
-    <article id={`post-${post.id}`} className="overflow-hidden rounded-[1.75rem] border border-white/65 bg-white/70 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
+    <article id={`post-${post.id}`} className="overflow-hidden rounded-[1.5rem] border border-[#E8D9C8]/50 bg-white/80 shadow-sm">
       <div className="grid gap-0 lg:grid-cols-[200px_minmax(0,1fr)]">
-        <div className="group relative min-h-[200px] bg-brand-beige">
+        <div className="group relative min-h-[220px] bg-brand-beige">
           {isReel && previewVideo ? (
             <video src={previewVideo} className="absolute inset-0 h-full w-full object-cover" muted playsInline controls />
+          ) : isCarousel && carouselSlides.length ? (
+            <div className="absolute inset-0 flex flex-col">
+              <div className="relative min-h-0 flex-1">
+                {activeCarouselSrc ? (
+                  <Image
+                    src={activeCarouselSrc}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="220px"
+                    unoptimized={activeCarouselSrc.startsWith('http')}
+                  />
+                ) : null}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/45 px-2 py-1.5">
+                  <button
+                    type="button"
+                    className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-luxury-ink disabled:opacity-40"
+                    disabled={carouselIndex <= 0}
+                    onClick={() => setCarouselIndex((i) => Math.max(0, i - 1))}
+                  >
+                    ←
+                  </button>
+                  <span className="text-[10px] font-semibold text-white">
+                    Slide {carouselIndex + 1}/{carouselSlides.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-luxury-ink disabled:opacity-40"
+                    disabled={carouselIndex >= carouselSlides.length - 1}
+                    onClick={() => setCarouselIndex((i) => Math.min(carouselSlides.length - 1, i + 1))}
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-1 overflow-x-auto bg-white/90 p-1.5">
+                {carouselSlides.map((src, idx) => (
+                  <button
+                    key={`${src}-${idx}`}
+                    type="button"
+                    onClick={() => setCarouselIndex(idx)}
+                    className={`relative h-12 w-10 shrink-0 overflow-hidden rounded-md border ${
+                      idx === carouselIndex ? 'border-[#C45D3E] ring-1 ring-[#C45D3E]/40' : 'border-transparent opacity-80'
+                    }`}
+                  >
+                    <Image src={src} alt="" fill className="object-cover" sizes="40px" unoptimized={src.startsWith('http')} />
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : post.imagePath ? (
             <>
               <Image src={post.imagePath} alt="" fill className="object-cover" sizes="200px" unoptimized={post.imagePath.startsWith('http')} />
@@ -750,16 +829,7 @@ function PostCard({
           </div>
 
           {isReel ? (
-            <div className="mt-4 space-y-3 rounded-2xl border border-[#E8D9C8] bg-[#FBF7F2] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">
-                Reel · méthode Claude Code + HyperFrames (local)
-              </p>
-              <ol className="list-decimal space-y-1 pl-4 text-[11px] leading-snug text-luxury-soft">
-                <li>Setup 1× : Claude Code Pro + kit <code className="text-[10px]">reel-monteur-fitmangas/</code> (guide détaillé dans le dossier).</li>
-                <li>Filmer en parlant naturellement — pas de lecture à l’écran (mode Normal, pas HDR).</li>
-                <li>Claude Code : dérush voix réelle → motion → sous-titres sync → MP4 local.</li>
-                <li>Ici : importer le MP4 monté → publier.</li>
-              </ol>
+            <div className="mt-4 space-y-3">
               <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
                 Gros titre (idée 0–2 s)
               </label>
@@ -775,13 +845,13 @@ function PostCard({
                 }
               />
               <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
-                Aide-mémoire (3 idées max — PAS un texte à lire)
+                Aide-mémoire (3 idées — généré auto)
               </label>
               <textarea
                 rows={3}
-                className="w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
+                className="w-full rounded-2xl border border-[#E8D9C8]/80 bg-white/90 px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
                 defaultValue={post.reelScript}
-                placeholder="Sujet + 3 idées. Tu parles naturellement ; les sous-titres suivront ta vraie voix…"
+                placeholder="1) … 2) … 3) …"
                 onBlur={(e) =>
                   run(
                     () => updateSocialPostReelBriefAction(post.id, { reelScript: e.target.value }),
@@ -790,13 +860,13 @@ function PostCard({
                 }
               />
               <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
-                Plan de tournage
+                Plan de tournage (généré auto)
               </label>
               <textarea
                 rows={2}
-                className="w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
+                className="w-full rounded-2xl border border-[#E8D9C8]/80 bg-white/90 px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
                 defaultValue={post.shotList}
-                placeholder="Plan 1 face caméra… Plan 2 démo…"
+                placeholder="Face cam…"
                 onBlur={(e) =>
                   run(
                     () => updateSocialPostReelBriefAction(post.id, { shotList: e.target.value }),
@@ -810,13 +880,17 @@ function PostCard({
                   className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
                   onClick={() => {
                     const prompt = [
-                      'Méthode LMDM / FitMangas — monte cette vidéo en suivant STRICTEMENT mes skills (dossier reel-monteur-fitmangas/skills/).',
+                      'Méthode LMDM / FitMangas — monte cette vidéo en suivant STRICTEMENT mes skills (dossier FitMangas-Reels/skills/ ou reel-monteur-fitmangas/skills/).',
+                      'Lis aussi CLAUDE.md + STRATEGY.md si présents.',
                       '',
-                      'Vidéo brute : [COLLE ICI LE CHEMIN DU FICHIER .mp4]',
+                      'Vidéo brute : [COLLE ICI LE CHEMIN DU FICHIER .mp4 ou .MOV]',
+                      '',
                       'Brief FitMangas (AIDE-MÉMOIRE uniquement — PAS un script à sous-titrer) :',
                       `- Hook / sujet : ${post.hookTitle || post.title}`,
-                      `- 3 idées max : ${post.reelScript || '—'}`,
-                      `- Plans : ${post.shotList || '—'}`,
+                      `- 3 idées max :`,
+                      post.reelScript || '—',
+                      `- Plans :`,
+                      post.shotList || '—',
                       `- Légende cible : ${post.caption || '—'}`,
                       '',
                       'RÈGLE PAROLE NATURELLE :',
@@ -827,67 +901,23 @@ function PostCard({
                       'Pipeline obligatoire :',
                       '0) Dérush : Whisper local + ffmpeg silencedetect (coupes DANS les silences).',
                       '1) Sections à partir de la transcription réelle.',
-                      '2) Motion design (zéro gros texte qui répète la voix). Charte cream/terracotta. Écran scindé.',
-                      '3) Sous-titres 2–3 mots sync voix réelle.',
+                      '2) Motion : Follow @fit.mangas + CTA pile 3 cartes (dashboard/blog/replays) — skills/03.',
+                      '3) Sous-titres 2–3 mots sync voix (style intangible).',
                       '4) Attends mon OK section par section avant export.',
-                      '5) SFX puis musique (~15 dB sous la voix).',
-                      '6) Export MP4 1080x1920 LOCAL — INTERDIT cloud HeyGen.',
+                      '5) Audio : musique ~15 dB sous la voix (sauf si je demande son d’origine). Pas de RNNoise.',
+                      '6) Export MP4 1080x1920 LOCAL H.264 SDR — INTERDIT cloud HeyGen.',
                       '',
                       'Si quelque chose bloque, répare-toi-même. Dis-moi quand l’aperçu local est prêt.',
                     ].join('\n');
                     void navigator.clipboard.writeText(prompt).then(
-                      () => setMessage('Prompt montage Claude Code copié.'),
+                      () => setMessage('Prompt Claude Code copié — colle-le dans Claude Code.'),
                       () => setMessage('Impossible de copier.'),
                     );
                   }}
                 >
                   <Copy size={14} />
-                  Copier prompt montage
+                  Copier prompt Claude Code
                 </button>
-                <button
-                  type="button"
-                  className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
-                  onClick={() => {
-                    const prompt = [
-                      'Installe HyperFrames sur ma machine et crée-moi un projet vidéo',
-                      'vertical 1080x1920 pour des Reels Instagram FitMangas (Pilates).',
-                      'Ouvre le studio de prévisualisation en local et dis-moi quand',
-                      "c'est prêt. Si quelque chose bloque, répare-le toi-même.",
-                      "N'utilise JAMAIS le rendu cloud HeyGen : uniquement local.",
-                    ].join('\n');
-                    void navigator.clipboard.writeText(prompt).then(
-                      () => setMessage('Prompt install HyperFrames copié.'),
-                      () => setMessage('Impossible de copier.'),
-                    );
-                  }}
-                >
-                  <Copy size={14} />
-                  Copier prompt install (1×)
-                </button>
-                <label className="btn-luxury-ghost inline-flex min-h-[40px] cursor-pointer items-center gap-2 px-3 text-[11px]">
-                  Upload brute (optionnel)
-                  <input
-                    type="file"
-                    accept="video/mp4,video/quicktime,video/webm"
-                    className="hidden"
-                    disabled={pending}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      e.target.value = '';
-                      if (!file) return;
-                      run(async () => {
-                        const body = new FormData();
-                        body.append('file', file);
-                        body.append('postId', post.id);
-                        body.append('kind', 'raw');
-                        const res = await fetch('/api/admin/community/upload-reel', { method: 'POST', body });
-                        const json = (await res.json()) as { ok: boolean; url?: string; error?: string };
-                        if (!json.ok || !json.url) return { ok: false, error: json.error || 'Upload échoué.' };
-                        return attachSocialRawVideoAction(post.id, json.url);
-                      }, 'Vidéo brute enregistrée.');
-                    }}
-                  />
-                </label>
                 <label className="btn-luxury-primary inline-flex min-h-[40px] cursor-pointer items-center gap-2 px-4 text-[11px]">
                   {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   Importer le MP4 monté
@@ -925,6 +955,9 @@ function PostCard({
                   </a>
                 ) : null}
               </div>
+              <p className="text-[10px] leading-snug text-luxury-muted">
+                Workflow : filmer (aide-mémoire) → Claude Code (prompt ci-dessus) → importer le MP4 ici → statut Prêt / Programmer.
+              </p>
             </div>
           ) : null}
 
@@ -999,7 +1032,9 @@ function PostCard({
               </details>
 
               {isCarousel && post.carouselPaths?.length ? (
-                <p className="mt-2 text-[11px] text-luxury-soft">{post.carouselPaths.length} slide(s) carousel liées.</p>
+                <p className="mt-2 text-[11px] text-luxury-soft">
+                  {post.carouselPaths.length} slides — utilise ← → ou les miniatures à gauche pour tout valider.
+                </p>
               ) : null}
 
               <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -1084,6 +1119,7 @@ function PostCard({
             <select
               className={`${ADMIN_FIELD_CLASS} min-h-[40px] max-w-[180px] text-[11px]`}
               value={post.status}
+              title="Statut interne du post (suivi workflow)"
               onChange={(e) =>
                 run(
                   () => updateSocialPostStatusAction(post.id, e.target.value as SocialPost['status']),
@@ -1091,9 +1127,9 @@ function PostCard({
                 )
               }
             >
-              <option value="idea">Idée</option>
-              <option value="ready">Prêt</option>
-              <option value="scheduled">Programmé</option>
+              <option value="idea">Idée — à filmer / préparer</option>
+              <option value="ready">Prêt — MP4 ou visuel OK</option>
+              <option value="scheduled">Programmé — en file</option>
               <option value="published">Publié (manuel)</option>
               <option value="skipped">Ignoré</option>
             </select>

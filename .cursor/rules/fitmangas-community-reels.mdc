@@ -1,0 +1,36 @@
+---
+description: Stratégie Community Manager + pipeline Reels HyperFrames FitMangas
+globs: src/lib/admin/social-*.ts,src/components/Admin/community/**,src/app/admin/community/**,reel-monteur-fitmangas/**,docs/cm-reels-strategy.md
+alwaysApply: false
+---
+
+# FitMangas — Community & Reels
+
+## Publication Instagram (validé)
+
+- Mix hebdo ~**60 % Reels / 25 % carousels / 15 % Feed photo** (~5 Reels + 1–2 carousels + 1–2 photos)
+- Reels = **vraie vidéo 9:16**, jamais photo Unsplash déguisée
+- Photos : bibliothèque réelle → Gemini → Pollinations → Unsplash (dernier recours)
+- Légendes **par format** (`CAPTION_BY_FORMAT`), pas une longueur globale ; FB court ; WhatsApp court + réel
+- Horaires Paris (`social-paris-time`) ; Muapi abandonné
+
+## Pattern viral Reels
+
+- Gros **hookTitle** 0–2 s + **sous-titres brûlés** + visage
+- Brief admin = **aide-mémoire** (3 idées), **pas** un script lu à l’écran
+- Sous-titres = transcription **voix réelle** (Whisper local)
+- Phase actuelle : **face cam** téléphone uniquement (pas de plan exercice filmé)
+
+## Montage (hors plateforme)
+
+- Claude Code + HyperFrames **local** dans `FitMangas-Reels/` (pas HeyGen cloud, pas Whisper OpenAI API dans l’app)
+- Skills source de vérité : `reel-monteur-fitmangas/skills/` (+ copie dans `FitMangas-Reels/skills/`)
+- Doc stratégie complète : `docs/cm-reels-strategy.md`
+- Sous-titres intangibles : blanc + contour noir, mot-clé terracotta, 2–3 mots
+- Audio : **jamais RNNoise** si la voix s’affaiblit ; voix stable ~−16 dB ; musique ~15 dB sous
+- Follow IG chaque Reel : block `instagram-follow` + avatar `hero.jpg` crop visage + badge vérifié bleu + handle **`@fit.mangas`** + bouton **Seguir** fixe
+- CTA chaque Reel : pile 3 cartes (dashboard + blog + replays) superposition LMDM + léger float — jamais mobile plein cadre
+
+## Admin
+
+- Upload MP4 monté dans Community Manager ; render cloud désactivé (410)

@@ -1,26 +1,40 @@
-# Skill FitMangas — Sous-titres (voix réelle uniquement)
+# Skill FitMangas — Sous-titres (voix réelle + règles LMDM)
 
-## Source unique des sous-titres
+Source : skill sous-titres LMDM (Alex) + style intangible FitMangas.
+
+## Source unique
 
 **Uniquement** la transcription Whisper de ce qui a été **prononcé**.  
-Interdit : générer des sous-titres depuis le brief / script FitMangas s’ils n’ont pas été dits.
+Interdit : coller le brief / script s’il n’a pas été dit.
 
 Si le brief dit « respiration costale » mais elle a dit « respire sur les côtés » → sous-titrer **sa** formulation.
 
-## Règles de découpage (guide LMDM)
+## Découpage (LMDM — strict)
 
-1. Viser **2 à 3 mots** par sous-titre.
-2. Ne jamais finir sur un mot faible (« le », « de », « et », « qui », « un », « une »).
-3. Nom + adjectif ensemble.
-4. Groupe verbal ensemble.
-5. Mot fort de fin de phrase peut s’isoler pour l’emphase.
+1. Viser **2 à 3 mots** par sous-titre. Court = lisible ; long = raté.  
+2. Ne **jamais** finir sur un mot faible : « le », « de », « et », « qui », « un », « une », « en », « à ».  
+   → Il s’accroche au mot suivant = démarrer le bloc d’après.  
+3. Nom + adjectif **ensemble** (« prompts secrets » ne se coupe pas).  
+4. Groupe verbal **ensemble** (« vient de te donner » = un bloc).  
+5. Mot fort de fin de phrase → **seul** pour l’emphase.
 
-## Position
+Exemple LMDM (à imiter) — phrase orale :  
+« Ils ont partagé ça dans leur documentation officielle. »  
+→ `ILS ONT PARTAGÉ ÇA` · `DANS LEUR DOCUMENTATION` · `OFFICIELLE`
 
-- Écran scindé : à la jointure animation / visage.
-- Plein écran : plus bas, sans couvrir le visuel.
-- Fin pile à la frontière de section (pas de débordement).
+## Position (LMDM)
 
-## Style FitMangas
+- Écran scindé : pile à la **jointure** animation / visage  
+- Plein écran : plus bas, sans couvrir le visuel important  
+- Fin **pile** à la frontière de section — **interdit** de déborder 0,2 s sur le plan suivant (look amateur)
 
-Contraste fort, mobile-first, accent terracotta possible sur 1 mot fort max.
+## Style FitMangas (intangible — ne pas changer)
+
+- Blanc + **contour noir**  
+- Mot-clé fort en **terracotta** `#C45D3E` (1 max par bloc)  
+- 2–3 mots, mobile-first  
+
+## Orthographe post-Whisper
+
+Corriger les **fautes évidentes** de transcription (ex. « Pues venid » → « Puedes venir »)  
+sans réécrire le discours ni coller le brief.
