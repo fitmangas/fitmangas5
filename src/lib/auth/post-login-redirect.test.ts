@@ -2,16 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resolvePostLoginPath } from './post-login-redirect';
 
-const clearDemoClientModeCookie = vi.fn(async () => {});
+const cookieDelete = vi.fn();
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({
-    delete: clearDemoClientModeCookie,
+    delete: cookieDelete,
   })),
-}));
-
-vi.mock('@/lib/demo-client-mode', () => ({
-  DEMO_CLIENT_COOKIE: 'fm_demo_client',
 }));
 
 vi.mock('@/lib/auth/admin', () => ({
@@ -23,16 +19,16 @@ vi.mock('@/lib/auth/admin', () => ({
 
 describe('resolvePostLoginPath', () => {
   beforeEach(() => {
-    clearDemoClientModeCookie.mockClear();
+    cookieDelete.mockClear();
   });
 
-  it('envoie un admin vers /admin et efface le cookie démo', async () => {
+  it('envoie un admin vers /admin et efface le cookie démo legacy', async () => {
     const path = await resolvePostLoginPath({} as never, {
       id: 'u1',
       email: 'admin@fitmangas.com',
     });
     expect(path).toBe('/admin');
-    expect(clearDemoClientModeCookie).toHaveBeenCalled();
+    expect(cookieDelete).toHaveBeenCalledWith('fm_demo_client');
   });
 
   it('envoie un membre vers /compte sans toucher au cookie démo', async () => {
@@ -41,6 +37,6 @@ describe('resolvePostLoginPath', () => {
       email: 'cliente@example.com',
     });
     expect(path).toBe('/compte');
-    expect(clearDemoClientModeCookie).not.toHaveBeenCalled();
+    expect(cookieDelete).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
-import type { SocialNetwork, SocialPostFormat } from '@/lib/admin/social-comms';
+import type { SocialLocale, SocialNetwork, SocialPostFormat } from '@/lib/admin/social-comms';
+import { SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT } from '@/lib/admin/social-image-prompt';
 
-export const SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT = `Editorial lifestyle photograph, 4:5 portrait format. A Pilates instructor's hands and forearm entering the frame from the left edge, gently adjusting the shoulder alignment of a woman lying on a cream Pilates mat. The student is in profile, eyes closed, serene relaxed expression, natural skin texture, mid-30s. Close-medium framing showing head and shoulders. Background: warm off-white textured plaster wall, softly blurred, shallow depth of field (50mm f/2 look). Soft natural side light from a window, gentle shadows, no flash. Single color accent: a terracotta clay-colored towel or top, everything else in cream, warm beige and natural skin tones. Muted desaturated palette, subtle film grain, premium wellness editorial style, not stock photography. Large negative space in the upper third of the frame. No text, no logo, no watermark.`;
+export { SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT };
 
 /** Type média produit — le format dicte le média. */
 export type SocialMediaKind = 'video_brief' | 'photo' | 'carousel';
@@ -44,11 +45,11 @@ export const CAPTION_BY_FORMAT: Record<SocialPostFormat, CaptionBand> = {
     hint: 'Story : texte minimal.',
   },
   text: {
-    min: 80,
-    idealMin: 180,
-    idealMax: 280,
-    max: 350,
-    hint: 'WhatsApp texte : court, chaleureux, 1 CTA.',
+    min: 120,
+    idealMin: 160,
+    idealMax: 320,
+    max: 420,
+    hint: 'WhatsApp communauté : résumé d’article chaleureux + lien. Pas d’acquisition.',
   },
 };
 
@@ -81,11 +82,13 @@ export const SOCIAL_CM_GUIDELINES: Record<SocialNetwork, NetworkGuideline> = {
     bestHours: [7, 8, 11, 12, 17, 18, 19],
     bestDays: ['mardi', 'mercredi', 'jeudi', 'vendredi'],
     formats: ['reel', 'carousel', 'feed'],
-    weeklyTarget: '3–5 Reels (vidéo) + 1–2 carousels + 1–2 Feed photo. ~60 % vidéo / 25 % carousel / 15 % photo.',
+    weeklyTarget:
+      '3–5 Reels + 1–2 carousels + 1–2 Feed. Facebook = miroir auto du même contenu (pas de posts FB séparés).',
     tips: [
       'Reels = vidéo 9:16 + gros titre 0–2 s + sous-titres brûlés (pas une photo Unsplash).',
       'Carousels pour l’éducation Pilates (saves).',
       'Feed photo = bibliothèque réelle en priorité (authenticité Alejandra).',
+      'Publier IG publie aussi FB si la case « Aussi Facebook » est cochée.',
     ],
   },
   facebook: {
@@ -97,23 +100,44 @@ export const SOCIAL_CM_GUIDELINES: Record<SocialNetwork, NetworkGuideline> = {
     bestHours: [9, 10, 13, 14, 18],
     bestDays: ['mercredi', 'jeudi', 'vendredi'],
     formats: ['feed', 'reel'],
-    weeklyTarget: '2–4 posts/semaine : texte court (40–80 car. idéalement), recyclage Reel avec légende réécrite.',
+    weeklyTarget: 'Miroir Instagram uniquement — même média + même légende. Pas de création FB séparée.',
     tips: [
-      'Prioriser commentaires / questions ouvertes.',
-      'Image réelle > stock. Moins de hashtags.',
+      'Ne pas refaire de Reels dédiés Facebook.',
+      'Gérer le miroir depuis la carte Instagram (case Aussi Facebook).',
     ],
   },
   whatsapp: {
     label: 'WhatsApp',
-    captionMax: 350,
-    captionIdeal: 220,
+    captionMax: 420,
+    captionIdeal: 240,
     hashtagMax: 0,
     hashtagIdeal: 0,
     bestHours: [8, 12, 17, 19],
     bestDays: ['lundi', 'mercredi', 'vendredi'],
+    formats: ['text', 'feed'],
+    weeklyTarget:
+      '2–3 messages/semaine pour la communauté déjà membre : teaser d’un article blog (ce qu’elles y trouveront) + lien.',
+    tips: [
+      'Pas d’acquisition (« rejoins-nous ») — elles sont déjà dans la communauté.',
+      'Ton : chaleureux, utile, résumé en 4–6 lignes + lien fitmangas.com/blog/…',
+      '0 hashtag.',
+    ],
+  },
+  linkedin: {
+    label: 'LinkedIn',
+    captionMax: 1300,
+    captionIdeal: 600,
+    hashtagMax: 3,
+    hashtagIdeal: 2,
+    bestHours: [8, 9, 12, 17, 18],
+    bestDays: ['mardi', 'mercredi', 'jeudi'],
     formats: ['feed'],
-    weeklyTarget: '2–3 messages/semaine avec photo réelle FitMangas (pas Unsplash).',
-    tips: ['0 hashtag, 1 CTA clair.', 'Photo bibliothèque Alejandra / cours.'],
+    weeklyTarget: '2–3 posts/semaine : posture pro, bien-être au travail, leadership du corps (sans jargon IG).',
+    tips: [
+      'Hook dans les 2 premières lignes (aperçu LinkedIn).',
+      'Paragraphes courts, 1 question ouverte en fin pour commentaires.',
+      'Peu de hashtags (1–3). Ton pro / bienveillant, pas « viral IG ».',
+    ],
   },
   tiktok: {
     label: 'TikTok',
@@ -131,28 +155,305 @@ export const SOCIAL_CM_GUIDELINES: Record<SocialNetwork, NetworkGuideline> = {
 
 export const CM_STRATEGY_NOTES = [
   'Prioriser la vidéo (Reels) pour croître — jamais une image Unsplash déguisée en Reel.',
-  'Carousels pour l’éducation Pilates (saves). Photos réelles pour Feed marque et WhatsApp.',
-  'IA editorial (Gemini → Pollinations) quand la bibliothèque est saturée ; Unsplash = dernier recours Feed uniquement.',
-  'Légendes adaptées au format (Reel court / Feed court / Carousel plus long). Facebook = court + communauté.',
-  'Format viral Reel : Claude Code + HyperFrames local (kit reel-monteur-fitmangas/) — parole naturelle, Whisper local, sous-titres blanc/contour + mot-clé terracotta.',
-  'CTA produit : dashboard desktop en carte flottante sur fond gris (style LMDM) — jamais screenshot mobile plein cadre coupé. Voir docs/cm-reels-strategy.md.',
-  'Audio : voix stable ~−16 dB ; jamais RNNoise si la voix s’affaiblit.',
+  'Facebook = miroir Instagram (même post). Pas de briefs Reels Facebook séparés.',
+  'WhatsApp = communauté déjà membre : teaser d’articles blog, pas d’acquisition.',
+  'LinkedIn = ton pro / bien-être au travail ; case « Aussi LinkedIn » pour adapter un post IG.',
+  'Carousels pour l’éducation Pilates (saves). Photos réelles Alejandra pour Feed identité.',
+  'Une idée-pilier / semaine (dos, stress, bassin, hanches, sommeil, confiance, énergie) — pas deux semaines de suite le même.',
+  'Cascade image : Gemini (payant) → fond de marque local → bibliothèque Alejandra. Jamais Pollinations. Unsplash = blog seulement.',
+  'Format viral Reel : Claude Code + HyperFrames local — parole naturelle, Whisper local, sous-titres blanc/contour + mot-clé terracotta.',
+  'CTA produit : dashboard desktop en carte flottante — jamais screenshot mobile plein cadre coupé.',
 ];
 
-/** Fallback si l’IA omet le brief Reel — aide-mémoire 3 idées + plan face cam. */
-export function fallbackReelBrief(hookTitle: string, title: string): { reelScript: string; shotList: string } {
-  const topic = (hookTitle || title || 'Sujet Pilates').trim();
+/**
+ * Piliers éditoriaux FitMangas — base de génération (problématiques femmes 30–55,
+ * Pilates/Barre doux, vie réelle : bureau, maison, stress, énergie).
+ * Pas une liste exhaustive : l’IA doit ROTATER, pas recycler posture/respiration.
+ */
+export const FITMANGAS_EDITORIAL_PILLARS = [
+  { id: 'energy', label: 'Énergie du quotidien', angle: 'Fatigue 15h, café en boucle, besoin d’un boost sans HIIT.' },
+  { id: 'stress', label: 'Stress & système nerveux', angle: 'Charge mentale, tension mâchoire/épaules, besoin de calme utile.' },
+  { id: 'desk', label: 'Corps au bureau', angle: 'Écran, nuque, hanches figées — gestes discrets au bureau.' },
+  { id: 'core', label: 'Centre & abdos doux', angle: 'Abdos sans crunch / sans mal de dos — sensation de maintien.' },
+  { id: 'hips', label: 'Hanches & mobilité', angle: 'Hanches raides après assise longue, marche plus légère.' },
+  { id: 'pelvic', label: 'Bassin & plancher', angle: 'Post-partum, stabilité, confiance dans le bas du corps (ton respectueux).' },
+  { id: 'sleep', label: 'Sommeil & récupération', angle: 'Corps qui ne décroche pas le soir, routine douce.' },
+  { id: 'confidence', label: 'Confiance & présence', angle: 'Se sentir droite, élégante, ancrée — sans promesse miracle.' },
+  { id: 'barre', label: 'Barre & jambes', angle: 'Jambes toniques, fessiers, sensation “allongée”.' },
+  { id: 'consistency', label: 'Constance douce', angle: '10–20 min, régularité > intensité, cours en visio FitMangas.' },
+  { id: 'pain_care', label: 'Douleurs du quotidien', angle: 'Mal de dos / nuque : prévention douce (pas diagnostic médical).' },
+  { id: 'community', label: 'Communauté & cours', angle: 'Ambiance live, progression, “je ne suis pas seule”.' },
+] as const;
+
+/** Fallback si l’IA omet le brief Reel — 3 idées + phrases parlables. */
+export const FACE_CAM_SHOT_LIST = [
+  '1) Face cam téléphone — parole naturelle (HD Normal SDR, pas HDR)',
+  '2) Rester face cam toute la durée (phase actuelle : AUCUN plan exercice filmé)',
+  '3) CTA oral doux : fitmangas.com / classes',
+].join('\n');
+
+export const FACE_CAM_SHOT_LIST_ES = [
+  '1) Face cam teléfono — habla natural (HD Normal SDR, no HDR)',
+  '2) Quedarte face cam todo el tiempo (fase actual: NINGÚN plano de ejercicio filmado)',
+  '3) CTA oral suave: fitmangas.com / clases',
+].join('\n');
+
+export function faceCamShotListForLocale(locale: SocialLocale = 'fr'): string {
+  return locale === 'es' ? FACE_CAM_SHOT_LIST_ES : FACE_CAM_SHOT_LIST;
+}
+
+const EXERCISE_TITLE_RE =
+  /\b(planche|plancha|crunch|squat|gainage|flexion|roulement|ouverture de bras|planche sur les genoux|respiration ventrale|torsion assise|respiración|apertura de brazos|báscula pélvica|bascule du bassin|puente de glúteos|el cien|the hundred|roll[- ]?up|dead ?bug|bird ?dog)\b/i;
+
+/** Détecte un titre “nom d’exercice” peu Instagrammable. */
+export function looksLikeExerciseTitle(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (EXERCISE_TITLE_RE.test(t) && !/[?!¿]/.test(t)) return true;
+  if (/^(la |le |les |el |los |las )?(planche|plancha|squat|crunch)\b/i.test(t)) return true;
+  return false;
+}
+
+/** Force le plan de tournage face cam (ignore les plans d’exercice inventés par l’IA). */
+export function enforceFaceCamShotList(raw: string, locale: SocialLocale = 'fr'): string {
+  const text = raw.trim();
+  const fallback = faceCamShotListForLocale(locale);
+  if (!text) return fallback;
+  const mentionsExercisePlan =
+    /plan\s*\d|exercice film|ejercicio film|b-?roll|plan large|plano amplio|démontr|demostr|ouverture de bras|apertura de brazos|flexion|planche|plancha|roulement d['’]épaules|mouvement filmé|movimiento filmado/i.test(
+      text,
+    );
+  const hasFaceCam = /face\s*cam/i.test(text);
+  if (mentionsExercisePlan || !hasFaceCam) return fallback;
+  return text.slice(0, 800);
+}
+
+/** Hook Reel Instagrammable (MAJUSCULES, max 8 mots, bénéfice). */
+export function polishInstagramHook(raw: string, fallbackTitle: string, locale: SocialLocale = 'fr'): string {
+  let h = (raw || '').trim().replace(/\s+/g, ' ');
+  const fallback = (fallbackTitle || '').trim();
+  if (!h || looksLikeExerciseTitle(h)) {
+    h = looksLikeExerciseTitle(fallback) ? '' : fallback;
+  }
+  if (!h) h = locale === 'es' ? '¿TU CUERPO TE HABLA?' : 'TON CORPS TE PARLE ?';
+  h = h.replace(/[🚀🧘💪🔥✨]/g, '').trim();
+  // Même règle que overlay : majuscules, phrase complète, jamais tronqué.
+  const polished = polishOverlayText(h, locale, 56);
+  return polished || (locale === 'es' ? '¿TU CUERPO TE HABLA?' : 'TON CORPS TE PARLE ?');
+}
+
+/**
+ * Titre carte : RECONNAISSANCE CONCRÈTE D’ABORD (scène vécue), reformulation claire ENSUITE.
+ * Jamais « X n’est pas Y » en ouverture sans scène. Accords féminins FR/ES.
+ */
+export function polishPostTitle(
+  raw: string,
+  hookTitle: string,
+  format?: SocialPostFormat,
+  locale: SocialLocale = 'fr',
+): string {
+  let t = (raw || '').trim().replace(/\s+/g, ' ');
+  t = t.replace(/\(\s*\d+\s*slides?\s*\)/gi, '').trim();
+  if (!t || looksLikeExerciseTitle(t) || titleFailsQualityGate(t)) {
+    const fromHook = (hookTitle || '').trim();
+    if (fromHook && !looksLikeExerciseTitle(fromHook) && !titleFailsQualityGate(fromHook)) {
+      t = fromHook.charAt(0) + fromHook.slice(1).toLowerCase();
+      if (!/[.!?…¿¡]$/.test(t)) t += locale === 'es' ? '?' : ' ?';
+    } else {
+      // Pas de filler — marqueur à revoir (l’UI lit titleNeedsReview)
+      t = locale === 'es' ? 'Título a revisar' : 'Titre à revoir';
+    }
+  }
+  if (format === 'carousel' && !/slide/i.test(t)) {
+    // le compte exact est ajouté après génération des images
+  }
+  return t.slice(0, 160);
+}
+
+const TITLE_BLACKLIST =
+  /\b(hurle|hurler|sauvage|guerri[eè]re|plume|fant[oô]me|inébranlable|rayonne|doux|douce|suave|d[eé]verrouille|prestance)\b|un geste qui|lib[eè]re ta|éveille ta|sculpte ta|active ton noyau|force invisible|en douceur|gesto suave|un gesto que/i;
+
+/** Ouverture « X n’est pas Y » sans scène concrète = rejet. */
+const OPENS_WITH_NEGATION_NO_SCENE =
+  /^(ce n['’]est pas|no es|eso no es|no es falta de|el problema no es)\b/i;
+
+const HAS_CONCRETE_SCENE =
+  /\b(tu |te |tes |ton |ta |tú |te |tus |cuando |quand |après |tras |à \d|las \d|heure|chaise|silla|bureau|lèves|levantas|redresses|journée|día sentada|corps|cuerpo)\b/i;
+
+export function titleFailsQualityGate(title: string): boolean {
+  const t = (title || '').trim();
+  if (!t || t.length < 12) return true;
+  if (TITLE_BLACKLIST.test(t)) return true;
+  if (/^(titre à revoir|título a revisar)/i.test(t)) return true;
+  // « X n’est pas Y » en ouverture sans aucune scène concrète dans le titre = rejet
+  if (OPENS_WITH_NEGATION_NO_SCENE.test(t) && !HAS_CONCRETE_SCENE.test(t)) return true;
+  return false;
+}
+
+/** Mots / fragments sur lesquels un overlay ne doit JAMAIS se terminer (troncature). */
+const OVERLAY_HANGING_END =
+  /(?:^|\s)(EN|DU|DE|DES|LE|LA|LES|UN|UNE|ET|OU|À|A|AU|AUX|POUR|PAR|SUR|DANS|AVEC|SANS|QUE|QUI|SI|TU|TE|TON|TA|TES|JE|ME|MON|MA|MES|ON|NOUS|VOUS|SE|SA|SON|SES|CE|CET|CETTE|CES|PAS|PLUS|D'|L'|N'|QU'|C'|Y|EL|LA|LOS|LAS|UN|UNA|POR|PARA|CON|SIN|QUE|SI|TU|TE|TU|SU|SUS|AL|DEL)$/i;
+
+export function isIncompleteOverlay(text: string): boolean {
+  const t = (text || '').trim();
+  if (!t) return true;
+  if (/[,;:–—\-…]\s*$/.test(t)) return true;
+  if (OVERLAY_HANGING_END.test(t)) return true;
+  return false;
+}
+
+/**
+ * Overlay / hook sur image : phrase autonome, MAJUSCULES, courte et COMPLÈTE.
+ * JAMAIS une troncature du titre long (ni coupe au milieu d’un mot, ni sur une préposition).
+ * Si trop long → on raccourcit par mots entiers jusqu’à une fin valide ; pas de slice aveugle.
+ */
+export function polishOverlayText(raw: string, locale: SocialLocale = 'fr', max = 56): string {
+  let t = (raw || '').trim().replace(/\s+/g, ' ');
+  if (!t) return '';
+
+  // Une seule proposition (pas le titre long multi-phrases)
+  t = (t.split(/[.!?|\n]/)[0] || t).trim();
+  t = t.replace(/[?¿!¡]+$/g, '').trim();
+  const loc = locale === 'es' ? 'es-ES' : 'fr-FR';
+  t = t.toLocaleUpperCase(loc);
+
+  if (t.length <= max && !isIncompleteOverlay(t)) return t;
+
+  const words = t.split(/\s+/).filter(Boolean);
+  for (let n = words.length; n >= 2; n -= 1) {
+    const candidate = words.slice(0, n).join(' ');
+    if (candidate.length <= max && !isIncompleteOverlay(candidate)) return candidate;
+  }
+
+  // Dernier recours : 3–5 mots forts, sans fin pendante (mieux qu’une coupe « …en »)
+  for (let n = Math.min(5, words.length); n >= 2; n -= 1) {
+    const candidate = words.slice(0, n).join(' ');
+    if (!isIncompleteOverlay(candidate)) return candidate;
+  }
+  return words.slice(0, 3).join(' ');
+}
+
+/** Few-shot titres bankables (FR) — reconnaissance concrète d’abord. */
+export const TITLE_FEW_SHOT_FR = [
+  'Tu te lèves de ta chaise et tes hanches sont raides ? Elles ne sont pas vieilles, elles sont restées pliées 8h.',
+  'Ce coup de barre de 15h ? Ce n’est pas le café qui te manque, c’est ta respiration coincée depuis le déjeuner.',
+  'Tes hanches craquent quand tu te lèves ? Ce n’est pas l’usure, c’est la position d’hier.',
+  'Tu te redresses dès qu’on te regarde, puis tu t’avachis. Se tenir droite ne devrait pas demander d’effort.',
+  'Après une journée assise, ton bassin ne bouge plus. Ce n’est pas un manque de souplesse, c’est un manque de mouvement.',
+  'Ce n’est pas de la fatigue. C’est ton corps qui n’a jamais reçu le signal de relâcher.',
+] as const;
+
+/** Few-shot titres bankables (ES) — misma regla. */
+export const TITLE_FEW_SHOT_ES = [
+  'Te levantas de la silla y tus caderas están rígidas. No están viejas: llevan 8h dobladas.',
+  '¿Ese bajón de las 15h? No es el café que te falta: es tu respiración trabada desde la comida.',
+  '¿Tus caderas crujen al levantarte? No es el desgaste: es la postura de ayer.',
+  'Te enderezas en cuanto te miran y luego te encoges. Mantenerte erecta no debería costar esfuerzo.',
+  'Tras un día sentada, tu pelvis ya no se mueve. No es falta de flexibilidad: es falta de movimiento.',
+  'No es cansancio. Es tu cuerpo que nunca recibió la señal de soltar.',
+] as const;
+
+export function withCarouselSlideCount(title: string, slideCount: number): string {
+  const base = title.replace(/\(\s*\d+\s*slides?\s*\)/gi, '').trim();
+  if (slideCount <= 0) return base.slice(0, 120);
+  return `${base} (${slideCount} slides)`.slice(0, 120);
+}
+
+export function fallbackReelBrief(
+  hookTitle: string,
+  title: string,
+  locale: SocialLocale = 'fr',
+): { reelScript: string; shotList: string } {
+  const topic = (hookTitle || title || (locale === 'es' ? 'Tema Pilates' : 'Sujet Pilates')).trim();
+  if (locale === 'es') {
+    return {
+      reelScript: [
+        'IDEAS:',
+        `1) Gancho ligado a: ${topic}`,
+        '2) Un error frecuente + la sensación / gesto clave (1 sola idea clara) — EXPLICAR face cam, no demostrar en plano ejercicio',
+        '3) Invitación suave FitMangas / fitmangas.com',
+        '',
+        'BRIEF (decir con naturalidad, no leer palabra por palabra):',
+        `« ¿Te suena esto: ${topic.toLowerCase()}… »`,
+        '« Esto es lo que cambio en 20 segundos — sin forzar. »',
+        '« Si quieres profundizar con suavidad, únete a una clase en fitmangas.com. »',
+      ].join('\n'),
+      shotList: FACE_CAM_SHOT_LIST_ES,
+    };
+  }
   return {
     reelScript: [
-      `1) Accroche : ${topic}`,
-      '2) Erreur fréquente + geste / souffle clé (1 idée claire)',
-      '3) Invitation FitMangas / fitmangas.com',
+      'IDÉES:',
+      `1) Accroche liée à : ${topic}`,
+      '2) Une erreur fréquente + la sensation / geste clé (1 seule idée claire) — à EXPLIQUER face cam, pas à démontrer en plan exercice',
+      '3) Invitation douce FitMangas / fitmangas.com',
+      '',
+      'BRIEF (à dire naturellement, pas à lire mot à mot):',
+      `« Tu reconnais ça : ${topic.toLowerCase()}… »`,
+      '« Voici ce que je change en 20 secondes — sans forcer. »',
+      '« Si tu veux creuser en douceur, rejoins une classe sur fitmangas.com. »',
     ].join('\n'),
-    shotList: [
-      '1) Face cam téléphone — parole naturelle (HD Normal, pas HDR)',
-      '2) Rester face cam (phase actuelle : pas de plan exercice filmé)',
-      '3) CTA oral : fitmangas.com / classes',
-    ].join('\n'),
+    shotList: FACE_CAM_SHOT_LIST,
+  };
+}
+
+export function statusLabelForPost(status: string, format: SocialPostFormat): string {
+  if (status === 'idea') {
+    return format === 'reel' ? 'Idée — à filmer' : 'Idée — à préparer';
+  }
+  if (status === 'ready') {
+    return format === 'reel' ? 'Prêt — MP4 OK' : 'Prêt — visuel OK';
+  }
+  if (status === 'scheduled') return 'Programmé — en file';
+  if (status === 'published') return 'Publié';
+  if (status === 'skipped') return 'Ignoré';
+  return status;
+}
+
+export function statusOptionsForFormat(format: SocialPostFormat): { value: string; label: string }[] {
+  return [
+    {
+      value: 'idea',
+      label: format === 'reel' ? 'Idée — à filmer' : 'Idée — à préparer',
+    },
+    {
+      value: 'ready',
+      label: format === 'reel' ? 'Prêt — MP4 OK' : 'Prêt — visuel OK',
+    },
+    { value: 'scheduled', label: 'Programmé — en file' },
+    { value: 'published', label: 'Publié (manuel)' },
+    { value: 'skipped', label: 'Ignoré' },
+  ];
+}
+
+/** Adapte un post IG/autre vers une légende LinkedIn (sans appel IA). */
+export function adaptCaptionToLinkedIn(source: {
+  title: string;
+  caption: string;
+  cta: string;
+  hookTitle?: string;
+}): { title: string; caption: string; cta: string; hashtags: string[] } {
+  const hook = (source.hookTitle || source.title || '').trim();
+  const body = source.caption.replace(/#\w+/g, '').trim();
+  const caption = [
+    hook ? `${hook.charAt(0)}${hook.slice(1).toLowerCase()}` : source.title,
+    '',
+    body,
+    '',
+    'Dans mon quotidien de coach Pilates / Barre en visio, je vois beaucoup de femmes coincées entre charge mentale et corps tendu.',
+    'Le Pilates doux n’est pas une mode : c’est un outil pour tenir la journée sans s’épuiser.',
+    '',
+    'Et toi — qu’est-ce qui te fatigue le plus en ce moment : le dos, l’énergie, ou la tête qui n’arrête pas ?',
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, 1200);
+
+  return {
+    title: source.title.slice(0, 120),
+    caption,
+    cta: source.cta || 'Découvrir FitMangas : fitmangas.com',
+    hashtags: ['Pilates', 'BienEtreAuTravail'],
   };
 }
 
@@ -165,10 +466,18 @@ export function analyzeCaptionForPost(
   const g = SOCIAL_CM_GUIDELINES[network];
   const band =
     network === 'facebook'
-      ? { min: 30, idealMin: 40, idealMax: 120, max: 300, hint: 'Facebook : viser 40–80 car. pour l’engagement.' }
+      ? { min: 30, idealMin: 40, idealMax: 180, max: 500, hint: 'Facebook = miroir IG : légende IG OK.' }
       : network === 'whatsapp'
         ? CAPTION_BY_FORMAT.text
-        : CAPTION_BY_FORMAT[format] ?? CAPTION_BY_FORMAT.feed;
+        : network === 'linkedin'
+          ? {
+              min: 200,
+              idealMin: 400,
+              idealMax: 900,
+              max: 1300,
+              hint: 'LinkedIn : hook + 2–4 courts paragraphes + question ouverte.',
+            }
+          : CAPTION_BY_FORMAT[format] ?? CAPTION_BY_FORMAT.feed;
 
   const len = caption.trim().length;
   const warnings: string[] = [];

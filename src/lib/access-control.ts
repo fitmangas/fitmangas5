@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { canUseAdminViewSwitch, isListedAdminEmail } from '@/lib/auth/admin';
-import { DEMO_SIMULATED_CUSTOMER_TIER, getDemoClientMode } from '@/lib/demo-client-mode';
+import { checkIsAdmin, isListedAdminEmail } from '@/lib/auth/admin';
 import type { AccessPolicy, AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse } from '@/lib/domain/calendar-types';
 
 export type { AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse };
+
+/** Tier simulé pour qu’un admin voie les cours membres (pas un mode « vue client »). */
+const ADMIN_MEMBER_ACCESS_TIER: CustomerTier = 'online_group_monthly';
 
 function statusLabelFromAccess(accessType: AccessType): SmartCourse['status_label'] {
   if (accessType === 'full') return 'Accès complet';
@@ -57,8 +59,7 @@ export async function canBypassClientRestrictionsForAdmin(userId: string): Promi
   } = await supabase.auth.getUser();
   if (!user || user.id !== safeUserId) return false;
 
-  const gate = await canUseAdminViewSwitch(supabase, user);
-  return gate.canSwitch;
+  return (await checkIsAdmin(supabase, user)).isAdmin;
 }
 
 export type UserLivePrivileges = {
@@ -68,9 +69,7 @@ export type UserLivePrivileges = {
   profileRole: string | null;
 };
 
-/**
- * Privilèges réels (sans mode démo). Pour l’UI admin vs simulation client.
- */
+/** Privilèges live réels (admin + tier). */
 export async function getLivePrivilegesTruthful(userId: string): Promise<UserLivePrivileges> {
   const safeUserId = sanitizeUuid(userId);
   const supabase = await createClient();
@@ -96,18 +95,9 @@ export async function getLivePrivilegesTruthful(userId: string): Promise<UserLiv
 
 /**
  * Source unique pour les privilèges live (rôle admin + tier utilisateur).
- * En mode démo (admin + cookie), ressemble à un élève abonné : pas de flag admin.
  */
 export async function getUserLivePrivileges(userId: string): Promise<UserLivePrivileges> {
-  const truth = await getLivePrivilegesTruthful(userId);
-  if ((await getDemoClientMode()) && (await canBypassClientRestrictionsForAdmin(userId))) {
-    return {
-      tier: DEMO_SIMULATED_CUSTOMER_TIER,
-      isAdmin: false,
-      profileRole: truth.profileRole,
-    };
-  }
-  return truth;
+  return getLivePrivilegesTruthful(userId);
 }
 
 function sanitizeUuid(value: string): string {
@@ -121,7 +111,7 @@ function sanitizeUuid(value: string): string {
 
 export async function getUserTier(userId: string): Promise<CustomerTier | null> {
   if (await canBypassClientRestrictionsForAdmin(userId)) {
-    return DEMO_SIMULATED_CUSTOMER_TIER;
+    return ADMIN_MEMBER_ACCESS_TIER;
   }
   const supabase = await createClient();
   const safeUserId = sanitizeUuid(userId);

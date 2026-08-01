@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-const FALLBACK = '/client-contact-photo.png';
+const FALLBACK = '/client-contact-photo.jpg';
 
 type Props = {
   avatarUrl?: string | null;

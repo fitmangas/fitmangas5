@@ -227,3 +227,138 @@ commit;
 ```
 
 Ensuite : filtrer `.eq('is_hidden', false)` partout côté client, et remplacer le workaround `is_ready` pour le masquage volontaire.
+
+## 8. Table `post_metrics` (boucle performance CM) — NON APPLIQUÉE
+
+Contexte : les posts CM stockent déjà `metaExternalId` / `facebookExternalId`. Sans table de métriques, la génération reste aveugle. Le job `social-insights-sync` est prêt mais désactivé (`SOCIAL_INSIGHTS_SYNC_ENABLED=false`) tant que le token Meta n’est pas renouvelé.
+
+**Ne pas appliquer sans GO écrit.**
+
+```sql
+begin;
+
+create table if not exists public.post_metrics (
+  id uuid primary key default gen_random_uuid(),
+  post_id text not null,
+  ig_media_id text,
+  permalink text,
+  published_at timestamptz,
+  reach integer,
+  saved integer,
+  shares integer,
+  views integer,
+  avg_watch_time numeric,
+  fetched_at timestamptz not null default now(),
+  locale text,
+  format text,
+  pilier text,
+  hook text,
+  image_source text
+);
+
+create unique index if not exists post_metrics_post_fetched_uidx
+  on public.post_metrics (post_id, fetched_at);
+
+create index if not exists post_metrics_pilier_format_idx
+  on public.post_metrics (pilier, format);
+
+alter table public.post_metrics enable row level security;
+
+revoke all on public.post_metrics from anon, authenticated;
+grant all on public.post_metrics to service_role;
+
+comment on table public.post_metrics is
+  'Snapshots IG Insights liés aux posts CM (admin_settings social_comms_board).';
+
+commit;
+```
+
+**Minimum stocké si on reste en JSON** (`admin_settings.social_post_metrics_snapshot`) sans migration : mêmes champs, sans historique SQL.
+
+
+---
+
+## CM v4 — Observabilité notifications / emails (NE PAS APPLIQUER)
+
+**Contexte :** la carte dashboard « Notifications & emails » s’appuie aujourd’hui sur `notification_log` + `user_notifications`. Manques connus (affichés explicitement dans l’UI, sans faux zéros) :
+- Newsletters / offres Resend hors dispatcher → **non loguées**
+- Pas de canal dédié `in_app` dans `notification_log.channel` (aujourd’hui `log` + `_delivered`)
+- Pas de vue matérialisée pour agrégats mois / type
+
+### Proposition A — étendre `notification_log.channel`
+
+```sql
+begin;
+
+alter table public.notification_log
+  drop constraint if exists notification_log_channel_check;
+
+alter table public.notification_log
+  add constraint notification_log_channel_check
+  check (channel in ('email', 'push', 'whatsapp', 'digest', 'log', 'in_app'));
+
+comment on column public.notification_log.channel is
+  'email | push | whatsapp | digest | log | in_app — in_app = cloche cliente';
+
+commit;
+```
+
+Puis adapter le dispatcher pour écrire `channel = 'in_app'` (au lieu de `log` + `_delivered`).
+
+### Proposition B — table d’agrégats (optionnelle, pour perf dashboard)
+
+```sql
+begin;
+
+create table if not exists public.notification_send_stats_daily (
+  day date not null,
+  channel text not null,
+  category text not null,
+  send_count integer not null default 0,
+  last_sent_at timestamptz,
+  primary key (day, channel, category)
+);
+
+alter table public.notification_send_stats_daily enable row level security;
+revoke all on public.notification_send_stats_daily from anon, authenticated;
+grant all on public.notification_send_stats_daily to service_role;
+
+comment on table public.notification_send_stats_daily is
+  'Agrégats journaliers pour la carte admin Notifications & emails.';
+
+commit;
+```
+
+### Proposition C — log newsletter Resend (RECOMMANDÉE pour total complet)
+
+> **STATUT : APPLIQUÉE (GO Kevin 2026-08-01)** — migration `20260801120000_notification_log_newsletter_index.sql` seule + code log Resend dans `newsletter-double-optin.ts`.
+
+**Problème simple :** les emails newsletter (confirmation d’inscription + nouvel article) partaient via Resend dans `newsletter-double-optin.ts` **sans** passer par le dispatcher. Donc ils n’apparaissaient **pas** dans `notification_log` → le total dashboard était partiel.
+
+**Choix retenu :** réutiliser la table **existante** `notification_log` (pas de nouvelle table). Après chaque envoi Resend réussi, le code écrit une ligne avec `event_type` `newsletter.confirm` / `newsletter.article_published` et `channel = 'email'`.
+
+**Ce que ça touche :**
+- Table **déjà existante** `public.notification_log` — aucune colonne ajoutée.
+- Index partiel pour les requêtes admin.
+
+```sql
+-- CM v5 — Proposition C (appliquée)
+begin;
+
+create index if not exists notification_log_newsletter_event_created_idx
+  on public.notification_log (created_at desc)
+  where event_type like 'newsletter.%';
+
+comment on index public.notification_log_newsletter_event_created_idx is
+  'CM v5 — filtre rapide des envois newsletter.* pour /admin/notifications';
+
+commit;
+```
+
+**Côté code :** dans `src/lib/blog/newsletter-double-optin.ts`, après un `sendEmailViaResend` OK, `insert` dans `notification_log` :
+- `channel = 'email'`
+- `event_type = 'newsletter.confirm'` ou `'newsletter.article_published'`
+- `idempotency_key` unique (`newsletter.confirm:{email}:{token}` / `newsletter.article_published:{articleId}:{email}`)
+- pas de colonne `status` (schéma actuel : pas de champ status)
+
+**Alternative (non retenue) :** table dédiée `newsletter_send_log`.

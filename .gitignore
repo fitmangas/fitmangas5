@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-dev/
 build/
 dist/
 coverage/
@@ -23,3 +24,6 @@ supabase/.temp/
 
 # Script local OAuth GA (ne pas versionner)
 scripts/add-sa-to-ga.mjs
+
+# Originaux photo CM (hors déploiement Vercel)
+library-originals/

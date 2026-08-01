@@ -11,7 +11,6 @@ import {
   type UserLivePrivileges,
 } from '@/lib/access-control';
 import { checkIsAdmin } from '@/lib/auth/admin';
-import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { isCourseLanguage } from '@/lib/course-language';
 import { resolveLiveBackLink } from '@/lib/live/live-back-url';
@@ -98,13 +97,11 @@ export default async function LiveCoursePage({
     .is('read_at', null);
 
   const realAdmin = (await checkIsAdmin(supabase, user)).isAdmin;
-  const globalDemo = (await getDemoClientMode()) && realAdmin;
-  /** Aperçu élève : ?preview=client explicite, ou cookie Vue Client admin. */
-  const effectiveStudentPreview = studentPreview || globalDemo;
+  /** `?preview=client` = rôle Jitsi participant uniquement (pas une bascule d’espace). */
   const backLink = resolveLiveBackLink({
     from: fromParam,
     realAdmin,
-    studentPreviewFromUrl: effectiveStudentPreview,
+    studentPreviewFromUrl: studentPreview,
   });
 
   let allowed = false;
@@ -114,7 +111,7 @@ export default async function LiveCoursePage({
     livePriv = await getUserLivePrivileges(user.id);
     const accessFull = (await getAccessType(user.id, idParsed.data)) === 'full';
 
-    if (effectiveStudentPreview) {
+    if (studentPreview) {
       allowed = accessFull || livePriv.isAdmin;
       isModerator = false;
     } else {
@@ -157,7 +154,7 @@ export default async function LiveCoursePage({
   // rejoindre le live encore ouvert. Marge de grâce = voir LIVE_TO_REPLAY_GRACE_MS.
   const courseIsPastForReplay = isCoursePastForReplay(courseEndedAt);
 
-  const useAdminReplayFetch = realAdmin && !effectiveStudentPreview;
+  const useAdminReplayFetch = realAdmin && !studentPreview;
 
   const { data: replay } = useAdminReplayFetch
     ? await createAdminClient()
@@ -255,9 +252,9 @@ export default async function LiveCoursePage({
         </div>
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-8">
-        {effectiveStudentPreview ? (
+        {studentPreview ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 shadow-sm">
-            <strong className="font-semibold">{globalDemo ? 'Mode démo · ' : ''}Aperçu élève</strong> — Rendu comme un
+            <strong className="font-semibold">Aperçu élève</strong> — Rendu comme un
             élève avec accès complet ({!courseIsPast ? 'live / Jitsi' : 'replay'}). Pas de droits animateur.
           </div>
         ) : null}
@@ -310,7 +307,7 @@ export default async function LiveCoursePage({
               displayName={displayName}
               email={emailForJitsi}
               isModerator={isModerator}
-              studentPreview={effectiveStudentPreview}
+              studentPreview={studentPreview}
             />
             {spotifyUrl ? (
               <p className="text-sm text-brand-ink/70">

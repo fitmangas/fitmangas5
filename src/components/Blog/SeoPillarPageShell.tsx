@@ -10,16 +10,16 @@ type Props = {
 export function SeoPillarPageShell({ page, relatedPages }: Props) {
   const heroImage =
     page.slug === 'pilates-debutant-maison'
-      ? '/Photo Alejandra exercice avec anneau.PNG'
+      ? '/Photo Alejandra exercice avec anneau.JPG'
       : page.slug === 'cours-pilates-visio'
         ? '/Photo Alejandra pose pour photographe.JPG'
         : '/Photo Alejandra exercice sur la plage.JPG';
   const appPreviewImage =
     page.slug === 'cours-pilates-visio'
-      ? '/espace cliente replays.png'
+      ? '/espace cliente replays.jpg'
       : page.slug === 'pilates-debutant-maison'
         ? '/Espace client sur Mobile Dashboard.jpg'
-        : '/espace cliente dashboard.png';
+        : '/espace cliente dashboard.jpg';
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">

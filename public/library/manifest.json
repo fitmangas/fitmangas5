@@ -1,0 +1,1214 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-27T04:39:16.643Z",
+  "themeMapping": {
+    "dos": "pilates-mat",
+    "stress": "lifestyle-coulisses",
+    "bassin": "pilates-mat",
+    "hanches": "barre",
+    "sommeil": "lifestyle-coulisses",
+    "confiance": "portraits",
+    "energie": "renfo-core",
+    "identite": "portraits",
+    "preuve": "coaching-visio",
+    "cta": "produit-captures",
+    "ambiance": "ambiance-studio"
+  },
+  "antiRepeatN": 12,
+  "folders": {
+    "portraits": {
+      "theme": "portraits",
+      "target": 12,
+      "count": 17,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/portraits/portrait-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1334x2000",
+          "bytes": 230624
+        },
+        {
+          "file": "library/portraits/portrait-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 70978
+        },
+        {
+          "file": "library/portraits/portrait-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 82352
+        },
+        {
+          "file": "library/portraits/portrait-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 55324
+        },
+        {
+          "file": "library/portraits/portrait-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 87582
+        },
+        {
+          "file": "library/portraits/portrait-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 82258
+        },
+        {
+          "file": "library/portraits/portrait-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1272x2000",
+          "bytes": 67812
+        },
+        {
+          "file": "library/portraits/portrait-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 80596
+        },
+        {
+          "file": "library/portraits/portrait-09.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 176936
+        },
+        {
+          "file": "library/portraits/portrait-10.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 121902
+        },
+        {
+          "file": "library/portraits/portrait-11.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1242x1846",
+          "bytes": 89154
+        },
+        {
+          "file": "library/portraits/portrait-12.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 200574
+        },
+        {
+          "file": "library/portraits/portrait-13.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 385868
+        },
+        {
+          "file": "library/portraits/portrait-14.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1331x2000",
+          "bytes": 74960
+        },
+        {
+          "file": "library/portraits/portrait-15.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1497x2000",
+          "bytes": 74852
+        },
+        {
+          "file": "library/portraits/portrait-16.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 63630
+        },
+        {
+          "file": "library/portraits/portrait-17.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 64372
+        }
+      ]
+    },
+    "pilates-mat": {
+      "theme": "pilates-mat",
+      "target": 12,
+      "count": 27,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/pilates-mat/pilates-mat-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 142058
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 70908
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 68566
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 70836
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 83874
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 55080
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 63056
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 66992
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-09.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 119248
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-10.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1401",
+          "bytes": 140430
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-11.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 73480
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-12.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 105204
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-13.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 101706
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-14.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1234",
+          "bytes": 96678
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-15.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 100940
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-16.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 95438
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-17.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 115448
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-18.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "633x1125",
+          "bytes": 122528
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-19.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 308632
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-20.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 313778
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-21.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1392x2000",
+          "bytes": 509028
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-22.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 428184
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-23.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 291130
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-24.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 314204
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-25.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 352216
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-26.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 111740
+        },
+        {
+          "file": "library/pilates-mat/pilates-mat-27.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 293312
+        }
+      ]
+    },
+    "barre": {
+      "theme": "barre",
+      "target": 8,
+      "count": 17,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/barre/barre-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 76978
+        },
+        {
+          "file": "library/barre/barre-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 86556
+        },
+        {
+          "file": "library/barre/barre-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 80932
+        },
+        {
+          "file": "library/barre/barre-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 77876
+        },
+        {
+          "file": "library/barre/barre-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1295x2000",
+          "bytes": 82900
+        },
+        {
+          "file": "library/barre/barre-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 62000
+        },
+        {
+          "file": "library/barre/barre-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 62322
+        },
+        {
+          "file": "library/barre/barre-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 35456
+        },
+        {
+          "file": "library/barre/barre-09.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1373x2000",
+          "bytes": 67022
+        },
+        {
+          "file": "library/barre/barre-10.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 164052
+        },
+        {
+          "file": "library/barre/barre-11.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 431678
+        },
+        {
+          "file": "library/barre/barre-12.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 419420
+        },
+        {
+          "file": "library/barre/barre-13.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 452108
+        },
+        {
+          "file": "library/barre/barre-14.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 454398
+        },
+        {
+          "file": "library/barre/barre-15.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 362596
+        },
+        {
+          "file": "library/barre/barre-16.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 352746
+        },
+        {
+          "file": "library/barre/barre-17.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 154506
+        }
+      ]
+    },
+    "renfo-core": {
+      "theme": "renfo-core",
+      "target": 8,
+      "count": 18,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/renfo-core/renfo-core-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 93910
+        },
+        {
+          "file": "library/renfo-core/renfo-core-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 84674
+        },
+        {
+          "file": "library/renfo-core/renfo-core-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 121286
+        },
+        {
+          "file": "library/renfo-core/renfo-core-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 173878
+        },
+        {
+          "file": "library/renfo-core/renfo-core-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 84108
+        },
+        {
+          "file": "library/renfo-core/renfo-core-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 89514
+        },
+        {
+          "file": "library/renfo-core/renfo-core-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 163744
+        },
+        {
+          "file": "library/renfo-core/renfo-core-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 75014
+        },
+        {
+          "file": "library/renfo-core/renfo-core-09.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 127924
+        },
+        {
+          "file": "library/renfo-core/renfo-core-10.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1500x2000",
+          "bytes": 293860
+        },
+        {
+          "file": "library/renfo-core/renfo-core-11.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1500x2000",
+          "bytes": 259708
+        },
+        {
+          "file": "library/renfo-core/renfo-core-12.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 304198
+        },
+        {
+          "file": "library/renfo-core/renfo-core-13.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1334x2000",
+          "bytes": 474512
+        },
+        {
+          "file": "library/renfo-core/renfo-core-14.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1334x2000",
+          "bytes": 458714
+        },
+        {
+          "file": "library/renfo-core/renfo-core-15.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1333",
+          "bytes": 491328
+        },
+        {
+          "file": "library/renfo-core/renfo-core-16.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1333",
+          "bytes": 485394
+        },
+        {
+          "file": "library/renfo-core/renfo-core-17.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 224688
+        },
+        {
+          "file": "library/renfo-core/renfo-core-18.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 149656
+        }
+      ]
+    },
+    "coaching-visio": {
+      "theme": "coaching-visio",
+      "target": 6,
+      "count": 9,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/coaching-visio/coaching-visio-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 118080
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1284",
+          "bytes": 133008
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 279468
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1292",
+          "bytes": 142536
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1333x2000",
+          "bytes": 110808
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 109338
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 106302
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 90412
+        },
+        {
+          "file": "library/coaching-visio/coaching-visio-09.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1333",
+          "bytes": 115644
+        }
+      ]
+    },
+    "lifestyle-coulisses": {
+      "theme": "lifestyle-coulisses",
+      "target": 6,
+      "count": 14,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 208446
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 132548
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1500x2000",
+          "bytes": 152194
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 29606
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 333314
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 411516
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-12.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 211902
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-13.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1500x2000",
+          "bytes": 218140
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-14.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 115154
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-15.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 313006
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-16.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 152396
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-17.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 143762
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-18.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 312308
+        },
+        {
+          "file": "library/lifestyle-coulisses/lifestyle-19.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1500x2000",
+          "bytes": 171056
+        }
+      ]
+    },
+    "ambiance-studio": {
+      "theme": "ambiance-studio",
+      "target": 5,
+      "count": 5,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/ambiance-studio/ambiance-studio-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 357008
+        },
+        {
+          "file": "library/ambiance-studio/ambiance-studio-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 549040
+        },
+        {
+          "file": "library/ambiance-studio/ambiance-studio-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 114498
+        },
+        {
+          "file": "library/ambiance-studio/ambiance-studio-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 130718
+        },
+        {
+          "file": "library/ambiance-studio/ambiance-studio-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1125x1500",
+          "bytes": 101798
+        }
+      ]
+    },
+    "produit-captures": {
+      "theme": "produit-captures",
+      "target": 3,
+      "count": 6,
+      "missing": 0,
+      "files": [
+        {
+          "file": "library/produit-captures/dashboard-desktop.webp",
+          "ratios": {
+            "web": true,
+            "4x5": false,
+            "1x1": false
+          },
+          "dims": "1800x985",
+          "bytes": 42418
+        },
+        {
+          "file": "library/produit-captures/produit-blog-04.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1100",
+          "bytes": 75352
+        },
+        {
+          "file": "library/produit-captures/produit-boutique-05.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1097",
+          "bytes": 59952
+        },
+        {
+          "file": "library/produit-captures/produit-capture-03.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1093",
+          "bytes": 69598
+        },
+        {
+          "file": "library/produit-captures/produit-dashboard-02.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "2000x1095",
+          "bytes": 64226
+        },
+        {
+          "file": "library/produit-captures/produit-progression-06.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "1999x1097",
+          "bytes": 69322
+        }
+      ]
+    }
+  }
+}

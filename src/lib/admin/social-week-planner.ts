@@ -12,7 +12,7 @@ export type WeekSlot = {
   dayOffset: number;
   slotIndex: number;
   /** Feed photo marque vs éducatif (légende) */
-  feedIntent?: 'brand' | 'edu';
+  feedIntent?: 'brand' | 'edu' | 'blog_teaser' | 'thought_leadership';
 };
 
 function pad(n: number) {
@@ -31,8 +31,9 @@ export function plannedAtParis(network: SocialNetwork, dayOffset: number, slotIn
 
 /**
  * Plan CM objectif :
- * IG ≈ 5 Reels + 1–2 carousels + 1–2 Feed photo (~60/25/15)
- * FB court + communauté ; WhatsApp photos réelles
+ * IG ≈ 5 Reels + 1 carousel + 1 Feed (~60/25/15) — Facebook = miroir IG (pas de slots FB)
+ * WhatsApp = teasers articles communauté
+ * LinkedIn = posts pro / thought leadership
  */
 export function buildWeeklySlots(networks: SocialNetwork[]): WeekSlot[] {
   const slots: WeekSlot[] = [];
@@ -54,6 +55,7 @@ export function buildWeeklySlots(networks: SocialNetwork[]): WeekSlot[] {
       mediaKind: 'carousel',
       dayOffset: 3,
       slotIndex: slotIndex++,
+      feedIntent: 'edu',
     });
     slots.push({
       network: 'instagram',
@@ -65,35 +67,30 @@ export function buildWeeklySlots(networks: SocialNetwork[]): WeekSlot[] {
     });
   }
 
-  if (networks.includes('facebook')) {
-    slots.push({
-      network: 'facebook',
-      format: 'reel',
-      mediaKind: 'video_brief',
-      dayOffset: 1,
-      slotIndex: slotIndex++,
-    });
-    for (const day of [3, 5]) {
-      slots.push({
-        network: 'facebook',
-        format: 'feed',
-        mediaKind: 'photo',
-        dayOffset: day,
-        slotIndex: slotIndex++,
-        feedIntent: 'brand',
-      });
-    }
-  }
+  // Facebook n'a plus de slots dédiés : miroir Instagram (alsoPublishFacebook).
 
   if (networks.includes('whatsapp')) {
     for (const day of [0, 2, 4]) {
       slots.push({
         network: 'whatsapp',
+        format: 'text',
+        mediaKind: 'photo',
+        dayOffset: day,
+        slotIndex: slotIndex++,
+        feedIntent: 'blog_teaser',
+      });
+    }
+  }
+
+  if (networks.includes('linkedin')) {
+    for (const day of [1, 3, 5]) {
+      slots.push({
+        network: 'linkedin',
         format: 'feed',
         mediaKind: 'photo',
         dayOffset: day,
         slotIndex: slotIndex++,
-        feedIntent: 'brand',
+        feedIntent: 'thought_leadership',
       });
     }
   }
@@ -120,29 +117,36 @@ export function weekPlanSummary(networks: SocialNetwork[]): string {
   const slots = buildWeeklySlots(networks);
   const byNetwork = slots.reduce(
     (acc, slot) => {
-      acc[slot.network] = acc[slot.network] ?? { total: 0, reels: 0, feed: 0, carousel: 0 };
+      acc[slot.network] = acc[slot.network] ?? { total: 0, reels: 0, feed: 0, carousel: 0, text: 0 };
       acc[slot.network].total += 1;
       if (slot.format === 'reel') acc[slot.network].reels += 1;
       if (slot.format === 'feed') acc[slot.network].feed += 1;
       if (slot.format === 'carousel') acc[slot.network].carousel += 1;
+      if (slot.format === 'text') acc[slot.network].text += 1;
       return acc;
     },
-    {} as Record<SocialNetwork, { total: number; reels: number; feed: number; carousel: number }>,
+    {} as Record<SocialNetwork, { total: number; reels: number; feed: number; carousel: number; text: number }>,
   );
 
-  return Object.entries(byNetwork)
-    .map(([network, stats]) => {
-      const label = SOCIAL_CM_GUIDELINES[network as SocialNetwork].label;
-      const parts = [`${stats.total}`];
-      if (stats.reels) parts.push(`${stats.reels} Reels`);
-      if (stats.carousel) parts.push(`${stats.carousel} carousel`);
-      if (stats.feed) parts.push(`${stats.feed} feed`);
-      return `${label}: ${parts.join(', ')}`;
-    })
-    .join(' · ');
+  const parts = Object.entries(byNetwork).map(([network, stats]) => {
+    const label = SOCIAL_CM_GUIDELINES[network as SocialNetwork].label;
+    const bits = [`${stats.total}`];
+    if (stats.reels) bits.push(`${stats.reels} Reels`);
+    if (stats.carousel) bits.push(`${stats.carousel} carousel`);
+    if (stats.feed) bits.push(`${stats.feed} feed`);
+    if (stats.text) bits.push(`${stats.text} msgs`);
+    return `${label}: ${bits.join(', ')}`;
+  });
+
+  if (networks.includes('instagram') || networks.includes('facebook')) {
+    parts.push('FB = miroir IG');
+  }
+
+  return parts.join(' · ');
 }
 
-export function resolveGenerationNetworks(filter: SocialNetwork | 'all'): SocialNetwork[] {
-  if (filter === 'all') return ['instagram', 'whatsapp', 'facebook'];
+export function resolveGenerationNetworks(filter: SocialNetwork): SocialNetwork[] {
+  // Facebook = miroir Instagram : on génère les posts IG (alsoPublishFacebook).
+  if (filter === 'facebook') return ['instagram'];
   return [filter];
 }

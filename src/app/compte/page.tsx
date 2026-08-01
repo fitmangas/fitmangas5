@@ -143,7 +143,7 @@ export default async function ComptePage({
     supabase.from('blog_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
   ]);
 
-  const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.png';
+  const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.jpg';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata, user.email);
   const greeting = formatCompteGreeting(lang, firstName);
   const grade = profile?.gamification_grade ??

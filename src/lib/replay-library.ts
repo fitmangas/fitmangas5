@@ -1,5 +1,4 @@
 import { canBypassClientRestrictionsForAdmin } from '@/lib/access-control';
-import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { getReplayBrandCoverSrc } from '@/lib/replay-brand-cover';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -51,17 +50,16 @@ function resolveCourse(row: RecordingRow): CourseEmbed | null {
 
 function mapAndFilter(
   rows: RecordingRow[] | null,
-  options?: { demoAdminShowUpcomingWithReplay?: boolean; hiddenVimeoIds?: Set<string> },
+  options?: { hiddenVimeoIds?: Set<string> },
 ): ReplayLibraryItem[] {
   const now = Date.now();
-  const relax = options?.demoAdminShowUpcomingWithReplay === true;
   const hidden = options?.hiddenVimeoIds ?? new Set<string>();
   const list: ReplayLibraryItem[] = [];
   for (const row of rows ?? []) {
     const c = resolveCourse(row);
     if (!c?.is_published) continue;
     const end = new Date(c.ends_at).getTime();
-    if (!relax && (Number.isNaN(end) || end >= now)) continue;
+    if (Number.isNaN(end) || end >= now) continue;
     const vimeoId = row.vimeo_video_id?.trim() ?? '';
     if (vimeoId && hidden.has(vimeoId)) continue;
     const embed = row.embed_url?.trim() ?? '';
@@ -139,9 +137,8 @@ async function enrichAndFilterPlayable(list: ReplayLibraryItem[]): Promise<Repla
 }
 
 export async function getReplayLibraryForUser(userId: string): Promise<ReplayLibraryItem[]> {
-  const [adminBypass, demo, hiddenVimeoIds] = await Promise.all([
+  const [adminBypass, hiddenVimeoIds] = await Promise.all([
     canBypassClientRestrictionsForAdmin(userId),
-    getDemoClientMode(),
     loadHiddenStandaloneVimeoIds(),
   ]);
 
@@ -170,10 +167,7 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
     rows = data as unknown as RecordingRow[] | null;
   }
 
-  let list = mapAndFilter(rows, {
-    demoAdminShowUpcomingWithReplay: demo && adminBypass,
-    hiddenVimeoIds,
-  });
+  let list = mapAndFilter(rows, { hiddenVimeoIds });
   list = await enrichAndFilterPlayable(list);
   return attachReplayExtras(userId, list);
 }

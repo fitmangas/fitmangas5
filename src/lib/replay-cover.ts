@@ -38,7 +38,7 @@ const COVERS: Record<ReplayCoverType, CoverVisual> = {
   postural: {
     label: 'Postural',
     gradientClass: 'from-[#A67C52]/80 via-[#D9C9B4]/55 to-[#FFF8F0]/70',
-    imageSrc: '/alejandra.png',
+    imageSrc: '/alejandra.jpg',
     tintClass: 'bg-[#A67C52]/28',
   },
   'renfo-core': {

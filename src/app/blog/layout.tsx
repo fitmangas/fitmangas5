@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import { AdminViewSwitch } from '@/components/Admin/AdminViewSwitch';
 import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { getClientLang } from '@/lib/compte/i18n';
@@ -35,11 +34,10 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
         {user ? (
           <>
             <CompteSidebar lang={lang} unreadNotifications={unreadNotifications} />
-            <AdminViewSwitch />
             <CompteMobileBottomNav lang={lang} unreadNotifications={unreadNotifications} />
           </>
         ) : null}
-        <main className={user ? 'luxury-main pb-16 pt-24 md:pb-16 md:pl-24 md:pt-0' : ''}>{children}</main>
+        <main className={user ? 'luxury-main pb-16 pt-24 md:pb-16 md:pt-0 md:pl-24' : ''}>{children}</main>
       </div>
     </div>
   );

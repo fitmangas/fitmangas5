@@ -1,0 +1,295 @@
+---
+description: FitMangas source de vérité v4 — faits acquis, chemins CM, règles non négociables. Appliquée à chaque session.
+alwaysApply: true
+---
+
+# FitMangas — Source de vérité v4 (contexte + chemins de décision)
+
+> **CETTE VERSION REMPLACE LA v2 ET LA v3.** Supprimer les précédentes, ne garder qu'un seul fichier vivant.
+>
+> Déposer à DEUX endroits :
+> 1. `.cursor/rules/fitmangas-source-de-verite.mdc` dans le repo (Cursor le lit à chaque session)
+> 2. Knowledge / Instructions du projet Claude web
+>
+> Tout ce qui est ici est ACQUIS. Ne plus jamais le redemander.
+
+---
+
+## 1. Faits stables — NE PLUS JAMAIS REDEMANDER
+
+- **Produit** : FitMangas (`fitmangas.com`) = Pilates & Barre en visio (coach Alejandra) + présentiel Nantes. Bilingue FR/ES. Marchés : France (primaire), Mexique (secondaire).
+- **Stack** : Next.js 15, Supabase Pro (`csamqilppttijrpnadtr`), Stripe (live), Vimeo, Jitsi/Jibri sur Hetzner (`178.104.206.202`, `live.fitmangas.com`), Resend, Printful, GA4 (`537748245`), Meta Pixel.
+- **Repo** : `/Users/kevinpicard/Projets/fitmangas5`
+- **Kevin n'est pas développeur.** Expliquer simple. Code écrit via Cursor.
+- **PAS DE SHOOTING PHOTO.** Décision définitive, répétée plusieurs fois. Ne jamais le proposer. La bibliothèque se construit par extraction d'images depuis les vidéos Reels déjà tournées.
+- Les dossiers commençant par un point (`.cursor/`) sont **cachés** dans le Finder macOS → `Cmd+Shift+.`
+
+### Clés & connexions — état confirmé
+- `GEMINI_API_KEY` : **présente** local + Vercel. **Texte = 200 OK** (`gemini-2.5-flash`, utiliser `thinkingBudget:0`). NE PLUS DEMANDER si Gemini est connecté : OUI.
+- `ANTHROPIC_API_KEY` : à ajouter (décision : basculer le texte sur Claude en primaire). Absent = démarrer à Gemini sans erreur bloquante.
+- `META_APP_ID` / `META_APP_SECRET` : absents. Meta tourne en **token manuel** stocké en `admin_settings`.
+- Meta token : **expiré le 21/07/2026** (`OAuthException` 190 / subcode 463). ⚠️ Page ID et IG User ID contiennent **le même numéro** (`104974608387991`) — anormal, l’un des deux est faux. Régénérer via Graph API Explorer → permissions `pages_show_list`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish` → puis `/me/accounts` pour séparer Page ID ≠ IG Business User ID.
+- Supabase, Stripe (live), Vimeo, Resend, GA4, Printful, Mistral, Groq, Unsplash : OK.
+- **Abonnements grand public (Claude Pro, Google AI Pro) ≠ accès API.** Aucune image/texte programmatique via ces abonnements. Seule une clé API + facturation API compte.
+
+### L'écosystème Google — surfaces à ne plus confondre
+| Surface | Ce que c'est | Gratuit ? |
+|---|---|---|
+| **App Gemini** (`gemini.google.com`) | Chat grand public, humain au clavier | Oui, quelques images/jour — **≠ API** |
+| **Google AI Studio** (`aistudio.google.com`) | Playground navigateur **+ endroit où on génère la clé API** | Interface toujours gratuite |
+| **API Gemini** (la clé, appelée par le site) | Programmatique | Voir faits durs ci-dessous |
+| **Vertex AI** | Voie entreprise Cloud | **ABANDONNÉE** pour FitMangas (voir ci-dessous) |
+
+**Faits durs image API (audit v4, confirmés) :**
+- Sur cette clé, le palier gratuit image = **`limit: 0` pour TOUS les modèles image, Flash INCLUSE** (`gemini-2.5-flash-image`, `gemini-3.1-flash-image`, Pro image). Message : `429` `generate_content_free_tier_* limit: 0`.
+- **Seule voie image IA viable = facturer / créditer le projet Gemini (Prepay).** Pas de 2e clé miracle.
+- **Imagen `:predict` = voie morte** (`404` « no longer available to new users »).
+- **Vertex AI = ABANDONNÉ** (403 API désactivée sur projet Cloud + 401 clés API non supportées + facturation de toute façon). Ne pas l’implémenter ni le proposer.
+- **Cloudflare Workers AI = ABANDONNÉ** (512px trop petit pour IG, qualité insuffisante). Ne pas l’implémenter.
+- **Les limites sont au niveau du COMPTE DE FACTURATION**, pas de la clé. → **La 2e clé Gemini est morte comme solution.**
+- Facturation Google = plans **Prepay/Postpay** depuis le 23/03/2026. Il faut **créditer**, pas seulement « activer ».
+- En gratuit, les prompts peuvent servir à entraîner les modèles. En payant, non.
+
+---
+
+## 2. Règles de travail — NON NÉGOCIABLES
+
+- **Migrations Supabase** : JAMAIS sans GO écrit de Kevin. Proposer dans `PROPOSITIONS_MIGRATIONS.md`.
+- **Déploiement** : Kevin déploie via `npx vercel@56.2.1 deploy --prod`. Cursor ne déploie ni ne commit jamais sans demande.
+- **Chaque prompt Cursor finit par** : `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
+- **Prompts consolidés** : un gros prompt, pas 40 petits.
+- **Réponses à Kevin** : français, simples, **objectives**. Ne jamais reprendre un chiffre ou une idée de Kevin sans la challenger, ni le suivre par confort. Il attend une analyse, pas un suiveur. **Répondre à TOUTES ses questions**, pas seulement aux plus faciles.
+- **Ne jamais faire de fallback silencieux.** Si une étape échoue, l'UI le dit.
+- Variable Vercel modifiée → `.env.local` aussi.
+
+---
+
+## 2bis. CIBLE & PILIERS
+
+### CIBLE RÉELLE (à ne plus jamais reformuler autrement)
+La cliente FitMangas ne paie PAS pour du Pilates (YouTube en propose gratuitement à l'infini). Elle paie pour **NE PAS ÊTRE SEULE**. C'est une femme qui a déjà essayé de s'y tenir seule et qui a échoué. Le produit réel = le **RENDEZ-VOUS FIXE** + la **CORRECTION EN DIRECT** + **LE FAIT D'ÊTRE VUE**. Trois choses que le gratuit ne peut pas donner. Toute copie (titre, légende, CTA) doit s'appuyer sur cet axe, jamais uniquement sur le soulagement de symptôme.
+
+### DÉCISIONS FIGÉES (ne plus proposer de les changer)
+- Essai gratuit 7 jours + paywall carte = **conservés tels quels**.
+- Bilingue FR/ES = **conservé**.
+- Pas de séquence email d'essai pour l'instant ; notifications email actuelles **conservées**.
+
+### MIX HEBDO — 3 FAMILLES (remplace « 1 pilier symptôme / semaine »)
+Sur 7 posts IG : **3 PORTÉE + 3 CONFIANCE + 1 CONVERSION** (ou **3/2/2** en alternance). Répartition tracée et visible en UI.
+
+| Famille | ~% | But | Thèmes |
+|---|---|---|---|
+| **PORTÉE** | ~40 % | Se faire découvrir | post-partum / périnée · périménopause / 45+ · corps de bureau (volume réduit) · énergie / coup de barre · sommeil / SN · stress |
+| **CONFIANCE** | ~35 % | Faire croire que ça marche pour elle | à quoi ressemble un cours visio · histoire d'Alejandra · correction en direct · communauté Mangitas · progrès d'une adhérente |
+| **CONVERSION** | ~25 % | Transformer en paiement | objections (souple / temps / matériel / honte / rate un cours→replays) · essai gratuit 7 jours explicite · prix assumé |
+
+Règles : rotation anti-répétition **par famille** (pas le même thème 2 semaines de suite) · historique 8 thèmes en UI · CONVERSION = CTA « essai gratuit 7 jours » (pas « abonne-toi ») · CONFIANCE = produit ou coach, pas exo générique · légendes conçues pour être **envoyées à une copine** · ≥1 post/semaine « envoie ça à… » · titres = scène concrète d'abord · génération FR d'abord + ES par post.
+
+---
+
+## 3. CHEMIN A — Que fait « GÉNÉRER INSTAGRAM (+ FB) »
+
+**Sortie : 7 posts/semaine = 5 Reels + 1 carousel + 1 feed.** Fuseau Paris.
+Créneaux IG : 07h, 08h, 11h, 12h, 17h, 18h, 19h
+
+| # | Slot | Jour/heure (défaut) | Média | Images IA |
+|---|------|---------------------|-------|-----------|
+| 1 | Reel | Lun 18h | MP4 importé | 0 |
+| 2 | Reel | Mar 07h | MP4 importé | 0 |
+| 3 | Reel | Mer 19h | MP4 importé | 0 |
+| 4 | Reel | Jeu 12h | MP4 importé | 0 |
+| 5 | Reel | Ven 17h | MP4 importé | 0 |
+| 6 | Carousel | Sam 11h | 7 slides | **4 à 6** |
+| 7 | Feed | Dim 08h | 1 visuel | 0 ou 1 |
+
+> Mapping jour/heure = point de départ, à réajuster après 3–4 semaines selon les Insights Instagram réels.
+
+### MIX DE FAMILLES (remplace l’ancienne atomisation 1 pilier)
+Chaque semaine = **3 familles** (portée / confiance / conversion), pas un seul symptôme martelé. Chaque post a une famille + un thème ; on peut forcer famille/thème dans l’UI avant génération. Traçabilité : répartition de la semaine + 8 derniers thèmes.
+
+### Reel (×5)
+Généré : titre/hook scroll-stop + **brief aide-mémoire** (sujet + hook + 3 idées max) + légende + heure.
+JAMAIS de script à lire. JAMAIS de photo déguisée en Reel. MP4 tourné puis importé.
+
+### Carousel (×1) — 7 slides, 4 à 6 images IA
+- **Slide 1** : image IA éditoriale avec **espace négatif en haut** + hook en overlay
+- **Slides 2–5** : une image IA par point pédagogique, texte dans l'espace négatif
+- **Slide 6** : point clé / citation sur fond de marque (respiration visuelle)
+- **Slide 7 (CTA)** : capture **dashboard desktop** en **carte flottante** (marges, coins arrondis, ombre) + pill `fitmangas.com`
+
+### Feed (×1)
+Alterner : vraie photo d'Alejandra (posts d'identité/confiance) ↔ image IA éditoriale (posts de concept).
+
+### Miroir Facebook
+Même média + même légende que le post IG, publié au créneau FB le plus proche (09h, 10h, 13h, 14h, 18h) ≥ heure IG. Aucun contenu FB créé séparément.
+
+### Autres réseaux
+- **WhatsApp** : 2–3/sem., teaser article blog + lien, membres uniquement. Créneaux 08h/12h/17h/19h.
+- **LinkedIn** : 2–3/sem., posts dédiés (posture pro, bien-être au travail).
+- **TikTok** : génération OK, publication marquée **« Bientôt »** — pas de bouton mort.
+
+---
+
+## 4. CHEMIN B — Génération de TEXTE
+
+Ordre strict :
+1. **Claude API** (`ANTHROPIC_API_KEY`) — primaire. Meilleure copie FR/ES.
+2. **Gemini** (`gemini-2.5-flash`, `thinkingBudget:0`).
+3. **Mistral** → 4. **Groq** → 5. **Échec explicite affiché dans l'UI.**
+
+> Absent Anthropic = démarrer à Gemini sans erreur bloquante. La 2e clé Gemini est retirée du plan.
+
+### Contrôle qualité titre (avant affichage)
+Rejeter + régénérer **une fois** si le titre :
+- commence par un nom d'exercice (« Báscula pélvica… », « Le pont… »)
+- contient du filler / mélodrame interdit : hurle, sauvage, guerrière, plume, fantôme, inébranlable, rayonne, doux, douce, suave, « un geste qui… », « libère ta », « éveille ta », « sculpte ta », « déverrouille », « active ton noyau », « force invisible », « prestance », « en douceur »
+- n'a ni ancre concrète (heure / durée / geste quotidien), ni langage plat, ni retournement contre-intuitif
+- partage la même charpente syntaxique que les autres titres de la même semaine
+
+2e échec → post marqué **« titre à revoir »**. Jamais de filler publié.
+
+**Structure imposée** : `ANCRE CONCRÈTE + LANGAGE PLAT + RETOURNEMENT`
+Référence : « À 15h ton dos te lâche ? Ce n'est (presque) jamais les abdos. »
+
+`whyItWorks` et champs annexes : **dans la langue du post**, vérifié après parsing. Accords féminins FR / femenino ES.
+
+---
+
+## 5. CHEMIN C — Génération d'IMAGE
+
+### La question d'entrée
+**« Ce visuel doit-il montrer Alejandra ELLE-MÊME, ou une personne illustrative ? »**
+- **Alejandra spécifiquement** (visage, identité, confiance) → **vraie photo de la bibliothèque**. L'IA ne peut pas générer *elle*.
+- **Personne illustrative / détail / objet / ambiance** → **IA, sans limite de volume**.
+
+> ⚠️ Ancienne règle « y a-t-il un corps ? » = ABANDONNÉE, elle était fausse. Un bon modèle + un prompt en 10 composants produit des corps publiables.
+
+### Dosage éditorial
+Sur une marque personnelle, 100 % de visages générés se remarque. Équilibre : **vrai visage d'Alejandra pour l'identité/confiance, IA pour le concept/pédagogie**. Côté IA, privilégier les cadrages partiels (mains, profils, détails) plutôt que des « fausses coachs » plein cadre.
+
+### Cascade providers (figée — audit v4)
+1. **Gemini image payant** (Flash image une fois le projet **crédité**) — seule voie IA réelle. Ordre runtime via `IMAGE_PROVIDER_ORDER` (ex. `gemini,brand,library`).
+2. **Fond de marque local** (canvas/SVG, cream `#FFFAF5` / terracotta `#C45D3E`) — gratuit, infini, slides texte / respiration.
+3. **Bibliothèque** — tout ce qui doit montrer Alejandra + captures produit.
+
+**Voies mortes — ne pas implémenter / proposer :** Imagen `:predict` · Vertex AI · Cloudflare Workers AI · Pollinations · 2e clé Gemini « gratuite ».
+
+### Interdits absolus
+- **Pollinations : supprimé définitivement.** Modèle trop faible → corps cassés → inpubliable.
+- **Unsplash : interdit sur Instagram.** Toléré pour illustrer un article de blog.
+- Aucun fallback silencieux : l'UI affiche le vrai provider + le message d'erreur.
+
+---
+
+## 6. LA FORMULE DE PROMPT IMAGE — 10 composants (validée en production)
+
+C'est l'actif principal, plus important qu'une bibliothèque photo.
+
+| # | Composant | Exemple |
+|---|-----------|---------|
+| 1 | Format | `Editorial lifestyle photograph, 4:5 portrait format` |
+| 2 | **Cadrage partiel** | `hands and forearm entering the frame from the left edge` / `close-medium framing showing head and shoulders` |
+| 3 | Sujet + état | `in profile, eyes closed, serene relaxed expression, natural skin texture, mid-30s` |
+| 4 | Décor | `warm off-white textured plaster wall, softly blurred` |
+| 5 | **Simulation d'objectif** | `shallow depth of field (50mm f/2 look)` |
+| 6 | Lumière | `soft natural side light from a window, gentle shadows, no flash` |
+| 7 | **Accent couleur unique** | `single color accent: a terracotta clay-colored towel, everything else in cream, warm beige and natural skin tones` |
+| 8 | Étalonnage | `muted desaturated palette, subtle film grain, premium wellness editorial style, not stock photography` |
+| 9 | **Espace négatif** | `large negative space in the upper third of the frame` (réservé au texte overlay) |
+| 10 | Exclusions | `no text, no logo, no watermark` |
+
+### Règles issues de la formule
+- **Le cadrage partiel (2) est la clé anatomie.** Mains, avant-bras, profils, plans serrés → pas de membres à compter. Éviter les poses corps entier.
+- **L'espace négatif (9) est obligatoire pour tout visuel de carousel** — c'est là que va le texte.
+- **L'accent couleur unique (7) impose la DA** sans retouche.
+- **La simulation d'objectif (5) supprime le look « IA ».**
+
+### Gabarit de référence complet
+```
+Editorial lifestyle photograph, 4:5 portrait format. A Pilates instructor's hands and forearm
+entering the frame from the left edge, gently adjusting the shoulder alignment of a woman lying
+on a cream Pilates mat. The student is in profile, eyes closed, serene relaxed expression,
+natural skin texture, mid-30s. Close-medium framing showing head and shoulders. Background:
+warm off-white textured plaster wall, softly blurred, shallow depth of field (50mm f/2 look).
+Soft natural side light from a window, gentle shadows, no flash. Single color accent: a
+terracotta clay-colored towel or top, everything else in cream, warm beige and natural skin
+tones. Muted desaturated palette, subtle film grain, premium wellness editorial style, not
+stock photography. Large negative space in the upper third of the frame. No text, no logo,
+no watermark.
+```
+
+### 10 variantes de gabarit à décliner
+`mains-ajustement` · `profil-respiration` · `detail-tapis` · `barre-cadrage-serre` ·
+`renfo-gainage-partiel` · `objet-nature-morte` · `ambiance-studio-vide` · `hanches-bassin` ·
+`dos-posture` · `sommeil-recuperation`
+
+---
+
+## 7. BIBLIOTHÈQUE — 60 photos, 8 dossiers
+
+Rôle : **uniquement ce que l'IA ne peut pas produire — Alejandra elle-même** + les captures produit.
+Source, sans shooting : **extraction d'images depuis les MP4 Reels déjà tournés** (`FitMangas-Reels/brutes/`). Grossit gratuitement à chaque tournage.
+
+| Dossier | Cible | Thème |
+|---|---|---|
+| `portraits/` | 12 | Visage, buste, regard caméra, 3/4, sourire — identité & confiance |
+| `pilates-mat/` | 12 | Exercices au sol, angles et postures variés |
+| `barre/` | 8 | Travail à la barre |
+| `renfo-core/` | 8 | Gainage, renforcement, core |
+| `coaching-visio/` | 6 | Elle coachant devant l'écran — **preuve du produit** |
+| `lifestyle-coulisses/` | 6 | Avant/après cours, préparation, authenticité |
+| `ambiance-studio/` | 5 | Lieu, matériel, détails, textures |
+| `produit-captures/` | 3 | Dashboard, replays, mobile (slides CTA) |
+
+Nommage : `portrait-01.jpg`, `pilates-mat-07.jpg`, `coaching-visio-03.jpg`. Min 2000 px. Recadrages 1:1 et 4:5.
+`manifest.json` à la racine de `public/library/` : thème, cible, fichiers présents par dossier.
+
+---
+
+## 8. BOUCLE DE PERFORMANCE — ce qui sépare l'amateur du pro
+
+Sans ça, le système génère à l'aveugle et la semaine 12 est identique à la semaine 1.
+
+1. **Stocker** pour chaque post publié : pilier, format, hook, provider image, date/heure.
+2. **Récupérer** les métriques (IG Insights via Graph API) : saves, shares, reach, watch time.
+3. **Banquer les hooks gagnants** dans une table dédiée.
+4. **Réinjecter** les 10 meilleurs hooks comme exemples few-shot dans la génération suivante.
+5. **Tracer la rotation des piliers** pour ne jamais répéter deux semaines de suite.
+
+---
+
+## 9. Dette à nettoyer sur la page CM
+
+- Prompt **« anti-nudité »** dans `SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT` → supprimer (hors sujet).
+- Type / badge / mapping **`pollinations`** orphelins → supprimer.
+- **Double filtre langue** `TOUTES / FR / ES` encore visible à côté de `GÉNÉRER FR / ES` → ne garder que Générer FR/ES.
+- Panneau **PHOTA / Double** → masquer derrière un flag OFF.
+- Fallbacks titres « **Un geste doux…** » / « **Un gesto suave…** » → supprimer.
+- `whyItWorks` en anglais → forcer la langue du post.
+- Notes playbook `CM_STRATEGY_NOTES` : disent encore « Gemini → Pollinations » → réécrire selon le CHEMIN C.
+- Onglet TikTok : publish marqué « Bientôt ».
+
+---
+
+## 10. Chantiers séparés (ne pas mélanger avec la page CM)
+
+- **`finalize.sh` sur le VPS** : timeout TUS sur MP4 ~1 Go = cause racine des replays cassés. Doit supprimer le MP4 local UNIQUEMENT après confirmation Vimeo playable. Seuil disque 80 % = filet secondaire.
+- **Meta publication auto** : vérifier IG User ID vs Page ID, régénérer le Page Access Token.
+
+## 11. Questions ouvertes
+
+- [x] Voie image gratuite API ? → **NON** (Flash aussi limit:0). Imagen/Vertex/Cloudflare = mortes.
+- [ ] **Créditer Gemini** (~2–5 $/mois pour ~40 images) — seule action qui débloque Nano Banana.
+- [ ] Claude API pour le texte : clé à créer (`ANTHROPIC_API_KEY`).
+- [ ] Meta : renouveler token + corriger Page ID ≠ IG User ID.
+
+## 12. Leçons dures
+
+- **Un modèle faible + un prompt vague casse les anatomies. Un bon modèle + un prompt en 10 composants produit du publiable.** Ne jamais conclure « l'IA ne sait pas faire ».
+- **Ne jamais confondre app Gemini / AI Studio / API Gemini / Vertex AI.** Ce qui marche à la main ne dit rien de ce qui marche par API.
+- **Un tier gratuit « qui fait des images » selon un blog agrégateur ≠ ta clé qui fait des images.** Tester, pas supposer.
+- Les quotas sont au niveau du **compte de facturation** → multiplier les clés ou les comptes ne résout rien.
+- Interdit RNNoise (`arnndn`) sur l'audio des Reels (écrase la voix).
+- NULL en PostgreSQL : la comparaison renvoie NULL, pas TRUE → gérer `IS NULL`.
+- Format de l'image source > CSS (recadrer au bon ratio en amont).
+- Les pièces jointes documents arrivent souvent vides → coller le texte ou une capture.

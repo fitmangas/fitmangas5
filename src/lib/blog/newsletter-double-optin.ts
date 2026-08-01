@@ -34,6 +34,36 @@ async function sendEmailViaResend(to: string, subject: string, html: string) {
   return { sent: false as const, reason: 'provider_unknown' };
 }
 
+/** Journalise un envoi Resend newsletter dans notification_log (service_role). */
+async function logNewsletterSend(params: {
+  eventType: 'newsletter.confirm' | 'newsletter.article_published';
+  email: string;
+  idempotencyKey: string;
+  payload?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.from('notification_log').insert({
+      user_id: null,
+      event_type: params.eventType,
+      channel: 'email',
+      payload: {
+        _delivered: 'email',
+        email: params.email.trim().toLowerCase(),
+        ...(params.payload ?? {}),
+      },
+      idempotency_key: params.idempotencyKey,
+    });
+    if (error) {
+      // Doublon d’idempotency = déjà logué (OK). Autre erreur = visible, pas de fallback silencieux.
+      if (error.code === '23505') return;
+      console.error('[newsletter] notification_log insert failed', params.eventType, error.message);
+    }
+  } catch (e) {
+    console.error('[newsletter] notification_log insert exception', params.eventType, e);
+  }
+}
+
 export async function createNewsletterConfirmationToken(subscriptionId: string): Promise<string> {
   const admin = createAdminClient();
   const token = randomBytes(24).toString('hex');
@@ -78,6 +108,13 @@ export async function sendNewsletterConfirmationEmail(email: string, token: stri
   const result = await sendEmailViaResend(email, 'Confirme ton inscription newsletter FitMangas', html);
   if (!result.sent) {
     console.info('[newsletter confirm] mode sans provider, lien:', confirmUrl);
+  } else {
+    await logNewsletterSend({
+      eventType: 'newsletter.confirm',
+      email,
+      idempotencyKey: `newsletter.confirm:${email.trim().toLowerCase()}:${token}`,
+      payload: { kind: 'confirm' },
+    });
   }
   return { sent: result.sent, confirmUrl };
 }
@@ -115,7 +152,21 @@ export async function sendPublicationNewsletter(params: { articleId: string; tit
       </table>`;
     const html = wrapResendEmail({ innerHtml: inner, locale: 'fr', showPreferencesLink: true });
     const result = await sendEmailViaResend(email, `Nouveau sur le blog : ${params.title}`, html);
-    if (result.sent) sent += 1;
+    if (result.sent) {
+      sent += 1;
+      const normalized = String(email).trim().toLowerCase();
+      await logNewsletterSend({
+        eventType: 'newsletter.article_published',
+        email: normalized,
+        idempotencyKey: `newsletter.article_published:${params.articleId}:${normalized}`,
+        payload: {
+          kind: 'article',
+          articleId: params.articleId,
+          title: params.title,
+          slugFr: params.slugFr,
+        },
+      });
+    }
   }
 
   await admin.from('blog_publication_events').upsert(

@@ -1,0 +1,9 @@
+FitMangas-Reels/
+node_modules/
+.next/
+.next-dev/
+data/
+*.MOV
+*.mp4
+
+library-originals/

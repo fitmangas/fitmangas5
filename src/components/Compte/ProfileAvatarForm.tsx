@@ -18,7 +18,7 @@ export function ProfileAvatarForm({
   avatarUrl: string | null | undefined;
   embedded?: boolean;
 }) {
-  const url = avatarUrl?.trim() || '/client-contact-photo.png';
+  const url = avatarUrl?.trim() || '/client-contact-photo.jpg';
   const content = (
     <div>
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Photo de profil</h2>

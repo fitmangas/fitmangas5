@@ -2,14 +2,15 @@ import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { checkIsAdmin } from '@/lib/auth/admin';
-import { DEMO_CLIENT_COOKIE } from '@/lib/demo-client-mode';
 
 export type PostLoginPath = '/admin' | '/compte';
 
-/** Réinitialise le mode démo « vue client » (nouvelle connexion admin = vue admin). */
+/** Ancien cookie mode démo — nettoyé à la connexion pour ne laisser aucun vestige. */
+const LEGACY_DEMO_CLIENT_COOKIE = 'fm_demo_client';
+
 export async function clearDemoClientModeCookie(): Promise<void> {
   const store = await cookies();
-  store.delete(DEMO_CLIENT_COOKIE);
+  store.delete(LEGACY_DEMO_CLIENT_COOKIE);
 }
 
 export async function resolvePostLoginPath(

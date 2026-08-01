@@ -82,24 +82,71 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
   if (!connection.accessToken || !connection.igUserId) {
     throw new Error('Instagram non connecté (IG User ID manquant).');
   }
-  const imageUrl = publicImageUrl(post);
   const caption = captionForPublish(post);
-  const create = await graphJson(
-    `${GRAPH}/${connection.igUserId}/media`,
-    {
+  const token = connection.accessToken;
+
+  // Reel vidéo (MP4 monté public)
+  if (post.format === 'reel' && post.editedVideoPath) {
+    const videoUrl = absolutePublicUrl(post.editedVideoPath);
+    const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        image_url: imageUrl,
+        media_type: 'REELS',
+        video_url: videoUrl,
         caption,
-        access_token: connection.accessToken,
+        share_to_feed: true,
+        access_token: token,
       }),
-    },
-  );
+    });
+    const creationId = String(create.id || '');
+    if (!creationId) throw new Error('Création Reel Instagram échouée.');
+
+    let ready = false;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const status = await graphJson(
+        `${GRAPH}/${creationId}?fields=status_code&access_token=${encodeURIComponent(token)}`,
+      );
+      const code = String(status.status_code || '');
+      if (code === 'FINISHED') {
+        ready = true;
+        break;
+      }
+      if (code === 'ERROR' || code === 'EXPIRED') {
+        throw new Error(`Upload Reel Instagram en erreur (${code}). Vérifie que le MP4 est public et en 9:16.`);
+      }
+    }
+    if (!ready) throw new Error('Timeout : le Reel Instagram n’est pas prêt (réessaie dans 1 min).');
+
+    const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creation_id: creationId,
+        access_token: token,
+      }),
+    });
+    return String(published.id || creationId);
+  }
+
+  if (post.format === 'reel' && !post.editedVideoPath) {
+    throw new Error('Importe d’abord le MP4 monté avant de publier ce Reel.');
+  }
+
+  const imageUrl = publicImageUrl(post);
+  const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      image_url: imageUrl,
+      caption,
+      access_token: token,
+    }),
+  });
   const creationId = String(create.id || '');
   if (!creationId) throw new Error('Création média Instagram échouée.');
 
-  // Instagram a besoin d’un court délai avant publish parfois
   await new Promise((r) => setTimeout(r, 2500));
 
   const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
@@ -107,13 +154,13 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       creation_id: creationId,
-      access_token: connection.accessToken,
+      access_token: token,
     }),
   });
   return String(published.id || creationId);
 }
 
-/** Publie ou programme un post Facebook Page. */
+/** Publie ou programme un post Facebook Page (image, vidéo publique, ou texte). */
 export async function publishFacebookPost(
   connection: MetaSocialConnection,
   post: SocialPost,
@@ -124,13 +171,8 @@ export async function publishFacebookPost(
   }
   const message = captionForPublish(post);
   const body: Record<string, unknown> = {
-    message,
     access_token: connection.accessToken,
   };
-
-  if (post.imagePath) {
-    body.url = publicImageUrl(post);
-  }
 
   if (options?.schedule && post.plannedAt) {
     const ts = Math.floor(new Date(post.plannedAt).getTime() / 1000);
@@ -139,6 +181,27 @@ export async function publishFacebookPost(
       body.published = false;
       body.scheduled_publish_time = ts;
     }
+  }
+
+  // Miroir Reel : vidéo publique si dispo
+  if (post.format === 'reel' && post.editedVideoPath) {
+    const videoUrl = absolutePublicUrl(post.editedVideoPath);
+    const published = await graphJson(`${GRAPH}/${connection.pageId}/videos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...body,
+        file_url: videoUrl,
+        description: message,
+        title: (post.hookTitle || post.title || 'FitMangas').slice(0, 255),
+      }),
+    });
+    return String(published.id || published.post_id || '');
+  }
+
+  body.message = message;
+  if (post.imagePath) {
+    body.url = publicImageUrl(post);
   }
 
   const endpoint = post.imagePath

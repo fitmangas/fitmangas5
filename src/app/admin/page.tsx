@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Euro, Megaphone, Video } from 'lucide-react';
+import { Bell, Megaphone, Video } from 'lucide-react';
 
 import { AiBusinessAdvisor } from '@/components/Admin/AiBusinessAdvisor';
 import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
-import { AdminViewSwitchMenuLink } from '@/components/Admin/AdminViewSwitchClient';
 import { ClientAvatar } from '@/components/Admin/ClientAvatar';
 import { DismissibleDashboardBadge, DismissOnClickLink } from '@/components/Admin/DismissibleDashboardBadge';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { checkIsAdmin, canUseAdminViewSwitch } from '@/lib/auth/admin';
+import { checkIsAdmin } from '@/lib/auth/admin';
+import { loadNotificationObservability } from '@/lib/admin/notification-observability';
 import {
   getCachedAdminKpiDrilldowns,
   getCachedAdminKpis,
@@ -20,7 +20,6 @@ import { createClient } from '@/lib/supabase/server';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { DEFAULT_COURSE_TIMEZONE, formatCourseInstant } from '@/lib/course-datetime';
 import type { CourseLanguage } from '@/lib/course-language';
-import { getDemoClientMode } from '@/lib/demo-client-mode';
 import { LIVE_FROM_ADMIN, liveCourseHref } from '@/lib/live/live-back-url';
 
 type ProfileRow = {
@@ -134,12 +133,6 @@ export default async function AdminPage() {
     redirect('/login?error=forbidden');
   }
 
-  const [viewSwitchGate, clientView] = await Promise.all([
-    canUseAdminViewSwitch(supabase, user),
-    getDemoClientMode(),
-  ]);
-  const showViewSwitch = viewSwitchGate.canSwitch;
-
   const adminDb = createAdminClient();
   const nowIso = new Date().toISOString();
   const [
@@ -198,16 +191,7 @@ export default async function AdminPage() {
 
   const firstName = me?.first_name?.trim() || 'Alejandra';
   const avatarUrl = me?.avatar_url?.trim() || null;
-  const mrrLabel =
-    kpis.mrrEur != null
-      ? `${kpis.mrrEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-      : '—';
-  const mrrHint =
-    kpis.mrrSource === 'stripe'
-      ? 'Stripe'
-      : kpis.mrrSource === 'db'
-        ? 'Base (fallback)'
-        : 'Non disponible';
+  const notificationsSummary = await loadNotificationObservability('month');
   const occupancyLabel = pctLabel(kpis.occupancyPercent);
   const clientsHeadTr = 'bg-white/85 text-[10px] uppercase tracking-wider text-luxury-ink/65 backdrop-blur';
   const combinedRevenueMonthEur =
@@ -232,20 +216,18 @@ export default async function AdminPage() {
           <div className="flex justify-end">
             <details className="relative z-[120]">
               <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/alejandra.png?v=2"
-                  alt="Alejandra"
-                  className="w-[100px] h-auto max-h-[200px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer"
-                />
+                <span className="inline-flex h-[120px] w-[100px] items-center justify-center overflow-hidden rounded-2xl bg-[#FFFAF5] shadow-[0_14px_28px_rgba(0,0,0,0.12)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/alejandra.png"
+                    alt="Alejandra"
+                    className="h-full w-full object-cover object-center"
+                  />
+                </span>
               </summary>
               <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
                 <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                   Retour site
-                </Link>
-                {showViewSwitch ? <AdminViewSwitchMenuLink clientView={clientView} /> : null}
-                <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
-                  Mon profil
                 </Link>
                 <form action="/auth/signout" method="post" className="mt-1">
                   <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
@@ -270,20 +252,18 @@ export default async function AdminPage() {
           </div>
           <details className="relative z-[120] shrink-0">
             <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/alejandra.png?v=2"
-                alt="Alejandra"
-                className="h-auto w-14 max-h-[120px] object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.22)] cursor-pointer sm:w-[88px] md:w-[100px] md:max-h-[200px]"
-              />
+              <span className="inline-flex h-16 w-14 items-center justify-center overflow-hidden rounded-xl bg-[#FFFAF5] shadow-[0_10px_20px_rgba(0,0,0,0.1)] sm:h-[100px] sm:w-[88px] sm:rounded-2xl md:h-[120px] md:w-[100px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/alejandra.png"
+                  alt="Alejandra"
+                  className="h-full w-full object-cover object-center"
+                />
+              </span>
             </summary>
             <div className="absolute right-0 z-[140] mt-2 w-56 rounded-3xl border border-white/70 bg-white/85 p-2 shadow-[0_18px_42px_rgba(29,29,31,0.15)] backdrop-blur-xl">
               <Link href="/" className="block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
                 Retour site
-              </Link>
-              {showViewSwitch ? <AdminViewSwitchMenuLink clientView={clientView} /> : null}
-              <Link href="/compte/profil" className="mt-1 block rounded-2xl px-4 py-2 text-sm text-luxury-ink transition hover:bg-white/70">
-                Mon profil
               </Link>
               <form action="/auth/signout" method="post" className="mt-1">
                 <button type="submit" className="w-full rounded-2xl px-4 py-2 text-left text-sm text-luxury-ink transition hover:bg-white/70">
@@ -388,16 +368,29 @@ export default async function AdminPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr_1.9fr]">
         <GlassCard elevated className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">MRR Stripe</p>
-              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">{mrrLabel}</p>
-              <p className="mt-2 text-xs text-luxury-muted">Source : {mrrHint}</p>
+          <Link href="/admin/notifications" className="flex h-full flex-col text-left">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft leading-snug">
+                  Notifications
+                  <br />&amp; emails
+                </p>
+                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-luxury-ink">
+                  {notificationsSummary.totalTracked}
+                </p>
+                <p className="mt-2 text-xs text-luxury-muted">
+                  Envois suivis · {notificationsSummary.periodLabel}
+                  {notificationsSummary.gaps.length ? ' · données partielles' : ''}
+                </p>
+              </div>
+              <span className="kpi-icon-wrap kpi-icon-wrap--violet shrink-0">
+                <Bell size={20} aria-hidden strokeWidth={2} />
+              </span>
             </div>
-            <span className="kpi-icon-wrap kpi-icon-wrap--orange shrink-0">
-              <Euro size={20} aria-hidden strokeWidth={2} />
+            <span className="mt-auto pt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">
+              Voir le détail →
             </span>
-          </div>
+          </Link>
         </GlassCard>
         <GlassCard elevated className="relative flex flex-col p-5 md:p-6">
           <DismissibleDashboardBadge storageKey="admin_badge_vimeo_pending" count={pendingStandaloneCount ?? 0} />

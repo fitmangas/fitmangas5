@@ -38,7 +38,7 @@ type Props = {
 };
 
 export function ProfileMonProfilCard({ avatarUrl, birthDate, email, title, birthLabel, emailLabel }: Props) {
-  const url = avatarUrl?.trim() || '/client-contact-photo.png';
+  const url = avatarUrl?.trim() || '/client-contact-photo.jpg';
   const defaultInput = birthDate ? birthDate.slice(0, 10) : '';
 
   return (

@@ -10,12 +10,32 @@ import {
   publishFacebookPost,
   publishInstagramNow,
 } from '@/lib/admin/meta-social';
-import { collectUsedUnsplashIdsFromPosts, generateSocialAiImage, generateSocialPhotoForPost, imageSourceFromProvider } from '@/lib/admin/social-ai-image';
-import { CAPTION_BY_FORMAT, fallbackReelBrief, SOCIAL_CM_GUIDELINES } from '@/lib/admin/social-cm-playbook';
+import {
+  emptyAlejandraDouble,
+  getAlejandraDoubleProfile,
+  refreshAlejandraPhotaStatus,
+  saveAlejandraDoubleProfile,
+  startAlejandraPhotaTraining,
+} from '@/lib/admin/alejandra-double';
+import { resolvePhotaApiKey } from '@/lib/admin/phota-client';
+import {
+  CAPTION_BY_FORMAT,
+  adaptCaptionToLinkedIn,
+  enforceFaceCamShotList,
+  fallbackReelBrief,
+  polishInstagramHook,
+  polishPostTitle,
+  SOCIAL_CM_GUIDELINES,
+  TITLE_FEW_SHOT_ES,
+  TITLE_FEW_SHOT_FR,
+  type SocialMediaKind,
+  titleFailsQualityGate,
+  polishOverlayText,
+  withCarouselSlideCount,
+} from '@/lib/admin/social-cm-playbook';
 import {
   buildWeeklySlots,
   plannedAtParis,
-  weekPlanSummary,
 } from '@/lib/admin/social-week-planner';
 import { parisScheduleToIso } from '@/lib/admin/social-paris-time';
 import {
@@ -30,12 +50,28 @@ import {
   SOCIAL_LIBRARY_IMAGES,
   type MetaSocialConnection,
   type SocialCommsBoard,
+  type SocialLocale,
   type SocialNetwork,
   type SocialPost,
   type SocialPostFormat,
   type SocialPostStatus,
 } from '@/lib/admin/social-comms';
-import { runBlogAiCascade } from '@/lib/blog/ai-providers';
+import { runSocialTextCascade } from '@/lib/admin/social-text-ai';
+import { loadHooksBank, recordHooks, topHooksForFewShot } from '@/lib/admin/social-hooks-bank';
+import {
+  loadPillarHistory,
+  pickWeeklyPillar,
+  recordWeekThemePlan,
+  buildWeekThemePlan,
+  getWeeklyPillar,
+  getContentTheme,
+  CONTENT_FAMILY_LABELS,
+  TRIAL_CTA_FR,
+  TRIAL_CTA_ES,
+  type ContentFamilyId,
+  type WeeklyPillar,
+  type WeekPlanSnapshot,
+} from '@/lib/admin/social-pillars';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -44,38 +80,267 @@ function revalidateCommunity() {
   revalidatePath('/admin');
 }
 
-/** Nettoie les légendes IA (surtout carousel) pour coller aux bandes idéales. */
+/** Nettoie les légendes IA pour coller aux bandes idéales (surtout Reels). */
 function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax: number): string {
   let c = raw
     .replace(/\*\*/g, '')
+    .replace(/[🚀🧘💪🔥✨😊😂🙏💕❤️]/g, '')
     .replace(/^Slide\s*\d+\s*[:：]\s*/gim, '')
     .replace(/\n?\s*Slide\s*\d+\s*[:：]\s*/gi, '\n')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
 
-  const idealMax = CAPTION_BY_FORMAT[format]?.idealMax ?? hardMax;
-  const targetMax = format === 'carousel' ? Math.min(hardMax, idealMax) : hardMax;
+  const band = CAPTION_BY_FORMAT[format];
+  // Reels / feed : viser la zone idéale, pas le max technique
+  const targetMax =
+    format === 'reel'
+      ? Math.min(hardMax, band?.idealMax ?? 150)
+      : format === 'feed'
+        ? Math.min(hardMax, band?.idealMax ?? 180)
+        : format === 'carousel'
+          ? Math.min(hardMax, band?.idealMax ?? 900)
+          : hardMax;
 
   if (c.length > targetMax) {
     const sliced = c.slice(0, targetMax);
-    const lastStop = Math.max(sliced.lastIndexOf('.'), sliced.lastIndexOf('!'), sliced.lastIndexOf('?'), sliced.lastIndexOf('\n'));
-    c = lastStop > targetMax * 0.55 ? sliced.slice(0, lastStop + 1).trim() : sliced.trim();
+    const lastStop = Math.max(
+      sliced.lastIndexOf('.'),
+      sliced.lastIndexOf('!'),
+      sliced.lastIndexOf('?'),
+      sliced.lastIndexOf('\n'),
+    );
+    c = lastStop > targetMax * 0.5 ? sliced.slice(0, lastStop + 1).trim() : sliced.trim();
   }
   return c.slice(0, hardMax);
 }
 
+/** Répare les JSON IA les plus fréquents (virgules, newlines dans strings, truncation). */
+function repairAiJson(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const start = s.indexOf('{');
+  if (start < 0) return s;
+  s = s.slice(start);
+
+  // Newlines / tabs bruts dans des strings → \n
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i]!;
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        out += ch;
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        out += ch;
+        continue;
+      }
+      if (ch === '\n') {
+        out += '\\n';
+        continue;
+      }
+      if (ch === '\r') continue;
+      if (ch === '\t') {
+        out += '\\t';
+        continue;
+      }
+      out += ch;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      continue;
+    }
+    out += ch;
+  }
+  s = out;
+
+  // Virgules traînantes
+  s = s.replace(/,\s*([\]}])/g, '$1');
+
+  // Truncation : fermer posts / objet
+  const openCurly = (s.match(/\{/g) || []).length;
+  const closeCurly = (s.match(/\}/g) || []).length;
+  const openSquare = (s.match(/\[/g) || []).length;
+  const closeSquare = (s.match(/\]/g) || []).length;
+  if (openSquare > closeSquare) s += ']'.repeat(openSquare - closeSquare);
+  if (openCurly > closeCurly) s += '}'.repeat(openCurly - closeCurly);
+
+  return s;
+}
+
 function extractJsonObject(text: string): unknown {
   const trimmed = text.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const start = trimmed.indexOf('{');
-    const end = trimmed.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      return JSON.parse(trimmed.slice(start, end + 1));
+  const attempts = [trimmed, repairAiJson(trimmed)];
+  let lastError: Error | null = null;
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      const start = attempt.indexOf('{');
+      const end = attempt.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          return JSON.parse(attempt.slice(start, end + 1));
+        } catch (e2) {
+          lastError = e2 instanceof Error ? e2 : new Error(String(e2));
+        }
+      }
     }
-    throw new Error('JSON introuvable');
   }
+  throw lastError || new Error('JSON introuvable');
+}
+
+function imageSourceFromProviderName(provider: string): SocialPost['imageSource'] {
+  if (provider === 'gemini' || provider === 'phota' || provider === 'brand') return 'ai';
+  if (provider === 'library') return 'library';
+  if (provider === 'unsplash') return 'unsplash';
+  return 'none';
+}
+
+type SlotSpec = {
+  slotId: number;
+  network: SocialNetwork;
+  format: SocialPostFormat;
+  mediaKind: string;
+  feedIntent: string | null;
+  dayOffset: number;
+  parisHour: number;
+  captionMin: number;
+  captionMax: number;
+  captionIdeal: string;
+  hashtagIdeal: number;
+  needsReelBrief: boolean;
+  needsPhoto: boolean;
+  assignPillar: string | null;
+  contentFamily: ContentFamilyId | null;
+  themeLabel: string | null;
+  forceTrialCta: boolean;
+  showProductOrCoach: boolean;
+  shareHook: boolean;
+  reelAngle: string | null;
+};
+
+async function generatePostsJsonForSlots(
+  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+  slotSpec: SlotSpec[],
+  locale: SocialLocale,
+): Promise<{ ok: true; posts: unknown[] } | { ok: false; error: string }> {
+  const articles = context.articlesByLocale[locale];
+  const compactContext = {
+    locale,
+    articles: articles.slice(0, 5).map((a) => ({
+      title: a.title,
+      slug: a.slug,
+      description: (a.description || '').slice(0, 140),
+      url: a.url,
+    })),
+    courses: context.courses.filter((c) => !c.language || c.language === locale).slice(0, 3),
+    pillars: context.pillars.slice(0, 4),
+  };
+  const pillarsLite = slotSpec.map((s) => ({
+    slotId: s.slotId,
+    family: s.contentFamily,
+    theme: s.assignPillar,
+    label: s.themeLabel,
+    forceTrialCta: s.forceTrialCta,
+    shareHook: s.shareHook,
+  }));
+  const langName = locale === 'es' ? 'español' : 'français';
+  const fewShot = (locale === 'es' ? TITLE_FEW_SHOT_ES : TITLE_FEW_SHOT_FR).join('\n- ');
+  const hooksBank = await loadHooksBank();
+  const topHooks = topHooksForFewShot(hooksBank, locale, 10)
+    .map((h) => h.text)
+    .filter(Boolean);
+  const hooksBlock = topHooks.length
+    ? `Hooks gagnants (réutiliser le CALIBRE, pas recopier) :\n- ${topHooks.join('\n- ')}`
+    : '';
+
+  const prompt = `FitMangas CM. Contenu 100% en ${langName}. JSON strict uniquement, sans markdown.
+
+CIBLE PRODUIT (ne jamais l'oublier) :
+La cliente ne paie PAS pour du Pilates gratuit (YouTube). Elle paie pour NE PAS ÊTRE SEULE :
+rendez-vous fixe + correction en direct + le fait d'être vue. Toute copie s'appuie sur cet axe,
+pas seulement sur le soulagement de symptôme.
+
+Contexte:
+${JSON.stringify(compactContext)}
+Mix familles/thèmes des slots : ${JSON.stringify(pillarsLite)}
+Slots (${slotSpec.length}): ${JSON.stringify(slotSpec)}
+${hooksBlock}
+
+Règles STRICTES (langue = ${locale}):
+- Exactement ${slotSpec.length} objets, slotId = ${slotSpec.map((s) => s.slotId).join(',')}
+- TOUT le texte (title, caption, hookTitle, reelScript, shotList, cta, whyItWorks) en ${langName} — JAMAIS anglais
+- Accords ${locale === 'es' ? 'femeninos' : 'féminins'}
+- CHAQUE slot a sa famille (portée / confiance / conversion) + thème — respecte assignPillar / contentFamily
+- PORTÉE = découverte (symptôme OK mais relié au « ne plus être seule »)
+- CONFIANCE = montrer le produit ou la coach (cours visio, correction, communauté) — PAS un exo générique
+- CONVERSION = une objection ; CTA EXPLICITE « essai gratuit 7 jours » (JAMAIS « abonne-toi »)
+- Au moins le slot marqué shareHook=true doit inclure une accroche type « envoie ça à… » / « envía esto a… »
+- Légendes conçues pour être ENVOYÉES À UNE COPINE (partages DM)
+- TITRES = RECONNAISSANCE CONCRÈTE D'ABORD (scène vécue féminine) puis reformulation claire. Jamais ouvrir par « X n'est pas Y » sans scène.
+- Few-shot calibre :
+- ${fewShot}
+- INTERDIT : hurle, sauvage, guerrière, plume, fantôme, inébranlable, rayonne, doux, suave, « un geste qui », « libère ta », « éveille ta », « sculpte ta », « déverrouille », « active ton noyau », « force invisible », « prestance »
+- INTERDIT : commencer par un nom d'exercice
+- INTERDIT : 5 titres avec la même charpente syntaxique
+- overlayText / hookTitle: TOUJOURS une phrase autonome COURTE COMPLÈTE EN MAJUSCULES (max ~8–10 mots), lisible en 1s. JAMAIS recopier/tronquer le titre long. INTERDIT de finir sur une préposition/pronom (en, du, tu, te, si, pas du…). Si trop long → reformuler plus court, ne pas couper.
+- REEL caption: 70–140 caractères STRICT. 0 ou 1 emoji max
+- reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
+- shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
+- FEED caption: 100–180 car. overlayText = texte sur image (court, complet)
+- CAROUSEL caption: 200–900 car. (hook 125 premiers + valeur + CTA save). Chaque slide a un point clair. INTERDIT "Slide 1"
+- WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
+- LinkedIn: ton pro, 350–700 car., question finale
+- hashtags = array sans #
+- imageHint EN ANGLAIS (scène photo PARTIELLE : mains/profil/détail — jamais corps entier). Si showProductOrCoach: coaching visio / coach portrait library vibe.
+
+JSON exact:
+{"posts":[{"slotId":0,"title":"","caption":"","hashtags":[],"cta":"","imageHint":"","overlayText":"","useOverlay":false,"hookTitle":"","reelScript":"","shotList":"","sourceType":"ai","sourceRef":null,"whyItWorks":""}]}`;
+
+  const runOnce = async (strict: boolean) => {
+    const aiResult = await runSocialTextCascade({
+      system: strict
+        ? `JSON valide uniquement. Langue ${langName}. Titres bankables (ancre+plat+retournement). Reels: caption courte, shotList face cam only.`
+        : `Community manager FitMangas wellness premium en ${langName}. JSON valide. Face cam only. Titres sans mélodrame.`,
+      user: strict
+        ? `${prompt}\n\nIMPORTANT: JSON parseable. \\n dans les strings. shotList = face cam only. Langue ${langName}.`
+        : prompt,
+      temperature: strict ? 0.35 : 0.55,
+      maxOutputTokens: 8192,
+    });
+    if (!aiResult.ok) return { ok: false as const, error: aiResult.detail || 'Génération texte impossible.' };
+    try {
+      const parsed = extractJsonObject(aiResult.text) as { posts?: unknown[] };
+      const posts = Array.isArray(parsed.posts) ? parsed.posts : [];
+      if (!posts.length) return { ok: false as const, error: 'Réponse IA sans posts.' };
+      return { ok: true as const, posts };
+    } catch (e) {
+      return {
+        ok: false as const,
+        error: e instanceof Error ? e.message : 'JSON IA invalide.',
+      };
+    }
+  };
+
+  const first = await runOnce(false);
+  if (first.ok) return first;
+  const second = await runOnce(true);
+  if (second.ok) return second;
+  return { ok: false, error: second.error || first.error };
 }
 
 async function loadGenerationContext() {
@@ -84,31 +349,61 @@ async function loadGenerationContext() {
   const [{ data: articles }, { data: courses }] = await Promise.all([
     admin
       .from('blog_articles')
-      .select('title_fr, slug_fr, description_fr, seo_keywords')
+      .select('title_fr, title_es, slug_fr, slug_es, description_fr, description_es, seo_keywords')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
-      .limit(8),
+      .limit(10),
     admin
       .from('courses')
       .select('title, starts_at, course_language')
       .eq('is_published', true)
       .gte('ends_at', nowIso)
       .order('starts_at', { ascending: true })
-      .limit(5),
+      .limit(8),
   ]);
 
-  return {
-    articles: (articles ?? []).map((row) => ({
-      title: row.title_fr,
-      slug: row.slug_fr,
-      description: row.description_fr,
+  const mapArticle = (
+    row: {
+      title_fr: string | null;
+      title_es: string | null;
+      slug_fr: string | null;
+      slug_es: string | null;
+      description_fr: string | null;
+      description_es: string | null;
+      seo_keywords: string | null;
+    },
+    locale: SocialLocale,
+  ) => {
+    const title = locale === 'es' ? row.title_es || row.title_fr : row.title_fr || row.title_es;
+    const slug = locale === 'es' ? row.slug_es || row.slug_fr : row.slug_fr || row.slug_es;
+    const description =
+      locale === 'es' ? row.description_es || row.description_fr : row.description_fr || row.description_es;
+    if (!title || !slug) return null;
+    return {
+      title,
+      slug,
+      description: description || '',
       keywords: row.seo_keywords,
-      url: `https://fitmangas.com/blog/${row.slug_fr}`,
-    })),
+      url: `https://fitmangas.com/blog/${slug}`,
+    };
+  };
+
+  const articlesFr = (articles ?? [])
+    .map((row) => mapArticle(row, 'fr'))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a));
+  const articlesEs = (articles ?? [])
+    .map((row) => mapArticle(row, 'es'))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a));
+
+  return {
+    articlesByLocale: {
+      fr: articlesFr,
+      es: articlesEs.length ? articlesEs : articlesFr,
+    },
     courses: (courses ?? []).map((row) => ({
       title: row.title,
       startsAt: row.starts_at,
-      language: row.course_language,
+      language: (row.course_language === 'es' ? 'es' : 'fr') as SocialLocale,
     })),
     pillars: SEO_PILLAR_PAGES.map((page) => ({
       title: page.shortTitle,
@@ -146,6 +441,71 @@ export async function markAllSocialPostsReadyAction() {
   });
   revalidateCommunity();
   return { ok: true as const };
+}
+
+/** Peaufine les posts existants (titres, hooks, captions, shotList face cam) sans régénérer l’IA. */
+export async function polishExistingSocialPostsAction() {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const now = new Date().toISOString();
+  let polished = 0;
+
+  const posts = board.posts.map((post) => {
+    if (post.status === 'published' || post.status === 'skipped') return post;
+
+    let next = { ...post };
+    let changed = false;
+
+    if (post.format === 'reel') {
+      const locale = post.locale ?? 'fr';
+      const hookTitle = polishInstagramHook(post.hookTitle, post.title, locale);
+      const title = polishPostTitle(post.title, hookTitle, 'reel', locale);
+      const shotList = enforceFaceCamShotList(post.shotList, locale);
+      const caption = sanitizeCaptionForFormat(post.caption, 'reel', 150);
+      if (
+        hookTitle !== post.hookTitle ||
+        title !== post.title ||
+        shotList !== post.shotList ||
+        caption !== post.caption
+      ) {
+        changed = true;
+        next = { ...next, hookTitle, title, shotList, caption, updatedAt: now };
+      }
+    } else if (post.format === 'feed' || post.format === 'carousel' || post.format === 'text') {
+      const locale = post.locale ?? 'fr';
+      const titleBase = polishPostTitle(post.title, post.hookTitle || post.title, post.format, locale);
+      const title =
+        post.format === 'carousel' && post.carouselPaths?.length
+          ? withCarouselSlideCount(titleBase, post.carouselPaths.length)
+          : titleBase;
+      const captionMax =
+        post.format === 'feed' ? 180 : post.format === 'text' ? 420 : CAPTION_BY_FORMAT.carousel.idealMax;
+      const caption = sanitizeCaptionForFormat(
+        post.caption,
+        post.format === 'text' ? 'text' : post.format,
+        captionMax,
+      );
+      if (title !== post.title || caption !== post.caption) {
+        changed = true;
+        next = { ...next, title, caption, updatedAt: now };
+      }
+    }
+
+    if (changed) polished += 1;
+    return next;
+  });
+
+  if (polished === 0) {
+    return { ok: true as const, polished: 0, message: 'Rien à peaufiner — les posts sont déjà propres.' };
+  }
+
+  await saveSocialCommsBoard({ ...board, posts });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    polished,
+    message: `${polished} post(s) peaufiné(s) : titres, légendes, plans face cam.`,
+  };
 }
 
 export async function updateSocialPostCaptionAction(postId: string, caption: string) {
@@ -241,17 +601,12 @@ export async function generateSocialImageAction(postId: string, feedbackOverride
   if (!post) return { ok: false as const, error: 'Post introuvable.' };
 
   const feedback = (feedbackOverride ?? post.imageFeedback).trim();
+  const double = await getAlejandraDoubleProfile();
+  const { generateSocialAiImage } = await import('@/lib/admin/social-ai-image');
   const result = await generateSocialAiImage(post, feedback, post.id.length);
   if (!result.ok) return result;
 
-  const source =
-    result.provider === 'gemini'
-      ? ('ai' as const)
-      : result.provider === 'unsplash'
-        ? ('unsplash' as const)
-        : result.provider === 'library'
-          ? ('library' as const)
-          : ('pollinations' as const);
+  const source = imageSourceFromProviderName(result.provider);
 
   await saveSocialCommsBoard({
     ...board,
@@ -269,10 +624,299 @@ export async function generateSocialImageAction(postId: string, feedbackOverride
     ),
   });
   revalidateCommunity();
+  const engineLabel =
+    result.provider === 'phota'
+      ? 'PHOTA entraîné'
+      : result.provider === 'gemini'
+        ? 'Gemini + refs'
+        : result.provider;
+  const doubleNote =
+    double.enabled && (result.provider === 'gemini' || result.provider === 'phota')
+      ? ` · Double (${engineLabel})`
+      : '';
   return {
     ok: true as const,
-    message: `Image régénérée (${result.provider}).`,
+    message: `Visuel Nano Banana 2 (${engineLabel})${doubleNote}.`,
   };
+}
+
+/** Applique une correction image-to-image sur l’image existante. */
+export async function refineSocialImageAction(postId: string, feedbackOverride?: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  const feedback = (feedbackOverride ?? post.imageFeedback).trim();
+  const { refineSocialAiImage } = await import('@/lib/admin/social-ai-image');
+  const result = await refineSocialAiImage(post, feedback);
+  if (!result.ok) return result;
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? {
+            ...item,
+            imagePath: result.imagePath,
+            imageSource: 'ai',
+            aiImagePrompt: result.prompt,
+            imageFeedback: '',
+            updatedAt: new Date().toISOString(),
+          }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const, message: 'Correction visuelle appliquée (image-to-image).' };
+}
+
+export async function updateSocialPostTitleAction(postId: string, title: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((post) =>
+      post.id === postId
+        ? {
+            ...post,
+            title: title.trim().slice(0, 180),
+            titleNeedsReview: false,
+            updatedAt: new Date().toISOString(),
+          }
+        : post,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function updateSocialPostCtaAction(postId: string, cta: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((post) =>
+      post.id === postId
+        ? { ...post, cta: cta.trim().slice(0, 180), updatedAt: new Date().toISOString() }
+        : post,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function updateSocialPostThemeAction(
+  postId: string,
+  themeId: string,
+  family?: ContentFamilyId | null,
+) {
+  await requireAdmin();
+  const theme = getContentTheme(themeId);
+  if (!theme) return { ok: false as const, error: 'Thème introuvable.' };
+  const resolvedFamily = family || theme.family;
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((p) => p.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((p) =>
+      p.id === postId
+        ? {
+            ...p,
+            pillarId: theme.id,
+            contentFamily: resolvedFamily,
+            cta:
+              theme.forceTrialCta && !p.cta
+                ? p.locale === 'es'
+                  ? TRIAL_CTA_ES
+                  : TRIAL_CTA_FR
+                : p.cta,
+            updatedAt: new Date().toISOString(),
+          }
+        : p,
+    ),
+  });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    message: `Thème : ${CONTENT_FAMILY_LABELS[resolvedFamily]} · ${theme.label}`,
+  };
+}
+
+/** Régénère UN post (texte + image) en gardant slot / langue / date / pilier. */
+export async function regenerateOneSocialPostAction(postId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((p) => p.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+
+  // Run isolé : ne touche pas les autres posts de la semaine
+  const runId = `solo_${Date.now().toString(36)}`;
+  const resetBoard = {
+    ...board,
+    posts: board.posts.map((p) =>
+      p.id === postId
+        ? {
+            ...p,
+            generationRunId: runId,
+            generationStatus: 'pending' as const,
+            generationError: null,
+            generationSlot: p.generationSlot ?? 0,
+            generationMediaKind:
+              p.generationMediaKind ||
+              (p.format === 'reel' ? 'video_brief' : p.format === 'carousel' ? 'carousel' : 'photo'),
+            generationDayOffset: p.generationDayOffset ?? 0,
+            generationSlotIndex: p.generationSlotIndex ?? 0,
+            updatedAt: new Date().toISOString(),
+          }
+        : p,
+    ),
+  };
+  await saveSocialCommsBoard(resetBoard);
+  const next = await generateNextPostAction(runId, 'pending');
+  revalidateCommunity();
+  if (!next.ok) return { ok: false as const, error: 'Régénération échouée.' };
+  if ('failedMessage' in next && typeof next.failedMessage === 'string' && next.failedMessage) {
+    return { ok: false as const, error: next.failedMessage };
+  }
+  const after = await getSocialCommsBoard();
+  const updated = after.posts.find((p) => p.id === postId);
+  if (updated?.generationStatus === 'failed') {
+    return { ok: false as const, error: updated.generationError || 'Régénération échouée.' };
+  }
+  return { ok: true as const, message: 'Post régénéré.' };
+}
+
+/** Crée la variante ES d’un post FR en réutilisant l’image. */
+export async function generateSpanishVariantAction(postId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const source = board.posts.find((p) => p.id === postId);
+  if (!source) return { ok: false as const, error: 'Post introuvable.' };
+  if (source.locale !== 'fr') return { ok: false as const, error: 'Disponible uniquement depuis un post FR.' };
+  const already = board.posts.find(
+    (p) => p.locale === 'es' && p.adaptedFromId === source.id && p.network === source.network && p.format === source.format,
+  );
+  if (already) return { ok: true as const, message: 'Variante ES déjà présente.' };
+
+  const context = await loadGenerationContext();
+  const pillarHistory = await loadPillarHistory();
+  const weekPillar = getWeeklyPillar(source.pillarId) || pickWeeklyPillar(pillarHistory, Date.now());
+  const mediaKind =
+    (source.generationMediaKind as import('@/lib/admin/social-cm-playbook').SocialMediaKind | null) ||
+    (source.format === 'reel' ? 'video_brief' : source.format === 'carousel' ? 'carousel' : 'photo');
+  const slot = {
+    network: source.network,
+    format: source.format,
+    mediaKind,
+    dayOffset: source.generationDayOffset ?? 0,
+    slotIndex: source.generationSlotIndex ?? 0,
+    feedIntent: undefined,
+  } as const;
+  const slotSpec = buildSlotSpecForWeek(
+    [slot],
+    weekPlanFromTheme(weekPillar, source.contentFamily),
+  )[0]!;
+  const batch = await generatePostsJsonForSlots(context, [{ ...slotSpec, slotId: 0 }], 'es');
+  if (!batch.ok) return { ok: false as const, error: batch.error };
+  const row = (batch.posts.find((p) => Boolean(p && typeof p === 'object')) as Record<string, unknown> | undefined) ?? {};
+  const articleSlugFallback = context.articlesByLocale.es?.[0]?.slug ?? null;
+  const normalized = normalizeGeneratedRowForPost({
+    row,
+    slot: slot as unknown as ReturnType<typeof buildWeeklySlots>[number],
+    slotSpec,
+    locale: 'es',
+    articleSlugFallback,
+  });
+  const now = new Date().toISOString();
+  const esPost: SocialPost = {
+    ...source,
+    id: createSocialPostId(),
+    locale: 'es',
+    ...normalized,
+    plannedAt: source.plannedAt,
+    pillarId: source.pillarId,
+    imagePath: source.imagePath,
+    carouselPaths: [...(source.carouselPaths ?? [])],
+    imageSource: source.imageSource,
+    aiImagePrompt: source.aiImagePrompt,
+    imageFeedback: '',
+    adaptedFromId: source.id,
+    generationStatus: 'done',
+    generationError: null,
+    generationRunId: source.generationRunId || null,
+    createdAt: now,
+    updatedAt: now,
+    metaExternalId: null,
+    facebookExternalId: null,
+    status: 'idea',
+  };
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [esPost, ...board.posts].slice(0, 160),
+  });
+  revalidateCommunity();
+  return { ok: true as const, message: 'Variante ES créée (même image).' };
+}
+
+export async function saveAlejandraDoubleAction(input: {
+  enabled: boolean;
+  referencePaths: string[];
+}) {
+  await requireAdmin();
+  const paths = Array.isArray(input.referencePaths) ? input.referencePaths.map(String) : [];
+  if (paths.length < 2) {
+    return { ok: false as const, error: 'Sélectionne au moins 2 portraits (idéal : 10–50 pour PHOTA).' };
+  }
+  const current = await getAlejandraDoubleProfile();
+  await saveAlejandraDoubleProfile({
+    ...current,
+    enabled: Boolean(input.enabled),
+    referencePaths: paths,
+    updatedAt: new Date().toISOString(),
+  });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    message: input.enabled
+      ? `Pack Double enregistré (${paths.length} photos). Lance l’entraînement PHOTA pour la meilleure fidélité.`
+      : 'Double désactivé.',
+  };
+}
+
+export async function resetAlejandraDoubleAction() {
+  await requireAdmin();
+  const defaults = emptyAlejandraDouble();
+  await saveAlejandraDoubleProfile(defaults);
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    message: `Double réinitialisé (${defaults.referencePaths.length} photos biblio). Relance l’entraînement PHOTA.`,
+  };
+}
+
+export async function trainAlejandraPhotaAction(tier: 'standard' | 'fast' = 'standard') {
+  await requireAdmin();
+  if (!resolvePhotaApiKey()) {
+    return {
+      ok: false as const,
+      error:
+        'PHOTALABS_API_KEY manquante. Crée une clé sur le portal PhotoLabs (API PHOTA) — pas besoin de Dupliq.',
+    };
+  }
+  const profile = await getAlejandraDoubleProfile();
+  const result = await startAlejandraPhotaTraining(profile, tier);
+  revalidateCommunity();
+  if (!result.ok) return result;
+  return { ok: true as const, message: result.message };
+}
+
+export async function refreshAlejandraPhotaStatusAction() {
+  await requireAdmin();
+  const profile = await getAlejandraDoubleProfile();
+  const result = await refreshAlejandraPhotaStatus(profile);
+  revalidateCommunity();
+  if (!result.ok) return result;
+  return { ok: true as const, message: result.message };
 }
 
 export async function updateSocialPostReelBriefAction(
@@ -287,13 +931,122 @@ export async function updateSocialPostReelBriefAction(
       post.id === postId
         ? {
             ...post,
-            hookTitle: input.hookTitle !== undefined ? input.hookTitle.trim().slice(0, 90) : post.hookTitle,
-            reelScript: input.reelScript !== undefined ? input.reelScript.trim().slice(0, 2000) : post.reelScript,
-            shotList: input.shotList !== undefined ? input.shotList.trim().slice(0, 800) : post.shotList,
+            hookTitle:
+              input.hookTitle !== undefined
+                ? polishInstagramHook(input.hookTitle, post.title, post.locale ?? 'fr')
+                : post.hookTitle,
+            reelScript: input.reelScript !== undefined ? input.reelScript.trim().slice(0, 4000) : post.reelScript,
+            shotList:
+              input.shotList !== undefined
+                ? enforceFaceCamShotList(input.shotList.trim(), post.locale ?? 'fr').slice(0, 800)
+                : post.shotList,
             updatedAt: new Date().toISOString(),
           }
         : post,
     ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function updateSocialPostFacebookMirrorAction(postId: string, alsoPublishFacebook: boolean) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.network !== 'instagram') {
+    return { ok: false as const, error: 'Le miroir Facebook ne s’applique qu’aux posts Instagram.' };
+  }
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? { ...item, alsoPublishFacebook, updatedAt: new Date().toISOString() }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+/** Crée ou retire une adaptation LinkedIn à partir d’un post (souvent Instagram). */
+export async function toggleLinkedInAdaptationAction(postId: string, enabled: boolean) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const source = board.posts.find((item) => item.id === postId);
+  if (!source) return { ok: false as const, error: 'Post introuvable.' };
+  if (source.network === 'linkedin') {
+    return { ok: false as const, error: 'Ce post est déjà LinkedIn.' };
+  }
+
+  const existing = board.posts.find((item) => item.network === 'linkedin' && item.adaptedFromId === postId);
+  const now = new Date().toISOString();
+
+  if (!enabled) {
+    if (!existing) return { ok: true as const, message: 'Aucune adaptation LinkedIn.' };
+    await saveSocialCommsBoard({
+      ...board,
+      posts: board.posts.filter((item) => item.id !== existing.id),
+    });
+    revalidateCommunity();
+    return { ok: true as const, message: 'Adaptation LinkedIn retirée.' };
+  }
+
+  if (existing) {
+    return { ok: true as const, message: 'Adaptation LinkedIn déjà présente.' };
+  }
+
+  const adapted = adaptCaptionToLinkedIn(source);
+  const linkedInPost: SocialPost = {
+    id: createSocialPostId(),
+    network: 'linkedin',
+    format: 'feed',
+    locale: source.locale ?? 'fr',
+    title: adapted.title,
+    caption: adapted.caption,
+    hashtags: adapted.hashtags,
+    cta: adapted.cta,
+    imageHint: source.imageHint,
+    imagePath: source.imagePath,
+    imageSource: source.imageSource,
+    aiImagePrompt: source.aiImagePrompt,
+    imageFeedback: '',
+    overlayText: source.overlayText,
+    useOverlay: false,
+    hookTitle: '',
+    reelScript: '',
+    shotList: '',
+    rawVideoPath: null,
+    editedVideoPath: null,
+    videoStatus: null,
+    carouselPaths: source.carouselPaths ?? [],
+    plannedAt: source.plannedAt,
+    status: 'idea',
+    sourceType: source.sourceType,
+    sourceRef: source.sourceRef,
+    whyItWorks: `Adapté depuis ${source.network} · ${source.title}`,
+    metaExternalId: null,
+    alsoPublishFacebook: false,
+    adaptedFromId: source.id,
+    facebookExternalId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [linkedInPost, ...board.posts].slice(0, 80),
+  });
+  revalidateCommunity();
+  return { ok: true as const, message: 'Post LinkedIn créé (format pro). Vérifie la légende puis copie/publie.' };
+}
+
+export async function deleteSocialPostAction(postId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.filter((post) => post.id !== postId && post.adaptedFromId !== postId),
   });
   revalidateCommunity();
   return { ok: true as const };
@@ -368,7 +1121,7 @@ export async function updateSocialPostOverlayAction(postId: string, overlayText:
       post.id === postId
         ? {
             ...post,
-            overlayText: overlayText.trim().slice(0, 90) || post.title,
+            overlayText: polishOverlayText(overlayText, post.locale, 56) || post.overlayText || '',
             useOverlay,
             updatedAt: new Date().toISOString(),
           }
@@ -379,12 +1132,16 @@ export async function updateSocialPostOverlayAction(postId: string, overlayText:
   return { ok: true as const };
 }
 
-export async function deleteSocialPostAction(postId: string) {
+export async function markSocialPostManualSentAction(postId: string) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
   await saveSocialCommsBoard({
     ...board,
-    posts: board.posts.filter((post) => post.id !== postId),
+    posts: board.posts.map((post) =>
+      post.id === postId
+        ? { ...post, manualSentAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        : post,
+    ),
   });
   revalidateCommunity();
   return { ok: true as const };
@@ -410,6 +1167,13 @@ export async function saveMetaConnectionManualAction(input: {
   };
   if (!connection.pageId || !connection.accessToken) {
     return { ok: false as const, error: 'Page ID et token sont obligatoires.' };
+  }
+  if (connection.igUserId && connection.pageId === connection.igUserId) {
+    return {
+      ok: false as const,
+      error:
+        'Page ID et IG User ID sont identiques — anormal. Ce sont deux numéros différents (Page Facebook ≠ compte Instagram Business). Récupère-les via Graph API Explorer → /me/accounts → instagram_business_account.',
+    };
   }
   await saveMetaSocialConnection(connection);
   revalidateCommunity();
@@ -456,6 +1220,12 @@ export async function publishSocialPostNowAction(postId: string) {
       error: 'WhatsApp communauté : copie le message et envoie-le manuellement (API communauté limitée).',
     };
   }
+  if (post.network === 'linkedin') {
+    return {
+      ok: false as const,
+      error: 'LinkedIn : copie la légende (et le visuel) puis publie manuellement sur LinkedIn.',
+    };
+  }
   if (post.network === 'tiktok') {
     return { ok: false as const, error: 'TikTok arrive plus tard.' };
   }
@@ -466,10 +1236,40 @@ export async function publishSocialPostNowAction(postId: string) {
   }
 
   try {
-    const externalId =
-      post.network === 'instagram'
-        ? await publishInstagramNow(connection, post)
-        : await publishFacebookPost(connection, post, { schedule: false });
+    let externalId: string;
+    let facebookExternalId: string | null = post.facebookExternalId;
+
+    if (post.network === 'instagram') {
+      externalId = await publishInstagramNow(connection, post);
+      if (post.alsoPublishFacebook) {
+        try {
+          facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
+        } catch (fbError) {
+          console.error('[publishSocialPostNowAction] FB mirror', post.id, fbError);
+          await saveSocialCommsBoard({
+            ...board,
+            posts: board.posts.map((item) =>
+              item.id === postId
+                ? {
+                    ...item,
+                    status: 'published',
+                    metaExternalId: externalId,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : item,
+            ),
+          });
+          revalidateCommunity();
+          return {
+            ok: true as const,
+            externalId,
+            message: `Publié sur Instagram. Miroir Facebook échoué : ${fbError instanceof Error ? fbError.message : 'erreur'}.`,
+          };
+        }
+      }
+    } else {
+      externalId = await publishFacebookPost(connection, post, { schedule: false });
+    }
 
     await saveSocialCommsBoard({
       ...board,
@@ -479,13 +1279,21 @@ export async function publishSocialPostNowAction(postId: string) {
               ...item,
               status: 'published',
               metaExternalId: externalId,
+              facebookExternalId,
               updatedAt: new Date().toISOString(),
             }
           : item,
       ),
     });
     revalidateCommunity();
-    return { ok: true as const, externalId };
+    return {
+      ok: true as const,
+      externalId,
+      message:
+        post.network === 'instagram' && post.alsoPublishFacebook
+          ? 'Publié sur Instagram + Facebook.'
+          : 'Publié sur Meta.',
+    };
   } catch (e) {
     return { ok: false as const, error: e instanceof Error ? e.message : 'Publication échouée.' };
   }
@@ -524,11 +1332,26 @@ export async function scheduleSocialPostAction(postId: string) {
   }
 
   if (post.network === 'instagram') {
+    const connection = await getMetaSocialConnection();
+    let facebookExternalId = post.facebookExternalId;
+    // Miroir FB programmé nativement si possible (image/vidéo déjà prête)
+    if (post.alsoPublishFacebook && connection.connected) {
+      try {
+        facebookExternalId = await publishFacebookPost(connection, post, { schedule: true });
+      } catch (e) {
+        console.error('[scheduleSocialPostAction] FB mirror schedule', post.id, e);
+      }
+    }
     await saveSocialCommsBoard({
       ...board,
       posts: board.posts.map((item) =>
         item.id === postId
-          ? { ...item, status: 'scheduled', updatedAt: new Date().toISOString() }
+          ? {
+              ...item,
+              status: 'scheduled',
+              facebookExternalId,
+              updatedAt: new Date().toISOString(),
+            }
           : item,
       ),
     });
@@ -536,7 +1359,9 @@ export async function scheduleSocialPostAction(postId: string) {
     return {
       ok: true as const,
       mode: 'instagram_queue' as const,
-      message: 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
+      message: post.alsoPublishFacebook
+        ? 'Instagram en file FitMangas + Facebook programmé (si média prêt). Le cron publiera IG à l’heure.'
+        : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
     };
   }
 
@@ -556,10 +1381,25 @@ export async function scheduleSocialPostAction(postId: string) {
     };
   }
 
+  if (post.network === 'linkedin') {
+    await saveSocialCommsBoard({
+      ...board,
+      posts: board.posts.map((item) =>
+        item.id === postId ? { ...item, status: 'scheduled', updatedAt: new Date().toISOString() } : item,
+      ),
+    });
+    revalidateCommunity();
+    return {
+      ok: true as const,
+      mode: 'linkedin_manual' as const,
+      message: 'LinkedIn rappel programmé : à l’heure, copie la légende et publie manuellement.',
+    };
+  }
+
   return { ok: false as const, error: 'Réseau non programmable pour l’instant.' };
 }
 
-/** Appelé par le cron : publie les posts Instagram “scheduled” dont l’heure est passée. */
+/** Appelé par le cron : publie les posts Instagram “scheduled” dont l’heure est passée (+ miroir FB). */
 export async function processDueSocialPostsAction() {
   const board = await getSocialCommsBoard();
   const connection = await getMetaSocialConnection();
@@ -574,9 +1414,23 @@ export async function processDueSocialPostsAction() {
     if (!connection.connected) continue;
     try {
       const externalId = await publishInstagramNow(connection, post);
+      let facebookExternalId = post.facebookExternalId;
+      if (post.alsoPublishFacebook && !facebookExternalId) {
+        try {
+          facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
+        } catch (fbError) {
+          console.error('[processDueSocialPostsAction] FB mirror', post.id, fbError);
+        }
+      }
       nextPosts = nextPosts.map((item) =>
         item.id === post.id
-          ? { ...item, status: 'published', metaExternalId: externalId, updatedAt: new Date().toISOString() }
+          ? {
+              ...item,
+              status: 'published',
+              metaExternalId: externalId,
+              facebookExternalId,
+              updatedAt: new Date().toISOString(),
+            }
           : item,
       );
       published += 1;
@@ -596,233 +1450,517 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function generateSocialWeekPlanAction(networks: SocialNetwork[] = ['instagram', 'whatsapp', 'facebook']) {
-  await requireAdmin();
+async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  concurrency: number,
+): Promise<T[]> {
+  const out: T[] = new Array(tasks.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, concurrency) }, async () => {
+    while (true) {
+      const i = cursor;
+      cursor += 1;
+      if (i >= tasks.length) return;
+      out[i] = await tasks[i]!();
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
 
-  const targetNetworks = networks.length ? networks : (['instagram', 'whatsapp', 'facebook'] as SocialNetwork[]);
-  const slots = buildWeeklySlots(targetNetworks);
-  if (!slots.length) {
-    return { ok: false as const, error: 'Aucun réseau sélectionné pour la génération.' };
-  }
+export async function generateSocialWeekPlanAction(
+  networks: SocialNetwork[] = ['instagram', 'whatsapp', 'linkedin'],
+  locales: SocialLocale[] = ['fr'],
+) {
+  const init = await initWeekPlanAction(networks, locales);
+  if (!init.ok) return init;
+  return {
+    ok: true as const,
+    created: init.total,
+    runId: init.runId,
+    message:
+      'Génération initialisée en mode progressif (post par post). Continue avec generateNextPostAction puis finalizeWeekPlanAction.',
+  };
+}
 
-  const context = await loadGenerationContext();
-  const slotSpec = slots.map((slot, index) => {
+function weekPlanFromTheme(
+  theme: WeeklyPillar,
+  familyOverride?: ContentFamilyId | null,
+): WeekPlanSnapshot {
+  const family = familyOverride || theme.family;
+  return {
+    mixLabel: `${CONTENT_FAMILY_LABELS[family]} · ${theme.label}`,
+    counts: {
+      portee: family === 'portee' ? 1 : 0,
+      confiance: family === 'confiance' ? 1 : 0,
+      conversion: family === 'conversion' ? 1 : 0,
+    },
+    assignments: [{ family, themeId: theme.id, label: theme.label }],
+    shareHookSlotIndex: family !== 'conversion' ? 0 : -1,
+  };
+}
+
+function buildSlotSpecForWeek(
+  slots: ReturnType<typeof buildWeeklySlots>,
+  weekPlan: WeekPlanSnapshot,
+): SlotSpec[] {
+  return slots.map((slot, index) => {
     const band =
-      slot.network === 'facebook'
-        ? { min: 40, max: 120, ideal: '40-80' }
-        : slot.network === 'whatsapp'
-          ? { min: 180, max: 280, ideal: '180-280' }
+      slot.network === 'whatsapp'
+        ? CAPTION_BY_FORMAT.text
+        : slot.network === 'linkedin'
+          ? { min: 350, idealMin: 350, idealMax: 700, max: 900 }
           : CAPTION_BY_FORMAT[slot.format];
+    const assignment = weekPlan.assignments[index % weekPlan.assignments.length]!;
+    const theme = getContentTheme(assignment.themeId);
+    const localeAngles = theme?.reelAnglesFr ?? [];
     return {
       slotId: index,
       network: slot.network,
       format: slot.format,
       mediaKind: slot.mediaKind,
+      feedIntent: slot.feedIntent ?? null,
       dayOffset: slot.dayOffset,
       parisHour:
         SOCIAL_CM_GUIDELINES[slot.network].bestHours[
           slot.slotIndex % SOCIAL_CM_GUIDELINES[slot.network].bestHours.length
         ],
-      captionMin: 'min' in band ? band.min : 70,
-      captionMax: 'max' in band ? band.max : 220,
-      captionIdeal: 'ideal' in band ? band.ideal : `${band.idealMin}-${band.idealMax}`,
+      captionMin: band.min,
+      captionMax:
+        slot.format === 'reel' ? 140 : Math.min(band.max, slot.network === 'linkedin' ? 700 : band.max),
+      captionIdeal: slot.format === 'reel' ? '70-140' : `${band.idealMin}-${band.idealMax}`,
       hashtagIdeal: SOCIAL_CM_GUIDELINES[slot.network].hashtagIdeal,
       needsReelBrief: slot.mediaKind === 'video_brief',
       needsPhoto: slot.mediaKind === 'photo' || slot.mediaKind === 'carousel',
+      assignPillar: assignment.themeId,
+      contentFamily: assignment.family,
+      themeLabel: assignment.label,
+      forceTrialCta: Boolean(theme?.forceTrialCta),
+      showProductOrCoach: Boolean(theme?.showProductOrCoach),
+      shareHook: index === weekPlan.shareHookSlotIndex,
+      reelAngle: slot.format === 'reel' ? localeAngles[index % Math.max(localeAngles.length, 1)] ?? null : null,
     };
   });
+}
 
-  const prompt = `Tu es community manager senior pour FitMangas (Pilates/Barre visio, coach Alejandra).
+function generationCounts(posts: SocialPost[], runId: string) {
+  const scoped = posts.filter((p) => p.generationRunId === runId);
+  const done = scoped.filter((p) => p.generationStatus === 'done').length;
+  const failed = scoped.filter((p) => p.generationStatus === 'failed').length;
+  const retrying = scoped.filter((p) => p.generationStatus === 'retrying').length;
+  const pending = scoped.filter((p) => p.generationStatus === 'pending').length;
+  return { total: scoped.length, done, failed, retrying, pending };
+}
 
-Contexte:
-${JSON.stringify(context)}
-
-Plan FIXE (${slots.length} posts) — tu ne choisis PAS réseau/format/horaire :
-${JSON.stringify(slotSpec)}
-
-Règles:
-- EXACTEMENT ${slots.length} posts, un par slotId (ordre 0…${slots.length - 1})
-- NE PAS renvoyer network, format, plannedAt, imagePath, whyItWorks
-- REEL (mediaKind=video_brief):
-  - caption 70–150 caractères (hook + CTA), PAS un pavé
-  - hookTitle OBLIGATOIRE: gros titre viral FR MAJUSCULES max 8 mots (ex: "MAL AU DOS AU BUREAU ?")
-  - reelScript OBLIGATOIRE: AIDE-MÉMOIRE 3 puces max (PAS un script à lire à l’écran). Format exact:
-    "1) ...\\n2) ...\\n3) ..."
-  - shotList OBLIGATOIRE: 2–3 lignes face cam téléphone (phase actuelle = face cam only, pas de plan exercice filmé)
-  - imageHint: laisser vide ou "n/a"
-- FEED photo marque: caption 100–180 car.
-- CAROUSEL:
-  - caption OBLIGATOIRE entre 200 et 900 caractères (cible idéale 400–700). Hook dans les 125 premiers caractères.
-  - Une SEULE légende Instagram fluide (2–4 courts paragraphes). INTERDIT: "Slide 1", "Slide 2", "Slide 3", markdown **, plan de slides dans le texte.
-  - Le contenu éducatif des slides est dans les IMAGES, pas recopié dans la légende.
-  - CTA save / FitMangas en fin, discret
-  - imageHint EN ANGLAIS (scène editorial Pilates 4:5 cream/beige/terracotta, no text)
-- FACEBOOK: 40–120 car., question ouverte, max 2 hashtags
-- WHATSAPP: 180–280 car., 0 hashtag, ton communauté
-- Hashtags dans le champ hashtags seulement
-- useOverlay: false (sauf carousel slide 1 si utile)
-- imageHint (feed/whatsapp) EN ANGLAIS: scène editorial Pilates unique 4:5 cream/beige/terracotta, no text
-- Réponds UNIQUEMENT JSON: {"posts":[{slotId,title,caption,hashtags,cta,imageHint,overlayText,useOverlay,hookTitle,reelScript,shotList,sourceType,sourceRef}]}`;
-
-  try {
-    const aiResult = await runBlogAiCascade({
-      system: 'Community manager FitMangas. JSON uniquement.',
-      user: prompt,
-      temperature: 0.7,
-      maxOutputTokens: 8192,
-    });
-
-    if (!aiResult.ok) {
-      return { ok: false as const, error: aiResult.detail || 'Génération texte impossible.' };
+function normalizeGeneratedRowForPost(params: {
+  row: Record<string, unknown>;
+  slot: ReturnType<typeof buildWeeklySlots>[number];
+  slotSpec: SlotSpec;
+  locale: SocialLocale;
+  articleSlugFallback: string | null;
+}) {
+  const { row, slot, slotSpec, locale, articleSlugFallback } = params;
+  const isReel = slot.mediaKind === 'video_brief';
+  const band = CAPTION_BY_FORMAT[slot.format] ?? CAPTION_BY_FORMAT.feed;
+  const captionMax =
+    slot.format === 'reel' ? 150 : slot.network === 'whatsapp' ? 420 : slot.network === 'linkedin' ? 900 : band.max;
+  const rawTitle = typeof row.title === 'string' ? row.title : `Post ${SOCIAL_CM_GUIDELINES[slot.network].label}`;
+  const rawHook =
+    typeof row.hookTitle === 'string' && row.hookTitle.trim() ? row.hookTitle.trim() : isReel ? rawTitle : '';
+  const hookTitle = isReel ? polishInstagramHook(rawHook, rawTitle, locale) : '';
+  let title = polishPostTitle(rawTitle, hookTitle || rawHook, slot.format, locale);
+  let titleNeedsReview = titleFailsQualityGate(title) || /titre à revoir|título a revisar/i.test(title);
+  if (titleNeedsReview) {
+    const retry = polishPostTitle(hookTitle || rawHook, rawTitle, slot.format, locale);
+    if (!titleFailsQualityGate(retry) && !/titre à revoir|título a revisar/i.test(retry)) {
+      title = retry;
+      titleNeedsReview = false;
     }
+  }
 
-    const parsed = extractJsonObject(aiResult.text) as { posts?: unknown[] };
-    const now = new Date().toISOString();
-    const rawPosts = Array.isArray(parsed.posts) ? parsed.posts : [];
+  const briefFallback = isReel ? fallbackReelBrief(hookTitle, title, locale) : { reelScript: '', shotList: '' };
+  const reelScriptRaw =
+    typeof row.reelScript === 'string' && row.reelScript.trim()
+      ? row.reelScript.trim().replace(/\\n/g, '\n')
+      : briefFallback.reelScript;
+  const shotListRaw = isReel
+    ? enforceFaceCamShotList(
+        typeof row.shotList === 'string' && row.shotList.trim()
+          ? row.shotList.trim().replace(/\\n/g, '\n')
+          : briefFallback.shotList,
+        locale,
+      )
+    : '';
 
-    const generated: SocialPost[] = [];
+  let sourceType: SocialPost['sourceType'] =
+    row.sourceType === 'blog' || row.sourceType === 'pillar' || row.sourceType === 'course' || row.sourceType === 'ai'
+      ? row.sourceType
+      : 'ai';
+  let sourceRef = typeof row.sourceRef === 'string' ? row.sourceRef : null;
+  if (slot.network === 'whatsapp' && articleSlugFallback) {
+    sourceType = 'blog';
+    sourceRef = sourceRef || articleSlugFallback;
+  }
+
+  return {
+    title,
+    caption:
+      typeof row.caption === 'string'
+        ? sanitizeCaptionForFormat(row.caption, slot.format === 'text' ? 'text' : slot.format, captionMax)
+        : '',
+    hashtags: Array.isArray(row.hashtags)
+      ? row.hashtags.map(String).filter(Boolean).slice(0, SOCIAL_CM_GUIDELINES[slot.network].hashtagMax)
+      : [],
+    cta: (() => {
+      if (slotSpec.forceTrialCta) {
+        return locale === 'es' ? TRIAL_CTA_ES : TRIAL_CTA_FR;
+      }
+      return typeof row.cta === 'string' ? row.cta.slice(0, 180) : '';
+    })(),
+    imageHint: typeof row.imageHint === 'string' ? row.imageHint.slice(0, 500) : '',
+    overlayText: (() => {
+      // Ne jamais se rabattre sur le titre long (cause des overlays coupés au milieu).
+      const rawOverlay = typeof row.overlayText === 'string' ? row.overlayText.trim() : '';
+      const rawHook = hookTitle.trim();
+      const candidate = rawOverlay || rawHook;
+      return polishOverlayText(candidate, locale, 56);
+    })(),
+    useOverlay: row.useOverlay === true || slot.format === 'feed' || slot.format === 'carousel',
+    hookTitle: polishOverlayText(hookTitle || (typeof row.overlayText === 'string' ? row.overlayText : ''), locale, 56),
+    reelScript: reelScriptRaw.slice(0, 4000),
+    shotList: shotListRaw.slice(0, 800),
+    sourceType,
+    sourceRef,
+    whyItWorks: typeof row.whyItWorks === 'string' ? row.whyItWorks.slice(0, 220) : '',
+    titleNeedsReview,
+    pillarId: typeof slotSpec.assignPillar === 'string' ? slotSpec.assignPillar : null,
+    contentFamily: slotSpec.contentFamily,
+  };
+}
+
+export async function initWeekPlanAction(
+  networks: SocialNetwork[] = ['instagram', 'whatsapp', 'linkedin'],
+  locales: SocialLocale[] = ['fr'],
+) {
+  await requireAdmin();
+  const targetNetworks = networks.length
+    ? networks.filter((n) => n !== 'facebook')
+    : (['instagram', 'whatsapp', 'linkedin'] as SocialNetwork[]);
+  // Défaut FR uniquement — ES = bouton « Générer en espagnol » par post
+  const targetLocales: SocialLocale[] = (locales.length ? locales : (['fr'] as SocialLocale[])).filter(
+    (l, i, arr) => (l === 'fr' || l === 'es') && arr.indexOf(l) === i,
+  );
+  if (!targetLocales.length) return { ok: false as const, error: 'Aucune langue sélectionnée (FR / ES).' };
+  const slots = buildWeeklySlots(targetNetworks);
+  if (!slots.length) return { ok: false as const, error: 'Aucun réseau sélectionné pour la génération.' };
+
+  const board = await getSocialCommsBoard();
+  const pillarHistory = await loadPillarHistory();
+  const weekSeed = Date.now();
+  const weekPlan = buildWeekThemePlan(pillarHistory, slots.length, weekSeed);
+  const slotSpec = buildSlotSpecForWeek(slots, weekPlan);
+  const now = new Date().toISOString();
+  const runId = `run_${Date.now().toString(36)}`;
+
+  const skeleton: SocialPost[] = [];
+  for (const locale of targetLocales) {
     for (let i = 0; i < slots.length; i += 1) {
       const slot = slots[i]!;
-      const row = (rawPosts.find((item) => {
-        if (!item || typeof item !== 'object') return false;
-        return (item as Record<string, unknown>).slotId === i;
-      }) ?? rawPosts[i]) as Record<string, unknown> | undefined;
-      if (!row || typeof row !== 'object') continue;
-
-      const isReel = slot.mediaKind === 'video_brief';
-      const band = CAPTION_BY_FORMAT[slot.format];
-      const captionMax =
-        slot.network === 'facebook' ? 120 : slot.network === 'whatsapp' ? 280 : band.max;
-      const title =
-        typeof row.title === 'string' ? row.title.slice(0, 120) : `Post ${SOCIAL_CM_GUIDELINES[slot.network].label}`;
-      const hookTitle =
-        typeof row.hookTitle === 'string' && row.hookTitle.trim()
-          ? row.hookTitle.trim().slice(0, 90)
-          : isReel
-            ? title.slice(0, 90).toUpperCase()
-            : '';
-      const briefFallback = isReel ? fallbackReelBrief(hookTitle, title) : { reelScript: '', shotList: '' };
-      const reelScriptRaw =
-        typeof row.reelScript === 'string' && row.reelScript.trim()
-          ? row.reelScript.trim()
-          : briefFallback.reelScript;
-      const shotListRaw =
-        typeof row.shotList === 'string' && row.shotList.trim()
-          ? row.shotList.trim()
-          : briefFallback.shotList;
-
-      generated.push({
+      const spec = slotSpec[i]!;
+      skeleton.push({
         id: createSocialPostId(),
         network: slot.network,
         format: slot.format,
-        title,
-        caption:
-          typeof row.caption === 'string'
-            ? sanitizeCaptionForFormat(row.caption, slot.format, captionMax)
-            : '',
-        hashtags: Array.isArray(row.hashtags)
-          ? row.hashtags.map(String).filter(Boolean).slice(0, SOCIAL_CM_GUIDELINES[slot.network].hashtagMax)
-          : [],
-        cta: typeof row.cta === 'string' ? row.cta.slice(0, 180) : '',
-        imageHint: typeof row.imageHint === 'string' ? row.imageHint.slice(0, 500) : '',
+        locale,
+        title: locale === 'es' ? 'Generación en curso…' : 'Génération en cours…',
+        caption: '',
+        hashtags: [],
+        cta: spec.forceTrialCta ? (locale === 'es' ? TRIAL_CTA_ES : TRIAL_CTA_FR) : '',
+        imageHint: '',
         imagePath: null,
-        imageSource: isReel ? 'none' : 'library',
+        imageSource: slot.mediaKind === 'video_brief' ? 'none' : 'library',
         aiImagePrompt: '',
         imageFeedback: '',
-        overlayText:
-          typeof row.overlayText === 'string' && row.overlayText.trim()
-            ? row.overlayText.trim().slice(0, 90)
-            : title.slice(0, 90),
-        useOverlay: row.useOverlay === true,
-        hookTitle,
-        reelScript: reelScriptRaw.slice(0, 2000),
-        shotList: shotListRaw.slice(0, 800),
+        overlayText: '',
+        useOverlay: false,
+        hookTitle: '',
+        reelScript: '',
+        shotList: '',
         rawVideoPath: null,
         editedVideoPath: null,
-        videoStatus: isReel ? 'brief' : null,
+        videoStatus: slot.mediaKind === 'video_brief' ? 'brief' : null,
         carouselPaths: [],
         plannedAt: plannedAtParis(slot.network, slot.dayOffset, slot.slotIndex),
         status: 'idea',
-        sourceType:
-          row.sourceType === 'blog' || row.sourceType === 'pillar' || row.sourceType === 'course' || row.sourceType === 'ai'
-            ? row.sourceType
-            : 'ai',
-        sourceRef: typeof row.sourceRef === 'string' ? row.sourceRef : null,
+        sourceType: 'ai',
+        sourceRef: null,
         whyItWorks: '',
         metaExternalId: null,
+        titleNeedsReview: false,
+        pillarId: spec.assignPillar ?? null,
+        contentFamily: spec.contentFamily,
+        alsoPublishFacebook: slot.network === 'instagram',
+        adaptedFromId: null,
+        facebookExternalId: null,
+        generationStatus: 'pending',
+        generationError: null,
+        generationRunId: runId,
+        generationSlot: i,
+        generationMediaKind: slot.mediaKind,
+        generationDayOffset: slot.dayOffset,
+        generationSlotIndex: slot.slotIndex,
         createdAt: now,
         updatedAt: now,
       });
     }
+  }
 
-    if (!generated.length) {
-      return { ok: false as const, error: 'Aucun post exploitable généré.' };
-    }
+  await recordWeekThemePlan(weekPlan, now.slice(0, 10));
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [...skeleton, ...board.posts].slice(0, 160),
+  });
+  revalidateCommunity();
 
-    const board = await getSocialCommsBoard();
-    const usedLibrary = collectUsedLibraryPaths(board.posts);
-    const usedUnsplash = collectUsedUnsplashIdsFromPosts(board.posts);
+  return {
+    ok: true as const,
+    runId,
+    total: skeleton.length,
+    mixLabel: weekPlan.mixLabel,
+    message: `Squelette généré (${skeleton.length} posts). ${weekPlan.mixLabel}`,
+  };
+}
 
-    let photosOk = 0;
-    let photosFailed = 0;
-    let reelsBrief = 0;
+export async function requeueFailedWeekPlanAction(runId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  let count = 0;
+  const posts = board.posts.map((post) => {
+    if (post.generationRunId !== runId || post.generationStatus !== 'failed') return post;
+    count += 1;
+    return {
+      ...post,
+      generationStatus: 'pending' as const,
+      generationError: null,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+  if (!count) return { ok: true as const, count: 0, message: 'Aucun échec à relancer.' };
+  await saveSocialCommsBoard({ ...board, posts });
+  revalidateCommunity();
+  return { ok: true as const, count, message: `${count} post(s) remis en file.` };
+}
 
-    for (let i = 0; i < generated.length; i += 1) {
-      const post = generated[i]!;
-      const slot = slots[i]!;
+export async function generateNextPostAction(runId: string, mode: 'pending' | 'failed' = 'pending') {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const target = board.posts
+    .filter((p) => p.generationRunId === runId)
+    .filter((p) =>
+      mode === 'failed'
+        ? p.generationStatus === 'failed'
+        : p.generationStatus === 'pending' || p.generationStatus === 'retrying',
+    )
+    .sort((a, b) => {
+      const sa = a.generationSlot ?? Number.MAX_SAFE_INTEGER;
+      const sb = b.generationSlot ?? Number.MAX_SAFE_INTEGER;
+      if (sa !== sb) return sa - sb;
+      return a.locale.localeCompare(b.locale);
+    })[0];
 
-      if (slot.mediaKind === 'video_brief') {
-        reelsBrief += 1;
-        continue;
-      }
+  if (!target) {
+    const counts = generationCounts(board.posts, runId);
+    return { ok: true as const, completed: true, ...counts };
+  }
 
-      const count = slot.mediaKind === 'carousel' ? 3 : 1;
-      const paths: string[] = [];
-      for (let c = 0; c < count; c += 1) {
-        const imageResult = await generateSocialPhotoForPost(post, {
-          variationSeed: i * 10 + c + 1,
-          usedLibraryPaths: usedLibrary,
-          usedUnsplashIds: usedUnsplash,
-          preferLibrary: true,
-          allowUnsplash: true,
-        });
-        if (imageResult.ok) {
-          paths.push(imageResult.imagePath);
-          post.aiImagePrompt = imageResult.prompt;
-          post.imageSource = imageSourceFromProvider(imageResult.provider);
-          if (imageResult.provider === 'library') usedLibrary.add(imageResult.imagePath);
-          if (imageResult.photoId) usedUnsplash.add(imageResult.photoId);
-          photosOk += 1;
-        } else {
-          photosFailed += 1;
-        }
-        await sleep(800);
-      }
+  const markRetrying = {
+    ...board,
+    posts: board.posts.map((p) =>
+      p.id === target.id
+        ? { ...p, generationStatus: 'retrying' as const, generationError: null, updatedAt: new Date().toISOString() }
+        : p,
+    ),
+  };
+  await saveSocialCommsBoard(markRetrying);
+
+  try {
+    const context = await loadGenerationContext();
+    const pillarHistory = await loadPillarHistory();
+    const weekPillar =
+      getWeeklyPillar(target.pillarId) || pickWeeklyPillar(pillarHistory, Date.now());
+    const slot = {
+      network: target.network,
+      format: target.format,
+      mediaKind:
+        (target.generationMediaKind as SocialMediaKind | null) ||
+        (target.format === 'reel' ? 'video_brief' : target.format === 'carousel' ? 'carousel' : 'photo'),
+      dayOffset: target.generationDayOffset ?? 0,
+      slotIndex: target.generationSlotIndex ?? 0,
+      feedIntent: undefined,
+    } as const;
+    const slotSpec = buildSlotSpecForWeek(
+      [slot],
+      weekPlanFromTheme(weekPillar, target.contentFamily),
+    )[0]!;
+    const batch = await generatePostsJsonForSlots(context, [{ ...slotSpec, slotId: 0 }], target.locale);
+    if (!batch.ok) throw new Error(batch.error);
+    const row = (batch.posts.find((p) => Boolean(p && typeof p === 'object')) as Record<string, unknown> | undefined) ?? {};
+    const articleSlugFallback = context.articlesByLocale[target.locale]?.[0]?.slug ?? null;
+    const normalized = normalizeGeneratedRowForPost({
+      row,
+      slot: slot as unknown as ReturnType<typeof buildWeeklySlots>[number],
+      slotSpec,
+      locale: target.locale,
+      articleSlugFallback,
+    });
+
+    let imagePath: string | null = target.imagePath;
+    let carouselPaths: string[] = target.carouselPaths ?? [];
+    let imageSource: SocialPost['imageSource'] = target.format === 'reel' ? 'none' : 'library';
+    let aiImagePrompt = '';
+
+    if (slot.mediaKind !== 'video_brief') {
+      const { collectUsedUnsplashIdsFromPosts, generateSocialPhotoForPost, uploadSocialGeneratedImage } = await import(
+        '@/lib/admin/social-ai-image'
+      );
+      const { BrandBackgroundProvider } = await import('@/lib/admin/image-providers/brand-background-provider');
+      const { listProductCapturePaths, pickLibraryPath } = await import('@/lib/admin/image-providers/library-provider');
+      const latestBoard = await getSocialCommsBoard();
+      const usedLibrary = collectUsedLibraryPaths(latestBoard.posts);
+      const usedUnsplash = collectUsedUnsplashIdsFromPosts(latestBoard.posts);
 
       if (slot.mediaKind === 'carousel') {
-        post.carouselPaths = paths;
-        post.imagePath = paths[0] ?? null;
+        const paths: Array<string | null> = new Array(7).fill(null);
+        const tasks: Array<() => Promise<void>> = [];
+        for (let c = 0; c < 7; c += 1) {
+          if (c === 5) {
+            const brand = new BrandBackgroundProvider();
+            const brandImg = await brand.generate('quote-frame citation slide', { width: 1080, height: 1350 });
+            if ('buffer' in brandImg && brandImg.buffer.length) paths[c] = await uploadSocialGeneratedImage(brandImg.buffer, `${target.id}-s6`);
+            continue;
+          }
+          if (c === 6) {
+            const product =
+              pickLibraryPath({ folder: 'produit-captures', themeHint: 'dashboard desktop', seed: target.id.length }) ||
+              listProductCapturePaths()[0] ||
+              null;
+            paths[c] = product;
+            continue;
+          }
+          tasks.push(async () => {
+            const r = await generateSocialPhotoForPost(target, {
+              variationSeed: (target.generationSlot ?? 0) * 10 + c + 1,
+              usedLibraryPaths: usedLibrary,
+              usedUnsplashIds: usedUnsplash,
+              preferLibrary: false,
+              forceNanoBanana: c < 5,
+              allowUnsplash: false,
+              libraryThemeHint: normalized.imageHint || normalized.title,
+            });
+            if (r.ok) {
+              paths[c] = r.imagePath;
+              imageSource = imageSourceFromProviderName(r.provider);
+              aiImagePrompt = r.prompt;
+            }
+            await sleep(250);
+          });
+        }
+        await runWithConcurrency(tasks, 3);
+        carouselPaths = paths.filter((p): p is string => Boolean(p));
+        imagePath = carouselPaths[0] ?? null;
       } else {
-        post.imagePath = paths[0] ?? null;
+        const r = await generateSocialPhotoForPost(target, {
+          variationSeed: target.id.length,
+          usedLibraryPaths: usedLibrary,
+          usedUnsplashIds: usedUnsplash,
+          preferLibrary: false,
+          forceNanoBanana: false,
+          allowUnsplash: false,
+          libraryThemeHint: normalized.imageHint || normalized.title,
+        });
+        if (!r.ok) throw new Error(r.error);
+        imagePath = r.imagePath;
+        imageSource = imageSourceFromProviderName(r.provider);
+        aiImagePrompt = r.prompt;
       }
     }
 
-    const next: SocialCommsBoard = {
-      version: 2,
-      lastGeneratedAt: now,
-      posts: [...generated, ...board.posts].slice(0, 80),
-    };
-    await saveSocialCommsBoard(next);
-    revalidateCommunity();
+    const now = new Date().toISOString();
+    const refreshed = await getSocialCommsBoard();
+    await saveSocialCommsBoard({
+      ...refreshed,
+      posts: refreshed.posts.map((p) =>
+        p.id === target.id
+          ? {
+              ...p,
+              ...normalized,
+              imagePath,
+              carouselPaths,
+              imageSource,
+              aiImagePrompt,
+              generationStatus: 'done',
+              generationError: null,
+              updatedAt: now,
+            }
+          : p,
+      ),
+    });
 
-    const summary = weekPlanSummary(targetNetworks);
-    return {
-      ok: true as const,
-      created: generated.length,
-      message: `Plan généré (${summary}). ${reelsBrief} briefs Reels (vidéo à filmer + montage). Photos: ${photosOk} ok${photosFailed ? `, ${photosFailed} échecs` : ''} (bibliothèque → Gemini → Pollinations → Unsplash).`,
-    };
+    const donePost = (await getSocialCommsBoard()).posts.find((p) => p.id === target.id);
+    if (donePost) {
+      await recordHooks([
+        {
+          text: (donePost.hookTitle || donePost.title).slice(0, 120),
+          pillarId: donePost.pillarId || 'weekly',
+          format: donePost.format,
+          locale: donePost.locale,
+          date: now,
+          score: null,
+        },
+      ]);
+    }
+
+    const updated = await getSocialCommsBoard();
+    const counts = generationCounts(updated.posts, runId);
+    revalidateCommunity();
+    return { ok: true as const, completed: false, postId: target.id, ...counts };
   } catch (e) {
-    console.error('[generateSocialWeekPlanAction]', e);
-    return { ok: false as const, error: e instanceof Error ? e.message : 'Erreur IA.' };
+    const msg = e instanceof Error ? e.message : String(e);
+    const refreshed = await getSocialCommsBoard();
+    await saveSocialCommsBoard({
+      ...refreshed,
+      posts: refreshed.posts.map((p) =>
+        p.id === target.id
+          ? {
+              ...p,
+              generationStatus: 'failed',
+              generationError: msg.slice(0, 500),
+              updatedAt: new Date().toISOString(),
+            }
+          : p,
+      ),
+    });
+    const updated = await getSocialCommsBoard();
+    const counts = generationCounts(updated.posts, runId);
+    revalidateCommunity();
+    return { ok: true as const, completed: false, postId: target.id, ...counts, failedMessage: msg.slice(0, 500) };
   }
+}
+
+export async function finalizeWeekPlanAction(runId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const counts = generationCounts(board.posts, runId);
+  if (!counts.total) return { ok: false as const, error: 'Run introuvable.' };
+  const now = new Date().toISOString();
+  await saveSocialCommsBoard({
+    ...board,
+    lastGeneratedAt: counts.done > 0 ? now : board.lastGeneratedAt,
+  });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    ...counts,
+    message: `Génération terminée: ${counts.done}/${counts.total} done, ${counts.failed} failed.`,
+  };
 }

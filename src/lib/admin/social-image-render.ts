@@ -84,7 +84,8 @@ export async function renderSocialPostCanvas(post: SocialPost): Promise<HTMLCanv
   const h = img.height * scale;
   ctx.drawImage(img, (EXPORT_SIZE - w) / 2, (EXPORT_SIZE - h) / 2, w, h);
 
-  const overlayText = (post.overlayText || post.title).trim();
+  // Un seul texte : grand serif en bas. Logo seul en haut (pas de titre à côté).
+  const overlayText = (post.overlayText || '').trim().toLocaleUpperCase('fr-FR');
 
   if (post.useOverlay && overlayText) {
     const gradient = ctx.createLinearGradient(0, EXPORT_SIZE * 0.45, 0, EXPORT_SIZE);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { canUseAdminViewSwitch, checkIsAdmin } from './admin';
+import { checkIsAdmin } from './admin';
 
 function supabaseWithRole(role: string | null) {
   return {
@@ -33,28 +33,5 @@ describe('admin gates', () => {
         email: 'other@example.com',
       }),
     ).resolves.toEqual({ isAdmin: true, source: 'role' });
-  });
-
-  it('canUseAdminViewSwitch exige role admin en base + email autorisé', async () => {
-    await expect(
-      canUseAdminViewSwitch(supabaseWithRole('admin') as never, {
-        id: 'u1',
-        email: 'admin@fitmangas.com',
-      }),
-    ).resolves.toEqual({ canSwitch: true, role: 'admin', emailAllowed: true });
-
-    await expect(
-      canUseAdminViewSwitch(supabaseWithRole('member') as never, {
-        id: 'u1',
-        email: 'admin@fitmangas.com',
-      }),
-    ).resolves.toMatchObject({ canSwitch: false, role: 'member', emailAllowed: true });
-
-    await expect(
-      canUseAdminViewSwitch(supabaseWithRole('admin') as never, {
-        id: 'u2',
-        email: 'other@example.com',
-      }),
-    ).resolves.toMatchObject({ canSwitch: false, role: 'admin', emailAllowed: false });
   });
 });

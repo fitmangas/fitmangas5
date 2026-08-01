@@ -1,17 +1,20 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type SocialNetwork = 'instagram' | 'whatsapp' | 'facebook' | 'tiktok';
+export type SocialNetwork = 'instagram' | 'whatsapp' | 'facebook' | 'linkedin' | 'tiktok';
 export type SocialPostFormat = 'feed' | 'story' | 'reel' | 'carousel' | 'text';
 export type SocialPostStatus = 'idea' | 'ready' | 'scheduled' | 'published' | 'skipped';
 export type SocialPostSource = 'manual' | 'ai' | 'blog' | 'pillar' | 'course';
+export type SocialLocale = 'fr' | 'es';
 
-export type SocialImageSource = 'library' | 'ai' | 'unsplash' | 'pollinations' | 'none';
+export type SocialImageSource = 'library' | 'ai' | 'unsplash' | 'brand' | 'none';
 export type SocialVideoStatus = 'brief' | 'raw_uploaded' | 'editing' | 'edited' | 'ready';
 
 export type SocialPost = {
   id: string;
   network: SocialNetwork;
   format: SocialPostFormat;
+  /** Langue du contenu (FR / ES). */
+  locale: SocialLocale;
   title: string;
   caption: string;
   hashtags: string[];
@@ -37,6 +40,28 @@ export type SocialPost = {
   sourceRef: string | null;
   whyItWorks: string;
   metaExternalId: string | null;
+  /** Titre rejeté 2× par le gate qualité — à corriger avant publish. */
+  titleNeedsReview?: boolean;
+  /** Pilier / thème (id ContentTheme). */
+  pillarId?: string | null;
+  /** Famille éditoriale CM v4. */
+  contentFamily?: 'portee' | 'confiance' | 'conversion' | null;
+  /** WhatsApp / LinkedIn : copie manuelle marquée envoyée. */
+  manualSentAt?: string | null;
+  /** Instagram → aussi publier sur la Page Facebook (même contenu). */
+  alsoPublishFacebook: boolean;
+  /** Post LinkedIn créé depuis un autre post (id source). */
+  adaptedFromId: string | null;
+  /** Id Meta Facebook si miroir IG→FB publié. */
+  facebookExternalId: string | null;
+  /** Suivi génération CM progressive (post par post). */
+  generationStatus?: 'pending' | 'done' | 'failed' | 'retrying' | null;
+  generationError?: string | null;
+  generationRunId?: string | null;
+  generationSlot?: number | null;
+  generationMediaKind?: string | null;
+  generationDayOffset?: number | null;
+  generationSlotIndex?: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -65,8 +90,34 @@ export const SOCIAL_NETWORK_LABELS: Record<SocialNetwork, string> = {
   instagram: 'Instagram',
   whatsapp: 'WhatsApp',
   facebook: 'Facebook',
+  linkedin: 'LinkedIn',
   tiktok: 'TikTok',
 };
+
+export const SOCIAL_LOCALE_LABELS: Record<SocialLocale, string> = {
+  fr: 'Français',
+  es: 'Español',
+};
+
+/** Couleurs logo / marque pour calendrier & pastilles. */
+export const SOCIAL_NETWORK_COLORS: Record<
+  SocialNetwork,
+  { bg: string; text: string; border: string; short: string }
+> = {
+  instagram: { bg: '#fce7f3', text: '#9d174d', border: '#E1306C', short: 'IG' },
+  whatsapp: { bg: '#ecfdf5', text: '#065f46', border: '#25D366', short: 'WA' },
+  facebook: { bg: '#eff6ff', text: '#1e3a8a', border: '#1877F2', short: 'FB' },
+  linkedin: { bg: '#e8f4fc', text: '#0a66c2', border: '#0A66C2', short: 'LI' },
+  tiktok: { bg: '#f4f4f5', text: '#18181b', border: '#111111', short: 'TT' },
+};
+
+export function socialImageProviderLabel(source: SocialImageSource): string {
+  if (source === 'ai') return 'Nano Banana / marque';
+  if (source === 'library') return 'Bibliothèque';
+  if (source === 'brand') return 'Fond de marque';
+  if (source === 'unsplash') return 'Unsplash';
+  return '—';
+}
 
 export const SOCIAL_STATUS_LABELS: Record<SocialPostStatus, string> = {
   idea: 'Idée',
@@ -76,21 +127,20 @@ export const SOCIAL_STATUS_LABELS: Record<SocialPostStatus, string> = {
   skipped: 'Ignoré',
 };
 
-/** Images fiables pour posts (priorité portraits/exercices, pas de screenshots). */
+/** Images fiables pour posts (manifest library + alias SEO). */
 export const SOCIAL_LIBRARY_IMAGES = [
+  '/library/portraits/portrait-01.webp',
+  '/library/portraits/portrait-01-4x5.webp',
+  '/library/portraits/portrait-02.webp',
+  '/library/pilates-mat/pilates-mat-01.webp',
+  '/library/pilates-mat/pilates-mat-01-4x5.webp',
+  '/library/barre/barre-01.webp',
+  '/library/renfo-core/renfo-core-01.webp',
+  '/library/coaching-visio/coaching-visio-01.webp',
   '/Photo Alejandra pose pour photographe.JPG',
-  '/Photo Alejandra exercice avec anneau.PNG',
+  '/Photo Alejandra exercice avec anneau.JPG',
   '/Photo Alejandra exercice sur la plage.JPG',
-  '/library/alejandra/portraits/portrait-studio-sourire.png',
-  '/library/alejandra/portraits/portrait-studio-sourire-large.png',
-  '/library/alejandra/exercices/exercice-anneau-variation.png',
-  '/library/alejandra/exercices/exercice-elastique.png',
-  '/library/alejandra/exercices/exercice-rouleau.png',
-  '/library/alejandra/exercices/exercice-ballon.jpg',
-  '/library/alejandra/exercices/exercice-ballon-2.jpg',
-  '/library/alejandra/exercices/exercice-chaise.jpg',
-  '/alejandra.png',
-  '/landing/offer-v-coll.jpg',
+  '/alejandra.jpg',
 ] as const;
 
 export function emptySocialCommsBoard(): SocialCommsBoard {
@@ -110,8 +160,18 @@ export function emptyMetaConnection(): MetaSocialConnection {
   };
 }
 
+function isSocialLocale(value: unknown): value is SocialLocale {
+  return value === 'fr' || value === 'es';
+}
+
 function isSocialNetwork(value: unknown): value is SocialNetwork {
-  return value === 'instagram' || value === 'whatsapp' || value === 'facebook' || value === 'tiktok';
+  return (
+    value === 'instagram' ||
+    value === 'whatsapp' ||
+    value === 'facebook' ||
+    value === 'linkedin' ||
+    value === 'tiktok'
+  );
 }
 
 function isSocialStatus(value: unknown): value is SocialPostStatus {
@@ -189,6 +249,7 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     id: row.id,
     network: row.network,
     format: row.format,
+    locale: isSocialLocale(row.locale) ? row.locale : 'fr',
     title: typeof row.title === 'string' ? row.title : 'Sans titre',
     caption: typeof row.caption === 'string' ? row.caption : '',
     hashtags: Array.isArray(row.hashtags) ? row.hashtags.map(String).filter(Boolean).slice(0, 12) : [],
@@ -198,13 +259,17 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     imageSource:
       row.imageSource === 'ai' ||
       row.imageSource === 'unsplash' ||
-      row.imageSource === 'pollinations' ||
       row.imageSource === 'library' ||
+      row.imageSource === 'brand' ||
       row.imageSource === 'none'
-        ? row.imageSource
-        : isReel && !imagePath
+        ? row.imageSource === 'brand'
+          ? 'ai'
+          : row.imageSource
+        : row.imageSource === 'pollinations'
           ? 'none'
-          : 'library',
+          : isReel && !imagePath
+            ? 'none'
+            : 'library',
     aiImagePrompt: typeof row.aiImagePrompt === 'string' ? row.aiImagePrompt : '',
     imageFeedback: typeof row.imageFeedback === 'string' ? row.imageFeedback : '',
     overlayText: typeof row.overlayText === 'string' ? row.overlayText : typeof row.title === 'string' ? row.title : null,
@@ -229,6 +294,32 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     sourceRef: typeof row.sourceRef === 'string' ? row.sourceRef : null,
     whyItWorks: typeof row.whyItWorks === 'string' ? row.whyItWorks : '',
     metaExternalId: typeof row.metaExternalId === 'string' ? row.metaExternalId : null,
+    titleNeedsReview: Boolean(row.titleNeedsReview),
+    pillarId: typeof row.pillarId === 'string' ? row.pillarId : null,
+    contentFamily:
+      row.contentFamily === 'portee' || row.contentFamily === 'confiance' || row.contentFamily === 'conversion'
+        ? row.contentFamily
+        : null,
+    manualSentAt: typeof row.manualSentAt === 'string' ? row.manualSentAt : null,
+    alsoPublishFacebook:
+      row.alsoPublishFacebook === undefined
+        ? row.network === 'instagram'
+        : Boolean(row.alsoPublishFacebook),
+    adaptedFromId: typeof row.adaptedFromId === 'string' ? row.adaptedFromId : null,
+    facebookExternalId: typeof row.facebookExternalId === 'string' ? row.facebookExternalId : null,
+    generationStatus:
+      row.generationStatus === 'pending' ||
+      row.generationStatus === 'done' ||
+      row.generationStatus === 'failed' ||
+      row.generationStatus === 'retrying'
+        ? row.generationStatus
+        : null,
+    generationError: typeof row.generationError === 'string' ? row.generationError : null,
+    generationRunId: typeof row.generationRunId === 'string' ? row.generationRunId : null,
+    generationSlot: typeof row.generationSlot === 'number' ? row.generationSlot : null,
+    generationMediaKind: typeof row.generationMediaKind === 'string' ? row.generationMediaKind : null,
+    generationDayOffset: typeof row.generationDayOffset === 'number' ? row.generationDayOffset : null,
+    generationSlotIndex: typeof row.generationSlotIndex === 'number' ? row.generationSlotIndex : null,
     createdAt: typeof row.createdAt === 'string' ? row.createdAt : new Date().toISOString(),
     updatedAt: typeof row.updatedAt === 'string' ? row.updatedAt : new Date().toISOString(),
   };
