@@ -306,7 +306,14 @@ Règles STRICTES (langue = ${locale}):
 - reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
 - shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
 - FEED caption: 100–180 car. overlayText = texte sur image (court, complet). Le CTA est la DERNIÈRE ligne de la caption.
-- CAROUSEL caption: 200–900 car. MAPPÉE aux 7 slides (1 paragraphe = 1 slide, même ordre). Hook dans les 125 premiers car. CTA final intégré. slideTitles = array de 7 titres overlay MAJUSCULES. INTERDIT "Slide 1". Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA.
+- CAROUSEL = LISTE de points AUTONOMES (JAMAIS une histoire découpée en 7 morceaux). slideTitles[7] OBLIGATOIRE :
+  [0] = titre-promesse type « 5 RAISONS D'ARRÊTER… » / « 5 CHOSES QUE PERSONNE NE TE DIT… »
+  [1]–[5] = UN point complet numéroté qui a du SENS SEUL (« 1. PERSONNE NE T'ATTEND », « 2. TU NE VOIS PAS TES ERREURS »…)
+  [6] = CTA (« ESSAI 7 JOURS — ON T'ATTEND »)
+  INTERDIT format narratif tranché (« ELLE A FAIT… », suite d'une phrase coupée, cliffhanger slide→slide).
+  Orthographe soignée FR/ES (ERREURS pas ERROURS ; errores ; motivación avec accent ; jours/días).
+  caption 400–900 car. : 1 paragraphe développé PAR slide, même ordre. Hook dans les 125 premiers car. CTA = dernière ligne.
+  INTERDIT "Slide 1". Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA.
 - WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
 - LinkedIn: ton pro, 350–700 car., question finale
 - hashtags = array sans #
@@ -1870,11 +1877,13 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
             continue;
           }
           if (c === 6) {
+            // CTA slide : capture dashboard 4:5 réelle (jamais dashboard-desktop-4x5 fantôme).
+            const CTA_DASHBOARD = '/library/produit-captures/produit-dashboard-02-4x5.webp';
             const product =
-              pickLibraryPath({ folder: 'produit-captures', themeHint: 'dashboard desktop', seed: target.id.length }) ||
-              listProductCapturePaths().find((p) => /dashboard/i.test(p)) ||
-              listProductCapturePaths()[0] ||
-              null;
+              listProductCapturePaths().find((p) => /produit-dashboard-02-4x5/i.test(p)) ||
+              pickLibraryPath({ folder: 'produit-captures', themeHint: 'produit dashboard', seed: target.id.length }) ||
+              listProductCapturePaths().find((p) => /dashboard-02|progression-06|boutique-05/i.test(p)) ||
+              CTA_DASHBOARD;
             paths[c] = product;
             continue;
           }
@@ -1921,14 +1930,15 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
           );
         }
       } else {
+        // Feed = vraie photo bibliothèque uniquement (pas d'IA). Overlay + logo brûlés ensuite.
         const r = await generateSocialPhotoForPost(target, {
           variationSeed: target.id.length,
           usedLibraryPaths: usedLibrary,
           usedUnsplashIds: usedUnsplash,
-          preferLibrary: false,
+          preferLibrary: true,
           forceNanoBanana: false,
           allowUnsplash: false,
-          libraryThemeHint: normalized.imageHint || normalized.title,
+          libraryThemeHint: normalized.imageHint || normalized.title || target.pillarId || 'portraits',
         });
         if (!r.ok) throw new Error(r.error);
         imagePath = r.imagePath;

@@ -158,11 +158,11 @@ export const CM_STRATEGY_NOTES = [
   'Facebook = miroir Instagram (même post). Pas de briefs Reels Facebook séparés.',
   'WhatsApp = communauté déjà membre : teaser d’articles blog, pas d’acquisition.',
   'LinkedIn = ton pro / bien-être au travail ; case « Aussi LinkedIn » pour adapter un post IG.',
-  'Carousels pour l’éducation Pilates (saves). Photos réelles Alejandra pour Feed identité.',
+  'Carousels = LISTE de points autonomes (jamais une histoire découpée). Feed = vraie photo bibliothèque + overlay.',
   'Une idée-pilier / semaine (dos, stress, bassin, hanches, sommeil, confiance, énergie) — pas deux semaines de suite le même.',
-  'Cascade image : Gemini (payant) → fond de marque local → bibliothèque Alejandra. Jamais Pollinations. Unsplash = blog seulement.',
+  'Cascade image : Gemini (payant, carousels éducatifs) → fond de marque local → bibliothèque Alejandra. Jamais Pollinations. Unsplash = blog seulement.',
   'Format viral Reel : Claude Code + HyperFrames local — parole naturelle, Whisper local, sous-titres blanc/contour + mot-clé terracotta.',
-  'CTA produit : dashboard desktop en carte flottante — jamais screenshot mobile plein cadre coupé.',
+  'CTA carousel slide 7 : capture dashboard 4:5 réelle (produit-dashboard-02) — jamais chemin -4x5 fantôme.',
 ];
 
 /**
@@ -359,38 +359,127 @@ export function mergeCaptionWithCta(caption: string, cta: string): string {
   return `${base.replace(/\s+$/, '')}\n\n${tip}`;
 }
 
-/** Titres overlay par slide carousel (7) — majuscules, courts, complets. */
+/** Correcteur orthographe FR/ES pour titres/légendes carousel (fautes fréquentes IA). */
+export function proofreadCarouselCopy(text: string, locale: SocialLocale = 'fr'): string {
+  let t = text || '';
+  if (locale === 'es') {
+    t = t.replace(/\berrori\b/gi, 'errores');
+    t = t.replace(/\bmotivacion\b/gi, 'motivación');
+    t = t.replace(/\bdias\b/gi, 'días');
+    t = t.replace(/\brazones?\b/gi, (m) => (/s$/i.test(m) ? 'razones' : 'razón'));
+    t = t.replace(/\bpilates de youtube\b/gi, 'Pilates de YouTube');
+    return t;
+  }
+  t = t.replace(/\bERROURS\b/g, 'ERREURS');
+  t = t.replace(/\berrours\b/gi, 'erreurs');
+  t = t.replace(/\bATTENDES\b/g, 'ATTEND');
+  t = t.replace(/\bRAISON D['’ ]?ARR[ÊE]TER\b/gi, 'RAISONS D’ARRÊTER');
+  t = t.replace(/\bSEPT JOURS\b/g, '7 JOURS');
+  t = t.replace(/\bpilates youtube\b/gi, (m) =>
+    m === m.toUpperCase() ? 'PILATES YOUTUBE' : 'Pilates YouTube',
+  );
+  return t;
+}
+
+/** Titres overlay par slide carousel (7) — LISTE de points autonomes, jamais une histoire découpée. */
 export function normalizeCarouselSlideTitles(
   raw: unknown,
   fallbackOverlay: string,
   locale: SocialLocale = 'fr',
 ): string[] {
-  const fromAi = Array.isArray(raw) ? raw.map((x) => String(x || '').trim()).filter(Boolean) : [];
+  const fromAi = Array.isArray(raw)
+    ? raw.map((x) => proofreadCarouselCopy(String(x || '').trim(), locale)).filter(Boolean)
+    : [];
   const defaultsFr = [
-    fallbackOverlay || 'LE RENDEZ-VOUS QUI MANQUAIT',
-    'CE QUE TU CROIS',
-    'CE QUI SE PASSE VRAIMENT',
-    'LE GESTE QUI CHANGE',
-    'POURQUOI ÇA TIENT',
-    'LA PHRASE À GARDER',
+    fallbackOverlay || '5 RAISONS D’ARRÊTER LE PILATES YOUTUBE',
+    '1. PERSONNE NE T’ATTEND',
+    '2. TU NE VOIS PAS TES ERREURS',
+    '3. LA MOTIVATION NE SUFFIT PAS',
+    '4. TU RECOMMENCES TOUJOURS À ZÉRO',
+    '5. TU PAIES POUR ÊTRE VUE',
     'ESSAI 7 JOURS — ON T’ATTEND',
   ];
   const defaultsEs = [
-    fallbackOverlay || 'LA CITA QUE FALTABA',
-    'LO QUE CREES',
-    'LO QUE PASA DE VERDAD',
-    'EL GESTO QUE CAMBIA',
-    'POR QUÉ SE SOSTIENE',
-    'LA FRASE PARA GUARDAR',
+    fallbackOverlay || '5 RAZONES PARA DEJAR EL PILATES DE YOUTUBE',
+    '1. NADIE TE ESPERA',
+    '2. NO VES TUS ERRORES',
+    '3. LA MOTIVACIÓN NO BASTA',
+    '4. SIEMPRE VUELVES A CERO',
+    '5. PAGAS POR SER VISTA',
     'PRUEBA 7 DÍAS — TE ESPERAMOS',
   ];
   const defaults = locale === 'es' ? defaultsEs : defaultsFr;
   const out: string[] = [];
   for (let i = 0; i < 7; i += 1) {
-    const candidate = fromAi[i] || (i === 0 ? fallbackOverlay : '') || defaults[i]!;
-    out.push(polishOverlayText(candidate, locale, 48) || defaults[i]!);
+    const candidate = fromAi[i] || (i === 0 ? proofreadCarouselCopy(fallbackOverlay, locale) : '') || defaults[i]!;
+    out.push(polishOverlayText(candidate, locale, 52) || defaults[i]!);
   }
-  return out;
+  return out.map((t) => proofreadCarouselCopy(t, locale));
+}
+
+/**
+ * Exemple canonique du format carousel LISTE (texte seul — validation humaine).
+ * Slide 1 = promesse · 2–6 = points autonomes numérotés · 7 = CTA.
+ */
+export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
+  slideTitles: string[];
+  caption: string;
+  note: string;
+} {
+  if (locale === 'es') {
+    const slideTitles = [
+      '5 RAZONES PARA DEJAR EL PILATES DE YOUTUBE',
+      '1. NADIE TE ESPERA',
+      '2. NO VES TUS ERRORES',
+      '3. LA MOTIVACIÓN NO BASTA',
+      '4. SIEMPRE VUELVES A CERO',
+      '5. PAGAS POR SER VISTA, NO POR UN MAT',
+      'PRUEBA 7 DÍAS — TE ESPERAMOS EN VISIO',
+    ];
+    const caption = buildCarouselMappedCaption({
+      slideTitles,
+      bodyParagraphs: [
+        '5 razones para dejar el Pilates de YouTube (y por qué el directo cambia todo).',
+        '1. Nadie te espera. Sin cita fija, el mat vuelve al armario en cuanto llega el correo.',
+        '2. No ves tus errores. El vídeo no te mira la pelvis ni te corrige el hombro.',
+        '3. La motivación no basta. Lo que sostiene es que alguien note si faltas.',
+        '4. Siempre vuelves a cero. Sin progresión guiada, reinicias la misma clase cada mes.',
+        '5. Pagas por ser vista, no por un mat. El producto es la corrección en directo.',
+        'Prueba gratis 7 días → fitmangas.com',
+      ],
+      cta: 'Prueba gratis 7 días → fitmangas.com',
+      locale: 'es',
+    });
+    return { slideTitles, caption, note: 'Formato LISTA — no narrativa troceada.' };
+  }
+  const slideTitles = [
+    '5 RAISONS D’ARRÊTER LE PILATES YOUTUBE',
+    '1. PERSONNE NE T’ATTEND',
+    '2. TU NE VOIS PAS TES ERREURS',
+    '3. LA MOTIVATION NE SUFFIT PAS',
+    '4. TU RECOMMENCES TOUJOURS À ZÉRO',
+    '5. TU PAIES POUR ÊTRE VUE, PAS POUR UN TAPIS',
+    'ESSAI 7 JOURS — ON T’ATTEND EN VISIO',
+  ];
+  const caption = buildCarouselMappedCaption({
+    slideTitles,
+    bodyParagraphs: [
+      '5 raisons d’arrêter le Pilates YouTube (et pourquoi le live change tout).',
+      '1. Personne ne t’attend. Sans rendez-vous fixe, le tapis retourne au placard dès que le mail arrive.',
+      '2. Tu ne vois pas tes erreurs. La vidéo ne regarde pas ton bassin et ne corrige pas ton épaule.',
+      '3. La motivation ne suffit pas. Ce qui tient, c’est que quelqu’un remarque si tu manques.',
+      '4. Tu recommences toujours à zéro. Sans progression guidée, tu rejoues la même séance chaque mois.',
+      '5. Tu paies pour être vue, pas pour un tapis. Le produit, c’est la correction en direct.',
+      'Essai gratuit 7 jours → fitmangas.com',
+    ],
+    cta: 'Essai gratuit 7 jours → fitmangas.com',
+    locale: 'fr',
+  });
+  return {
+    slideTitles,
+    caption,
+    note: 'Format LISTE — chaque titre a du sens seul. Pas d’histoire découpée en 7 morceaux.',
+  };
 }
 
 export function buildCarouselMappedCaption(params: {
@@ -416,6 +505,7 @@ export function buildCarouselMappedCaption(params: {
   }
   let caption = lines.filter(Boolean).join('\n\n');
   caption = mergeCaptionWithCta(caption, params.cta);
+  caption = proofreadCarouselCopy(caption, locale);
   if (caption.length > 900) caption = caption.slice(0, 897).trimEnd() + '…';
   return caption;
 }

@@ -214,7 +214,7 @@ export async function generateSocialPhotoForPost(
   const themeHint = opts.libraryThemeHint || post.imageHint || post.title;
   const folder = opts.libraryFolder || folderForTheme(themeHint);
 
-  if (isAlejandraDoubleEnabled()) {
+  if (isAlejandraDoubleEnabled() && !(post.format === 'feed' && !opts.forceNanoBanana)) {
     const doubleProfile = await getAlejandraDoubleProfile();
     if (isPhotaDoubleReady(doubleProfile)) {
       const phota = await generateWithAlejandraPhota(doubleProfile, prompt);
@@ -233,10 +233,11 @@ export async function generateSocialPhotoForPost(
   if (opts.preferLibrary) {
     order = ['library', ...order.filter((n) => n !== 'library')];
   }
-  if (opts.forceNanoBanana || post.format === 'carousel') {
+  if (opts.forceNanoBanana || (post.format === 'carousel' && !opts.preferLibrary)) {
     order = ['gemini', ...order.filter((n) => n !== 'gemini')];
   }
 
+  // Feed = vraie photo bibliothèque uniquement (identité Alejandra), jamais IA.
   if (opts.preferLibrary !== false && post.format === 'feed' && !opts.forceNanoBanana) {
     const libPath = pickLibraryPath({
       usedPaths: opts.usedLibraryPaths,
@@ -248,6 +249,7 @@ export async function generateSocialPhotoForPost(
       opts.usedLibraryPaths.add(libPath);
       return { ok: true, imagePath: libPath, prompt, provider: 'library' };
     }
+    return { ok: false, error: 'Feed : aucune photo bibliothèque disponible pour ce thème.' };
   }
 
   const cascade = await generateWithImageProviderCascade(prompt, size, {

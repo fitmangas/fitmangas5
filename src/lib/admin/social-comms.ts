@@ -286,7 +286,14 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     rawVideoPath: typeof row.rawVideoPath === 'string' ? row.rawVideoPath : null,
     editedVideoPath: typeof row.editedVideoPath === 'string' ? row.editedVideoPath : null,
     videoStatus: normalizeVideoStatus(row.videoStatus) ?? (isReel ? 'brief' : null),
-    carouselPaths: Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String).filter(Boolean) : [],
+    carouselPaths:
+      row.format === 'carousel'
+        ? sanitizeCarouselPathsClient(
+            Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String).filter(Boolean) : [],
+          )
+        : Array.isArray(row.carouselPaths)
+          ? row.carouselPaths.map(String).filter(Boolean)
+          : [],
     carouselSlideTitles: Array.isArray(row.carouselSlideTitles)
       ? row.carouselSlideTitles.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 7)
       : [],
@@ -335,6 +342,24 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     createdAt: typeof row.createdAt === 'string' ? row.createdAt : new Date().toISOString(),
     updatedAt: typeof row.updatedAt === 'string' ? row.updatedAt : new Date().toISOString(),
   };
+}
+
+/** Remap client-safe des chemins carousel fantômes (pas de fs — usable dans le board React). */
+export function remapCarouselPathClient(path: string): string {
+  if (/dashboard-desktop(-4x5)?\./i.test(path)) {
+    return '/library/produit-captures/produit-dashboard-02-4x5.webp';
+  }
+  return path;
+}
+
+export function sanitizeCarouselPathsClient(paths: string[] | null | undefined): string[] {
+  const CTA = '/library/produit-captures/produit-dashboard-02-4x5.webp';
+  const source = Array.isArray(paths) ? paths.map(remapCarouselPathClient).filter(Boolean) : [];
+  const out: string[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    out.push(source[i] || (i === 6 ? CTA : out[i - 1] || CTA));
+  }
+  return out;
 }
 
 export function parseSocialCommsBoard(raw: unknown): SocialCommsBoard {

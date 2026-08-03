@@ -103,10 +103,15 @@ export function listLibraryPublicPaths(opts?: {
       if (opts?.prefer4x5) {
         const base = publicPath.replace(/\.(webp|jpe?g|png)$/i, '');
         const crop = `${base}-4x5.webp`;
-        // Strict manifest-only resolution: never probe disk files in public/library at runtime.
-        const canUseCrop =
-          typeof entry === 'object' && entry?.ratios && (entry.ratios['4x5'] === true || entry.ratios.web === true);
-        paths.push(canUseCrop ? crop : publicPath);
+        // Uniquement si le manifeste marque explicitement le crop 4:5 (pas « web »).
+        const canUseCrop = typeof entry === 'object' && entry?.ratios?.['4x5'] === true;
+        const chosen = canUseCrop ? crop : publicPath;
+        // Vérifie le fichier sur disque pour éviter les 404 (ex. dashboard-desktop-4x5 fantôme).
+        const abs = path.join(process.cwd(), 'public', chosen.replace(/^\//, ''));
+        if (fs.existsSync(abs)) paths.push(chosen);
+        else if (fs.existsSync(path.join(process.cwd(), 'public', publicPath.replace(/^\//, '')))) {
+          paths.push(publicPath);
+        }
       } else {
         paths.push(publicPath);
       }
@@ -118,6 +123,58 @@ export function listLibraryPublicPaths(opts?: {
 
 export function listProductCapturePaths(): string[] {
   return listLibraryPublicPaths({ folder: 'produit-captures', prefer4x5: true });
+}
+
+/** Remplace un chemin bibliothèque fantôme (ex. dashboard-desktop-4x5.webp) par un fichier réel. */
+export function resolveExistingLibraryPath(publicPath: string | null | undefined): string | null {
+  if (!publicPath) return null;
+  if (publicPath.startsWith('http://') || publicPath.startsWith('https://')) return publicPath;
+  // Ancien CTA landscape / crop fantôme → capture dashboard 4:5 réelle
+  if (/dashboard-desktop/i.test(publicPath)) {
+    const cta = '/library/produit-captures/produit-dashboard-02-4x5.webp';
+    if (fs.existsSync(path.join(process.cwd(), 'public', cta.slice(1)))) return cta;
+  }
+  const rel = publicPath.replace(/^\//, '');
+  const abs = path.join(process.cwd(), 'public', rel);
+  if (fs.existsSync(abs)) return publicPath.startsWith('/') ? publicPath : `/${publicPath}`;
+  // Crop 4x5 fantôme → base webp si présent
+  const baseCandidate = publicPath.replace(/-4x5\.(webp|jpe?g|png)$/i, '.$1');
+  if (baseCandidate !== publicPath) {
+    const baseAbs = path.join(process.cwd(), 'public', baseCandidate.replace(/^\//, ''));
+    if (fs.existsSync(baseAbs)) return baseCandidate.startsWith('/') ? baseCandidate : `/${baseCandidate}`;
+  }
+  return null;
+}
+
+/** Garantit 7 chemins carousel ; remappe les 404 locaux. */
+export function sanitizeCarouselPaths(paths: string[] | null | undefined): string[] {
+  const CTA = '/library/produit-captures/produit-dashboard-02-4x5.webp';
+  const pool = listProductCapturePaths();
+  const out: string[] = [];
+  const source = Array.isArray(paths) ? paths : [];
+  for (let i = 0; i < 7; i += 1) {
+    const raw = source[i] || null;
+    const resolved = resolveExistingLibraryPath(raw);
+    if (resolved) {
+      out.push(resolved);
+      continue;
+    }
+    if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
+      out.push(raw);
+      continue;
+    }
+    if (i === 6) {
+      out.push(resolveExistingLibraryPath(CTA) || pool[0] || CTA);
+    } else {
+      out.push(
+        out[i - 1] ||
+          pool.find((p) => !out.includes(p)) ||
+          pool[0] ||
+          CTA,
+      );
+    }
+  }
+  return out;
 }
 
 export function folderForTheme(theme: string): LibraryFolderId {

@@ -882,8 +882,8 @@ export function CommunityManagerBoard({
               useDouble={doubleUiEnabled && alejandraDouble.enabled}
               onCaptionChange={(value) => setDraftCaptions((c) => ({ ...c, [post.id]: value }))}
               onFeedbackChange={(value) => setDraftFeedback((c) => ({ ...c, [post.id]: value }))}
-              onPreview={() => {
-                setPreviewIndex(0);
+              onPreview={(slideIndex = 0) => {
+                setPreviewIndex(slideIndex);
                 setPreviewPost(post);
               }}
               onCopy={() => void copyPost(post)}
@@ -1171,7 +1171,7 @@ function PostCard({
   useDouble: boolean;
   onCaptionChange: (value: string) => void;
   onFeedbackChange: (value: string) => void;
-  onPreview: () => void;
+  onPreview: (slideIndex?: number) => void;
   onCopy: () => void;
   run: (action: () => Promise<{ ok: boolean; error?: string; message?: string }>, successMessage: string) => void;
   setMessage: (msg: string) => void;
@@ -1223,7 +1223,7 @@ function PostCard({
                     unoptimized={activeCarouselSrc.startsWith('http')}
                   />
                 ) : null}
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/45 px-2 py-1.5">
+                <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center justify-between gap-1 bg-black/45 px-2 py-1.5">
                   <button
                     type="button"
                     className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-luxury-ink disabled:opacity-40"
@@ -1244,8 +1244,19 @@ function PostCard({
                     →
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onPreview(carouselIndex)}
+                  className="absolute inset-0 z-[1] mb-8 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100"
+                  aria-label="Prévisualiser le carousel"
+                >
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-luxury-ink shadow-lg">
+                    <Eye size={16} />
+                    Aperçu
+                  </span>
+                </button>
               </div>
-              <div className="flex gap-1 overflow-x-auto bg-white/90 p-1.5">
+              <div className="relative z-[2] flex gap-1 overflow-x-auto bg-white/90 p-1.5">
                 {carouselSlides.map((src, idx) => (
                   <button
                     key={`${src}-${idx}`}
@@ -1272,7 +1283,7 @@ function PostCard({
               ) : null}
               <button
                 type="button"
-                onClick={onPreview}
+                onClick={() => onPreview(0)}
                 className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100"
                 aria-label="Prévisualiser le visuel"
               >
