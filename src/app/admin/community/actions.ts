@@ -32,6 +32,9 @@ import {
   titleFailsQualityGate,
   polishOverlayText,
   withCarouselSlideCount,
+  mergeCaptionWithCta,
+  normalizeCarouselSlideTitles,
+  sanitizeTrashTalkCopy,
 } from '@/lib/admin/social-cm-playbook';
 import {
   buildWeeklySlots,
@@ -298,18 +301,19 @@ Règles STRICTES (langue = ${locale}):
 - INTERDIT : commencer par un nom d'exercice
 - INTERDIT : 5 titres avec la même charpente syntaxique
 - overlayText / hookTitle: TOUJOURS une phrase autonome COURTE COMPLÈTE EN MAJUSCULES (max ~8–10 mots), lisible en 1s. JAMAIS recopier/tronquer le titre long. INTERDIT de finir sur une préposition/pronom (en, du, tu, te, si, pas du…). Si trop long → reformuler plus court, ne pas couper.
-- REEL caption: 70–140 caractères STRICT. 0 ou 1 emoji max
+- TRASH-TALK : tape sur le MENSONGE de l'industrie / l'excuse / la situation absurde — JAMAIS sur le corps, l'âge, le poids ou un défaut de la femme (interdit: vieille, trop vieille, grosse, molle, paresseuse, nulle). Elle doit se sentir comprise, pas jugée.
+- REEL caption: 70–140 caractères STRICT. 0 ou 1 emoji max. CTA = dernière ligne de la caption.
 - reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
 - shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
-- FEED caption: 100–180 car. overlayText = texte sur image (court, complet)
-- CAROUSEL caption: 200–900 car. (hook 125 premiers + valeur + CTA save). Chaque slide a un point clair. INTERDIT "Slide 1"
+- FEED caption: 100–180 car. overlayText = texte sur image (court, complet). Le CTA est la DERNIÈRE ligne de la caption.
+- CAROUSEL caption: 200–900 car. MAPPÉE aux 7 slides (1 paragraphe = 1 slide, même ordre). Hook dans les 125 premiers car. CTA final intégré. slideTitles = array de 7 titres overlay MAJUSCULES. INTERDIT "Slide 1". Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA.
 - WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
 - LinkedIn: ton pro, 350–700 car., question finale
 - hashtags = array sans #
-- imageHint EN ANGLAIS (scène photo PARTIELLE : mains/profil/détail — jamais corps entier). Si showProductOrCoach: coaching visio / coach portrait library vibe.
+- imageHint EN ANGLAIS (scène photo PARTIELLE : mains/profil/détail — jamais corps entier). Si showProductOrCoach: coaching visio / coach portrait library vibe. Si progres_adherente: pas de visage IA « fausse cliente ».
 
 JSON exact:
-{"posts":[{"slotId":0,"title":"","caption":"","hashtags":[],"cta":"","imageHint":"","overlayText":"","useOverlay":false,"hookTitle":"","reelScript":"","shotList":"","sourceType":"ai","sourceRef":null,"whyItWorks":""}]}`;
+{"posts":[{"slotId":0,"title":"","caption":"","hashtags":[],"cta":"","imageHint":"","overlayText":"","useOverlay":false,"hookTitle":"","reelScript":"","shotList":"","slideTitles":["","","","","","",""],"sourceType":"ai","sourceRef":null,"whyItWorks":""}]}`;
 
   const runOnce = async (strict: boolean) => {
     const aiResult = await runSocialTextCascade({
@@ -1603,11 +1607,20 @@ function normalizeGeneratedRowForPost(params: {
   }
 
   return {
-    title,
-    caption:
-      typeof row.caption === 'string'
-        ? sanitizeCaptionForFormat(row.caption, slot.format === 'text' ? 'text' : slot.format, captionMax)
-        : '',
+    title: sanitizeTrashTalkCopy(title, locale),
+    caption: (() => {
+      const rawCaption =
+        typeof row.caption === 'string'
+          ? sanitizeCaptionForFormat(row.caption, slot.format === 'text' ? 'text' : slot.format, captionMax)
+          : '';
+      const ctaText = (() => {
+        if (slotSpec.forceTrialCta) {
+          return locale === 'es' ? TRIAL_CTA_ES : TRIAL_CTA_FR;
+        }
+        return typeof row.cta === 'string' ? row.cta.slice(0, 180) : '';
+      })();
+      return mergeCaptionWithCta(rawCaption, ctaText);
+    })(),
     hashtags: Array.isArray(row.hashtags)
       ? row.hashtags.map(String).filter(Boolean).slice(0, SOCIAL_CM_GUIDELINES[slot.network].hashtagMax)
       : [],
@@ -1619,7 +1632,6 @@ function normalizeGeneratedRowForPost(params: {
     })(),
     imageHint: typeof row.imageHint === 'string' ? row.imageHint.slice(0, 500) : '',
     overlayText: (() => {
-      // Ne jamais se rabattre sur le titre long (cause des overlays coupés au milieu).
       const rawOverlay = typeof row.overlayText === 'string' ? row.overlayText.trim() : '';
       const rawHook = hookTitle.trim();
       const candidate = rawOverlay || rawHook;
@@ -1627,6 +1639,14 @@ function normalizeGeneratedRowForPost(params: {
     })(),
     useOverlay: row.useOverlay === true || slot.format === 'feed' || slot.format === 'carousel',
     hookTitle: polishOverlayText(hookTitle || (typeof row.overlayText === 'string' ? row.overlayText : ''), locale, 56),
+    carouselSlideTitles:
+      slot.format === 'carousel'
+        ? normalizeCarouselSlideTitles(
+            (row as { slideTitles?: unknown }).slideTitles ?? (row as { carouselSlideTitles?: unknown }).carouselSlideTitles,
+            typeof row.overlayText === 'string' ? row.overlayText : hookTitle,
+            locale,
+          )
+        : [],
     reelScript: reelScriptRaw.slice(0, 4000),
     shotList: shotListRaw.slice(0, 800),
     sourceType,
@@ -1831,17 +1851,28 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
 
       if (slot.mediaKind === 'carousel') {
         const paths: Array<string | null> = new Array(7).fill(null);
+        const preferLibraryNoFace =
+          target.pillarId === 'progres_adherente' ||
+          /mangita|adhérente|alumna/i.test(`${normalized.title} ${normalized.caption}`);
         const tasks: Array<() => Promise<void>> = [];
         for (let c = 0; c < 7; c += 1) {
           if (c === 5) {
             const brand = new BrandBackgroundProvider();
             const brandImg = await brand.generate('quote-frame citation slide', { width: 1080, height: 1350 });
-            if ('buffer' in brandImg && brandImg.buffer.length) paths[c] = await uploadSocialGeneratedImage(brandImg.buffer, `${target.id}-s6`);
+            if ('buffer' in brandImg && brandImg.buffer.length) {
+              paths[c] = await uploadSocialGeneratedImage(brandImg.buffer, `${target.id}-s6`);
+            } else {
+              paths[c] =
+                pickLibraryPath({ folder: 'produit-captures', themeHint: 'dashboard', seed: c }) ||
+                listProductCapturePaths()[0] ||
+                null;
+            }
             continue;
           }
           if (c === 6) {
             const product =
               pickLibraryPath({ folder: 'produit-captures', themeHint: 'dashboard desktop', seed: target.id.length }) ||
+              listProductCapturePaths().find((p) => /dashboard/i.test(p)) ||
               listProductCapturePaths()[0] ||
               null;
             paths[c] = product;
@@ -1852,10 +1883,14 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
               variationSeed: (target.generationSlot ?? 0) * 10 + c + 1,
               usedLibraryPaths: usedLibrary,
               usedUnsplashIds: usedUnsplash,
-              preferLibrary: false,
-              forceNanoBanana: c < 5,
+              preferLibrary: preferLibraryNoFace || c === 0,
+              forceNanoBanana: !preferLibraryNoFace && c < 5,
               allowUnsplash: false,
-              libraryThemeHint: normalized.imageHint || normalized.title,
+              libraryThemeHint: preferLibraryNoFace
+                ? c % 2 === 0
+                  ? 'ambiance studio détail mains'
+                  : 'coaching visio écran'
+                : normalized.imageHint || normalized.title,
             });
             if (r.ok) {
               paths[c] = r.imagePath;
@@ -1866,8 +1901,25 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
           });
         }
         await runWithConcurrency(tasks, 3);
-        carouselPaths = paths.filter((p): p is string => Boolean(p));
+        const fallbackPool = listProductCapturePaths();
+        const filled: string[] = [];
+        for (let c = 0; c < 7; c += 1) {
+          filled[c] =
+            paths[c] ||
+            filled[c - 1] ||
+            fallbackPool.find((p) => !filled.includes(p)) ||
+            fallbackPool[0] ||
+            '/library/produit-captures/produit-dashboard-02-4x5.webp';
+        }
+        carouselPaths = filled;
         imagePath = carouselPaths[0] ?? null;
+        if (!normalized.carouselSlideTitles?.length) {
+          normalized.carouselSlideTitles = normalizeCarouselSlideTitles(
+            undefined,
+            normalized.overlayText || normalized.hookTitle,
+            target.locale,
+          );
+        }
       } else {
         const r = await generateSocialPhotoForPost(target, {
           variationSeed: target.id.length,
@@ -1962,5 +2014,101 @@ export async function finalizeWeekPlanAction(runId: string) {
     ok: true as const,
     ...counts,
     message: `Génération terminée: ${counts.done}/${counts.total} done, ${counts.failed} failed.`,
+  };
+}
+
+/** Série « 50 conseils Pilates » — compte comme PORTÉE, n° mémorisé. */
+export async function generateConseilSeriesPostAction() {
+  await requireAdmin();
+  const { claimNextConseilNumber, CONSEIL_KEYWORD_BANK_FR, CONSEIL_SERIES_TOTAL, getConseilSeriesState } = await import(
+    '@/lib/admin/social-conseil-series'
+  );
+  const state = await getConseilSeriesState();
+  if (state.nextNumber > CONSEIL_SERIES_TOTAL) {
+    return { ok: false as const, error: `Série complète (${CONSEIL_SERIES_TOTAL}/50).` };
+  }
+  const keyword =
+    CONSEIL_KEYWORD_BANK_FR.find((k) => !state.usedKeywords.includes(k)) ||
+    CONSEIL_KEYWORD_BANK_FR[(state.nextNumber - 1) % CONSEIL_KEYWORD_BANK_FR.length]!;
+  const claimed = await claimNextConseilNumber(keyword);
+  if (!claimed) return { ok: false as const, error: 'Impossible de réserver un numéro de conseil.' };
+
+  const board = await getSocialCommsBoard();
+  const now = new Date().toISOString();
+  const overlay = polishOverlayText(`CONSEIL N°${claimed.number} : ${claimed.keyword.toUpperCase()}`, 'fr', 56);
+  const title = `Conseil n°${claimed.number} — ${claimed.keyword}`;
+  const caption = mergeCaptionWithCta(
+    [
+      `Conseil n°${claimed.number} — ${claimed.keyword}.`,
+      `Ce que le Pilates change vraiment : ${claimed.keyword}, pas un exercice technique à cocher.`,
+      `Les ${CONSEIL_SERIES_TOTAL - 1} autres sont sur le profil.`,
+    ].join('\n\n'),
+    'Essai gratuit 7 jours → fitmangas.com',
+  );
+  const post: SocialPost = {
+    id: createSocialPostId(),
+    network: 'instagram',
+    format: 'reel',
+    locale: 'fr',
+    title,
+    caption,
+    hashtags: ['pilates', 'fitmangas', 'conseil'],
+    cta: 'Essai gratuit 7 jours → fitmangas.com',
+    imageHint: 'partial framing hands breathing calm editorial lifestyle',
+    imagePath: null,
+    imageSource: 'none',
+    aiImagePrompt: '',
+    imageFeedback: '',
+    overlayText: overlay,
+    useOverlay: true,
+    hookTitle: overlay,
+    reelScript: [
+      'IDÉES:',
+      `1) Accroche conseil n°${claimed.number} — ${claimed.keyword}`,
+      '2) Ce que ça change vraiment (ressenti, pas exo technique)',
+      '3) Invitation douce essai 7 jours',
+      '',
+      'BRIEF:',
+      `« Conseil n°${claimed.number} : ${claimed.keyword}. »`,
+      '« Voici ce que ça change vraiment — sans forcer. »',
+      '« Les autres conseils sont sur le profil. Essai 7 jours sur fitmangas.com. »',
+    ].join('\n'),
+    shotList: enforceFaceCamShotList('', 'fr'),
+    rawVideoPath: null,
+    editedVideoPath: null,
+    videoStatus: 'brief',
+    carouselPaths: [],
+    carouselSlideTitles: [],
+    seriesKind: 'conseil_50',
+    seriesNumber: claimed.number,
+    seriesKeyword: claimed.keyword,
+    plannedAt: plannedAtParis('instagram', 0, 0),
+    status: 'idea',
+    sourceType: 'ai',
+    sourceRef: `conseil-${claimed.number}`,
+    whyItWorks: `Série 50 conseils · portée · n°${claimed.number}/${CONSEIL_SERIES_TOTAL}`,
+    metaExternalId: null,
+    titleNeedsReview: false,
+    pillarId: 'energie_crash',
+    contentFamily: 'portee',
+    alsoPublishFacebook: true,
+    adaptedFromId: null,
+    facebookExternalId: null,
+    generationStatus: 'done',
+    generationError: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [post, ...board.posts].slice(0, 160),
+    lastGeneratedAt: board.lastGeneratedAt,
+  });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    message: `Conseil n°${claimed.number} — ${claimed.keyword} ajouté (${claimed.number}/${CONSEIL_SERIES_TOTAL}).`,
+    postId: post.id,
   };
 }

@@ -1,7 +1,9 @@
 import type { SocialPost } from '@/lib/admin/social-comms';
 
 export const SOCIAL_LOGO_PATH = '/logo.png';
-const EXPORT_SIZE = 1080;
+/** Instagram feed / carousel portrait (4:5). */
+export const EXPORT_WIDTH = 1080;
+export const EXPORT_HEIGHT = 1350;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -27,7 +29,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
     }
   }
   if (line) lines.push(line);
-  return lines.slice(0, 3);
+  return lines.slice(0, 4);
 }
 
 /** Retire le fond noir du logo PNG pour un rendu transparent sur photo. */
@@ -55,72 +57,100 @@ function drawLogoTransparent(ctx: CanvasRenderingContext2D, logo: HTMLImageEleme
   ctx.drawImage(off, x, y, w, h);
 }
 
-async function drawLogo(ctx: CanvasRenderingContext2D, size: number) {
+async function drawLogo(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number) {
   try {
     const logo = await loadImage(SOCIAL_LOGO_PATH);
-    const maxW = size * 0.16;
-    const scale = Math.min(maxW / logo.width, maxW / logo.height);
+    // ~12% de la largeur, marge 4% — logo entier, jamais coupé
+    const maxW = canvasW * 0.12;
+    const maxH = canvasH * 0.08;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
     const w = logo.width * scale;
     const h = logo.height * scale;
-    drawLogoTransparent(ctx, logo, size * 0.05, size * 0.05, w, h);
+    const x = canvasW * 0.04;
+    const y = canvasH * 0.035;
+    drawLogoTransparent(ctx, logo, x, y, w, h);
   } catch {
     // Logo optionnel
   }
 }
 
-/** Rendu canvas partagé (preview + téléchargement). */
-export async function renderSocialPostCanvas(post: SocialPost): Promise<HTMLCanvasElement> {
-  if (!post.imagePath) throw new Error('Aucune image');
+export function resolveSlideOverlayText(
+  post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format'>,
+  slideIndex = 0,
+): string {
+  const titles = post.carouselSlideTitles ?? [];
+  if (post.format === 'carousel' && titles[slideIndex]?.trim()) {
+    return titles[slideIndex]!.trim().toLocaleUpperCase('fr-FR');
+  }
+  return (post.overlayText || '').trim().toLocaleUpperCase('fr-FR');
+}
 
-  const img = await loadImage(post.imagePath);
+/** Rendu canvas partagé (preview + téléchargement) — ratio 4:5 Instagram. */
+export async function renderSocialPostCanvas(
+  post: SocialPost,
+  options?: { slideIndex?: number; imagePathOverride?: string | null },
+): Promise<HTMLCanvasElement> {
+  const imagePath = options?.imagePathOverride || post.imagePath;
+  if (!imagePath) throw new Error('Aucune image');
+
+  const slideIndex = options?.slideIndex ?? 0;
+  const img = await loadImage(imagePath);
   const canvas = document.createElement('canvas');
-  canvas.width = EXPORT_SIZE;
-  canvas.height = EXPORT_SIZE;
+  canvas.width = EXPORT_WIDTH;
+  canvas.height = EXPORT_HEIGHT;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas indisponible');
 
-  const scale = Math.max(EXPORT_SIZE / img.width, EXPORT_SIZE / img.height);
+  // Cover 4:5
+  const scale = Math.max(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
   const w = img.width * scale;
   const h = img.height * scale;
-  ctx.drawImage(img, (EXPORT_SIZE - w) / 2, (EXPORT_SIZE - h) / 2, w, h);
+  ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
 
-  // Un seul texte : grand serif en bas. Logo seul en haut (pas de titre à côté).
-  const overlayText = (post.overlayText || '').trim().toLocaleUpperCase('fr-FR');
+  const overlayText = resolveSlideOverlayText(post, slideIndex);
+  const burnOverlay = post.useOverlay || post.format === 'carousel';
 
-  if (post.useOverlay && overlayText) {
-    const gradient = ctx.createLinearGradient(0, EXPORT_SIZE * 0.45, 0, EXPORT_SIZE);
+  if (burnOverlay && overlayText) {
+    const gradient = ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
     gradient.addColorStop(0, 'rgba(30,24,20,0)');
-    gradient.addColorStop(1, 'rgba(30,24,20,0.78)');
+    gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
     ctx.fillStyle = '#fffaf5';
-    ctx.font = '600 54px Georgia, serif';
+    ctx.font = '600 52px Georgia, serif';
     ctx.textAlign = 'center';
-    const lines = wrapText(ctx, overlayText, EXPORT_SIZE * 0.82);
-    const startY = EXPORT_SIZE - 160 - (lines.length - 1) * 62;
+    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
+    const startY = EXPORT_HEIGHT - 140 - (lines.length - 1) * 58;
     lines.forEach((item, index) => {
-      ctx.fillText(item, EXPORT_SIZE / 2, startY + index * 62);
+      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * 58);
     });
   }
 
-  await drawLogo(ctx, EXPORT_SIZE);
+  await drawLogo(ctx, EXPORT_WIDTH, EXPORT_HEIGHT);
   return canvas;
 }
 
-export async function renderSocialPostDataUrl(post: SocialPost): Promise<string> {
-  const canvas = await renderSocialPostCanvas(post);
+export async function renderSocialPostDataUrl(
+  post: SocialPost,
+  options?: { slideIndex?: number; imagePathOverride?: string | null },
+): Promise<string> {
+  const canvas = await renderSocialPostCanvas(post, options);
   return canvas.toDataURL('image/png');
 }
 
-export async function downloadSocialPostImage(post: SocialPost) {
-  const canvas = await renderSocialPostCanvas(post);
+export async function downloadSocialPostImage(post: SocialPost, slideIndex = 0) {
+  const path =
+    post.format === 'carousel' && post.carouselPaths?.[slideIndex]
+      ? post.carouselPaths[slideIndex]
+      : post.imagePath;
+  const canvas = await renderSocialPostCanvas(post, { slideIndex, imagePathOverride: path });
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('Export image échoué');
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `fitmangas-${post.id}.png`;
+  a.download = `fitmangas-${post.id}${post.format === 'carousel' ? `-s${slideIndex + 1}` : ''}.png`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -23,6 +23,7 @@ import {
   deleteSocialPostAction,
   disconnectMetaAction,
   finalizeWeekPlanAction,
+  generateConseilSeriesPostAction,
   generateNextPostAction,
   generateSocialImageAction,
   generateSpanishVariantAction,
@@ -43,7 +44,6 @@ import {
   trainAlejandraPhotaAction,
   refreshAlejandraPhotaStatusAction,
   updateSocialPostCaptionAction,
-  updateSocialPostCtaAction,
   updateSocialPostFacebookMirrorAction,
   updateSocialPostImageAction,
   updateSocialPostImageFeedbackAction,
@@ -255,7 +255,10 @@ export function CommunityManagerBoard({
     }
     let cancelled = false;
     setPreviewLoading(true);
-    void renderSocialPostDataUrl({ ...previewPost, imagePath: slide })
+    void renderSocialPostDataUrl(previewPost, {
+      slideIndex: previewIndex,
+      imagePathOverride: slide,
+    })
       .then((url) => {
         if (!cancelled) setPreviewUrl(url);
       })
@@ -376,16 +379,6 @@ export function CommunityManagerBoard({
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Community Manager</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Programme & publications</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-luxury-muted">
-              {networkFilter === 'facebook'
-                ? 'Facebook = miroir Instagram. Génère Instagram pour alimenter IG + FB.'
-                : `Génère uniquement ${SOCIAL_NETWORK_LABELS[networkFilter]} — ${generationSummary}. Calendrier = tous les réseaux.`}
-            </p>
-            {board.lastGeneratedAt ? (
-              <p className="mt-2 text-xs text-luxury-soft">
-                Dernière génération IA : {new Date(board.lastGeneratedAt).toLocaleString('fr-FR')}
-              </p>
-            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -427,6 +420,15 @@ export function CommunityManagerBoard({
                     ? 'Générer Instagram (FR)'
                     : `Générer ${SOCIAL_NETWORK_LABELS[networkFilter]}`}
             </button>
+            <button
+              type="button"
+              disabled={pending || generationFlow.active}
+              onClick={() => run(() => generateConseilSeriesPostAction(), 'Conseil généré.')}
+              className="btn-luxury-ghost min-h-[44px] px-4 text-[11px] disabled:opacity-60"
+              title="Série Conseil n°1–50 (portée, compteur mémorisé)"
+            >
+              Générer un Conseil
+            </button>
             {pending || generationFlow.active ? (
               <p className="w-full text-xs text-luxury-soft">
                 Génération {SOCIAL_NETWORK_LABELS[networkFilter === 'facebook' ? 'instagram' : networkFilter]} · FR
@@ -462,7 +464,11 @@ export function CommunityManagerBoard({
           ))}
           <button
             type="button"
-            title="Stratégie CM"
+            title={
+              pillarHistoryLabels.length
+                ? `Stratégie CM — 8 derniers thèmes : ${pillarHistoryLabels.join(' → ')}`
+                : 'Stratégie CM'
+            }
             aria-label="Ouvrir la stratégie community manager"
             onClick={() => setShowStrategyPanel(true)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E8D9C8] bg-white text-[#7a2e1a] shadow-sm transition hover:border-[#C45D3E]/50 hover:bg-[#FBF7F2]"
@@ -510,21 +516,6 @@ export function CommunityManagerBoard({
             Mix cible : 3 portée · 3 confiance · 1 conversion (ou 3/2/2 en alternance)
           </p>
         )}
-        {pillarHistoryLabels.length ? (
-          <p className="mt-1 text-[10px] text-luxury-muted">
-            8 derniers thèmes : {pillarHistoryLabels.join(' → ')}
-          </p>
-        ) : null}
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-            Générer = FR uniquement
-          </span>
-          <span className="rounded-full bg-[#FBF7F2] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7a2e1a]">
-            ES = bouton par post
-          </span>
-        </div>
-
 
         {showDoublePanel && doubleUiEnabled ? (
           <div className="mt-3 rounded-2xl border border-[#c5daf0]/80 bg-[#f7fbff]/90 p-4">
@@ -948,7 +939,7 @@ export function CommunityManagerBoard({
                   <img
                     src={previewUrl || previewPost.imagePath || ''}
                     alt="Aperçu Instagram"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                   {/* Pas de texte CSS en haut : l’image composée a déjà logo (haut) + grand texte (bas).
                       Exception Reel sans overlay brûlé : hook seul en haut (pas de doublon bas). */}
@@ -1414,7 +1405,6 @@ function PostCard({
               run(() => updateSocialPostTitleAction(post.id, e.target.value), 'Titre enregistré.');
             }}
           />
-          {post.whyItWorks ? <p className="mt-1 text-[11px] leading-snug text-luxury-soft">{post.whyItWorks}</p> : null}
           {post.generationStatus === 'failed' && post.generationError ? (
             <p className="mt-1 text-[11px] text-[#991b1b]">Erreur génération: {post.generationError}</p>
           ) : null}
@@ -1467,33 +1457,49 @@ function PostCard({
             </div>
           ) : null}
 
-          <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-            Famille / thème (forcer avant régénération)
-          </label>
-          <select
-            className={`${ADMIN_FIELD_CLASS} mt-1`}
-            value={post.pillarId || ''}
-            onChange={(e) => {
-              const themeId = e.target.value;
-              if (!themeId) return;
-              const theme = getContentTheme(themeId);
-              run(
-                () => updateSocialPostThemeAction(post.id, themeId, theme?.family ?? null),
-                'Thème mis à jour.',
-              );
-            }}
-          >
-            <option value="">— Choisir un thème —</option>
-            {(['portee', 'confiance', 'conversion'] as ContentFamilyId[]).map((fam) => (
-              <optgroup key={fam} label={CONTENT_FAMILY_LABELS[fam]}>
-                {ACTIVE_CONTENT_THEMES.filter((t) => t.family === fam).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <details className="mt-3">
+            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
+              Options
+            </summary>
+            <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
+              Famille / thème (pour régénérer ce post)
+            </label>
+            <select
+              className={`${ADMIN_FIELD_CLASS} mt-1`}
+              value={post.pillarId || ''}
+              onChange={(e) => {
+                const themeId = e.target.value;
+                if (!themeId) return;
+                const theme = getContentTheme(themeId);
+                run(
+                  () => updateSocialPostThemeAction(post.id, themeId, theme?.family ?? null),
+                  'Thème mis à jour.',
+                );
+              }}
+            >
+              <option value="">— Choisir un thème —</option>
+              {(['portee', 'confiance', 'conversion'] as ContentFamilyId[]).map((fam) => (
+                <optgroup key={fam} label={CONTENT_FAMILY_LABELS[fam]}>
+                  {ACTIVE_CONTENT_THEMES.filter((t) => t.family === fam).map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {post.pillarId ? (
+              <button
+                type="button"
+                disabled={pending}
+                className="btn-luxury-ghost mt-2 min-h-[36px] gap-2 px-3 text-[11px]"
+                onClick={() => run(() => regenerateOneSocialPostAction(post.id), 'Post régénéré avec ce thème.')}
+              >
+                {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                Régénérer avec ce thème
+              </button>
+            ) : null}
+          </details>
 
           <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
             Publication (heure Paris)
@@ -1548,7 +1554,7 @@ function PostCard({
                 }}
               />
               <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
-                Aide-mémoire — 3 idées + brief phrases (généré auto)
+                Brief tournage
               </label>
               <textarea
                 rows={8}
@@ -1562,12 +1568,6 @@ function PostCard({
                   )
                 }
               />
-              <p className="text-[10px] leading-snug text-luxury-muted">
-                Les 3 idées = repères. Le BRIEF = phrases parlables pour filmer sans tout inventer.
-              </p>
-              <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
-                Plan de tournage — face cam only
-              </label>
               <textarea
                 rows={3}
                 className="w-full rounded-2xl border border-[#E8D9C8]/80 bg-white/90 px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
@@ -1581,9 +1581,6 @@ function PostCard({
                   )
                 }
               />
-              <p className="text-[10px] leading-snug text-luxury-muted">
-                Phase actuelle : pas de plan exercice filmé. Les plans d’exercice inventés par l’IA sont remplacés automatiquement.
-              </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   type="button"
@@ -1666,9 +1663,6 @@ function PostCard({
                   </a>
                 ) : null}
               </div>
-              <p className="text-[10px] leading-snug text-luxury-muted">
-                Workflow : filmer (aide-mémoire) → Claude Code (prompt ci-dessus) → importer le MP4 ici → statut Prêt / Programmer.
-              </p>
             </div>
           ) : null}
 
@@ -1806,14 +1800,23 @@ function PostCard({
                   }}
                 />
               </div>
-              {!post.useOverlay ? (
-                <p className="mt-1 text-[11px] text-luxury-soft">Sans texte sur image : seul le logo FitMangas sera ajouté à l’export.</p>
+              {isCarousel && post.carouselSlideTitles?.length ? (
+                <div className="mt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
+                    Titres des 7 slides
+                  </p>
+                  <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-[12px] text-luxury-ink">
+                    {post.carouselSlideTitles.map((t, i) => (
+                      <li key={`${post.id}-slide-title-${i}`}>{t || `— slide ${i + 1}`}</li>
+                    ))}
+                  </ol>
+                </div>
               ) : null}
             </>
           ) : null}
 
           <label className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-            Description Instagram (légende)
+            Description Instagram (légende + CTA en dernière ligne)
           </label>
           <textarea
             value={caption}
@@ -1829,24 +1832,9 @@ function PostCard({
             }}
           />
           <p className={`mt-1 text-xs ${captionAnalysis.ok ? 'text-luxury-soft' : 'text-[#7a2e1a]'}`}>
-            {captionAnalysis.length} / {captionAnalysis.max} car. (idéal {captionAnalysis.idealMin}–{captionAnalysis.idealMax})
+            {captionAnalysis.length} / {captionAnalysis.max} car.
             {captionAnalysis.warnings.length ? ` — ${captionAnalysis.warnings.join(' ')}` : ''}
-            {isCarousel ? ' · Carousel : 200–900 car. conseillé' : ''}
           </p>
-
-          <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-            CTA
-          </label>
-          <input
-            key={`cta-${post.id}-${post.updatedAt}`}
-            className={`${ADMIN_FIELD_CLASS} mt-1`}
-            defaultValue={post.cta || ''}
-            placeholder="Ex. : Enregistre ce post · Réserve ta place"
-            onBlur={(e) => {
-              if (e.target.value.trim() === (post.cta || '')) return;
-              run(() => updateSocialPostCtaAction(post.id, e.target.value), 'CTA enregistré.');
-            }}
-          />
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button

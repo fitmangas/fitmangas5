@@ -34,6 +34,12 @@ export type SocialPost = {
   editedVideoPath: string | null;
   videoStatus: SocialVideoStatus | null;
   carouselPaths: string[];
+  /** Titres overlay par slide (carousel, longueur 7). */
+  carouselSlideTitles?: string[];
+  /** Série « 50 conseils » (portée). */
+  seriesKind?: 'conseil_50' | null;
+  seriesNumber?: number | null;
+  seriesKeyword?: string | null;
   plannedAt: string | null;
   status: SocialPostStatus;
   sourceType: SocialPostSource;
@@ -281,6 +287,12 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     editedVideoPath: typeof row.editedVideoPath === 'string' ? row.editedVideoPath : null,
     videoStatus: normalizeVideoStatus(row.videoStatus) ?? (isReel ? 'brief' : null),
     carouselPaths: Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String).filter(Boolean) : [],
+    carouselSlideTitles: Array.isArray(row.carouselSlideTitles)
+      ? row.carouselSlideTitles.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 7)
+      : [],
+    seriesKind: row.seriesKind === 'conseil_50' ? 'conseil_50' : null,
+    seriesNumber: typeof row.seriesNumber === 'number' ? row.seriesNumber : null,
+    seriesKeyword: typeof row.seriesKeyword === 'string' ? row.seriesKeyword : null,
     plannedAt: typeof row.plannedAt === 'string' ? row.plannedAt : null,
     status: row.status,
     sourceType:

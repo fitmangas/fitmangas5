@@ -286,24 +286,26 @@ export const CONTENT_THEMES: ContentTheme[] = [
   {
     id: 'progres_adherente',
     family: 'confiance',
-    label: 'Progrès d’une adhérente',
-    labelEs: 'Progreso de una alumna',
-    angle: 'Preuve sociale réelle — avant/après vécu, pas promesse.',
-    angleEs: 'Prueba social real — antes/después vivido.',
+    label: 'Progrès d’une Mangita (anonyme)',
+    labelEs: 'Progreso de una Mangita (anónima)',
+    angle:
+      'Preuve sociale SANS prénom ni visage IA : « une Mangita » + vraies photos bibliothèque / détails / citation marque. Jamais un visage généré présenté comme une cliente nommée.',
+    angleEs:
+      'Prueba social SIN nombre ni cara IA: « una Mangita » + fotos reales de biblioteca / detalles. Nunca un rostro generado como alumna nombrada.',
     showProductOrCoach: true,
     reelAnglesFr: [
-      'Ce qu’elle a changé en 6 semaines',
-      'Elle pensait ne pas être « sportive »',
-      'Le moment où ça a tenu',
+      'Ce qu’une Mangita a changé en 6 semaines (sans la nommer)',
+      'Elle pensait ne pas être « sportive » — anonymisé',
+      'Le moment où ça a tenu — rendez-vous fixe',
       'Ce qu’elle dirait à son ancienne elle',
-      'Preuve : le rendez-vous fixe',
+      'Preuve : le rendez-vous fixe, pas un visage IA',
     ],
     reelAnglesEs: [
-      'Lo que cambió en 6 semanas',
-      'Pensaba que no era « deportista »',
+      'Lo que cambió una Mangita en 6 semanas (sin nombrarla)',
+      'Pensaba que no era « deportista » — anónimo',
       'El momento en que se sostuvo',
       'Lo que le diría a su yo de antes',
-      'Prueba: la cita fija',
+      'Prueba: la cita fija, no un rostro IA',
     ],
   },
   // ——— CONVERSION ———

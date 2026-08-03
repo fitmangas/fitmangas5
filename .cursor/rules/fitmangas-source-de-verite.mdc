@@ -111,14 +111,21 @@ Chaque semaine = **3 familles** (portée / confiance / conversion), pas un seul 
 Généré : titre/hook scroll-stop + **brief aide-mémoire** (sujet + hook + 3 idées max) + légende + heure.
 JAMAIS de script à lire. JAMAIS de photo déguisée en Reel. MP4 tourné puis importé.
 
-### Carousel (×1) — 7 slides, 4 à 6 images IA
-- **Slide 1** : image IA éditoriale avec **espace négatif en haut** + hook en overlay
-- **Slides 2–5** : une image IA par point pédagogique, texte dans l'espace négatif
-- **Slide 6** : point clé / citation sur fond de marque (respiration visuelle)
-- **Slide 7 (CTA)** : capture **dashboard desktop** en **carte flottante** (marges, coins arrondis, ombre) + pill `fitmangas.com`
+### Carousel (×1) — 7 slides, 4 à 6 images IA + titres overlay obligatoires
+- **Chaque slide** porte un **titre overlay** court (MAJUSCULES), incrusté sur l’image — jamais d’image vierge.
+- **Slide 1** : hook · **Slides 2–5** : un point pédagogique · **Slide 6** : citation / fond de marque · **Slide 7 (CTA)** : capture dashboard + essai.
+- Légende 200–900 car. **mappée** aux 7 slides (1 paragraphe = 1 slide), CTA en dernière ligne.
+- **Témoignage nommé** : INTERDIT visage IA présenté comme une cliente réelle. « Une Mangita » anonyme + bibliothèque / détails / marque, ou vraie photo.
 
 ### Feed (×1)
-Alterner : vraie photo d'Alejandra (posts d'identité/confiance) ↔ image IA éditoriale (posts de concept).
+Alterner : vraie photo d’Alejandra (identité/confiance) ↔ image IA éditoriale (concept). Ratio export **4:5**. Overlay bas + logo haut-gauche entier.
+
+### Trash-talk (CM v7) — règle absolue
+Tape sur **le mensonge de l’industrie**, **l’excuse**, ou **la situation absurde** — **JAMAIS** sur le corps, l’âge, le poids ou un défaut personnel. Elle doit se sentir **comprise**, jamais jugée.
+INTERDITS overlay/titre : vieille, trop vieille, grosse, molle, paresseuse, nulle, et tout reproche d’insécurité physique/âge.
+
+### Série « 50 conseils Pilates »
+Format activable : « Conseil n°X — mot-clé », compteur 1–50 mémorisé (`social_conseil_series`). Compte comme **PORTÉE**. Overlay `CONSEIL N°X : MOT-CLÉ`. Angle = ce que le Pilates change vraiment (pas un exo technique).
 
 ### Miroir Facebook
 Même média + même légende que le post IG, publié au créneau FB le plus proche (09h, 10h, 13h, 14h, 18h) ≥ heure IG. Aucun contenu FB créé séparément.

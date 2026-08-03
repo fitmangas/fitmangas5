@@ -271,28 +271,49 @@ export function polishPostTitle(
 }
 
 const TITLE_BLACKLIST =
-  /\b(hurle|hurler|sauvage|guerri[eè]re|plume|fant[oô]me|inébranlable|rayonne|doux|douce|suave|d[eé]verrouille|prestance)\b|un geste qui|lib[eè]re ta|éveille ta|sculpte ta|active ton noyau|force invisible|en douceur|gesto suave|un gesto que/i;
+  /\b(hurle|hurler|sauvage|guerri[eè]re|plume|fant[oô]me|inébranlable|rayonne|doux|douce|suave|d[eé]verrouille|prestance|trop\s+vieille|demasiado\s+vieja|paresseuse|perezosa)\b|un geste qui|lib[eè]re ta|éveille ta|sculpte ta|active ton noyau|force invisible|en douceur|gesto suave|un gesto que/i;
 
-/** Ouverture « X n’est pas Y » sans scène concrète = rejet. */
-const OPENS_WITH_NEGATION_NO_SCENE =
-  /^(ce n['’]est pas|no es|eso no es|no es falta de|el problema no es)\b/i;
+/**
+ * TRASH-TALK FitMangas (CM v7) :
+ * On tape sur LE MENSONGE DE L’INDUSTRIE, L’EXCUSE, ou LA SITUATION ABSURDE —
+ * JAMAIS sur le corps, l’âge, le poids ou un défaut personnel de la femme.
+ * Elle doit se sentir COMPRISE et du bon côté, jamais jugée.
+ */
+export const TRASH_TALK_BODY_SHAME =
+  /\b(trop\s+vieille|vieille|viej[ao]s?|grosse|gorda|molle|floja|paresseuse|perezosa|nulle|inútil|obèse|obesa|flasque|flácid[ao]|moche|fea|ridicule)\b/i;
 
-const HAS_CONCRETE_SCENE =
-  /\b(tu |te |tes |ton |ta |tú |te |tus |cuando |quand |après |tras |à \d|las \d|heure|chaise|silla|bureau|lèves|levantas|redresses|journée|día sentada|corps|cuerpo)\b/i;
+export function violatesTrashTalkDignity(text: string): boolean {
+  return TRASH_TALK_BODY_SHAME.test(text || '');
+}
 
-export function titleFailsQualityGate(title: string): boolean {
-  const t = (title || '').trim();
-  if (!t || t.length < 12) return true;
-  if (TITLE_BLACKLIST.test(t)) return true;
-  if (/^(titre à revoir|título a revisar)/i.test(t)) return true;
-  // « X n’est pas Y » en ouverture sans aucune scène concrète dans le titre = rejet
-  if (OPENS_WITH_NEGATION_NO_SCENE.test(t) && !HAS_CONCRETE_SCENE.test(t)) return true;
-  return false;
+/** Remplace les overlays/titres qui nomment une insécurité physique/âge. */
+export function sanitizeTrashTalkCopy(raw: string, locale: SocialLocale = 'fr'): string {
+  const t = (raw || '').trim();
+  if (!t) return t;
+  if (!violatesTrashTalkDignity(t)) return t;
+  if (/trop\s+vieille|vieille|viej/i.test(t)) {
+    return locale === 'es'
+      ? 'TE DIJERON QUE ERA DEMASIADO TARDE. ES FALSO.'
+      : "ON T'A DIT QUE C'ÉTAIT TROP TARD. C'EST FAUX.";
+  }
+  if (/grosse|gorda|molle|floja|obèse|obesa|flasque/i.test(t)) {
+    return locale === 'es'
+      ? 'EL PROBLEMA NO ERES TÚ: ES LA PROMESA IMPOSIBLE.'
+      : "LE PROBLÈME N'EST PAS TOI : C'EST LA PROMESSE IMPOSSIBLE.";
+  }
+  if (/paresseuse|perezosa|nulle|inútil/i.test(t)) {
+    return locale === 'es'
+      ? 'NO ES FALTA DE VOLUNTAD: ES FALTA DE CITA FIJA.'
+      : "CE N'EST PAS UN MANQUE DE VOLONTÉ : C'EST UN MANQUE DE RENDEZ-VOUS.";
+  }
+  return locale === 'es'
+    ? 'TE VENDIERON UNA HISTORIA FALSA. AQUÍ ESTÁ LA REAL.'
+    : 'ON T’A VENDU UNE HISTOIRE FAUSSE. VOICI LA VRAIE.';
 }
 
 /** Mots / fragments sur lesquels un overlay ne doit JAMAIS se terminer (troncature). */
 const OVERLAY_HANGING_END =
-  /(?:^|\s)(EN|DU|DE|DES|LE|LA|LES|UN|UNE|ET|OU|À|A|AU|AUX|POUR|PAR|SUR|DANS|AVEC|SANS|QUE|QUI|SI|TU|TE|TON|TA|TES|JE|ME|MON|MA|MES|ON|NOUS|VOUS|SE|SA|SON|SES|CE|CET|CETTE|CES|PAS|PLUS|D'|L'|N'|QU'|C'|Y|EL|LA|LOS|LAS|UN|UNA|POR|PARA|CON|SIN|QUE|SI|TU|TE|TU|SU|SUS|AL|DEL)$/i;
+  /(?:^|\s)(EN|DU|DE|DES|LE|LA|LES|UN|UNE|ET|OU|À|A|AU|AUX|POUR|PAR|SUR|DANS|AVEC|SANS|QUE|QUI|SI|TU|TE|TON|TA|TES|JE|ME|MON|MA|MES|ON|NOUS|VOUS|SE|SA|SON|SES|CE|CET|CETTE|CES|PAS|PLUS|D'|L'|N'|QU'|C'|Y|EL|LOS|LAS|UNA|POR|PARA|CON|SIN|SU|SUS|AL|DEL)$/i;
 
 export function isIncompleteOverlay(text: string): boolean {
   const t = (text || '').trim();
@@ -302,16 +323,12 @@ export function isIncompleteOverlay(text: string): boolean {
   return false;
 }
 
-/**
- * Overlay / hook sur image : phrase autonome, MAJUSCULES, courte et COMPLÈTE.
- * JAMAIS une troncature du titre long (ni coupe au milieu d’un mot, ni sur une préposition).
- * Si trop long → on raccourcit par mots entiers jusqu’à une fin valide ; pas de slice aveugle.
- */
 export function polishOverlayText(raw: string, locale: SocialLocale = 'fr', max = 56): string {
   let t = (raw || '').trim().replace(/\s+/g, ' ');
   if (!t) return '';
 
-  // Une seule proposition (pas le titre long multi-phrases)
+  t = sanitizeTrashTalkCopy(t, locale);
+
   t = (t.split(/[.!?|\n]/)[0] || t).trim();
   t = t.replace(/[?¿!¡]+$/g, '').trim();
   const loc = locale === 'es' ? 'es-ES' : 'fr-FR';
@@ -325,12 +342,99 @@ export function polishOverlayText(raw: string, locale: SocialLocale = 'fr', max 
     if (candidate.length <= max && !isIncompleteOverlay(candidate)) return candidate;
   }
 
-  // Dernier recours : 3–5 mots forts, sans fin pendante (mieux qu’une coupe « …en »)
   for (let n = Math.min(5, words.length); n >= 2; n -= 1) {
     const candidate = words.slice(0, n).join(' ');
     if (!isIncompleteOverlay(candidate)) return candidate;
   }
   return words.slice(0, 3).join(' ');
+}
+
+/** Intègre le CTA à la fin de la légende (une seule fois). */
+export function mergeCaptionWithCta(caption: string, cta: string): string {
+  const base = (caption || '').trim();
+  const tip = (cta || '').trim();
+  if (!tip) return base;
+  if (!base) return tip;
+  if (base.toLowerCase().includes(tip.toLowerCase().slice(0, Math.min(24, tip.length)))) return base;
+  return `${base.replace(/\s+$/, '')}\n\n${tip}`;
+}
+
+/** Titres overlay par slide carousel (7) — majuscules, courts, complets. */
+export function normalizeCarouselSlideTitles(
+  raw: unknown,
+  fallbackOverlay: string,
+  locale: SocialLocale = 'fr',
+): string[] {
+  const fromAi = Array.isArray(raw) ? raw.map((x) => String(x || '').trim()).filter(Boolean) : [];
+  const defaultsFr = [
+    fallbackOverlay || 'LE RENDEZ-VOUS QUI MANQUAIT',
+    'CE QUE TU CROIS',
+    'CE QUI SE PASSE VRAIMENT',
+    'LE GESTE QUI CHANGE',
+    'POURQUOI ÇA TIENT',
+    'LA PHRASE À GARDER',
+    'ESSAI 7 JOURS — ON T’ATTEND',
+  ];
+  const defaultsEs = [
+    fallbackOverlay || 'LA CITA QUE FALTABA',
+    'LO QUE CREES',
+    'LO QUE PASA DE VERDAD',
+    'EL GESTO QUE CAMBIA',
+    'POR QUÉ SE SOSTIENE',
+    'LA FRASE PARA GUARDAR',
+    'PRUEBA 7 DÍAS — TE ESPERAMOS',
+  ];
+  const defaults = locale === 'es' ? defaultsEs : defaultsFr;
+  const out: string[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const candidate = fromAi[i] || (i === 0 ? fallbackOverlay : '') || defaults[i]!;
+    out.push(polishOverlayText(candidate, locale, 48) || defaults[i]!);
+  }
+  return out;
+}
+
+export function buildCarouselMappedCaption(params: {
+  slideTitles: string[];
+  bodyParagraphs?: string[];
+  cta: string;
+  locale?: SocialLocale;
+}): string {
+  const locale = params.locale ?? 'fr';
+  const titles = params.slideTitles.slice(0, 7);
+  const paras = params.bodyParagraphs ?? [];
+  const lines: string[] = [];
+  for (let i = 0; i < titles.length; i += 1) {
+    const title = titles[i]!;
+    const body = (paras[i] || '').trim();
+    if (i === 0) {
+      lines.push(body || `${title}.`);
+    } else if (i === 6) {
+      lines.push(body || params.cta || (locale === 'es' ? 'Prueba gratis 7 días → fitmangas.com' : 'Essai gratuit 7 jours → fitmangas.com'));
+    } else {
+      lines.push(body || `${title}.`);
+    }
+  }
+  let caption = lines.filter(Boolean).join('\n\n');
+  caption = mergeCaptionWithCta(caption, params.cta);
+  if (caption.length > 900) caption = caption.slice(0, 897).trimEnd() + '…';
+  return caption;
+}
+
+/** Ouverture « X n’est pas Y » sans scène concrète = rejet. */
+const OPENS_WITH_NEGATION_NO_SCENE =
+  /^(ce n['’]est pas|no es|eso no es|no es falta de|el problema no es)\b/i;
+
+const HAS_CONCRETE_SCENE =
+  /\b(tu |te |tes |ton |ta |tú |te |tus |cuando |quand |après |tras |à \d|las \d|heure|chaise|silla|bureau|lèves|levantas|redresses|journée|día sentada|corps|cuerpo)\b/i;
+
+export function titleFailsQualityGate(title: string): boolean {
+  const t = (title || '').trim();
+  if (!t || t.length < 12) return true;
+  if (TITLE_BLACKLIST.test(t)) return true;
+  if (violatesTrashTalkDignity(t) && /trop\s+vieille|paresseuse|grosse|nulle/i.test(t)) return true;
+  if (/^(titre à revoir|título a revisar)/i.test(t)) return true;
+  if (OPENS_WITH_NEGATION_NO_SCENE.test(t) && !HAS_CONCRETE_SCENE.test(t)) return true;
+  return false;
 }
 
 /** Few-shot titres bankables (FR) — reconnaissance concrète d’abord. */

@@ -117,7 +117,7 @@ export function listLibraryPublicPaths(opts?: {
 }
 
 export function listProductCapturePaths(): string[] {
-  return listLibraryPublicPaths({ folder: 'produit-captures', prefer4x5: false });
+  return listLibraryPublicPaths({ folder: 'produit-captures', prefer4x5: true });
 }
 
 export function folderForTheme(theme: string): LibraryFolderId {
