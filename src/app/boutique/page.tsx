@@ -3,13 +3,22 @@ import Link from 'next/link';
 import { sortPrintfulProducts } from '@/lib/printful-product-order';
 import { getPrintfulProducts, mapProductImage } from '@/lib/printful';
 
+export const dynamic = 'force-dynamic';
+
 function formatPrice(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return 'Prix sur demande';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 export default async function BoutiquePage() {
-  const productsRaw = await getPrintfulProducts().catch(() => []);
+  let catalogueUnavailable = false;
+  let productsRaw: Awaited<ReturnType<typeof getPrintfulProducts>> = [];
+  try {
+    productsRaw = await getPrintfulProducts();
+  } catch (e) {
+    console.error('[boutique] Printful catalogue indisponible', e);
+    catalogueUnavailable = true;
+  }
   const products = await sortPrintfulProducts(productsRaw);
 
   return (
@@ -24,7 +33,11 @@ export default async function BoutiquePage() {
         </p>
       </header>
 
-      {products.length === 0 ? (
+      {catalogueUnavailable ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50/80 p-10 text-center text-red-800 shadow-sm">
+          Catalogue indisponible — Printful ne répond pas. Réessaie plus tard.
+        </div>
+      ) : products.length === 0 ? (
         <div className="rounded-3xl border border-white/40 bg-white/55 p-10 text-center text-luxury-muted shadow-sm backdrop-blur">
           Aucun produit synchronisé pour le moment.
         </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
+import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { ReplayLibraryCard } from '@/components/Replay/ReplayLibraryCard';
 import { VisioLock } from '@/components/Premium/VisioLock';
 import { getReplayLibraryForUser } from '@/lib/replay-library';
@@ -69,6 +70,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           page: 'Page',
           play: 'Play',
           soon: 'Coming soon',
+          unknown: 'Status unknown · retry later',
         }
       : lang === 'es'
         ? {
@@ -96,6 +98,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             page: 'Página',
             play: 'Ver replay',
             soon: 'Pronto disponible',
+            unknown: 'Estado desconocido · reintentar',
           }
         : {
             title: 'Mes replays & ma bibliothèque',
@@ -122,6 +125,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             page: 'Page',
             play: 'Lecture',
             soon: 'Bientôt disponible',
+            unknown: 'Statut inconnu · réessayer',
           };
 
   if (!hasVisioAccess) {
@@ -268,7 +272,11 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
   });
 
-  const hero = sorted.find((i) => i.isPlayable !== false) ?? null;
+  const hero =
+    sorted.find((i) => i.isPlayable && i.playbackStatus === 'ready') ??
+    sorted.find((i) => i.playbackStatus === 'unknown') ??
+    sorted[0] ??
+    null;
   const rest = hero ? sorted.filter((i) => i.recordingId !== hero.recordingId) : sorted;
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -279,7 +287,8 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     hero?.courseDescription?.trim() ||
     (hero ? getReplayFallbackDescription(hero.courseTitle, lang) : '');
   const heroDate = hero ? formatFrenchSessionDate(hero.startsAt) : '';
-  const heroPlayable = hero?.isPlayable !== false;
+  const heroPlayable = hero?.isPlayable === true && hero.playbackStatus === 'ready';
+  const heroUnknown = hero?.playbackStatus === 'unknown';
 
   return (
     <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
@@ -339,13 +348,18 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
       ) : (
         <>
           <section className="glass-card mt-10 grid gap-6 overflow-hidden p-6 md:grid-cols-2 md:p-8">
-            <div className="overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 md:rounded-2xl">
+            <div className="relative overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 md:rounded-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={hero.coverImageUrl}
                 alt=""
                 className="aspect-[16/10] h-full w-full object-cover md:aspect-auto md:min-h-[260px]"
               />
+              {hero.courseLanguage ? (
+                <span className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg shadow-md backdrop-blur-md md:h-10 md:w-10 md:text-xl">
+                  <CourseLanguageFlag language={hero.courseLanguage} uiLang={lang} className="text-lg md:text-xl" />
+                </span>
+              ) : null}
             </div>
             <div className="flex flex-col justify-center">
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-600">{t.latest}</p>
@@ -362,7 +376,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
                   </Link>
                 ) : (
                   <span className="inline-flex rounded-full border border-white/50 bg-white/45 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted">
-                    {t.soon}
+                    {heroUnknown ? t.unknown : t.soon}
                   </span>
                 )}
               </div>
@@ -374,12 +388,12 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
               <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.favFolder}</h2>
               <div className="mt-4 flex flex-wrap gap-3">
                 {favorites.map((f) =>
-                  f.isPlayable === false ? (
+                  f.isPlayable !== true || f.playbackStatus !== 'ready' ? (
                     <span
                       key={f.recordingId}
                       className="rounded-full border border-white/45 bg-white/40 px-4 py-2 text-xs font-semibold text-luxury-muted"
                     >
-                      ♥ {f.courseTitle} · {t.soon}
+                      ♥ {f.courseTitle} · {f.playbackStatus === 'unknown' ? t.unknown : t.soon}
                     </span>
                   ) : (
                     <Link

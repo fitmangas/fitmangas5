@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/auth/assert-admin-api';
-import { slugifyBlog } from '@/lib/blog/slugify';
-import { translateText } from '@/lib/blog/translate';
+import {
+  persistSpanishTranslation,
+  translateArticleBodyToSpanish,
+} from '@/lib/blog/translate-article-es';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(_request: Request, context: { params: Promise<{ articleId: string }> }) {
@@ -13,52 +15,40 @@ export async function POST(_request: Request, context: { params: Promise<{ artic
   try {
     const admin = createAdminClient();
 
-    const { data: article, error } = await admin.from('blog_articles').select('*').eq('id', articleId).maybeSingle();
+    const { data: article, error } = await admin
+      .from('blog_articles')
+      .select('id,title_fr,description_fr,meta_description_fr,content_fr,seo_keywords')
+      .eq('id', articleId)
+      .maybeSingle();
 
     if (error || !article) {
       return NextResponse.json({ error: 'Article introuvable.' }, { status: 404 });
     }
 
-    const titleEs = await translateText(article.title_fr, 'es');
-    const descFr = article.description_fr?.trim() ?? '';
-    const descEs = descFr ? await translateText(descFr, 'es') : null;
-    const contentEs = await translateText(article.content_fr, 'es');
+    const translation = await translateArticleBodyToSpanish({
+      title_fr: article.title_fr,
+      description_fr: article.description_fr,
+      meta_description_fr: article.meta_description_fr,
+      content_fr: article.content_fr,
+    });
 
-    if (!titleEs || !contentEs) {
+    if (!translation.ok) {
       return NextResponse.json(
-        { error: 'Traduction impossible. Vérifie GEMINI_API_KEY ou réessaie.' },
+        { error: translation.error || 'Traduction impossible. Vérifie GEMINI_API_KEY ou réessaie.' },
         { status: 503 },
       );
     }
 
-    const slug_es = slugifyBlog(titleEs);
-
-    await admin
-      .from('blog_articles')
-      .update({
-        title_es: titleEs,
-        description_es: descEs,
-        content_es: contentEs,
-        slug_es,
-        meta_description_es: descEs?.slice(0, 320) ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', articleId);
-
-    await admin.from('blog_article_translations').upsert(
-      {
-        article_id: articleId,
-        language: 'es',
-        title: titleEs,
-        description: descEs,
-        content: contentEs,
-        meta_description: descEs?.slice(0, 320) ?? null,
-        slug: slug_es,
-        auto_translated: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'article_id,language' },
-    );
+    const persisted = await persistSpanishTranslation(admin, articleId, translation, {
+      title_fr: article.title_fr,
+      description_fr: article.description_fr,
+      content_fr: article.content_fr,
+      meta_description_fr: article.meta_description_fr,
+      seo_keywords: article.seo_keywords,
+    });
+    if (!persisted.ok) {
+      return NextResponse.json({ error: persisted.error }, { status: 400 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {

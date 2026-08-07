@@ -3,32 +3,70 @@ import { normalizeDurationSeconds } from '@/lib/vimeo';
 
 const VIMEO_API_BASE = 'https://api.vimeo.com';
 
+/**
+ * confirmed = Vimeo a répondu et is_playable / status est fiable
+ * unknown = pas de token / erreur réseau / 4xx-5xx hors 404 → JAMAIS isPlayable:true
+ * unavailable = confirmé non lisible (404, transcode KO, etc.)
+ */
+export type VimeoPlaybackConfidence = 'confirmed' | 'unknown' | 'unavailable';
+
 export type VimeoPlaybackProbe = {
   vimeoId: string;
+  /** true UNIQUEMENT si Vimeo confirme explicitement la lecture. */
   isPlayable: boolean;
   durationSeconds: number | null;
   title: string | null;
   status: string | null;
+  confidence: VimeoPlaybackConfidence;
 };
 
 function getToken(): string | null {
   return process.env.VIMEO_ACCESS_TOKEN?.trim() || null;
 }
 
+function probeResult(
+  partial: Omit<VimeoPlaybackProbe, 'confidence' | 'isPlayable'> & {
+    isPlayable: boolean;
+    confidence: VimeoPlaybackConfidence;
+  },
+): VimeoPlaybackProbe {
+  // Garde-fou absolu : unknown / unavailable ne peuvent jamais être playable.
+  if (partial.confidence !== 'confirmed' && partial.isPlayable) {
+    console.error('[vimeo-playback] refus isPlayable:true hors confirmation', partial);
+    return { ...partial, isPlayable: false };
+  }
+  return partial;
+}
+
 /**
  * Sonde légère : une vidéo est-elle réellement lisible côté Vimeo ?
- * (évite d’afficher « cette vidéo n’existe pas » / upload bloqué)
+ * En cas d’erreur / absence de token → isPlayable:false + confidence:unknown (jamais true).
  */
 export async function probeVimeoPlayback(vimeoId: string): Promise<VimeoPlaybackProbe> {
   const safeId = String(vimeoId).trim();
   if (!/^\d+$/.test(safeId)) {
-    return { vimeoId: safeId, isPlayable: false, durationSeconds: null, title: null, status: 'invalid' };
+    return probeResult({
+      vimeoId: safeId,
+      isPlayable: false,
+      durationSeconds: null,
+      title: null,
+      status: 'invalid',
+      confidence: 'unavailable',
+    });
   }
 
   const token = getToken();
   if (!token) {
-    // Sans token : on ne bloque pas la lecture (comportement permissif).
-    return { vimeoId: safeId, isPlayable: true, durationSeconds: null, title: null, status: null };
+    // Point 1 — sans token : ne PAS prétendre que c’est lisible.
+    console.error('[vimeo-playback] VIMEO_ACCESS_TOKEN absent — isPlayable=false (unknown)', safeId);
+    return probeResult({
+      vimeoId: safeId,
+      isPlayable: false,
+      durationSeconds: null,
+      title: null,
+      status: 'no_token',
+      confidence: 'unknown',
+    });
   }
 
   try {
@@ -45,12 +83,27 @@ export async function probeVimeoPlayback(vimeoId: string): Promise<VimeoPlayback
     );
 
     if (res.status === 404) {
-      return { vimeoId: safeId, isPlayable: false, durationSeconds: null, title: null, status: 'not_found' };
+      console.error('[vimeo-playback] vidéo introuvable (404)', safeId);
+      return probeResult({
+        vimeoId: safeId,
+        isPlayable: false,
+        durationSeconds: null,
+        title: null,
+        status: 'not_found',
+        confidence: 'unavailable',
+      });
     }
     if (!res.ok) {
-      // Erreur API ponctuelle : ne pas blacklister la vidéo côté cliente.
-      console.error('[vimeo-playback] probe failed', safeId, res.status);
-      return { vimeoId: safeId, isPlayable: true, durationSeconds: null, title: null, status: 'error' };
+      // Point 2 — erreur HTTP : jamais isPlayable:true
+      console.error('[vimeo-playback] probe HTTP failed', safeId, res.status, await res.text().catch(() => ''));
+      return probeResult({
+        vimeoId: safeId,
+        isPlayable: false,
+        durationSeconds: null,
+        title: null,
+        status: `http_${res.status}`,
+        confidence: 'unknown',
+      });
     }
 
     const data = (await res.json()) as {
@@ -69,16 +122,25 @@ export async function probeVimeoPlayback(vimeoId: string): Promise<VimeoPlayback
       explicitlyPlayable ||
       (status === 'available' && (transcode === 'complete' || transcode == null) && (durationSeconds ?? 0) > 0);
 
-    return {
+    return probeResult({
       vimeoId: safeId,
       isPlayable: available,
       durationSeconds,
       title: data.name ?? null,
       status,
-    };
+      confidence: available ? 'confirmed' : 'unavailable',
+    });
   } catch (e) {
-    console.error('[vimeo-playback] probe error', safeId, e);
-    return { vimeoId: safeId, isPlayable: true, durationSeconds: null, title: null, status: 'error' };
+    // Point 3 — exception réseau : jamais isPlayable:true
+    console.error('[vimeo-playback] probe network/exception', safeId, e);
+    return probeResult({
+      vimeoId: safeId,
+      isPlayable: false,
+      durationSeconds: null,
+      title: null,
+      status: 'network_error',
+      confidence: 'unknown',
+    });
   }
 }
 

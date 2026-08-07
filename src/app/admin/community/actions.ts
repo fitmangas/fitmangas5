@@ -21,10 +21,11 @@ import { resolvePhotaApiKey } from '@/lib/admin/phota-client';
 import {
   CAPTION_BY_FORMAT,
   captionBandCharCeiling,
-  adaptCaptionToLinkedIn,
+  CAROUSEL_SLIDE_COUNT,
+  CAROUSEL_LIST_FORMAT_RULES,
   enforceFaceCamShotList,
-  fallbackReelBrief,
   polishInstagramHook,
+  hookNeedsReview,
   polishPostTitle,
   SOCIAL_CM_GUIDELINES,
   TITLE_FEW_SHOT_ES,
@@ -35,6 +36,7 @@ import {
   withCarouselSlideCount,
   mergeCaptionWithCta,
   normalizeCarouselSlideTitles,
+  overlaysNeedReviewFromTitles,
   sanitizeTrashTalkCopy,
 } from '@/lib/admin/social-cm-playbook';
 import {
@@ -42,6 +44,8 @@ import {
   plannedAtParis,
 } from '@/lib/admin/social-week-planner';
 import { parisScheduleToIso } from '@/lib/admin/social-paris-time';
+import { markSpanishVariantsStale, whyItWorksNeedsReviewForLocale } from '@/lib/admin/social-copy-quality';
+import { adaptCaptionToLinkedInViaLlm } from '@/lib/admin/social-linkedin-adapt';
 import {
   collectUsedLibraryPaths,
   createSocialPostId,
@@ -305,14 +309,12 @@ Règles STRICTES (langue = ${locale}):
 - reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
 - shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
 - FEED caption: 150–220 MOTS (~800–1200 car.). Mini-histoire / valeur. Hook dans les 125 PREMIERS caractères. CTA « essai gratuit 7 jours » UNE seule fois, dernière ligne. overlayText = texte sur image (court, complet).
-- CAROUSEL = LISTE de points AUTONOMES (JAMAIS une histoire découpée en 7 morceaux). slideTitles[7] OBLIGATOIRE :
-  [0] = titre-promesse type « 5 RAISONS D'ARRÊTER… » / « 5 CHOSES QUE PERSONNE NE TE DIT… »
-  [1]–[5] = UN point complet numéroté qui a du SENS SEUL (« 1. PERSONNE NE T'ATTEND », « 2. TU NE VOIS PAS TES ERREURS »…)
-  [6] = CTA (« ESSAI 7 JOURS — ON T'ATTEND »)
-  INTERDIT format narratif tranché (« ELLE A FAIT… », suite d'une phrase coupée, cliffhanger slide→slide).
-  Orthographe soignée FR/ES (ERREURS pas ERROURS ; errores ; motivación avec accent ; jours/días).
-  caption 150–300 MOTS : 1 paragraphe développé PAR slide, même ordre. Hook dans les 125 premiers car. CTA = dernière ligne.
-  INTERDIT "Slide 1". Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA.
+- CAROUSEL — RÈGLE VERROUILLÉE (ne jamais dériver) :
+${CAROUSEL_LIST_FORMAT_RULES}
+  slideTitles = array de EXACTEMENT 6 strings.
+  INTERDIT titre = numéro nu. INTERDIT narration (« CE QU'UNE MANGITA A COMPRIS », « LA COACH DIT SON PRÉNOM »).
+  Orthographe soignée FR/ES (ERREURS pas ERROURS).
+  Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA — mais les TITRES restent une LISTE autonome (pas un récit à son sujet).
 - FRANÇAIS NATUREL : le calque « Tu paies pour X, pas pour Y » = MAX 1 post dans tout le batch. Autres posts : formulations variées (« Un tapis ne t'a jamais rappelée à l'ordre. », « La vidéo ne lève pas les yeux vers toi. », « Ce que tu paies, ce n'est pas le cours : c'est qu'on t'attende. »).
 - ANTI-RÉPÉTITION SEMAINE : thèmes/piliers DISTINCTS entre posts. Overlays à structures DIFFÉRENTES (interdit deux overlays « TU PAIES… PAS POUR… »).
 - WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
@@ -321,7 +323,7 @@ Règles STRICTES (langue = ${locale}):
 - imageHint EN ANGLAIS (scène photo PARTIELLE : mains/profil/détail — jamais corps entier). Si showProductOrCoach: coaching visio / coach portrait library vibe. Si progres_adherente: pas de visage IA « fausse cliente ».
 
 JSON exact:
-{"posts":[{"slotId":0,"title":"","caption":"","hashtags":[],"cta":"","imageHint":"","overlayText":"","useOverlay":false,"hookTitle":"","reelScript":"","shotList":"","slideTitles":["","","","","","",""],"sourceType":"ai","sourceRef":null,"whyItWorks":""}]}`;
+{"posts":[{"slotId":0,"title":"","caption":"","hashtags":[],"cta":"","imageHint":"","overlayText":"","useOverlay":false,"hookTitle":"","reelScript":"","shotList":"","slideTitles":["","","","","",""],"sourceType":"ai","sourceRef":null,"whyItWorks":""}]}`;
 
   const runOnce = async (strict: boolean) => {
     const aiResult = await runSocialTextCascade({
@@ -527,19 +529,22 @@ export async function polishExistingSocialPostsAction() {
 export async function updateSocialPostCaptionAction(postId: string, caption: string) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
-  await saveSocialCommsBoard({
-    ...board,
-    posts: board.posts.map((post) =>
-      post.id === postId
-        ? {
-            ...post,
-            caption: caption.trim(),
-            updatedAt: new Date().toISOString(),
-            status: post.status === 'idea' ? 'ready' : post.status,
-          }
-        : post,
-    ),
-  });
+  const target = board.posts.find((p) => p.id === postId);
+  const now = new Date().toISOString();
+  let posts = board.posts.map((post) =>
+    post.id === postId
+      ? {
+          ...post,
+          caption: caption.trim(),
+          updatedAt: now,
+          status: post.status === 'idea' ? ('ready' as const) : post.status,
+        }
+      : post,
+  );
+  if (target?.locale === 'fr') {
+    posts = markSpanishVariantsStale(posts, postId, now);
+  }
+  await saveSocialCommsBoard({ ...board, posts });
   revalidateCommunity();
   return { ok: true as const };
 }
@@ -688,19 +693,22 @@ export async function refineSocialImageAction(postId: string, feedbackOverride?:
 export async function updateSocialPostTitleAction(postId: string, title: string) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
-  await saveSocialCommsBoard({
-    ...board,
-    posts: board.posts.map((post) =>
-      post.id === postId
-        ? {
-            ...post,
-            title: title.trim().slice(0, 180),
-            titleNeedsReview: false,
-            updatedAt: new Date().toISOString(),
-          }
-        : post,
-    ),
-  });
+  const target = board.posts.find((p) => p.id === postId);
+  const now = new Date().toISOString();
+  let posts = board.posts.map((post) =>
+    post.id === postId
+      ? {
+          ...post,
+          title: title.trim().slice(0, 180),
+          titleNeedsReview: false,
+          updatedAt: now,
+        }
+      : post,
+  );
+  if (target?.locale === 'fr') {
+    posts = markSpanishVariantsStale(posts, postId, now);
+  }
+  await saveSocialCommsBoard({ ...board, posts });
   revalidateCommunity();
   return { ok: true as const };
 }
@@ -708,14 +716,17 @@ export async function updateSocialPostTitleAction(postId: string, title: string)
 export async function updateSocialPostCtaAction(postId: string, cta: string) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
-  await saveSocialCommsBoard({
-    ...board,
-    posts: board.posts.map((post) =>
-      post.id === postId
-        ? { ...post, cta: cta.trim().slice(0, 180), updatedAt: new Date().toISOString() }
-        : post,
-    ),
-  });
+  const target = board.posts.find((p) => p.id === postId);
+  const now = new Date().toISOString();
+  let posts = board.posts.map((post) =>
+    post.id === postId
+      ? { ...post, cta: cta.trim().slice(0, 180), updatedAt: now }
+      : post,
+  );
+  if (target?.locale === 'fr') {
+    posts = markSpanishVariantsStale(posts, postId, now);
+  }
+  await saveSocialCommsBoard({ ...board, posts });
   revalidateCommunity();
   return { ok: true as const };
 }
@@ -799,6 +810,19 @@ export async function regenerateOneSocialPostAction(postId: string) {
   if (updated?.generationStatus === 'failed') {
     return { ok: false as const, error: updated.generationError || 'Régénération échouée.' };
   }
+  if (post.locale === 'fr') {
+    const boardAfter = await getSocialCommsBoard();
+    const now = new Date().toISOString();
+    await saveSocialCommsBoard({
+      ...boardAfter,
+      posts: markSpanishVariantsStale(boardAfter.posts, postId, now),
+    });
+    revalidateCommunity();
+    return {
+      ok: true as const,
+      message: 'Post FR régénéré. Variante(s) ES marquées périmées — relancer « Générer ES ».',
+    };
+  }
   return { ok: true as const, message: 'Post régénéré.' };
 }
 
@@ -812,7 +836,13 @@ export async function generateSpanishVariantAction(postId: string) {
   const already = board.posts.find(
     (p) => p.locale === 'es' && p.adaptedFromId === source.id && p.network === source.network && p.format === source.format,
   );
-  if (already) return { ok: true as const, message: 'Variante ES déjà présente.' };
+  if (already && !already.esStale) {
+    return { ok: true as const, message: 'Variante ES déjà présente.' };
+  }
+  // Si ES stale : on remplace l’ancienne variante
+  const boardWithoutStaleEs = already
+    ? { ...board, posts: board.posts.filter((p) => p.id !== already.id) }
+    : board;
 
   const context = await loadGenerationContext();
   const pillarHistory = await loadPillarHistory();
@@ -866,12 +896,16 @@ export async function generateSpanishVariantAction(postId: string) {
     facebookExternalId: null,
     status: 'idea',
   };
+  const esPostFresh: SocialPost = { ...esPost, esStale: false };
   await saveSocialCommsBoard({
-    ...board,
-    posts: [esPost, ...board.posts].slice(0, 160),
+    ...boardWithoutStaleEs,
+    posts: [esPostFresh, ...boardWithoutStaleEs.posts].slice(0, 160),
   });
   revalidateCommunity();
-  return { ok: true as const, message: 'Variante ES créée (même image).' };
+  return {
+    ok: true as const,
+    message: already ? 'Variante ES régénérée (FR mis à jour).' : 'Variante ES créée (même image).',
+  };
 }
 
 export async function saveAlejandraDoubleAction(input: {
@@ -1012,7 +1046,13 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     return { ok: true as const, message: 'Adaptation LinkedIn déjà présente.' };
   }
 
-  const adapted = adaptCaptionToLinkedIn(source);
+  const adapted = await adaptCaptionToLinkedInViaLlm({
+    title: source.title,
+    caption: source.caption,
+    cta: source.cta,
+    hookTitle: source.hookTitle,
+    locale: source.locale ?? 'fr',
+  });
   const linkedInPost: SocialPost = {
     id: createSocialPostId(),
     network: 'linkedin',
@@ -1040,7 +1080,10 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     status: 'idea',
     sourceType: source.sourceType,
     sourceRef: source.sourceRef,
-    whyItWorks: `Adapté depuis ${source.network} · ${source.title}`,
+    whyItWorks: adapted.needsManual
+      ? `Adaptation LinkedIn à finaliser manuellement (${adapted.error || 'IA indisponible'})`
+      : `Adapté via IA depuis ${source.network} · ${source.title}`,
+    whyItWorksNeedsReview: adapted.needsManual,
     metaExternalId: null,
     alsoPublishFacebook: false,
     adaptedFromId: source.id,
@@ -1054,7 +1097,12 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     posts: [linkedInPost, ...board.posts].slice(0, 80),
   });
   revalidateCommunity();
-  return { ok: true as const, message: 'Post LinkedIn créé (format pro). Vérifie la légende puis copie/publie.' };
+  return {
+    ok: true as const,
+    message: adapted.needsManual
+      ? `Post LinkedIn créé en brouillon — ${adapted.error || 'légende à rédiger manuellement'}.`
+      : 'Post LinkedIn créé via cascade texte. Vérifie la légende puis copie/publie.',
+  };
 }
 
 export async function deleteSocialPostAction(postId: string) {
@@ -1230,6 +1278,31 @@ export async function publishSocialPostNowAction(postId: string) {
   const post = board.posts.find((item) => item.id === postId);
   if (!post) return { ok: false as const, error: 'Post introuvable.' };
 
+  if (post.titleNeedsReview) {
+    return { ok: false as const, error: 'Titre à revoir : corrige le titre avant publication Meta.' };
+  }
+  if (post.overlaysNeedReview) {
+    return { ok: false as const, error: 'Overlays à revoir : corrige les textes carousel avant publication.' };
+  }
+  if (post.carouselMissingSlides) {
+    return { ok: false as const, error: 'Slide manquante : carousel incomplet, publication bloquée.' };
+  }
+  if (post.whyItWorksNeedsReview) {
+    return { ok: false as const, error: 'whyItWorks hors langue : à corriger avant publication.' };
+  }
+  if (post.esStale) {
+    return { ok: false as const, error: 'Variante ES périmée : re-traduis depuis le FR avant publication.' };
+  }
+  if (
+    post.format !== 'reel' &&
+    post.format !== 'text' &&
+    post.network !== 'whatsapp' &&
+    (!post.imagePath || post.imageSource === 'none') &&
+    !(post.carouselPaths ?? []).some(Boolean)
+  ) {
+    return { ok: false as const, error: 'Image manquante : impossible de publier sans visuel.' };
+  }
+
   if (post.network === 'whatsapp') {
     return {
       ok: false as const,
@@ -1320,6 +1393,12 @@ export async function scheduleSocialPostAction(postId: string) {
   const board = await getSocialCommsBoard();
   const post = board.posts.find((item) => item.id === postId);
   if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.titleNeedsReview) {
+    return { ok: false as const, error: 'Titre à revoir : corrige le titre avant programmation Meta.' };
+  }
+  if (post.overlaysNeedReview || post.carouselMissingSlides) {
+    return { ok: false as const, error: 'Carousel incomplet / overlays à revoir — programmation bloquée.' };
+  }
   if (!post.plannedAt) return { ok: false as const, error: 'Choisis d’abord une date/heure.' };
 
   if (post.network === 'facebook') {
@@ -1599,17 +1678,20 @@ function normalizeGeneratedRowForPost(params: {
       titleNeedsReview = false;
     }
   }
+  if (isReel && hookNeedsReview(hookTitle)) {
+    titleNeedsReview = true;
+  }
 
-  const briefFallback = isReel ? fallbackReelBrief(hookTitle, title, locale) : { reelScript: '', shotList: '' };
+  // Brief Reel : pas de template silencieux — vide = échec explicite à la génération
   const reelScriptRaw =
     typeof row.reelScript === 'string' && row.reelScript.trim()
       ? row.reelScript.trim().replace(/\\n/g, '\n')
-      : briefFallback.reelScript;
+      : '';
   const shotListRaw = isReel
     ? enforceFaceCamShotList(
         typeof row.shotList === 'string' && row.shotList.trim()
           ? row.shotList.trim().replace(/\\n/g, '\n')
-          : briefFallback.shotList,
+          : '',
         locale,
       )
     : '';
@@ -1656,21 +1738,34 @@ function normalizeGeneratedRowForPost(params: {
       return polishOverlayText(candidate, locale, 56);
     })(),
     useOverlay: row.useOverlay === true || slot.format === 'feed' || slot.format === 'carousel',
-    hookTitle: polishOverlayText(hookTitle || (typeof row.overlayText === 'string' ? row.overlayText : ''), locale, 56),
-    carouselSlideTitles:
-      slot.format === 'carousel'
-        ? normalizeCarouselSlideTitles(
-            (row as { slideTitles?: unknown }).slideTitles ?? (row as { carouselSlideTitles?: unknown }).carouselSlideTitles,
-            typeof row.overlayText === 'string' ? row.overlayText : hookTitle,
-            locale,
-          )
-        : [],
+    hookTitle: (() => {
+      const h = polishOverlayText(hookTitle || (typeof row.overlayText === 'string' ? row.overlayText : ''), locale, 56);
+      return h;
+    })(),
+    ...(() => {
+      if (slot.format !== 'carousel') {
+        return { carouselSlideTitles: [] as string[], overlaysNeedReview: false };
+      }
+      const normalizedSlides = normalizeCarouselSlideTitles(
+        (row as { slideTitles?: unknown }).slideTitles ?? (row as { carouselSlideTitles?: unknown }).carouselSlideTitles,
+        typeof row.overlayText === 'string' ? row.overlayText : hookTitle,
+        locale,
+      );
+      return {
+        carouselSlideTitles: normalizedSlides.titles,
+        overlaysNeedReview: normalizedSlides.overlaysNeedReview,
+      };
+    })(),
     reelScript: reelScriptRaw.slice(0, 4000),
     shotList: shotListRaw.slice(0, 800),
     sourceType,
     sourceRef,
     whyItWorks: typeof row.whyItWorks === 'string' ? row.whyItWorks.slice(0, 220) : '',
-    titleNeedsReview,
+    whyItWorksNeedsReview: whyItWorksNeedsReviewForLocale(
+      typeof row.whyItWorks === 'string' ? row.whyItWorks : '',
+      locale,
+    ),
+    titleNeedsReview: titleNeedsReview || (isReel && hookNeedsReview(hookTitle)),
     pillarId: typeof slotSpec.assignPillar === 'string' ? slotSpec.assignPillar : null,
     contentFamily: slotSpec.contentFamily,
   };
@@ -1852,6 +1947,10 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
       articleSlugFallback,
     });
 
+    if (slot.mediaKind === 'video_brief' && !normalized.reelScript.trim()) {
+      throw new Error('Brief Reel vide — génération texte échouée (pas de template de secours).');
+    }
+
     let imagePath: string | null = target.imagePath;
     let carouselPaths: string[] = target.carouselPaths ?? [];
     let imageSource: SocialPost['imageSource'] = target.format === 'reel' ? 'none' : 'library';
@@ -1861,85 +1960,125 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
       const { collectUsedUnsplashIdsFromPosts, generateSocialPhotoForPost, uploadSocialGeneratedImage } = await import(
         '@/lib/admin/social-ai-image'
       );
-      const { BrandBackgroundProvider } = await import('@/lib/admin/image-providers/brand-background-provider');
-      const { listProductCapturePaths, pickLibraryPath } = await import('@/lib/admin/image-providers/library-provider');
       const latestBoard = await getSocialCommsBoard();
       const usedLibrary = collectUsedLibraryPaths(latestBoard.posts);
       const usedUnsplash = collectUsedUnsplashIdsFromPosts(latestBoard.posts);
 
       if (slot.mediaKind === 'carousel') {
-        const paths: Array<string | null> = new Array(7).fill(null);
-        const preferLibraryNoFace =
-          target.pillarId === 'progres_adherente' ||
-          /mangita|adhérente|alumna/i.test(`${normalized.title} ${normalized.caption}`);
+        const paths: Array<string | null> = new Array(CAROUSEL_SLIDE_COUNT).fill(null);
+        const slidesNormalized =
+          normalized.carouselSlideTitles?.length === CAROUSEL_SLIDE_COUNT
+            ? {
+                titles: normalized.carouselSlideTitles,
+                overlaysNeedReview:
+                  Boolean((normalized as { overlaysNeedReview?: boolean }).overlaysNeedReview) ||
+                  overlaysNeedReviewFromTitles(normalized.carouselSlideTitles),
+              }
+            : normalizeCarouselSlideTitles(
+                normalized.carouselSlideTitles,
+                normalized.overlayText || normalized.hookTitle,
+                target.locale,
+              );
+        const slideTitles = slidesNormalized.titles;
+        normalized.carouselSlideTitles = slideTitles;
+        (normalized as { overlaysNeedReview?: boolean }).overlaysNeedReview = slidesNormalized.overlaysNeedReview;
+        normalized.overlayText = slideTitles[0] || normalized.overlayText;
         const tasks: Array<() => Promise<void>> = [];
-        for (let c = 0; c < 7; c += 1) {
-          if (c === 5) {
-            const brand = new BrandBackgroundProvider();
-            const brandImg = await brand.generate('quote-frame citation slide', { width: 1080, height: 1350 });
-            if ('buffer' in brandImg && brandImg.buffer.length) {
-              paths[c] = await uploadSocialGeneratedImage(brandImg.buffer, `${target.id}-s6`);
-            } else {
-              paths[c] =
-                pickLibraryPath({ folder: 'produit-captures', themeHint: 'dashboard', seed: c }) ||
-                listProductCapturePaths()[0] ||
-                null;
-            }
-            continue;
+
+        // Slide 1 (index 0) = vraie photo Alejandra (identité / confiance)
+        tasks.push(async () => {
+          const r = await generateSocialPhotoForPost(target, {
+            variationSeed: (target.generationSlot ?? 0) * 10 + 1,
+            usedLibraryPaths: usedLibrary,
+            usedUnsplashIds: usedUnsplash,
+            preferLibrary: true,
+            forceNanoBanana: false,
+            allowUnsplash: false,
+            libraryFolder: 'portraits',
+            libraryThemeHint: 'portrait Alejandra confiance identité',
+          });
+          if (r.ok) {
+            paths[0] = r.imagePath;
+            imageSource = imageSourceFromProviderName(r.provider);
+            aiImagePrompt = r.prompt;
+            usedLibrary.add(r.imagePath);
           }
-          if (c === 6) {
-            // CTA slide : capture dashboard 4:5 réelle (jamais dashboard-desktop-4x5 fantôme).
-            const CTA_DASHBOARD = '/library/produit-captures/produit-dashboard-02-4x5.webp';
-            const product =
-              listProductCapturePaths().find((p) => /produit-dashboard-02-4x5/i.test(p)) ||
-              pickLibraryPath({ folder: 'produit-captures', themeHint: 'produit dashboard', seed: target.id.length }) ||
-              listProductCapturePaths().find((p) => /dashboard-02|progression-06|boutique-05/i.test(p)) ||
-              CTA_DASHBOARD;
-            paths[c] = product;
-            continue;
-          }
+        });
+
+        // Slides 2–5 (index 1–4) = images IA sur le sujet du point (formule 10 composants)
+        for (let c = 1; c <= 4; c += 1) {
+          const slideHint = slideTitles[c] || normalized.imageHint || normalized.title;
           tasks.push(async () => {
-            const r = await generateSocialPhotoForPost(target, {
-              variationSeed: (target.generationSlot ?? 0) * 10 + c + 1,
-              usedLibraryPaths: usedLibrary,
-              usedUnsplashIds: usedUnsplash,
-              preferLibrary: preferLibraryNoFace || c === 0,
-              forceNanoBanana: !preferLibraryNoFace && c < 5,
-              allowUnsplash: false,
-              libraryThemeHint: preferLibraryNoFace
-                ? c % 2 === 0
-                  ? 'ambiance studio détail mains'
-                  : 'coaching visio écran'
-                : normalized.imageHint || normalized.title,
-            });
+            const r = await generateSocialPhotoForPost(
+              {
+                ...target,
+                format: 'carousel',
+                useOverlay: true,
+                imageHint: slideHint,
+                title: slideHint,
+                overlayText: slideHint,
+              },
+              {
+                variationSeed: (target.generationSlot ?? 0) * 10 + c + 1,
+                usedLibraryPaths: usedLibrary,
+                usedUnsplashIds: usedUnsplash,
+                preferLibrary: false,
+                forceNanoBanana: true,
+                allowUnsplash: false,
+                libraryThemeHint: slideHint,
+              },
+            );
             if (r.ok) {
-              paths[c] = r.imagePath;
-              imageSource = imageSourceFromProviderName(r.provider);
-              aiImagePrompt = r.prompt;
+              // Slides pédagogiques : refuser un fallback bibliothèque lifestyle hors sujet
+              const isLibraryLifestyle =
+                r.provider === 'library' ||
+                (/^\/library\//.test(r.imagePath) && !/generees|produit-captures/i.test(r.imagePath));
+              if (isLibraryLifestyle) {
+                console.warn(`[carousel] slide ${c + 1}: image biblio refusée (hors sujet) → ${r.imagePath}`);
+              } else {
+                paths[c] = r.imagePath;
+                imageSource = imageSourceFromProviderName(r.provider);
+                aiImagePrompt = r.prompt;
+              }
             }
             await sleep(250);
           });
         }
+
         await runWithConcurrency(tasks, 3);
-        const fallbackPool = listProductCapturePaths();
-        const filled: string[] = [];
-        for (let c = 0; c < 7; c += 1) {
-          filled[c] =
-            paths[c] ||
-            filled[c - 1] ||
-            fallbackPool.find((p) => !filled.includes(p)) ||
-            fallbackPool[0] ||
-            '/library/produit-captures/produit-dashboard-02-4x5.webp';
+
+        // Slide 6 (index 5) = CTA dashboard desktop ENTIER en carte flottante (pré-composé)
+        {
+          const { composeCarouselCtaSlideBuffer } = await import('@/lib/admin/compose-carousel-cta');
+          const ctaBuf = await composeCarouselCtaSlideBuffer({
+            overlayText: slideTitles[5] || 'ESSAI 7 JOURS — ON T’ATTEND EN VISIO',
+          });
+          paths[5] = await uploadSocialGeneratedImage(ctaBuf, `${target.id}-cta`, {
+            prompt: 'carousel-cta-dashboard-contain',
+            provider: 'brand',
+            theme: 'cta-dashboard',
+          });
         }
-        carouselPaths = filled;
-        imagePath = carouselPaths[0] ?? null;
-        if (!normalized.carouselSlideTitles?.length) {
-          normalized.carouselSlideTitles = normalizeCarouselSlideTitles(
-            undefined,
-            normalized.overlayText || normalized.hookTitle,
-            target.locale,
+
+        const { sanitizeCarouselPaths, carouselHasMissingSlides } = await import(
+          '@/lib/admin/image-providers/library-provider'
+        );
+        const resolved = sanitizeCarouselPaths(paths.map((p) => p || ''));
+        for (let c = 0; c < CAROUSEL_SLIDE_COUNT; c += 1) {
+          if (paths[c]) resolved[c] = paths[c]!;
+        }
+        carouselPaths = resolved.slice(0, CAROUSEL_SLIDE_COUNT);
+        if (carouselHasMissingSlides(carouselPaths, CAROUSEL_SLIDE_COUNT)) {
+          const missing = carouselPaths
+            .map((p, i) => (!p?.trim() ? i + 1 : null))
+            .filter(Boolean)
+            .join(', ');
+          throw new Error(
+            `Carousel failed : slide(s) manquante(s) [${missing}] — pas de duplication silencieuse. Relancer la génération image.`,
           );
         }
+        imagePath = carouselPaths[0] ?? null;
+        imageSource = imageSource === 'library' ? 'ai' : imageSource;
       } else {
         // Feed = vraie photo bibliothèque uniquement (pas d'IA). Overlay + logo brûlés ensuite.
         const r = await generateSocialPhotoForPost(target, {
@@ -1971,6 +2110,7 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
               carouselPaths,
               imageSource,
               aiImagePrompt,
+              carouselMissingSlides: false,
               generationStatus: 'done',
               generationError: null,
               updatedAt: now,
@@ -2058,14 +2198,42 @@ export async function generateConseilSeriesPostAction() {
   const now = new Date().toISOString();
   const overlay = polishOverlayText(`CONSEIL N°${claimed.number} : ${claimed.keyword.toUpperCase()}`, 'fr', 56);
   const title = `Conseil n°${claimed.number} — ${claimed.keyword}`;
-  const caption = mergeCaptionWithCta(
-    [
-      `Conseil n°${claimed.number} — ${claimed.keyword}.`,
-      `Ce que le Pilates change vraiment : ${claimed.keyword}, pas un exercice technique à cocher.`,
-      `Les ${CONSEIL_SERIES_TOTAL - 1} autres sont sur le profil.`,
-    ].join('\n\n'),
-    'Essai gratuit 7 jours → fitmangas.com',
-  );
+
+  const textCascade = await runSocialTextCascade({
+    system: `Tu es community manager Instagram FitMangas. Réponds UNIQUEMENT JSON:
+{"caption":"...","reelScript":"...","whyItWorks":"..."}
+Légende courte FR (max 150 car.), brief Reel face cam (pas script à lire), whyItWorks en français.`,
+    user: `Série 50 conseils — n°${claimed.number} sur le thème « ${claimed.keyword} ».
+Pas de gabarit figé. Une idée concrète, langage plat, CTA essai 7 jours fitmangas.com.`,
+    temperature: 0.7,
+    maxOutputTokens: 900,
+  });
+  if (!textCascade.ok) {
+    return {
+      ok: false as const,
+      error: `Série conseil : cascade texte échouée — ${textCascade.detail || 'pas de légende template'}.`,
+    };
+  }
+  let captionBody = '';
+  let reelScript = '';
+  let whyItWorks = `Série 50 conseils · portée · n°${claimed.number}/${CONSEIL_SERIES_TOTAL}`;
+  try {
+    const match = textCascade.text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('JSON introuvable');
+    const parsed = JSON.parse(match[0]) as { caption?: string; reelScript?: string; whyItWorks?: string };
+    captionBody = String(parsed.caption || '').trim();
+    reelScript = String(parsed.reelScript || '').trim().replace(/\\n/g, '\n');
+    if (parsed.whyItWorks) whyItWorks = String(parsed.whyItWorks).trim().slice(0, 220);
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: `Série conseil : parse IA échoué — ${e instanceof Error ? e.message : 'erreur'} (pas de gabarit).`,
+    };
+  }
+  if (!captionBody || !reelScript) {
+    return { ok: false as const, error: 'Série conseil : caption ou brief vide après IA — à revoir.' };
+  }
+  const caption = mergeCaptionWithCta(captionBody, 'Essai gratuit 7 jours → fitmangas.com');
   const post: SocialPost = {
     id: createSocialPostId(),
     network: 'instagram',
@@ -2083,18 +2251,9 @@ export async function generateConseilSeriesPostAction() {
     overlayText: overlay,
     useOverlay: true,
     hookTitle: overlay,
-    reelScript: [
-      'IDÉES:',
-      `1) Accroche conseil n°${claimed.number} — ${claimed.keyword}`,
-      '2) Ce que ça change vraiment (ressenti, pas exo technique)',
-      '3) Invitation douce essai 7 jours',
-      '',
-      'BRIEF:',
-      `« Conseil n°${claimed.number} : ${claimed.keyword}. »`,
-      '« Voici ce que ça change vraiment — sans forcer. »',
-      '« Les autres conseils sont sur le profil. Essai 7 jours sur fitmangas.com. »',
-    ].join('\n'),
+    reelScript,
     shotList: enforceFaceCamShotList('', 'fr'),
+
     rawVideoPath: null,
     editedVideoPath: null,
     videoStatus: 'brief',
@@ -2107,7 +2266,8 @@ export async function generateConseilSeriesPostAction() {
     status: 'idea',
     sourceType: 'ai',
     sourceRef: `conseil-${claimed.number}`,
-    whyItWorks: `Série 50 conseils · portée · n°${claimed.number}/${CONSEIL_SERIES_TOTAL}`,
+    whyItWorks,
+    whyItWorksNeedsReview: whyItWorksNeedsReviewForLocale(whyItWorks, 'fr'),
     metaExternalId: null,
     titleNeedsReview: false,
     pillarId: 'energie_crash',

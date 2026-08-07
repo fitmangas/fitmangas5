@@ -1,5 +1,12 @@
 import { runBlogAiCascade, type BlogAiProviderId } from '@/lib/blog/ai-providers';
+import {
+  assertTitleDiversity,
+  buildTitleDiversityPromptBlock,
+  preferredMoldsForContext,
+  type TitleDiversityContext,
+} from '@/lib/blog/blog-title-diversity';
 import { translateText } from '@/lib/blog/translate';
+import { BLOG_SEO_TITLE_MAX, enforceBlogSeoTitle } from '@/lib/blog/blog-seo-limits';
 
 export type GeneratedBlogTitles = {
   title_fr: string;
@@ -64,7 +71,8 @@ function normalizeTitle(value: unknown): string {
 }
 
 function isAcceptableTitle(title: string): boolean {
-  if (title.length < 36 || title.length > 72) return false;
+  // Score SEO admin exige title.length < 60 → max 59. Ancien plafond 72 = bug (titres « OK » mais croix rouge).
+  if (title.length < 36 || title.length > BLOG_SEO_TITLE_MAX) return false;
   if (isGenericPilatesTitle(title)) return false;
   if (/article\s+pilates\s+\d+/i.test(title)) return false;
   return true;
@@ -93,10 +101,10 @@ function fallbackTitles(params: {
     .trim();
   const category = categoryLabelFr(params.categorySlug);
   const topic = sanitized || category;
-  const title_fr = topic.slice(0, 60).trim();
+  const title_fr = topic.slice(0, BLOG_SEO_TITLE_MAX).trim();
   return {
-    title_fr: title_fr.length >= 20 ? title_fr : `${topic} — ${category}`.slice(0, 60).trim(),
-    title_es: `${topic.slice(0, 50).trim()} — pilates`.slice(0, 60).trim(),
+    title_fr: title_fr.length >= 20 ? title_fr : enforceBlogSeoTitle(`${topic} — ${category}`),
+    title_es: enforceBlogSeoTitle(`${topic.slice(0, 50).trim()} — pilates`),
   };
 }
 
@@ -127,8 +135,8 @@ function parseTitles(
 ): GeneratedBlogTitles | null {
   const data = extractJsonBlock(raw);
   if (!data) return null;
-  const title_fr = normalizeTitle(data.title_fr);
-  const title_es = normalizeTitle(data.title_es);
+  const title_fr = enforceBlogSeoTitle(normalizeTitle(data.title_fr));
+  const title_es = enforceBlogSeoTitle(normalizeTitle(data.title_es));
   if (!isAcceptableTitle(title_fr) || !isAcceptableSpanishTitle(title_es)) return null;
   return { title_fr, title_es, provider, model };
 }
@@ -139,12 +147,15 @@ function buildTitlePrompt(params: {
   descriptionFr?: string;
   contentHtmlEs?: string | null;
   descriptionEs?: string | null;
+  diversity?: TitleDiversityContext;
 }): { system: string; user: string } {
   const category = categoryLabelFr(params.categorySlug);
   const frExcerpt = stripHtml(params.contentHtmlFr).slice(0, 6000);
   const esExcerpt = params.contentHtmlEs ? stripHtml(params.contentHtmlEs).slice(0, 4000) : '';
   const descFr = params.descriptionFr?.trim() ?? '';
   const descEs = params.descriptionEs?.trim() ?? '';
+  const diversityCtx: TitleDiversityContext = params.diversity ?? { recentTitles: [] };
+  const preferred = preferredMoldsForContext(diversityCtx);
 
   const system =
     'Tu es rédactrice SEO pour un blog pilates / barre premium (FitMangas). Tu réponds uniquement avec un JSON valide {"title_fr":"...","title_es":"..."}.';
@@ -162,17 +173,35 @@ ${esExcerpt ? `Contenu ES (texte extrait, pour inspirer le titre espagnol):\n${e
 ${descEs ? `Chapo ES: ${descEs}\n` : ''}
 
 Règles STRICTES:
-- title_fr: OBLIGATOIREMENT 45 à 60 caractères (compte-les), français naturel, accrocheur, bénéfice ou angle clair, avec un mot-clé longue traîne utile
-- title_es: OBLIGATOIREMENT 45 à 60 caractères, espagnol naturel (PAS une traduction mot à mot du français)
+- title_fr: OBLIGATOIREMENT 45 à 59 caractères (STRICTEMENT moins de 60 — Google tronque au-delà). Compte-les.
+- title_es: OBLIGATOIREMENT 45 à 59 caractères (STRICTEMENT moins de 60), espagnol naturel (PAS une traduction mot à mot du français)
 - Viser une requête précise, pas seulement "pilates" (ex: respiration pilates, posture bureau, mal de dos, abdos profonds, routine débutant)
 - Prioriser les clusters FitMangas quand c'est cohérent: pilates en ligne, cours pilates visio, pilates débutant maison
 - Éviter de cannibaliser les pages piliers: le titre doit cibler un sous-sujet précis, pas reprendre seulement "Pilates en ligne" ou "Cours de Pilates en visio"
 - Donner envie de cliquer sans promesse médicale ni sensationnalisme
 - Cohérent avec la catégorie et le contenu réel
 - INTERDIT: "Article pilates", numéros d'article, formulations génériques vagues ("mouvement & souffle"), titres trop courts
-- Pas de guillemets autour des titres`;
+- Pas de guillemets autour des titres
+- Gabarit préféré pour CE titre (choisis-en UN): ${preferred[0] ?? 'question'}
+- Exemples de gabarits à faire tourner: question ("Pourquoi ton dos lâche à 15h ?"), affirmation-bénéfice, mythe cassé ("Le Pilates ne muscle pas — vraiment ?"), scène concrète, chiffre (durée) — PAS toujours "N astuces pour…"
+
+${buildTitleDiversityPromptBlock(diversityCtx)}`;
 
   return { system, user };
+}
+
+function acceptTitlesIfDiverse(
+  titles: GeneratedBlogTitles,
+  diversity: TitleDiversityContext | undefined,
+  angleHint?: string,
+): GeneratedBlogTitles | null {
+  if (!diversity) return titles;
+  const check = assertTitleDiversity(titles.title_fr, diversity, { angleHint });
+  if (!check.ok) {
+    console.info(`[generateBlogTitles] titre rejeté (diversité): ${check.reason}`);
+    return null;
+  }
+  return titles;
 }
 
 export async function tryGenerateBlogTitlesFromContentDetailed(params: {
@@ -182,62 +211,101 @@ export async function tryGenerateBlogTitlesFromContentDetailed(params: {
   contentHtmlEs?: string | null;
   descriptionEs?: string | null;
   providerOrder?: import('@/lib/blog/ai-providers').BlogAiProviderId[];
+  /** Titres / angles récents pour anti-répétition de moule. */
+  diversity?: TitleDiversityContext;
 }): Promise<TitleGenerationAttemptResult> {
-  const { system, user } = buildTitlePrompt(params);
-  const cascade = await runBlogAiCascade(
-    {
-      system,
-      user,
-      temperature: 0.65,
-      maxOutputTokens: 1024,
-    },
-    params.providerOrder,
-  );
+  const diversity = params.diversity ?? { recentTitles: [] };
+  const angleHint = `${params.descriptionFr ?? ''} ${params.categorySlug}`;
+  let lastDiversityReject = '';
 
-  if (!cascade.ok) {
-    const quotaOnly =
-      cascade.attempts.length > 0 &&
-      cascade.attempts.every((a) => a.reason === 'quota_exhausted' || a.reason === 'no_api_key');
-    if (cascade.attempts.some((a) => a.reason === 'no_api_key') && cascade.attempts.length === 0) {
-      return { ok: false, reason: 'no_api_key', detail: cascade.detail };
-    }
-    if (cascade.attempts.every((a) => a.reason === 'no_api_key')) {
-      return { ok: false, reason: 'no_api_key', detail: cascade.detail };
-    }
-    if (quotaOnly || cascade.attempts.some((a) => a.reason === 'quota_exhausted')) {
-      return { ok: false, reason: 'quota_exhausted', detail: cascade.detail };
-    }
-    return { ok: false, reason: 'generation_failed', detail: cascade.detail };
-  }
-
-  const parsed = parseTitles(cascade.text, cascade.provider, cascade.model);
-  if (!parsed) {
-    // Réponse invalide du premier provider : tenter les suivants individuellement
-    const { completeWithProvider, listConfiguredBlogAiProviders } = await import('@/lib/blog/ai-providers');
-    for (const provider of listConfiguredBlogAiProviders(params.providerOrder)) {
-      if (provider === cascade.provider) continue;
-      const result = await completeWithProvider(provider, {
+  // Jusqu’à 2 passes : 1re génération + 1 régénération si moule/angle en conflit.
+  for (let pass = 0; pass < 2; pass += 1) {
+    const diversityForPass: TitleDiversityContext = {
+      ...diversity,
+      forbidNTips: pass > 0 && lastDiversityReject.includes('N astuces'),
+    };
+    const { system, user } = buildTitlePrompt({ ...params, diversity: diversityForPass });
+    const cascade = await runBlogAiCascade(
+      {
         system,
         user,
-        temperature: 0.65,
+        temperature: pass === 0 ? 0.65 : 0.85,
         maxOutputTokens: 1024,
-      });
-      if (!result.ok) continue;
-      const titles = parseTitles(result.text, result.provider, result.model);
-      if (titles) {
-        console.info(`[generateBlogTitles] titres générés par ${titles.provider}/${titles.model}`);
-        return { ok: true, titles };
+      },
+      params.providerOrder,
+    );
+
+    if (!cascade.ok) {
+      const quotaOnly =
+        cascade.attempts.length > 0 &&
+        cascade.attempts.every((a) => a.reason === 'quota_exhausted' || a.reason === 'no_api_key');
+      if (cascade.attempts.every((a) => a.reason === 'no_api_key')) {
+        return { ok: false, reason: 'no_api_key', detail: cascade.detail };
+      }
+      if (quotaOnly || cascade.attempts.some((a) => a.reason === 'quota_exhausted')) {
+        return { ok: false, reason: 'quota_exhausted', detail: cascade.detail };
+      }
+      if (pass === 1) {
+        return { ok: false, reason: 'generation_failed', detail: cascade.detail };
+      }
+      continue;
+    }
+
+    const tryAccept = (raw: string, provider?: BlogAiProviderId, model?: string) => {
+      const parsed = parseTitles(raw, provider, model);
+      if (!parsed) return null;
+      return acceptTitlesIfDiverse(parsed, diversity, angleHint);
+    };
+
+    let accepted = tryAccept(cascade.text, cascade.provider, cascade.model);
+    if (!accepted) {
+      const parsedOnce = parseTitles(cascade.text, cascade.provider, cascade.model);
+      if (parsedOnce) {
+        const check = assertTitleDiversity(parsedOnce.title_fr, diversity, { angleHint });
+        if (!check.ok) lastDiversityReject = check.reason;
+      }
+
+      const { completeWithProvider, listConfiguredBlogAiProviders } = await import('@/lib/blog/ai-providers');
+      for (const provider of listConfiguredBlogAiProviders(params.providerOrder)) {
+        if (provider === cascade.provider && pass === 0) continue;
+        const result = await completeWithProvider(provider, {
+          system,
+          user,
+          temperature: 0.8,
+          maxOutputTokens: 1024,
+        });
+        if (!result.ok) continue;
+        accepted = tryAccept(result.text, result.provider, result.model);
+        if (accepted) break;
+        const parsed = parseTitles(result.text, result.provider, result.model);
+        if (parsed) {
+          const check = assertTitleDiversity(parsed.title_fr, diversity, { angleHint });
+          if (!check.ok) lastDiversityReject = check.reason;
+        }
       }
     }
-    return {
-      ok: false,
-      reason: 'invalid_response',
-      detail: `JSON titres invalide (${cascade.provider}).`,
-    };
+
+    if (accepted) {
+      console.info(`[generateBlogTitles] titres générés par ${accepted.provider}/${accepted.model}`);
+      return { ok: true, titles: accepted };
+    }
+
+    if (pass === 1) {
+      return {
+        ok: false,
+        reason: 'invalid_response',
+        detail: lastDiversityReject
+          ? `Anti-répétition: ${lastDiversityReject}`
+          : `JSON titres invalide (${cascade.provider}).`,
+      };
+    }
   }
 
-  console.info(`[generateBlogTitles] titres générés par ${parsed.provider}/${parsed.model}`);
-  return { ok: true, titles: parsed };
+  return {
+    ok: false,
+    reason: 'invalid_response',
+    detail: lastDiversityReject || 'Échec génération titres (diversité).',
+  };
 }
 
 export async function tryGenerateBlogTitlesFromContent(params: {
@@ -252,7 +320,7 @@ export async function tryGenerateBlogTitlesFromContent(params: {
 }
 
 /**
- * Secours local uniquement pour scripts manuels — ne pas utiliser pour créer des articles publishables.
+ * Génère titres via IA. Échec total → throw (plus de fallbackTitles silencieux).
  */
 export async function generateBlogTitlesFromContent(params: {
   contentHtmlFr: string;
@@ -263,7 +331,7 @@ export async function generateBlogTitlesFromContent(params: {
 }): Promise<GeneratedBlogTitles> {
   const fromAi = await tryGenerateBlogTitlesFromContent(params);
   if (fromAi) return fromAi;
-  return fallbackTitlesAsync(params);
+  throw new Error('Génération titres blog échouée — aucun titre de secours injecté.');
 }
 
 export function buildTopicBrief(categorySlug: string, index: number, description?: string): string {
@@ -272,5 +340,8 @@ export function buildTopicBrief(categorySlug: string, index: number, description
   if (desc && !/^Conseils pilates pratiques pour l/i.test(desc) && !/^Description courte pour/i.test(desc)) {
     return desc;
   }
-  return `Article pilates sur le thème « ${category} » : conseils concrets, routine réaliste et progression douce (série ${index}).`;
+  // Pas de seed « Article pilates sur le thème… » (placeholder bloqué à la publication).
+  throw new Error(
+    `Brief topic manquant pour « ${category} » (série ${index}) — fournis une description concrète, pas un placeholder.`,
+  );
 }

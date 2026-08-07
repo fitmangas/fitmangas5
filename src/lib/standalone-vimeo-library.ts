@@ -72,7 +72,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
       vimeoVideoId,
       folderName,
       publishedAt: typeof r.published_at === 'string' ? r.published_at : null,
-      isPlayable: true,
+      isPlayable: false,
     };
   });
 
@@ -82,9 +82,10 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
 
   for (const item of mapped) {
     const probe = probes.get(item.vimeoVideoId);
-    if (probe && !probe.isPlayable) continue;
+    // Jamais playable sans confirmation Vimeo explicite (token/erreur = unknown).
+    if (!probe || !probe.isPlayable || probe.confidence !== 'confirmed') continue;
     let durationSeconds = item.durationSeconds;
-    if (probe?.durationSeconds && probe.durationSeconds > 0) {
+    if (probe.durationSeconds && probe.durationSeconds > 0) {
       if (!durationSeconds || durationSeconds <= 0) {
         durationUpdates.push({ videoId: item.id, durationSeconds: probe.durationSeconds });
       }
@@ -94,7 +95,7 @@ export async function getStandaloneVimeoLibraryForUser(): Promise<StandaloneVime
       ...item,
       durationSeconds,
       isPlayable: true,
-      displayTitle: cleanVimeoDisplayTitle(probe?.title ?? item.title, { folderName: item.folderName }),
+      displayTitle: cleanVimeoDisplayTitle(probe.title ?? item.title, { folderName: item.folderName }),
     });
   }
 

@@ -55,7 +55,7 @@ alwaysApply: true
 ## 2. Règles de travail — NON NÉGOCIABLES
 
 - **Migrations Supabase** : JAMAIS sans GO écrit de Kevin. Proposer dans `PROPOSITIONS_MIGRATIONS.md`.
-- **Déploiement** : Kevin déploie via `npx vercel@56.2.1 deploy --prod`. Cursor ne déploie ni ne commit jamais sans demande.
+- **Déploiement** : Kevin déploie via `npx vercel@58.7.1 deploy --prod`. Cursor ne déploie ni ne commit jamais sans demande.
 - **Chaque prompt Cursor finit par** : `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
 - **Prompts consolidés** : un gros prompt, pas 40 petits.
 - **Réponses à Kevin** : français, simples, **objectives**. Ne jamais reprendre un chiffre ou une idée de Kevin sans la challenger, ni le suivre par confort. Il attend une analyse, pas un suiveur. **Répondre à TOUTES ses questions**, pas seulement aux plus faciles.
@@ -99,8 +99,8 @@ Créneaux IG : 07h, 08h, 11h, 12h, 17h, 18h, 19h
 | 3 | Reel | Mer 19h | MP4 importé | 0 |
 | 4 | Reel | Jeu 12h | MP4 importé | 0 |
 | 5 | Reel | Ven 17h | MP4 importé | 0 |
-| 6 | Carousel | Sam 11h | 7 slides | **4 à 6** |
-| 7 | Feed | Dim 08h | 1 visuel | 0 ou 1 |
+| 6 | Carousel | Sam 11h | **6 slides** | **4** (slides 2–5) |
+| 7 | Feed | Dim 08h | 1 visuel | 0 (vraie photo biblio) |
 
 > Mapping jour/heure = point de départ, à réajuster après 3–4 semaines selon les Insights Instagram réels.
 
@@ -111,14 +111,16 @@ Chaque semaine = **3 familles** (portée / confiance / conversion), pas un seul 
 Généré : titre/hook scroll-stop + **brief aide-mémoire** (sujet + hook + 3 idées max) + légende + heure.
 JAMAIS de script à lire. JAMAIS de photo déguisée en Reel. MP4 tourné puis importé.
 
-### Carousel (×1) — 7 slides, 4 à 6 images IA + titres overlay obligatoires
-- **Chaque slide** porte un **titre overlay** court (MAJUSCULES), incrusté sur l’image — jamais d’image vierge.
-- **Slide 1** : hook · **Slides 2–5** : un point pédagogique · **Slide 6** : citation / fond de marque · **Slide 7 (CTA)** : capture dashboard + essai.
-- Légende 200–900 car. **mappée** aux 7 slides (1 paragraphe = 1 slide), CTA en dernière ligne.
-- **Témoignage nommé** : INTERDIT visage IA présenté comme une cliente réelle. « Une Mangita » anonyme + bibliothèque / détails / marque, ou vraie photo.
+### Carousel (×1) — 6 slides (plus de slide « citation » vide)
+- **Chaque slide** porte un **titre overlay** court (MAJUSCULES), complet — **interdit** un titre = numéro nu (« 1 », « 2 »).
+- **Slide 1 (couverture)** : vraie photo Alejandra (biblio) + hook.
+- **Slides 2–5** : un point pédagogique + **image IA** (formule 10 composants, cadrage partiel, espace négatif haut). **Interdit** lifestyle biblio hors sujet.
+- **Slide 6 (CTA)** : dashboard desktop **ENTIER** (`espace cliente dashboard.jpg`) en **contain** dans une carte flottante (pas de crop/zoom) + pill `fitmangas.com`.
+- Légende **150–300 mots**, mappée aux 6 slides (1 paragraphe = 1 slide), hook dans les 125 premiers car., CTA en dernière ligne.
+- **Témoignage nommé** : INTERDIT visage IA présenté comme une cliente réelle. « Une Mangita » anonyme + biblio / détails / marque, ou vraie photo.
 
 ### Feed (×1)
-Alterner : vraie photo d’Alejandra (identité/confiance) ↔ image IA éditoriale (concept). Ratio export **4:5**. Overlay bas + logo haut-gauche entier.
+Vraie photo d’Alejandra (bibliothèque) — pas d’IA. Ratio export **4:5**. Overlay bas + logo haut-gauche entier. Légende **150–220 mots**.
 
 ### Trash-talk (CM v7) — règle absolue
 Tape sur **le mensonge de l’industrie**, **l’excuse**, ou **la situation absurde** — **JAMAIS** sur le corps, l’âge, le poids ou un défaut personnel. Elle doit se sentir **comprise**, jamais jugée.

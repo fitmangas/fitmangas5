@@ -101,6 +101,24 @@ export async function renderSocialPostCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas indisponible');
 
+  const isPrecomposedCta =
+    post.format === 'carousel' &&
+    (/[-_]cta[-_]/i.test(imagePath) ||
+      (post.carouselPaths?.length
+        ? slideIndex === post.carouselPaths.length - 1 && /cta|dashboard/i.test(imagePath)
+        : false));
+
+  if (isPrecomposedCta) {
+    // Image déjà composée 4:5 (dashboard contain + carte) — pas de cover zoom
+    const scale = Math.min(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.fillStyle = '#2a2420';
+    ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
+    ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
+    return canvas;
+  }
+
   // Cover 4:5
   const scale = Math.max(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
   const w = img.width * scale;

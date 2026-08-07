@@ -90,7 +90,14 @@ export default async function CompteBoutiqueEnCoursPage() {
           };
 
   const email = user.email?.toLowerCase() ?? '';
-  const orders = await getPrintfulOrders(100).catch(() => []);
+  let ordersUnavailable = false;
+  let orders: Awaited<ReturnType<typeof getPrintfulOrders>> = [];
+  try {
+    orders = await getPrintfulOrders(100);
+  } catch (e) {
+    console.error('[compte/boutique/en-cours] Printful', e);
+    ordersUnavailable = true;
+  }
   const mine = orders.filter((order) => byEmail(order, email));
   const active = mine.filter((order) => ACTIVE_ORDER_STATUSES.has((order.status ?? '').toLowerCase()));
 
@@ -114,7 +121,11 @@ export default async function CompteBoutiqueEnCoursPage() {
         </Link>
       </header>
 
-      {!detailed.length ? (
+      {ordersUnavailable ? (
+        <GlassCard className="border-red-200 bg-red-50/80 p-6 text-sm text-red-800">
+          Catalogue / commandes indisponibles — Printful ne répond pas.
+        </GlassCard>
+      ) : !detailed.length ? (
         <GlassCard className="p-6 text-sm text-luxury-muted">{t.empty}</GlassCard>
       ) : (
         <div className="space-y-4">

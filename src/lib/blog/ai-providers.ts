@@ -1,9 +1,9 @@
 /**
- * Cascade IA blog : Gemini → Mistral → Groq → OpenAI (optionnel).
+ * Cascade IA blog : Claude → Gemini → Mistral → Groq → OpenAI (optionnel).
  * Liste ordonnée, facile à réordonner. Chaque provider renvoie le même format texte.
  */
 
-export type BlogAiProviderId = 'gemini' | 'mistral' | 'groq' | 'openai';
+export type BlogAiProviderId = 'claude' | 'gemini' | 'mistral' | 'groq' | 'openai';
 
 export type BlogAiFailureReason =
   | 'no_api_key'
@@ -42,8 +42,14 @@ export type BlogAiCascadeResult =
       attempts: BlogAiChatFailure[];
     };
 
-/** Ordre de bascule — modifier ici pour réordonner. */
-export const BLOG_AI_PROVIDER_ORDER: BlogAiProviderId[] = ['gemini', 'mistral', 'groq', 'openai'];
+/** Ordre de bascule — Claude primaire (CHEMIN B source de vérité). */
+export const BLOG_AI_PROVIDER_ORDER: BlogAiProviderId[] = [
+  'claude',
+  'gemini',
+  'mistral',
+  'groq',
+  'openai',
+];
 
 function envTrim(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -52,6 +58,8 @@ function envTrim(name: string): string | undefined {
 
 export function getProviderApiKey(provider: BlogAiProviderId): string | undefined {
   switch (provider) {
+    case 'claude':
+      return envTrim('ANTHROPIC_API_KEY');
     case 'gemini':
       return envTrim('GEMINI_API_KEY') || envTrim('GOOGLE_GENAI_API_KEY') || envTrim('GOOGLE_API_KEY');
     case 'mistral':
@@ -65,8 +73,10 @@ export function getProviderApiKey(provider: BlogAiProviderId): string | undefine
 
 export function getProviderModel(provider: BlogAiProviderId): string {
   switch (provider) {
+    case 'claude':
+      return envTrim('ANTHROPIC_MODEL') ?? 'claude-sonnet-4-5';
     case 'gemini':
-      return envTrim('GEMINI_MODEL') ?? 'gemini-2.0-flash';
+      return envTrim('GEMINI_MODEL') ?? 'gemini-2.5-flash';
     case 'mistral':
       return envTrim('MISTRAL_MODEL') ?? 'mistral-small-latest';
     case 'groq':
@@ -95,6 +105,67 @@ function isUnavailableMessage(message: string, status?: number): boolean {
   return /UNAVAILABLE|high demand|overloaded|temporarily/i.test(message);
 }
 
+async function completeWithClaude(
+  params: BlogAiChatParams,
+  apiKey: string,
+): Promise<BlogAiChatSuccess | BlogAiChatFailure> {
+  const model = getProviderModel('claude');
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: params.maxOutputTokens ?? 8192,
+        temperature: params.temperature ?? 0.7,
+        system: params.system,
+        messages: [{ role: 'user', content: params.user }],
+      }),
+    });
+    const body = await response.text();
+    if (!response.ok) {
+      console.error('[blog-ai] Claude', response.status, body.slice(0, 400));
+      if (isQuotaMessage(body, response.status)) {
+        return {
+          ok: false,
+          provider: 'claude',
+          reason: 'quota_exhausted',
+          detail: `${response.status}: ${body.slice(0, 300)}`,
+        };
+      }
+      return {
+        ok: false,
+        provider: 'claude',
+        reason: 'provider_error',
+        detail: `${response.status}: ${body.slice(0, 300)}`,
+      };
+    }
+    let json: { content?: Array<{ type?: string; text?: string }> };
+    try {
+      json = JSON.parse(body) as typeof json;
+    } catch {
+      return { ok: false, provider: 'claude', reason: 'invalid_response', detail: 'JSON Claude invalide.' };
+    }
+    const text = (json.content ?? [])
+      .filter((block) => block.type === 'text' && block.text)
+      .map((block) => block.text!)
+      .join('\n')
+      .trim();
+    if (!text) {
+      return { ok: false, provider: 'claude', reason: 'invalid_response', detail: 'Réponse Claude vide.' };
+    }
+    return { ok: true, text, provider: 'claude', model };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[blog-ai] Claude', message.slice(0, 400));
+    return { ok: false, provider: 'claude', reason: 'provider_error', detail: message.slice(0, 400) };
+  }
+}
+
 async function completeWithGemini(
   params: BlogAiChatParams,
   apiKey: string,
@@ -110,6 +181,7 @@ async function completeWithGemini(
       config: {
         temperature: params.temperature ?? 0.7,
         maxOutputTokens: params.maxOutputTokens ?? 4096,
+        ...(model.includes('flash') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     });
     const text = response.text?.trim() ?? '';
@@ -131,7 +203,7 @@ async function completeWithGemini(
 }
 
 async function completeOpenAiCompatible(params: {
-  provider: Exclude<BlogAiProviderId, 'gemini'>;
+  provider: Exclude<BlogAiProviderId, 'gemini' | 'claude'>;
   baseUrl: string;
   apiKey: string;
   chat: BlogAiChatParams;
@@ -204,7 +276,6 @@ async function completeOpenAiCompatible(params: {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error(`[blog-ai] ${params.provider}`, message.slice(0, 400));
-    // Région / réseau inaccessible (ex. Groq) → continuer la cascade proprement
     return {
       ok: false,
       provider: params.provider,
@@ -224,6 +295,8 @@ export async function completeWithProvider(
   }
 
   switch (provider) {
+    case 'claude':
+      return completeWithClaude(chat, apiKey);
     case 'gemini':
       return completeWithGemini(chat, apiKey);
     case 'mistral':
@@ -252,7 +325,7 @@ export async function completeWithProvider(
 
 /**
  * Enchaîne les providers configurés jusqu'au premier succès.
- * Ne retente pas longuement Gemini (bascule immédiate vers le suivant).
+ * Absent Anthropic = démarrer à Gemini sans erreur bloquante.
  */
 export async function runBlogAiCascade(
   chat: BlogAiChatParams,
@@ -265,7 +338,7 @@ export async function runBlogAiCascade(
     return {
       ok: false,
       reason: 'generation_failed',
-      detail: 'Aucune clé IA configurée (GEMINI / MISTRAL / GROQ / OPENAI).',
+      detail: 'Aucune clé IA configurée (ANTHROPIC / GEMINI / MISTRAL / GROQ / OPENAI).',
       attempts,
     };
   }

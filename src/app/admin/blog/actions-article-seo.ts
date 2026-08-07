@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { GoogleGenAI } from '@google/genai';
 
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { enforceBlogSeoMeta, enforceBlogSeoTitle } from '@/lib/blog/blog-seo-limits';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 function extractJsonBlock(raw: string): Record<string, unknown> | null {
@@ -34,8 +35,8 @@ Contenu (extrait HTML, tronqué si besoin): ${input.contentHtml.slice(0, 12000)}
 Réponds STRICTEMENT en JSON avec les clés:
 - keywords: tableau de 5 strings (mots-clés à intégrer)
 - score: nombre 0-100 (score SEO estimé)
-- title_suggestion: titre optimisé, moins de 60 caractères
-- meta_description: meta description entre 140 et 155 caractères
+- title_suggestion: titre optimisé, STRICTEMENT moins de 60 caractères (max 59)
+- meta_description: meta description STRICTEMENT moins de 160 caractères (idéal 140–159)
 - content_advice: paragraphe court (structure, longueur, mots-clés manquants, cluster pilier à soutenir: Pilates en ligne, Pilates en visio ou Pilates débutant maison)
 
 Règles:
@@ -55,8 +56,12 @@ Sans markdown ni texte hors JSON.`;
 
   const keywords = Array.isArray(parsed.keywords) ? parsed.keywords.map((k) => String(k)).filter(Boolean).slice(0, 5) : [];
   const score = typeof parsed.score === 'number' ? Math.min(100, Math.max(0, Math.round(parsed.score))) : 0;
-  const title_suggestion = typeof parsed.title_suggestion === 'string' ? parsed.title_suggestion.trim() : '';
-  const meta_description = typeof parsed.meta_description === 'string' ? parsed.meta_description.trim() : '';
+  const title_suggestion = enforceBlogSeoTitle(
+    typeof parsed.title_suggestion === 'string' ? parsed.title_suggestion.trim() : '',
+  );
+  const meta_description = enforceBlogSeoMeta(
+    typeof parsed.meta_description === 'string' ? parsed.meta_description.trim() : '',
+  );
   const content_advice = typeof parsed.content_advice === 'string' ? parsed.content_advice.trim() : '';
 
   return {
@@ -93,8 +98,8 @@ Thème demandé: ${themeTrim}
 
 Génère un article de blog bilingue FR + ES.
 Réponds STRICTEMENT en JSON avec les clés:
-- title_fr, title_es (titres SEO 45 à 60 caractères chacun, avec requête longue traîne précise)
-- meta_description_fr, meta_description_es (140 à 155 caractères)
+- title_fr, title_es (titres SEO 45 à 59 caractères chacun — STRICTEMENT moins de 60)
+- meta_description_fr, meta_description_es (140 à 159 caractères — STRICTEMENT moins de 160)
 - description_fr, description_es (chapo 1-2 phrases, texte brut sans HTML)
 - content_fr, content_es (article complet 800 à 1000 mots en FR et sa traduction ES complète ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; inclure une courte FAQ en fin d'article)
 - seo_keywords: string (5 à 8 mots-clés longue traîne séparés par virgules)
@@ -120,8 +125,8 @@ Sans markdown ni texte hors JSON.`;
   const parsed = extractJsonBlock(response.text ?? '');
   if (!parsed) return { ok: false as const, error: 'Réponse Gemini invalide.' };
 
-  const title_fr = String(parsed.title_fr ?? '').trim();
-  const title_es = String(parsed.title_es ?? '').trim();
+  const title_fr = enforceBlogSeoTitle(String(parsed.title_fr ?? '').trim());
+  const title_es = enforceBlogSeoTitle(String(parsed.title_es ?? '').trim());
   const content_fr = String(parsed.content_fr ?? '').trim();
   const content_es = String(parsed.content_es ?? '').trim();
   if (!title_fr || !content_fr) return { ok: false as const, error: 'Contenu généré incomplet.' };
@@ -152,12 +157,12 @@ Sans markdown ni texte hors JSON.`;
       title_fr,
       title_es: title_es || null,
       slug_fr,
-      description_fr: String(parsed.description_fr ?? '').trim() || null,
-      description_es: String(parsed.description_es ?? '').trim() || null,
+      description_fr: enforceBlogSeoMeta(String(parsed.description_fr ?? '').trim()) || null,
+      description_es: enforceBlogSeoMeta(String(parsed.description_es ?? '').trim()) || null,
       content_fr,
       content_es: content_es || null,
-      meta_description_fr: String(parsed.meta_description_fr ?? '').trim() || null,
-      meta_description_es: String(parsed.meta_description_es ?? '').trim() || null,
+      meta_description_fr: enforceBlogSeoMeta(String(parsed.meta_description_fr ?? '').trim()) || null,
+      meta_description_es: enforceBlogSeoMeta(String(parsed.meta_description_es ?? '').trim()) || null,
       seo_keywords: String(parsed.seo_keywords ?? '').trim() || null,
       status: 'draft',
       scheduled_publication_at: scheduled.toISOString(),

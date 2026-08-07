@@ -2,15 +2,16 @@ export async function translateText(text: string, target: 'en' | 'es'): Promise<
   const key = process.env.GEMINI_API_KEY;
   if (!key || !text.trim()) return null;
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-  const targetLabel = target === 'es' ? 'espagnol' : 'anglais';
+  const targetLabel = target === 'es' ? 'espagnol (Espagne / Amérique latine, naturel)' : 'anglais';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.15,
+        ...(model.includes('flash') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
       contents: [
         {
@@ -18,8 +19,10 @@ export async function translateText(text: string, target: 'en' | 'es'): Promise<
           parts: [
             {
               text: [
-                `Traduis ce texte français en ${targetLabel}.`,
-                'Préserve exactement les balises HTML/Markdown, les listes, les backticks et les sauts de paragraphes.',
+                `Traduis fidèlement ce texte français en ${targetLabel}.`,
+                'Ne reformule pas le fond : même sens, mêmes faits, mêmes conseils.',
+                'Préserve exactement les balises HTML, les listes, les attributs et les sauts de paragraphes.',
+                'Accords au féminin quand le texte s’adresse à une lectrice (tú / te).',
                 'Ne rajoute aucune explication. Réponds uniquement avec la traduction.',
                 '',
                 text,

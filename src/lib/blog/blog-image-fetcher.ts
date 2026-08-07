@@ -167,15 +167,24 @@ export async function fetchUnsplashImage(params: {
   credit: string | null;
   alt: string | null;
   photoId: string | null;
+  /** unsplash = API OK · fallback = Unsplash KO / clé absente · none = rien */
+  imageSource: 'unsplash' | 'fallback' | 'none';
 }> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   const excluded = params.excludedPhotoIds ?? new Set<string>();
   const variant = params.variant ?? 0;
 
   if (!key) {
+    console.warn('[fetchUnsplashImage] UNSPLASH_ACCESS_KEY absent → imageSource:fallback');
     const fallback = pickFallbackImage(excluded, variant);
-    if (!fallback) return { imageUrl: null, credit: null, alt: null, photoId: null };
-    return { imageUrl: fallback.imageUrl, credit: null, alt: null, photoId: fallback.photoId };
+    if (!fallback) return { imageUrl: null, credit: null, alt: null, photoId: null, imageSource: 'none' };
+    return {
+      imageUrl: fallback.imageUrl,
+      credit: null,
+      alt: null,
+      photoId: fallback.photoId,
+      imageSource: 'fallback',
+    };
   }
 
   const queries = rotatedQueries(params.categorySlug, variant);
@@ -191,10 +200,12 @@ export async function fetchUnsplashImage(params: {
         credit: picked.credit,
         alt: picked.alt,
         photoId: picked.photoId,
+        imageSource: 'unsplash',
       };
     }
   }
 
+  console.warn('[fetchUnsplashImage] Unsplash sans résultat → imageSource:fallback', params.categorySlug);
   const fallback = pickFallbackImage(excluded, variant);
   if (fallback) {
     return {
@@ -202,10 +213,11 @@ export async function fetchUnsplashImage(params: {
       credit: null,
       alt: null,
       photoId: fallback.photoId,
+      imageSource: 'fallback',
     };
   }
 
-  return { imageUrl: null, credit: null, alt: null, photoId: null };
+  return { imageUrl: null, credit: null, alt: null, photoId: null, imageSource: 'none' };
 }
 
 export function normalizeStoredImageUrl(url: string): string {

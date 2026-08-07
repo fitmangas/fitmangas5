@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/auth/assert-admin-api';
+import {
+  deleteSpanishTranslationRow,
+  withSpanishInvalidationIfContentFrChanged,
+} from '@/lib/blog/translate-article-es';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const PATCHABLE = new Set([
@@ -43,9 +47,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ artic
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const payload: Record<string, unknown> = {};
-  for (const key of PATCHABLE) {
-    if (key in body) payload[key] = body[key];
+  let payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (PATCHABLE.has(key)) payload[key] = value;
   }
 
   if (Object.keys(payload).length === 0) {
@@ -58,7 +62,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ artic
     const admin = createAdminClient();
     const { data: current, error: readError } = await admin
       .from('blog_articles')
-      .select('status, slug_fr, slug_en, slug_es')
+      .select(
+        'status, slug_fr, slug_en, slug_es, content_fr, title_fr, description_fr, meta_description_fr, seo_keywords',
+      )
       .eq('id', articleId)
       .maybeSingle();
 
@@ -73,7 +79,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ artic
       for (const field of SLUG_FIELDS) {
         if (!(field in payload)) continue;
         const incoming = normalizedSlug(payload[field]);
-        const existing = normalizedSlug(current[field]);
+        const existing = normalizedSlug(current[field as keyof typeof current] as string);
         if (incoming !== existing) {
           return NextResponse.json(
             {
@@ -87,10 +93,27 @@ export async function PATCH(request: Request, context: { params: Promise<{ artic
       }
     }
 
+    payload = withSpanishInvalidationIfContentFrChanged({
+      previousContentFr: current.content_fr,
+      previous: {
+        title_fr: current.title_fr,
+        description_fr: current.description_fr,
+        content_fr: current.content_fr,
+        meta_description_fr: current.meta_description_fr,
+        seo_keywords: current.seo_keywords,
+      },
+      payload,
+    });
+    const invalidatedEs = payload.title_es === null && payload.content_es === null;
+
     const { error } = await admin.from('blog_articles').update(payload).eq('id', articleId);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (invalidatedEs) {
+      await deleteSpanishTranslationRow(admin, articleId);
     }
 
     return NextResponse.json({ ok: true });

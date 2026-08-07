@@ -25,6 +25,7 @@ export default async function CompteBoutiquePage() {
           seeTracking: 'See tracking',
           seeHistory: 'See history',
           noProducts: 'No products returned by Printful. Check PRINTFUL_API_TOKEN / PRINTFUL_STORE_ID then refresh.',
+          catalogueUnavailable: 'Catalogue unavailable — Printful is not responding. Try again later.',
         }
       : lang === 'es'
         ? {
@@ -34,6 +35,7 @@ export default async function CompteBoutiquePage() {
             seeTracking: 'Ver seguimiento',
             seeHistory: 'Ver historial',
             noProducts: 'Printful no devolvió productos. Verifica PRINTFUL_API_TOKEN / PRINTFUL_STORE_ID y recarga.',
+            catalogueUnavailable: 'Catálogo no disponible — Printful no responde. Inténtalo más tarde.',
           }
         : {
             title: 'Boutique FitMangas',
@@ -42,12 +44,23 @@ export default async function CompteBoutiquePage() {
             seeTracking: 'Voir le suivi',
             seeHistory: 'Voir l’historique',
             noProducts: 'Aucun produit n’est remonté par Printful. Vérifie PRINTFUL_API_TOKEN / PRINTFUL_STORE_ID puis recharge la page.',
+            catalogueUnavailable: 'Catalogue indisponible — Printful ne répond pas. Réessaie plus tard.',
           };
 
-  const [productsRaw, orders] = await Promise.all([
-    getPrintfulProducts().catch(() => []),
-    getPrintfulOrders(80).catch(() => []),
-  ]);
+  let catalogueUnavailable = false;
+  let productsRaw: Awaited<ReturnType<typeof getPrintfulProducts>> = [];
+  let orders: Awaited<ReturnType<typeof getPrintfulOrders>> = [];
+  try {
+    productsRaw = await getPrintfulProducts();
+  } catch (e) {
+    console.error('[compte/boutique] Printful products', e);
+    catalogueUnavailable = true;
+  }
+  try {
+    orders = await getPrintfulOrders(80);
+  } catch (e) {
+    console.error('[compte/boutique] Printful orders', e);
+  }
   const products = await sortPrintfulProducts(productsRaw);
 
   const email = user.email?.toLowerCase() ?? '';
@@ -76,7 +89,11 @@ export default async function CompteBoutiquePage() {
         </Link>
       </section>
 
-      {products.length === 0 ? (
+      {catalogueUnavailable ? (
+        <GlassCard className="border-red-200 bg-red-50/80 p-5 text-sm text-red-800">
+          {t.catalogueUnavailable}
+        </GlassCard>
+      ) : products.length === 0 ? (
         <GlassCard className="p-5 text-sm text-luxury-muted">
           {t.noProducts}
         </GlassCard>

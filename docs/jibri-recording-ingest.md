@@ -53,7 +53,20 @@ Content-Type: application/json
 | 429 | Rate limit (30 req/min/IP) |
 | 503 | `RECORDING_INGEST_SECRET` absent |
 
-## Exemple finalize.sh (après upload Vimeo TUS)
+## finalize.sh (VPS Hetzner)
+
+Script canonique dans le repo : **`scripts/vps/finalize.sh`**.
+
+Règles (dette §10) :
+1. Upload TUS avec timeout long (~2 h) pour MP4 ~1 Go.
+2. Boucle probe Vimeo jusqu’à `is_playable=true` (pas seulement « upload reçu »).
+3. Ingest API FitMangas.
+4. **`rm` du MP4 uniquement après playable + ingest OK** — sinon le fichier reste.
+5. Seuil disque 80 % = cleanup secondaire des vieux MP4 (>7 j) seulement.
+
+Ne pas exécuter depuis Cursor : déployer par SSH sur le VPS Jibri.
+
+## Exemple minimal (ingest seul, après probe déjà OK)
 
 ```bash
 #!/usr/bin/env bash
@@ -76,6 +89,7 @@ curl -fsS -X POST "${APP_URL}/api/internal/recordings/ingest" \
 
 | Fichier | Rôle |
 |---------|------|
+| `scripts/vps/finalize.sh` | Upload TUS + probe playable + ingest + delete MP4 |
 | `src/app/api/internal/recordings/ingest/route.ts` | Route API |
 | `src/lib/jibri-recording-filename.ts` | Parser + recherche cours |
 | `src/lib/vimeo.ts` | `syncVideoRecording` (existant) |

@@ -31,10 +31,20 @@ export default async function AdminBoutiquePage() {
   const gate = await checkIsAdmin(supabase, user);
   if (!gate.isAdmin) redirect('/login?error=forbidden');
 
-  const [productsRaw, orders] = await Promise.all([
-    getPrintfulProducts().catch(() => []),
-    getPrintfulOrders(80).catch(() => []),
-  ]);
+  let catalogueUnavailable = false;
+  let productsRaw: Awaited<ReturnType<typeof getPrintfulProducts>> = [];
+  let orders: Awaited<ReturnType<typeof getPrintfulOrders>> = [];
+  try {
+    productsRaw = await getPrintfulProducts();
+  } catch (e) {
+    console.error('[admin/boutique] Printful products', e);
+    catalogueUnavailable = true;
+  }
+  try {
+    orders = await getPrintfulOrders(80);
+  } catch (e) {
+    console.error('[admin/boutique] Printful orders', e);
+  }
   const products = await sortPrintfulProducts(productsRaw);
 
   const inProgressOrders = orders.filter((o) => ACTIVE_ORDER_STATUSES.has((o.status ?? '').toLowerCase()));
@@ -150,7 +160,11 @@ export default async function AdminBoutiquePage() {
       <GlassCard className="p-6">
         <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Produits en vente</h2>
         {!products.length ? (
-          <p className="mt-4 text-sm text-luxury-soft">Aucun produit synchronisé via Printful.</p>
+          <p className="mt-4 text-sm text-luxury-soft">
+            {catalogueUnavailable
+              ? 'Catalogue indisponible — Printful ne répond pas.'
+              : 'Aucun produit synchronisé via Printful.'}
+          </p>
         ) : (
           <div className="mt-6">
             <PrintfulProductsSaleGridEditor

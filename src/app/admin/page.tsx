@@ -14,7 +14,7 @@ import {
   getCachedAdminKpis,
   getCachedStripeCollectedCurrentMonthEur,
 } from '@/lib/admin/cached-kpis';
-import { getSocialCommsBoard, SOCIAL_NETWORK_LABELS, upcomingSocialPosts } from '@/lib/admin/social-comms';
+import { emptySocialCommsBoard, getSocialCommsBoard, SOCIAL_NETWORK_LABELS, upcomingSocialPosts } from '@/lib/admin/social-comms';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
@@ -172,7 +172,10 @@ export default async function AdminPage() {
       .eq('status', 'pending'),
     getCachedStripeCollectedCurrentMonthEur(),
     getCachedAdminKpiDrilldowns(),
-    getSocialCommsBoard(),
+    getSocialCommsBoard().catch((e) => {
+      console.error('[admin dashboard] board CM indisponible', e);
+      return emptySocialCommsBoard();
+    }),
   ]);
   const nextSocialPosts = upcomingSocialPosts(socialBoard, 3);
 

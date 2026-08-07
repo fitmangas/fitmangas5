@@ -48,6 +48,14 @@ export type SocialPost = {
   metaExternalId: string | null;
   /** Titre rejeté 2× par le gate qualité — à corriger avant publish. */
   titleNeedsReview?: boolean;
+  /** Overlays carousel invalides — pack figé interdit ; à corriger avant publish. */
+  overlaysNeedReview?: boolean;
+  /** whyItWorks hors langue du post (ex. anglais sur post FR). */
+  whyItWorksNeedsReview?: boolean;
+  /** Carousel : au moins une slide image manquante (pas de duplication silencieuse). */
+  carouselMissingSlides?: boolean;
+  /** Variante ES périmée après édition / regen FR (comme blog ES stale). */
+  esStale?: boolean;
   /** Pilier / thème (id ContentTheme). */
   pillarId?: string | null;
   /** Famille éditoriale CM v4. */
@@ -228,7 +236,7 @@ function normalizeVideoStatus(value: unknown): SocialVideoStatus | null {
   return null;
 }
 
-function normalizePost(raw: unknown, index = 0): SocialPost | null {
+function normalizePost(raw: unknown, _index = 0): SocialPost | null {
   if (!raw || typeof raw !== 'object') return null;
   const row = raw as Record<string, unknown>;
   if (typeof row.id !== 'string' || !isSocialNetwork(row.network) || !isSocialFormat(row.format) || !isSocialStatus(row.status)) {
@@ -242,14 +250,39 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
       rawImage.startsWith('/library/social/') ||
       rawImage.includes('/storage/v1/object/public/'));
   const isReel = row.format === 'reel';
+  // Jamais de pickLibraryImage silencieux : absence d’image = null + badge « image manquante ».
   const imagePath =
-    isReel && !rawImage
-      ? null
-      : isKnownLibrary || isRemoteImage
+    isKnownLibrary || isRemoteImage
+      ? rawImage
+      : rawImage && (rawImage.startsWith('/') || rawImage.startsWith('http'))
         ? rawImage
-        : row.network === 'whatsapp' && row.format === 'text' && !rawImage
-          ? null
-          : rawImage || (isReel ? null : pickLibraryImage(index + row.id.length));
+        : null;
+
+  const carouselPaths =
+    row.format === 'carousel'
+      ? sanitizeCarouselPathsClient(Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String) : [])
+      : Array.isArray(row.carouselPaths)
+        ? row.carouselPaths.map(String).filter(Boolean)
+        : [];
+  const carouselMissing =
+    row.format === 'carousel' && carouselMissingSlideIndexes(carouselPaths).length > 0;
+
+  let imageSource: SocialImageSource =
+    row.imageSource === 'ai' ||
+    row.imageSource === 'unsplash' ||
+    row.imageSource === 'library' ||
+    row.imageSource === 'brand' ||
+    row.imageSource === 'none'
+      ? row.imageSource === 'brand'
+        ? 'ai'
+        : row.imageSource
+      : !imagePath
+        ? 'none'
+        : 'library';
+  // Legacy pollinations / sources inconnues → none (jamais badge pollinations).
+  if (typeof row.imageSource === 'string' && row.imageSource === 'pollinations') {
+    imageSource = 'none';
+  }
 
   return {
     id: row.id,
@@ -262,20 +295,7 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     cta: typeof row.cta === 'string' ? row.cta : '',
     imageHint: typeof row.imageHint === 'string' ? row.imageHint : '',
     imagePath,
-    imageSource:
-      row.imageSource === 'ai' ||
-      row.imageSource === 'unsplash' ||
-      row.imageSource === 'library' ||
-      row.imageSource === 'brand' ||
-      row.imageSource === 'none'
-        ? row.imageSource === 'brand'
-          ? 'ai'
-          : row.imageSource
-        : row.imageSource === 'pollinations'
-          ? 'none'
-          : isReel && !imagePath
-            ? 'none'
-            : 'library',
+    imageSource,
     aiImagePrompt: typeof row.aiImagePrompt === 'string' ? row.aiImagePrompt : '',
     imageFeedback: typeof row.imageFeedback === 'string' ? row.imageFeedback : '',
     overlayText: typeof row.overlayText === 'string' ? row.overlayText : typeof row.title === 'string' ? row.title : null,
@@ -286,16 +306,9 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     rawVideoPath: typeof row.rawVideoPath === 'string' ? row.rawVideoPath : null,
     editedVideoPath: typeof row.editedVideoPath === 'string' ? row.editedVideoPath : null,
     videoStatus: normalizeVideoStatus(row.videoStatus) ?? (isReel ? 'brief' : null),
-    carouselPaths:
-      row.format === 'carousel'
-        ? sanitizeCarouselPathsClient(
-            Array.isArray(row.carouselPaths) ? row.carouselPaths.map(String).filter(Boolean) : [],
-          )
-        : Array.isArray(row.carouselPaths)
-          ? row.carouselPaths.map(String).filter(Boolean)
-          : [],
+    carouselPaths,
     carouselSlideTitles: Array.isArray(row.carouselSlideTitles)
-      ? row.carouselSlideTitles.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 7)
+      ? row.carouselSlideTitles.map((x) => String(x || '').trim()).slice(0, 6)
       : [],
     seriesKind: row.seriesKind === 'conseil_50' ? 'conseil_50' : null,
     seriesNumber: typeof row.seriesNumber === 'number' ? row.seriesNumber : null,
@@ -314,6 +327,10 @@ function normalizePost(raw: unknown, index = 0): SocialPost | null {
     whyItWorks: typeof row.whyItWorks === 'string' ? row.whyItWorks : '',
     metaExternalId: typeof row.metaExternalId === 'string' ? row.metaExternalId : null,
     titleNeedsReview: Boolean(row.titleNeedsReview),
+    overlaysNeedReview: Boolean(row.overlaysNeedReview),
+    whyItWorksNeedsReview: Boolean(row.whyItWorksNeedsReview),
+    carouselMissingSlides: Boolean(row.carouselMissingSlides) || carouselMissing,
+    esStale: Boolean(row.esStale),
     pillarId: typeof row.pillarId === 'string' ? row.pillarId : null,
     contentFamily:
       row.contentFamily === 'portee' || row.contentFamily === 'confiance' || row.contentFamily === 'conversion'
@@ -352,14 +369,23 @@ export function remapCarouselPathClient(path: string): string {
   return path;
 }
 
+/**
+ * Remap client des chemins carousel — NE remplit / NE duplique JAMAIS.
+ * Les index manquants restent '' pour que l’UI affiche « slide manquante ».
+ */
 export function sanitizeCarouselPathsClient(paths: string[] | null | undefined): string[] {
-  const CTA = '/library/produit-captures/produit-dashboard-02-4x5.webp';
-  const source = Array.isArray(paths) ? paths.map(remapCarouselPathClient).filter(Boolean) : [];
+  const source = Array.isArray(paths) ? paths.map((p) => remapCarouselPathClient(String(p || ''))) : [];
   const out: string[] = [];
-  for (let i = 0; i < 7; i += 1) {
-    out.push(source[i] || (i === 6 ? CTA : out[i - 1] || CTA));
+  for (let i = 0; i < 6; i += 1) {
+    const raw = (source[i] || '').trim();
+    out.push(raw);
   }
   return out;
+}
+
+export function carouselMissingSlideIndexes(paths: string[] | null | undefined): number[] {
+  const sanitized = sanitizeCarouselPathsClient(paths);
+  return sanitized.map((p, i) => (p.trim() ? -1 : i)).filter((i) => i >= 0);
 }
 
 export function parseSocialCommsBoard(raw: unknown): SocialCommsBoard {
@@ -375,6 +401,14 @@ export function parseSocialCommsBoard(raw: unknown): SocialCommsBoard {
   };
 }
 
+export class SocialCommsBoardLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SocialCommsBoardLoadError';
+  }
+}
+
+/** Charge le board CM. Erreur DB / JSON → throw (jamais un board vide silencieux). Absence de clé = board vide légitime. */
 export async function getSocialCommsBoard(): Promise<SocialCommsBoard> {
   try {
     const admin = createAdminClient();
@@ -383,14 +417,23 @@ export async function getSocialCommsBoard(): Promise<SocialCommsBoard> {
       .select('value')
       .eq('key', SOCIAL_COMMS_SETTING_KEY)
       .maybeSingle();
-    if (error || !data?.value) return emptySocialCommsBoard();
+    if (error) {
+      console.error('[social-comms] getSocialCommsBoard DB', error.message);
+      throw new SocialCommsBoardLoadError(`Board CM indisponible (DB) : ${error.message}`);
+    }
+    if (!data?.value) return emptySocialCommsBoard();
     try {
       return parseSocialCommsBoard(JSON.parse(String(data.value)));
-    } catch {
-      return emptySocialCommsBoard();
+    } catch (e) {
+      console.error('[social-comms] getSocialCommsBoard JSON', e);
+      throw new SocialCommsBoardLoadError('Board CM corrompu (JSON invalide).');
     }
-  } catch {
-    return emptySocialCommsBoard();
+  } catch (e) {
+    if (e instanceof SocialCommsBoardLoadError) throw e;
+    console.error('[social-comms] getSocialCommsBoard', e);
+    throw new SocialCommsBoardLoadError(
+      e instanceof Error ? e.message : 'Board CM indisponible.',
+    );
   }
 }
 

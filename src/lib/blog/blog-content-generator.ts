@@ -3,15 +3,24 @@ import {
   type BlogAiProviderId,
 } from '@/lib/blog/ai-providers';
 import {
+  BLOG_MIN_BODY_WORDS,
+  containsArticlePilatesPlaceholder,
+  countBodyWords,
+  ensureValidatedBlogCta,
   looksLikeFallbackTemplate,
   sanitizeBlogContentHtml,
 } from '@/lib/blog/blog-content-guards';
+import { BLOG_SEO_META_MAX, enforceBlogSeoMeta } from '@/lib/blog/blog-seo-limits';
+import {
+  looksLikeGenericBlogOpener,
+  type BlogAngleId,
+} from '@/lib/blog/blog-title-diversity';
 
 export type GeneratedArticle = {
   contentHtml: string;
   description: string;
   metaDescription: string;
-  seoKeywords: string;
+  seoKeywords: string | null;
   /** Provider IA qui a produit cet article (jamais « fallback »). */
   provider: BlogAiProviderId;
   model: string;
@@ -46,41 +55,53 @@ function extractJsonBlock(raw: string): Record<string, unknown> | null {
   }
 }
 
-function buildPrompts(params: { topicBrief: string; category: string; publishDateIso: string }): {
+function buildPrompts(params: {
+  topicBrief: string;
+  category: string;
+  publishDateIso: string;
+  title?: string;
+  recentAngles?: BlogAngleId[];
+  lastAngle?: BlogAngleId | null;
+}): {
   system: string;
   user: string;
 } {
-  const system = `Tu es copywriter SEO expert d'un blog pilates premium. Tu écris en français naturel, clair et professionnel.
-Objectif stratégique FitMangas: construire des clusters SEO autour de 3 pages piliers:
+  const system = `Tu es copywriter SEO expert d'un blog pilates premium (FitMangas / Alejandra). Tu RÉDIGES un article UNIQUE — jamais un gabarit à trous.
+Objectif stratégique FitMangas: clusters SEO autour de:
 - Pilates en ligne (/pilates-en-ligne)
 - Cours de Pilates en visio (/cours-pilates-visio)
 - Pilates débutant à la maison (/pilates-debutant-maison)
-Retourne STRICTEMENT un JSON avec ces clés:
-- contentHtml (article en HTML, 700 à 950 mots, avec <h2>, <h3>, <p>, <ul>, <li>, <strong>, et une courte section FAQ en fin d'article)
-- description (120 à 160 caractères)
-- metaDescription (140 à 155 caractères)
-- seoKeywords (5 à 8 mots-clés longue traîne séparés par virgules, sans répéter le titre complet)`;
 
-  const user = `Brief éditorial: ${params.topicBrief}
-Catégorie: ${params.category}
+Retourne STRICTEMENT un JSON avec ces clés:
+- contentHtml (article HTML UNIQUE, 700 à 950 mots, balises <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin AVANT le CTA)
+- description (120 à 159 caractères, STRICTEMENT moins de 160)
+- metaDescription (140 à 159 caractères, STRICTEMENT moins de 160)
+- seoKeywords (5 à 8 mots-clés longue traîne séparés par virgules)`;
+
+  const avoidAngles = (params.recentAngles ?? []).slice(-8).join(', ') || '(aucun)';
+  const lockedTitle = params.title?.trim();
+
+  const user = `Sujet SPÉCIFIQUE à traiter (un seul angle, contenu propre à CE sujet):
+${params.topicBrief}
+
+${lockedTitle ? `Titre déjà validé (NE PAS le réécrire dans contentHtml comme <h1> ; le corps doit coller à ce titre): ${lockedTitle}\n` : ''}Catégorie: ${params.category}
 Date publication: ${params.publishDateIso}
 
-Contraintes:
-- le contenu doit être spécifique au brief (pas de titre générique type "Article pilates X")
-- viser une intention de recherche précise (ex: douleur dos pilates débutant, respiration pilates, posture bureau)
-- rattacher l'article à UN cluster principal: pilates en ligne, cours pilates visio, ou pilates débutant maison
-- traiter une question précise du cluster sans cannibaliser la page pilier (ne pas écrire un guide général "Pilates en ligne" si l'article doit être un sous-sujet)
-- proposer un angle longue traîne clair (ex: routine pilates débutant maison, respiration pilates en ligne, posture pilates visio, abdos profonds pilates débutant)
-- intégrer naturellement le mot-clé principal dans l'introduction, un <h2> et la conclusion
-- inclure dans la FAQ une question qui renvoie naturellement vers la pratique en ligne / visio / maison, sans lien HTML
-- texte actionnable, motivant, sans jargon inutile
-- intro accrocheuse qui répond à un problème concret
-- 3-5 conseils concrets
-- une mini-story réaliste
-- conclusion avec CTA doux vers FitMangas
-- ne pas inventer de liens HTML externes ; le site ajoutera le maillage interne automatiquement
-- ne pas promettre de résultat médical, de perte de poids garantie ou de guérison
-- INTERDIT: textes génériques type "Pourquoi ce sujet change ta pratique" ou "Un guide concret pour progresser en pilates"`;
+Règles de RÉDACTION (obligatoires):
+- Chaque article = contenu ORIGINAL rédigé pour CE sujet. Pas de texte recyclé.
+- Les intertitres <h2>/<h3> doivent être SPÉCIFIQUES au sujet (ex. "Respiration latérale au bureau", "Quand 15 minutes battent une heure"). INTERDIT d'utiliser les titres de section figés suivants: "Pourquoi ce sujet change ta pratique", "Le contexte concret", "3 actions simples à appliquer cette semaine", "Exemple terrain", "Ce que tu peux retenir".
+- INTERDIT ABSOLU: "Article pilates N", "mouvement & souffle", tout placeholder non résolu, "Un guide concret pour progresser en pilates autour de…".
+- Viser une intention de recherche précise liée au sujet
+- Rattacher à UN cluster: pilates en ligne / cours pilates visio / pilates débutant maison
+- ANGLE DISTINCT: un seul (respiration, dos, posture bureau, périménopause, débutante, régularité, renforcement centre, etc.)
+- INTERDIT de reprendre l'angle précédent: ${params.lastAngle ?? '(aucun)'}
+- Angles récents à ne pas recycler: ${avoidAngles}
+- Intro = problème concret DU sujet (pas une amorce générique)
+- 3-5 conseils concrets propres au sujet + une mini-story réaliste
+- FAQ courte (2-3 questions) liées au sujet
+- NE PAS écrire le CTA final toi-même (le système l'ajoute). Termine après la FAQ.
+- Pas de liens HTML externes ; pas de promesse médicale / perte de poids / guérison
+- Minimum ${BLOG_MIN_BODY_WORDS} mots de contenu réel unique`;
 
   return { system, user };
 }
@@ -98,50 +119,57 @@ function parseGeneratedArticle(
   const metaDescription = typeof data.metaDescription === 'string' ? data.metaDescription.trim() : '';
   const seoKeywords = typeof data.seoKeywords === 'string' ? data.seoKeywords.trim() : '';
 
-  const cleanedHtml = sanitizeBlogContentHtml(contentHtml);
-  if (!cleanedHtml || cleanedHtml.length < 600) return null;
+  let cleanedHtml = sanitizeBlogContentHtml(contentHtml);
+  if (!cleanedHtml) return null;
   if (looksLikeFallbackTemplate(cleanedHtml, description)) return null;
+  if (looksLikeGenericBlogOpener(description) || looksLikeGenericBlogOpener(cleanedHtml)) return null;
+  if (containsArticlePilatesPlaceholder(cleanedHtml) || containsArticlePilatesPlaceholder(description)) {
+    return null;
+  }
 
+  cleanedHtml = ensureValidatedBlogCta(cleanedHtml);
+  if (countBodyWords(cleanedHtml) < BLOG_MIN_BODY_WORDS) return null;
+
+  const plainFallback = cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return {
     contentHtml: cleanedHtml,
-    description:
-      truncateAtSentence(
-        description || cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-        160,
-      ),
-    metaDescription:
-      truncateAtSentence(
-        metaDescription ||
-          description ||
-          cleanedHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-        155,
-      ),
-    seoKeywords: seoKeywords || 'pilates, posture, respiration, bien-être',
+    description: enforceBlogSeoMeta(
+      truncateAtSentence(description || plainFallback, BLOG_SEO_META_MAX),
+    ),
+    metaDescription: enforceBlogSeoMeta(
+      truncateAtSentence(metaDescription || description || plainFallback, BLOG_SEO_META_MAX),
+    ),
+    seoKeywords:
+      seoKeywords && !containsArticlePilatesPlaceholder(seoKeywords) ? seoKeywords : null,
     provider,
     model,
   };
 }
 
 /**
- * Génère un article via la cascade Gemini → Mistral → Groq → OpenAI.
+ * Génère un article via la cascade Claude → Gemini → Mistral → Groq → OpenAI.
  * Ne renvoie JAMAIS le template de secours : en cas d’échec total → generation_failed.
  */
-/** Qualité éditoriale prioritaire : Gemini puis Mistral (sans Groq). */
-export const PREMIUM_BLOG_AI_ORDER: BlogAiProviderId[] = ['gemini', 'mistral'];
+/** Qualité éditoriale prioritaire : Claude puis Gemini puis Mistral. */
+export const PREMIUM_BLOG_AI_ORDER: BlogAiProviderId[] = ['claude', 'gemini', 'mistral'];
 
 export async function tryGenerateFrenchArticle(params: {
   topicBrief: string;
   category: string;
   publishDateIso: string;
+  /** Titre déjà validé (corps aligné dessus, non réécrit). */
+  title?: string;
   /** Ordre de cascade optionnel (ex. PREMIUM_BLOG_AI_ORDER). */
   providerOrder?: BlogAiProviderId[];
+  recentAngles?: BlogAngleId[];
+  lastAngle?: BlogAngleId | null;
 }): Promise<ArticleGenerationAttemptResult> {
   const { system, user } = buildPrompts(params);
   const cascade = await runBlogAiCascade(
     {
       system,
       user,
-      temperature: 0.8,
+      temperature: 0.85,
       maxOutputTokens: 8192,
     },
     params.providerOrder,
@@ -157,20 +185,17 @@ export async function tryGenerateFrenchArticle(params: {
 
   const article = parseGeneratedArticle(cascade.text, cascade.provider, cascade.model);
   if (!article) {
-    // Un provider a répondu mais JSON invalide → tenter encore les providers suivants serait idéal ;
-    // runBlogAiCascade s’arrête au premier texte. On relance en excluant le provider fautif via
-    // une 2e passe manuelle sur les providers restants.
     const retry = await retryParseAcrossProviders(params, cascade.provider, params.providerOrder);
     if (retry) return { ok: true, article: retry };
     return {
       ok: false,
       reason: 'generation_failed',
-      detail: `Réponse JSON invalide ou contenu template de ${cascade.provider}.`,
+      detail: `Réponse JSON invalide, trop courte, ou contenu template de ${cascade.provider}.`,
     };
   }
 
   console.info(
-    `[generateFrenchArticle] contenu généré par ${article.provider}/${article.model}`,
+    `[generateFrenchArticle] contenu généré par ${article.provider}/${article.model} (${countBodyWords(article.contentHtml)} mots)`,
   );
   return { ok: true, article };
 }
@@ -180,6 +205,9 @@ async function retryParseAcrossProviders(
     topicBrief: string;
     category: string;
     publishDateIso: string;
+    title?: string;
+    recentAngles?: BlogAngleId[];
+    lastAngle?: BlogAngleId | null;
   },
   skipProvider: BlogAiProviderId,
   providerOrder?: BlogAiProviderId[],
@@ -191,7 +219,7 @@ async function retryParseAcrossProviders(
     const result = await completeWithProvider(provider, {
       system,
       user,
-      temperature: 0.8,
+      temperature: 0.9,
       maxOutputTokens: 8192,
     });
     if (!result.ok) continue;
@@ -213,6 +241,7 @@ export async function generateFrenchArticle(params: {
   topicBrief: string;
   category: string;
   publishDateIso: string;
+  title?: string;
 }): Promise<GeneratedArticle | null> {
   const result = await tryGenerateFrenchArticle(params);
   return result.ok ? result.article : null;

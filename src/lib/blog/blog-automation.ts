@@ -7,6 +7,12 @@ import {
 import { looksLikeFallbackTemplate } from '@/lib/blog/blog-content-guards';
 import { collectUsedPhotoIdsFromUrls, fetchUnsplashImage } from '@/lib/blog/blog-image-fetcher';
 import {
+  detectBlogAngle,
+  looksLikeGenericBlogOpener,
+  type BlogAngleId,
+  type TitleDiversityContext,
+} from '@/lib/blog/blog-title-diversity';
+import {
   isGenericPilatesTitle,
   tryGenerateBlogTitlesFromContentDetailed,
   type TitleGenerationFailureReason,
@@ -19,6 +25,7 @@ import {
 import { loadStaticTopicPool, pickNextEditorialTopic } from '@/lib/blog/editorial-topics';
 import { GeminiRateLimiter } from '@/lib/blog/gemini-rate-limit';
 import { formatMonthYear } from '@/lib/blog/month';
+import { enforceBlogSeoMeta, enforceBlogSeoTitle } from '@/lib/blog/blog-seo-limits';
 import { slugifyBlog } from '@/lib/blog/slugify';
 
 /** Titres réécrits par jour (hors génération d’article hebdomadaire). */
@@ -121,6 +128,38 @@ async function loadEditorialContext(admin: SupabaseClient) {
   return { usedTopicIds, usedBriefs };
 }
 
+/** Fenêtre ~2 semaines : titres + angles pour anti-répétition (max 1 « N astuces » / lot). */
+async function loadTitleDiversityContext(admin: SupabaseClient): Promise<TitleDiversityContext> {
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 14);
+  const { data, error } = await admin
+    .from('blog_articles')
+    .select('title_fr, description_fr, seo_keywords, created_at')
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: true })
+    .limit(40);
+
+  if (error) {
+    console.warn('[loadTitleDiversityContext]', error.message);
+    return { recentTitles: [] };
+  }
+
+  const recentTitles: string[] = [];
+  const recentAngles: BlogAngleId[] = [];
+  for (const row of data ?? []) {
+    const title = row.title_fr?.trim();
+    if (title) recentTitles.push(title);
+    const angle = detectBlogAngle(`${title ?? ''} ${row.description_fr ?? ''} ${row.seo_keywords ?? ''}`);
+    if (angle !== 'general') recentAngles.push(angle);
+  }
+
+  return {
+    recentTitles,
+    recentAngles,
+    lastAngle: recentAngles[recentAngles.length - 1] ?? null,
+  };
+}
+
 async function ensureCategoryId(
   admin: SupabaseClient,
   slug: string,
@@ -213,6 +252,8 @@ export async function rewriteBlogTitlesBatch(
   result.pending_published = publishedPending.length;
 
   let updatedPublished = 0;
+  const diversity = await loadTitleDiversityContext(admin);
+  const batchTitles = [...diversity.recentTitles];
 
   for (const row of targets) {
     const article = row as ArticleTitleRow;
@@ -236,6 +277,11 @@ export async function rewriteBlogTitlesBatch(
       categorySlug: categorySlugFromRow(article),
       contentHtmlEs: article.content_es,
       descriptionEs: article.description_es ?? undefined,
+      diversity: {
+        recentTitles: batchTitles,
+        recentAngles: diversity.recentAngles,
+        lastAngle: diversity.lastAngle,
+      },
     });
 
     if (!generation.ok) {
@@ -279,6 +325,12 @@ export async function rewriteBlogTitlesBatch(
       continue;
     }
 
+    batchTitles.push(generated.title_fr);
+    diversity.lastAngle = detectBlogAngle(`${generated.title_fr} ${article.description_fr ?? ''}`);
+    if (diversity.lastAngle !== 'general') {
+      diversity.recentAngles = [...(diversity.recentAngles ?? []), diversity.lastAngle];
+    }
+
     result.updated += 1;
     if (article.status === 'published') {
       updatedPublished += 1;
@@ -309,6 +361,9 @@ export async function generateDraftArticlesBatch(
   }
 
   const { usedTopicIds, usedBriefs } = await loadEditorialContext(admin);
+  const diversity = await loadTitleDiversityContext(admin);
+  const batchTitles = [...diversity.recentTitles];
+  let lastAngle: BlogAngleId | null = diversity.lastAngle ?? null;
   const { data: categories } = await admin.from('blog_categories').select('id, slug');
   const categoryCache = new Map<string, string>((categories ?? []).map((c) => [c.slug, c.id]));
 
@@ -319,11 +374,26 @@ export async function generateDraftArticlesBatch(
 
   for (let i = 0; i < count; i += 1) {
     await limiter.waitTurn();
-    const topic = await pickNextEditorialTopic({
+    let topic = await pickNextEditorialTopic({
       usedTopicIds,
       usedBriefs,
       seed: Date.now() + i,
     });
+
+    // Rotation d’angle : si le brief tombe sur le même angle que le précédent, retente 1×.
+    if (topic && lastAngle) {
+      const topicAngle = detectBlogAngle(topic.briefFr);
+      if (topicAngle !== 'general' && topicAngle === lastAngle) {
+        usedTopicIds.add(topic.id);
+        usedBriefs.push(topic.briefFr);
+        const alt = await pickNextEditorialTopic({
+          usedTopicIds,
+          usedBriefs,
+          seed: Date.now() + i + 17,
+        });
+        if (alt) topic = alt;
+      }
+    }
 
     if (!topic) {
       result.errors.push('Aucun sujet éditorial disponible (réserve épuisée et génération IA vide).');
@@ -332,12 +402,16 @@ export async function generateDraftArticlesBatch(
 
     const scheduledAt = schedulePublicationDate();
     await limiter.waitTurn();
+    const topicAngle = detectBlogAngle(topic.briefFr);
     // Qualité d’abord (Gemini→Mistral), puis cascade complète si besoin (Groq/OpenAI).
     let contentResult = await tryGenerateFrenchArticle({
       topicBrief: topic.briefFr,
       category: topic.categorySlug,
       publishDateIso: scheduledAt.toISOString(),
+      title: undefined,
       providerOrder: PREMIUM_BLOG_AI_ORDER,
+      recentAngles: diversity.recentAngles,
+      lastAngle,
     });
     if (!contentResult.ok) {
       contentResult = await tryGenerateFrenchArticle({
@@ -345,6 +419,8 @@ export async function generateDraftArticlesBatch(
         category: topic.categorySlug,
         publishDateIso: scheduledAt.toISOString(),
         providerOrder: BLOG_AI_PROVIDER_ORDER,
+        recentAngles: diversity.recentAngles,
+        lastAngle,
       });
     }
 
@@ -360,6 +436,10 @@ export async function generateDraftArticlesBatch(
       result.errors.push(`generation_failed topic=${topic.id}: template de secours refusé.`);
       continue;
     }
+    if (looksLikeGenericBlogOpener(generated.description) || looksLikeGenericBlogOpener(generated.contentHtml)) {
+      result.errors.push(`generation_failed topic=${topic.id}: amorce générique refusée.`);
+      continue;
+    }
 
     await limiter.waitTurn();
     let titleResult = await tryGenerateBlogTitlesFromContentDetailed({
@@ -367,6 +447,11 @@ export async function generateDraftArticlesBatch(
       descriptionFr: generated.description,
       categorySlug: topic.categorySlug,
       providerOrder: PREMIUM_BLOG_AI_ORDER,
+      diversity: {
+        recentTitles: batchTitles,
+        recentAngles: diversity.recentAngles,
+        lastAngle,
+      },
     });
     if (!titleResult.ok) {
       titleResult = await tryGenerateBlogTitlesFromContentDetailed({
@@ -374,6 +459,12 @@ export async function generateDraftArticlesBatch(
         descriptionFr: generated.description,
         categorySlug: topic.categorySlug,
         providerOrder: BLOG_AI_PROVIDER_ORDER,
+        diversity: {
+          recentTitles: batchTitles,
+          recentAngles: diversity.recentAngles,
+          lastAngle,
+          forbidNTips: batchTitles.some((t) => /\d+\s*(astuces?|actions?|conseils?)/i.test(t)),
+        },
       });
     }
 
@@ -388,6 +479,11 @@ export async function generateDraftArticlesBatch(
     // Brief réservé uniquement après succès contenu + titres
     usedTopicIds.add(topic.id);
     usedBriefs.push(topic.briefFr);
+    batchTitles.push(titles.title_fr);
+    lastAngle = detectBlogAngle(`${titles.title_fr} ${topic.briefFr}`) || topicAngle;
+    if (lastAngle !== 'general') {
+      diversity.recentAngles = [...(diversity.recentAngles ?? []), lastAngle];
+    }
 
     console.info(
       `[generateDraftArticlesBatch] article via contenu=${generated.provider}/${generated.model} titres=${titles.provider ?? '?'}/${titles.model ?? '?'}`,
@@ -406,24 +502,34 @@ export async function generateDraftArticlesBatch(
       variant: usedTopicIds.size,
     });
     if (img.photoId) usedPhotoIds.add(img.photoId);
+    if (img.imageSource === 'fallback') {
+      result.errors.push(
+        `Warning image: Unsplash KO pour « ${titles.title_fr.slice(0, 40)}… » → imageSource:fallback (à remplacer).`,
+      );
+    }
 
     const slugSuffix = topic.id.slice(-8);
+    let seoKeywords = formatSeoKeywordsWithTopic(topic.id, generated.seoKeywords);
+    if (img.imageSource === 'fallback') {
+      const { withImageSourceFallbackTag } = await import('@/lib/blog/editorial-topic-key');
+      seoKeywords = withImageSourceFallbackTag(seoKeywords);
+    }
     const { data: inserted, error: insertError } = await admin
       .from('blog_articles')
       .insert({
         coach_id: coach.id,
-        title_fr: titles.title_fr,
-        title_es: titles.title_es,
+        title_fr: enforceBlogSeoTitle(titles.title_fr),
+        title_es: enforceBlogSeoTitle(titles.title_es),
         slug_fr: await ensureUniqueSlug(admin, titles.title_fr, slugSuffix),
         slug_es: slugifyBlog(titles.title_es),
-        description_fr: generated.description || topic.briefFr,
+        description_fr: enforceBlogSeoMeta(generated.description || topic.briefFr),
         content_fr: generated.contentHtml,
         category_id: categoryId,
         featured_image_url: img.imageUrl,
         scheduled_publication_at: scheduledAt.toISOString(),
         status: 'draft',
-        seo_keywords: formatSeoKeywordsWithTopic(topic.id, generated.seoKeywords),
-        meta_description_fr: generated.metaDescription.slice(0, 320),
+        seo_keywords: seoKeywords,
+        meta_description_fr: enforceBlogSeoMeta(generated.metaDescription),
       })
       .select('id')
       .maybeSingle();

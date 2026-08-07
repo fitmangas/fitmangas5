@@ -1386,6 +1386,31 @@ function PostCard({
                 Titre à revoir
               </span>
             ) : null}
+            {post.overlaysNeedReview ? (
+              <span className="rounded-full bg-[#fff4e5] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9a3412]">
+                Overlays à revoir
+              </span>
+            ) : null}
+            {post.carouselMissingSlides ? (
+              <span className="rounded-full bg-[#fef2f2] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#991b1b]">
+                Slide manquante
+              </span>
+            ) : null}
+            {!isReel && post.format !== 'text' && (!post.imagePath || post.imageSource === 'none') ? (
+              <span className="rounded-full bg-[#fef2f2] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#991b1b]">
+                Image manquante
+              </span>
+            ) : null}
+            {post.whyItWorksNeedsReview ? (
+              <span className="rounded-full bg-[#fff4e5] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9a3412]">
+                whyItWorks à revoir
+              </span>
+            ) : null}
+            {post.esStale ? (
+              <span className="rounded-full bg-[#fef2f2] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#991b1b]">
+                ES périmée
+              </span>
+            ) : null}
             {post.generationStatus ? (
               <span
                 className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${

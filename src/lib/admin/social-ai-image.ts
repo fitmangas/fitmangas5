@@ -88,7 +88,15 @@ export async function uploadSocialGeneratedImage(
   const admin = createAdminClient();
   const stamp = Date.now();
   const storagePath = `library/generees/${postId}-${stamp}.jpg`;
-  const { error } = await admin.storage.from('avatars').upload(storagePath, buffer, {
+  // Toujours JPEG valide (Gemini peut renvoyer PNG / WebP → Bad Request Supabase).
+  let jpeg = buffer;
+  try {
+    const sharp = (await import('sharp')).default;
+    jpeg = await sharp(buffer).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+  } catch {
+    jpeg = buffer;
+  }
+  const { error } = await admin.storage.from('avatars').upload(storagePath, jpeg, {
     contentType: 'image/jpeg',
     upsert: true,
   });
@@ -103,7 +111,7 @@ export async function uploadSocialGeneratedImage(
     const dir = path.join(process.cwd(), 'public', 'library', 'generees');
     await fs.mkdir(dir, { recursive: true });
     const fileName = `${postId}-${stamp}.jpg`;
-    await fs.writeFile(path.join(dir, fileName), buffer);
+    await fs.writeFile(path.join(dir, fileName), jpeg);
   } catch {
     // ignore
   }
@@ -261,16 +269,9 @@ export async function generateSocialPhotoForPost(
   });
 
   if ('error' in cascade) {
-    const libPath = pickLibraryPath({
-      usedPaths: opts.usedLibraryPaths,
-      seed: variationSeed,
-      folder,
-      themeHint,
-    });
-    if (libPath) {
-      opts.usedLibraryPaths.add(libPath);
-      return { ok: true, imagePath: libPath, prompt, provider: 'library' };
-    }
+    // Jamais de biblio silencieuse pour masquer un échec IA.
+    // Photo biblio uniquement si explicitement demandée (preferLibrary / feed).
+    console.error('[social-ai-image] cascade image échouée — pas de fallback biblio silencieux', cascade.error);
     return { ok: false, error: cascade.error };
   }
 

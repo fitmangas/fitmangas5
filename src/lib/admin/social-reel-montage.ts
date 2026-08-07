@@ -195,23 +195,6 @@ function estimateDurationFromScript(script: string, shotList: string): number {
   return Math.max(8, Math.min(45, Math.round(words / 2.2) + 2));
 }
 
-function fallbackPlan(post: SocialPost): ClaudeReelPlan {
-  const hookTitle = (post.hookTitle || post.title || 'FitMangas').trim().slice(0, 90);
-  const durationSeconds = estimateDurationFromScript(post.reelScript, post.shotList);
-  const raw = (post.reelScript || post.caption || hookTitle)
-    .split(/[\n.!?]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 8)
-    .slice(0, 8);
-  const slice = durationSeconds / Math.max(1, raw.length);
-  const captions = raw.map((text, i) => ({
-    start: Number((2.5 + i * slice).toFixed(2)),
-    end: Number((2.5 + (i + 1) * slice - 0.15).toFixed(2)),
-    text: text.slice(0, 70),
-  }));
-  return { hookTitle, durationSeconds, captions };
-}
-
 /** Claude produit le plan de montage (hook + sous-titres timed) à partir du brief — pas de Whisper. */
 export async function planReelWithClaude(post: SocialPost): Promise<ClaudeReelPlan> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim();
@@ -269,7 +252,9 @@ Réponds UNIQUEMENT JSON valide:
     .map((c) => c.text!)
     .join('\n');
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return fallbackPlan(post);
+  if (!match) {
+    throw new Error('Plan montage à revoir : JSON Claude introuvable.');
+  }
 
   try {
     const parsed = JSON.parse(match[0]) as Partial<ClaudeReelPlan>;
@@ -287,10 +272,15 @@ Réponds UNIQUEMENT JSON valide:
           }))
           .filter((c) => c.text && c.end > c.start)
       : [];
-    if (!captions.length) return { ...fallbackPlan(post), hookTitle, durationSeconds };
+    if (!captions.length) {
+      throw new Error('Plan montage à revoir : aucune caption valide dans le JSON Claude.');
+    }
     return { hookTitle, durationSeconds, captions };
-  } catch {
-    return fallbackPlan(post);
+  } catch (e) {
+    if (e instanceof Error && /à revoir/i.test(e.message)) throw e;
+    throw new Error(
+      `Plan montage à revoir : ${e instanceof Error ? e.message : 'parse JSON Claude échoué'}.`,
+    );
   }
 }
 

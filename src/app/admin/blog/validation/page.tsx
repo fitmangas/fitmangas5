@@ -45,6 +45,10 @@ export default async function AdminBlogValidationPage() {
         title_es,
         content_en,
         content_es,
+        description_es,
+        meta_description_fr,
+        meta_description_es,
+        seo_keywords,
         slug_fr,
         status,
         published_at,
@@ -146,6 +150,10 @@ export default async function AdminBlogValidationPage() {
             title_es: string | null;
             content_en: string | null;
             content_es: string | null;
+            description_es: string | null;
+            meta_description_fr: string | null;
+            meta_description_es: string | null;
+            seo_keywords: string | null;
             blog_categories: { label_fr: string } | null;
           } | null;
 
@@ -182,7 +190,16 @@ export default async function AdminBlogValidationPage() {
           const translationReady = hasCompleteSpanishTranslation({
             title_es: article.title_es,
             content_es: article.content_es,
+            description_es: article.description_es,
+            meta_description_es: article.meta_description_es,
+            title_fr: article.title_fr,
+            description_fr: article.description_fr,
+            content_fr: article.content_fr,
+            meta_description_fr: article.meta_description_fr,
+            seo_keywords: article.seo_keywords,
           });
+          const imageFallback =
+            typeof article.seo_keywords === 'string' && /imageSource:fallback/i.test(article.seo_keywords);
 
           return (
             <section key={row.id} className="glass-card rounded-2xl border border-white/40 p-6">
@@ -213,6 +230,11 @@ export default async function AdminBlogValidationPage() {
                     >
                       {translationReady ? 'ES prête' : 'ES manquante'}
                     </span>
+                    {imageFallback ? (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-800">
+                        imageSource:fallback
+                      </span>
+                    ) : null}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     <ValidationPreviewModal

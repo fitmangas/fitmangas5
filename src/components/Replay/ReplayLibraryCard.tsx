@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 
 import { toggleReplayFavoriteAction } from '@/app/compte/actions';
+import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { liveCourseHref } from '@/lib/live/live-back-url';
 import type { ReplayLibraryItem } from '@/lib/replay-library';
 
@@ -36,7 +37,11 @@ function formatDuration(seconds: number | null): string {
   return `${m} min`;
 }
 
-function progressLabel(progressSeconds: number | null | undefined, durationSeconds: number | null, prefix: string): string | null {
+function progressLabel(
+  progressSeconds: number | null | undefined,
+  durationSeconds: number | null,
+  prefix: string,
+): string | null {
   if (progressSeconds == null || progressSeconds <= 0) return null;
   if (durationSeconds != null && durationSeconds > 0) {
     const pct = Math.min(100, Math.round((progressSeconds / durationSeconds) * 100));
@@ -57,7 +62,8 @@ export function ReplayLibraryCard({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [fav, setFav] = useState(item.isFavorite ?? false);
-  const playable = item.isPlayable !== false;
+  const playable = item.isPlayable === true && item.playbackStatus === 'ready';
+  const unknownStatus = item.playbackStatus === 'unknown';
 
   useEffect(() => {
     setFav(item.isFavorite ?? false);
@@ -73,6 +79,7 @@ export function ReplayLibraryCard({
           available: 'Replay available · Fit Mangas',
           play: 'Play',
           soon: 'Coming soon',
+          unknown: 'Status unknown · retry later',
           preview: 'Video preview',
           resumeAt: 'Resume at',
         }
@@ -84,6 +91,7 @@ export function ReplayLibraryCard({
             available: 'Replay disponible · Fit Mangas',
             play: 'Ver replay',
             soon: 'Pronto disponible',
+            unknown: 'Estado desconocido · reintentar',
             preview: 'Vista previa de video',
             resumeAt: 'Reanudar en',
           }
@@ -94,9 +102,11 @@ export function ReplayLibraryCard({
             available: 'Replay disponible · Fit Mangas',
             play: 'Lecture',
             soon: 'Bientôt disponible',
+            unknown: 'Statut inconnu · réessayer',
             preview: 'Aperçu vidéo',
             resumeAt: 'Reprise à',
           };
+  const statusLabel = playable ? t.available : unknownStatus ? t.unknown : t.soon;
   const replayLabel = item.replayTitle?.trim();
   const showReplaySubtitle =
     replayLabel &&
@@ -132,6 +142,13 @@ export function ReplayLibraryCard({
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.88] via-black/28 to-transparent" />
 
+      {/* Drapeau langue — coin haut-gauche, visible avant le clic */}
+      {item.courseLanguage ? (
+        <span className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg shadow-md backdrop-blur-md md:h-10 md:w-10 md:text-xl">
+          <CourseLanguageFlag language={item.courseLanguage} uiLang={lang} className="text-lg md:text-xl" />
+        </span>
+      ) : null}
+
       {item.durationSeconds ? (
         <span className="absolute right-3 top-3 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold tabular-nums text-white backdrop-blur-md">
           {formatDuration(item.durationSeconds)}
@@ -145,8 +162,12 @@ export function ReplayLibraryCard({
       ) : null}
 
       {!playable ? (
-        <span className="absolute left-3 top-3 rounded-full bg-[#C45D3E] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white shadow-md">
-          {t.soon}
+        <span
+          className={`absolute bottom-28 left-3 z-10 max-w-[70%] rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white shadow-md md:bottom-32 ${
+            unknownStatus ? 'bg-amber-600/95' : 'bg-[#C45D3E]'
+          }`}
+        >
+          {unknownStatus ? t.unknown : t.soon}
         </span>
       ) : null}
 
@@ -167,7 +188,7 @@ export function ReplayLibraryCard({
       {showReplaySubtitle ? (
         <p className="text-[13px] leading-relaxed text-luxury-muted">&ldquo;{replayLabel}&rdquo;</p>
       ) : (
-        <p className="text-[13px] leading-relaxed text-luxury-soft">{playable ? t.available : t.soon}</p>
+        <p className="text-[13px] leading-relaxed text-luxury-soft">{statusLabel}</p>
       )}
       {playable ? (
         <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-luxury-orange transition group-hover:gap-3">
@@ -178,7 +199,7 @@ export function ReplayLibraryCard({
         </span>
       ) : (
         <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-luxury-muted">
-          {t.soon}
+          {unknownStatus ? t.unknown : t.soon}
         </span>
       )}
     </div>
@@ -186,12 +207,13 @@ export function ReplayLibraryCard({
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/35 bg-white/[0.32] shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur-[20px] transition-all duration-200 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-white/55 hover:shadow-[0_16px_34px_rgba(15,23,42,0.13)]">
+      {/* Favori en bas-droite du media — laisse le drapeau libre en haut-gauche */}
       <button
         type="button"
         onClick={onFavoriteClick}
         disabled={pending}
         title={fav ? t.removeFav : t.addFav}
-        className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/40 text-white shadow-lg shadow-black/20 backdrop-blur-md transition hover:bg-slate-900/55 disabled:opacity-50"
+        className="absolute right-4 top-[38%] z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900/40 text-white shadow-lg shadow-black/20 backdrop-blur-md transition hover:bg-slate-900/55 disabled:opacity-50"
         aria-label={fav ? t.removeFav : t.addFav}
       >
         <Heart size={20} className={fav ? 'fill-rose-400 text-rose-400' : 'text-white'} aria-hidden />

@@ -146,35 +146,42 @@ export function resolveExistingLibraryPath(publicPath: string | null | undefined
   return null;
 }
 
-/** Garantit 7 chemins carousel ; remappe les 404 locaux. */
+/**
+ * Résout les chemins carousel existants — NE remplit / NE duplique JAMAIS une slide manquante.
+ * Les trous restent des chaînes vides ; l’appelant doit échouer si count < 6.
+ */
 export function sanitizeCarouselPaths(paths: string[] | null | undefined): string[] {
-  const CTA = '/library/produit-captures/produit-dashboard-02-4x5.webp';
-  const pool = listProductCapturePaths();
+  const source = Array.isArray(paths) ? paths.slice(0, 6) : [];
   const out: string[] = [];
-  const source = Array.isArray(paths) ? paths : [];
-  for (let i = 0; i < 7; i += 1) {
-    const raw = source[i] || null;
+  for (let i = 0; i < 6; i += 1) {
+    const raw = (source[i] || '').trim();
+    if (!raw) {
+      out.push('');
+      continue;
+    }
     const resolved = resolveExistingLibraryPath(raw);
     if (resolved) {
       out.push(resolved);
       continue;
     }
-    if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
+    if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/library/social/')) {
       out.push(raw);
       continue;
     }
-    if (i === 6) {
-      out.push(resolveExistingLibraryPath(CTA) || pool[0] || CTA);
-    } else {
-      out.push(
-        out[i - 1] ||
-          pool.find((p) => !out.includes(p)) ||
-          pool[0] ||
-          CTA,
-      );
-    }
+    // Chemin local mort → trou explicite (pas de duplicata)
+    out.push('');
   }
   return out;
+}
+
+/** Nombre de slides non vides (après sanitize). */
+export function countValidCarouselSlides(paths: string[] | null | undefined): number {
+  return (paths ?? []).filter((p) => Boolean(p?.trim())).length;
+}
+
+export function carouselHasMissingSlides(paths: string[] | null | undefined, required = 6): boolean {
+  const sanitized = sanitizeCarouselPaths(paths);
+  return sanitized.length < required || sanitized.some((p) => !p.trim()) || countValidCarouselSlides(sanitized) < required;
 }
 
 export function folderForTheme(theme: string): LibraryFolderId {
