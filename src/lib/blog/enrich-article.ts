@@ -55,12 +55,15 @@ export async function enrichArticleBodyHtml(params: {
   title: string;
   contentHtml: string;
   description?: string | null;
+  /** Défaut true (articles publiés). false = brouillons / non indexés. */
+  requireSubstantialRewrite?: boolean;
 }): Promise<EnrichArticleResult> {
   const wordsBefore = countBodyWords(params.contentHtml);
   const bodyOnly = stripValidatedBlogCta(params.contentHtml);
+  const requireSubstantial = params.requireSubstantialRewrite !== false;
 
   const system = `Tu es rédactrice SEO senior (FitMangas / Alejandra, coach Pilates & Barre).
-Tu ENRICHIS un article déjà publié : réécriture substantielle (>30% du contenu réellement retravaillé), pas un polish cosmétique.
+Tu ENRICHIS un article : réécriture substantielle (>30% du contenu réellement retravaillé), pas un polish cosmétique.
 Cible: ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots de contenu RÉEL et unique.
 INTERDIT: remplissage creux, reformulations vides, promesse médicale / perte de poids.
 Si le sujet ne porte pas ${BLOG_TARGET_WORDS_MIN} mots utiles, préfère ~900 mots denses plutôt que diluer.
@@ -130,7 +133,7 @@ Consignes:
   }
 
   const rewriteRatio = substantialRewriteRatio(params.contentHtml, cleaned);
-  if (rewriteRatio < BLOG_SUBSTANTIAL_REWRITE_MIN_RATIO) {
+  if (requireSubstantial && rewriteRatio < BLOG_SUBSTANTIAL_REWRITE_MIN_RATIO) {
     return {
       ok: false,
       reason: 'insufficient_rewrite',

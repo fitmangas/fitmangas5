@@ -15,6 +15,17 @@ export const FALLBACK_CONTENT_MARKERS = [
   'Ce que tu peux retenir',
 ] as const;
 
+/** Marqueurs suffisamment spécifiques pour conclure « template » à eux seuls. */
+const FALLBACK_STRONG_MARKERS = [
+  'Pourquoi ce sujet change ta pratique',
+  'Un guide concret pour progresser en pilates',
+  '3 actions simples à appliquer cette semaine',
+  'Ce guide t\'aide à avancer concrètement',
+] as const;
+
+/** Marqueurs trop génériques seuls — exigent un 2ᵉ signal. */
+const FALLBACK_WEAK_MARKERS = ['Le contexte concret', 'Exemple terrain', 'Ce que tu peux retenir'] as const;
+
 /** CTA de fin validé (à conserver tel quel en queue d’article). */
 export const BLOG_VALIDATED_CTA_HTML =
   '<p>Si cet article t\'aide, note-le et partage-le à une amie qui veut reprendre en douceur.</p>';
@@ -120,8 +131,11 @@ export function sanitizeBlogContentHtml(html: string): string {
 /** Détecte le HTML/description issus de l’ancien fallbackContent template. */
 export function looksLikeFallbackTemplate(contentHtml: string, description?: string | null): boolean {
   const haystack = `${contentHtml ?? ''}\n${description ?? ''}`;
-  if (FALLBACK_CONTENT_MARKERS.some((marker) => haystack.includes(marker))) return true;
   if (containsArticlePilatesPlaceholder(haystack)) return true;
+  if (FALLBACK_STRONG_MARKERS.some((marker) => haystack.includes(marker))) return true;
+  const weakHits = FALLBACK_WEAK_MARKERS.filter((marker) => haystack.includes(marker)).length;
+  // Un seul « Exemple terrain » dans un article réel ≠ template ; 2+ signaux faibles = oui.
+  if (weakHits >= 2) return true;
   return (
     looksLikeGenericBlogOpener(description ?? '') ||
     looksLikeGenericBlogOpener(stripHtmlToText(contentHtml ?? ''))

@@ -173,7 +173,7 @@ export async function tryGenerateFrenchArticle(params: {
       system,
       user,
       temperature: 0.85,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 12288,
     },
     params.providerOrder,
   );
@@ -223,7 +223,7 @@ async function retryParseAcrossProviders(
       system,
       user,
       temperature: 0.9,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 12288,
     });
     if (!result.ok) continue;
     const parsed = parseGeneratedArticle(result.text, result.provider, result.model);

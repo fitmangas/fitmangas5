@@ -7,6 +7,13 @@ import { MarketingAiAdvisor } from '@/components/Admin/marketing/MarketingAiAdvi
 import { MarketingAnalyticsLive } from '@/components/Admin/marketing/MarketingAnalyticsLive';
 import { MarketingEditorialCalendarSection } from '@/components/Admin/marketing/MarketingEditorialCalendarSection';
 import { MarketingSearchConsoleLive } from '@/components/Admin/marketing/MarketingSearchConsoleLive';
+import { SeoExcellencePillarActions } from '@/components/Admin/marketing/SeoExcellencePillarActions';
+import {
+  seoActionStatusLabel,
+  seoPillarStatusBadgeClass,
+  type SeoActionStatus,
+  type SeoExcellenceAction,
+} from '@/components/Admin/marketing/seo-excellence-status';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
@@ -650,7 +657,13 @@ async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
       getSearchTopPages(28, 50),
       getIndexingStatus(),
     ]);
-    return { available: true, overview, queries, topPages, indexing };
+    return {
+      available: true,
+      overview: overview ?? null,
+      queries: Array.isArray(queries) ? queries : [],
+      topPages: Array.isArray(topPages) ? topPages : [],
+      indexing: indexing ?? null,
+    };
   } catch (e) {
     return {
       available: false,
@@ -777,11 +790,12 @@ function buildMarketingKpis({
   gaSummary: GaSummary;
   subscriptionStats: SubscriptionStats;
 }) {
+  const topPages = safeTopPages(searchConsoleSummary);
   const searchClicks =
-    searchConsoleSummary.overview?.clicks ?? searchConsoleSummary.topPages.reduce((sum, row) => sum + row.clicks, 0);
+    searchConsoleSummary.overview?.clicks ?? topPages.reduce((sum, row) => sum + (row.clicks ?? 0), 0);
   const searchImpressions =
     searchConsoleSummary.overview?.impressions ??
-    searchConsoleSummary.topPages.reduce((sum, row) => sum + row.impressions, 0);
+    topPages.reduce((sum, row) => sum + (row.impressions ?? 0), 0);
   const avgPosition = searchConsoleSummary.overview?.position ?? null;
   const indexing = searchConsoleSummary.indexing;
 
@@ -863,8 +877,6 @@ function buildMarketingKpis({
   ] satisfies Array<{ label: string; value: string; detail: string; info: string; tone: KpiTone }>;
 }
 
-type SeoActionStatus = 'done' | 'in_progress' | 'todo';
-
 type SeoExcellencePlan = {
   score: number;
   level: string;
@@ -876,19 +888,14 @@ type SeoExcellencePlan = {
     title: string;
     goal: string;
     status: SeoActionStatus;
-    actions: Array<{ text: string; status: SeoActionStatus }>;
+    actions: SeoExcellenceAction[];
   }>;
 };
 
 const SEO_PILLAR_PATHS = SEO_PILLAR_PAGES.map((page) => `/${page.slug}`);
 
-function seoActionStatusLabel(status: SeoActionStatus): string {
-  if (status === 'done') return 'Fait';
-  if (status === 'in_progress') return 'En cours';
-  return 'À faire';
-}
-
-function pillarPageMatchesTopPage(pageUrl: string, pillarPath: string): boolean {
+function pillarPageMatchesTopPage(pageUrl: string | null | undefined, pillarPath: string): boolean {
+  if (!pageUrl || typeof pageUrl !== 'string') return false;
   try {
     const pathname = new URL(pageUrl).pathname.replace(/\/$/, '') || '/';
     return pathname === pillarPath || pathname.endsWith(pillarPath);
@@ -896,6 +903,13 @@ function pillarPageMatchesTopPage(pageUrl: string, pillarPath: string): boolean 
     const normalized = pageUrl.replace(/\/$/, '');
     return normalized.endsWith(pillarPath);
   }
+}
+
+/** Toujours un tableau — GSC/GA absents ou partiels ne doivent jamais planter le rendu. */
+function safeTopPages(
+  summary: SearchConsoleSummary | null | undefined,
+): Array<{ page: string; clicks: number; impressions: number }> {
+  return Array.isArray(summary?.topPages) ? summary.topPages : [];
 }
 
 function buildSeoExcellencePlan({
@@ -909,12 +923,14 @@ function buildSeoExcellencePlan({
   gaSummary: GaSummary;
   subscriptionStats: SubscriptionStats;
 }): SeoExcellencePlan {
-  const overview = searchConsoleSummary.overview;
+  const overview = searchConsoleSummary?.overview ?? null;
   const avgPosition = overview?.position ?? null;
   const impressions = overview?.impressions ?? 0;
   const clicks = overview?.clicks ?? 0;
-  const keyEvents = gaSummary.keyEvents30d ?? 0;
-  const gscOk = searchConsoleSummary.available;
+  const keyEvents = gaSummary?.keyEvents30d ?? 0;
+  const gscOk = Boolean(searchConsoleSummary?.available);
+  const activeSubscribers = subscriptionStats?.activeSubscribers ?? 0;
+  const failedPayments = subscriptionStats?.failedPayments ?? 0;
   const checks = [
     articlesPublished >= 40,
     articlesPublished >= 80,
@@ -922,11 +938,11 @@ function buildSeoExcellencePlan({
     clicks >= 50,
     avgPosition != null && avgPosition <= 10,
     keyEvents > 0,
-    subscriptionStats.activeSubscribers >= 10,
-    subscriptionStats.failedPayments === 0,
+    activeSubscribers >= 10,
+    failedPayments === 0,
   ];
   const completedChecks = checks.filter(Boolean).length;
-  const score = Math.round((completedChecks / checks.length) * 100);
+  const score = checks.length > 0 ? Math.round((completedChecks / checks.length) * 100) : 0;
 
   const level =
     score >= 80
@@ -938,10 +954,11 @@ function buildSeoExcellencePlan({
           : 'Démarrage SEO';
 
   // Proxy d’indexation déjà dispo : impressions GSC sur les URLs piliers (pas de nouvel appel API).
+  const topPages = safeTopPages(searchConsoleSummary);
   const pillarHits = SEO_PILLAR_PATHS.map((path) => {
-    const rows = searchConsoleSummary.topPages.filter((row) => pillarPageMatchesTopPage(row.page, path));
-    const pageImpressions = rows.reduce((sum, row) => sum + row.impressions, 0);
-    const pageClicks = rows.reduce((sum, row) => sum + row.clicks, 0);
+    const rows = topPages.filter((row) => pillarPageMatchesTopPage(row?.page, path));
+    const pageImpressions = rows.reduce((sum, row) => sum + (row.impressions ?? 0), 0);
+    const pageClicks = rows.reduce((sum, row) => sum + (row.clicks ?? 0), 0);
     return { path, impressions: pageImpressions, clicks: pageClicks, visible: pageImpressions > 0 };
   });
   const pillarsVisible = pillarHits.filter((row) => row.visible).length;
@@ -951,8 +968,7 @@ function buildSeoExcellencePlan({
     articlesPublished >= 60 ? 'done' : articlesPublished >= 30 ? 'in_progress' : 'todo';
   const visibilityStatus: SeoActionStatus =
     impressions >= 500 ? 'done' : impressions > 0 ? 'in_progress' : 'todo';
-  const trafficStatus: SeoActionStatus = clicks >= 50 ? 'done' : clicks > 0 ? 'in_progress' : 'todo';
-  const conversionStatus: SeoActionStatus = keyEvents > 0 ? 'done' : gaSummary.available ? 'in_progress' : 'todo';
+  const conversionStatus: SeoActionStatus = keyEvents > 0 ? 'done' : gaSummary?.available ? 'in_progress' : 'todo';
 
   const pillarsStatus: SeoActionStatus = !gscOk
     ? 'in_progress'
@@ -1036,7 +1052,13 @@ function buildSeoExcellencePlan({
                 : pillarsVisible >= 3
                   ? 'Les 3 pages piliers ont des impressions GSC → signal d’indexation effective.'
                   : `${pillarsVisible}/3 pages piliers avec impressions GSC — surveiller les absentes, sans relancer une indexation « à l’aveugle ».`,
-            status: !gscOk ? 'todo' : pillarsVisible >= 3 ? 'done' : pillarsVisible > 0 ? 'in_progress' : 'todo',
+            status: !gscOk
+              ? 'todo'
+              : pillarsVisible >= 3
+                ? 'done'
+                : pillarsVisible > 0
+                  ? 'watching'
+                  : 'todo',
           },
           {
             text: 'Renforcer le maillage interne : lier chaque page pilier à 8–12 articles du blog.',
@@ -1050,7 +1072,7 @@ function buildSeoExcellencePlan({
             text: gscOk
               ? `Suivre impressions + clics des 3 URLs piliers dans Search Console (${pillarsVisible}/3 visibles ce mois).`
               : 'Suivre impressions + clics des 3 URLs piliers dès que Search Console répond.',
-            status: gscOk ? (pillarsVisible >= 3 ? 'done' : 'in_progress') : 'todo',
+            status: gscOk ? 'watching' : 'todo',
           },
         ],
       },
@@ -1108,7 +1130,7 @@ function buildSeoExcellencePlan({
         goal:
           keyEvents > 0
             ? `${formatCompact(keyEvents)} key events GA4 / 30j — conversions mesurées ; optimiser le tunnel.`
-            : gaSummary.available
+            : gaSummary?.available
               ? 'GA4 répond mais 0 key event / 30j — vérifier le marquage des conversions (essai, checkout, abo).'
               : 'GA4 indisponible ici — conseil neutre : brancher et marquer les key events dès que possible.',
         status: conversionStatus,
@@ -1118,7 +1140,7 @@ function buildSeoExcellencePlan({
               keyEvents > 0
                 ? 'Key events GA4 actifs — surveiller begin_trial_click, begin_checkout, trial_started, purchase.'
                 : 'Marquer dans GA4 les key events : essai, checkout, trial démarré, abonnement.',
-            status: keyEvents > 0 ? 'done' : 'todo',
+            status: keyEvents > 0 ? 'watching' : 'todo',
           },
           {
             text: 'Ajouter FAQ, avis clientes, bénéfices concrets et captures de l’expérience visio.',
@@ -1144,14 +1166,14 @@ function buildSeoExcellencePlan({
           },
           {
             text: 'Après gros changements de contenu, vérifier dans GSC que les URLs touchées restent couvertes (sans relancer l’indexation « en masse »).',
-            status: gscOk ? 'in_progress' : 'todo',
+            status: gscOk ? 'watching' : 'todo',
           },
           {
             text:
               avgPosition != null && avgPosition > 10
                 ? `Prioriser les requêtes positions 11–30 (position moyenne actuelle : ${avgPosition.toFixed(1)}).`
                 : 'Suivre les requêtes où FitMangas est positions 11–30 : ce sont les victoires les plus proches.',
-            status: trafficStatus === 'done' ? 'done' : visibilityStatus === 'todo' ? 'todo' : 'in_progress',
+            status: visibilityStatus === 'todo' ? 'todo' : 'watching',
           },
         ],
       },
@@ -1160,6 +1182,10 @@ function buildSeoExcellencePlan({
 }
 
 function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
+  const milestones = Array.isArray(plan?.milestones) ? plan.milestones : [];
+  const pillars = Array.isArray(plan?.pillars) ? plan.pillars : [];
+  const score = typeof plan?.score === 'number' && Number.isFinite(plan.score) ? Math.max(0, Math.min(100, plan.score)) : 0;
+
   return (
     <section className="rounded-[2rem] border border-[#C45D3E]/20 bg-[#FFFAF5]/95 p-5 shadow-[0_18px_42px_rgba(120,80,20,0.08)] backdrop-blur-xl md:p-6">
       {/* Score en bandeau pleine largeur — plus de split 0.85/1.4 qui écrasait les conseils */}
@@ -1168,14 +1194,14 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
           <div className="min-w-0 max-w-3xl">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Objectif SEO excellence</p>
             <div className="mt-3 flex flex-wrap items-end gap-3">
-              <p className="text-5xl font-semibold leading-none text-luxury-ink">{plan.score}%</p>
-              <p className="pb-1 text-sm font-semibold text-[#C45D3E]">{plan.level}</p>
+              <p className="text-5xl font-semibold leading-none text-luxury-ink">{score}%</p>
+              <p className="pb-1 text-sm font-semibold text-[#C45D3E]">{plan?.level || '—'}</p>
             </div>
             <div className="mt-4 h-2 max-w-md overflow-hidden rounded-full bg-brand-sand/70">
-              <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${plan.score}%` }} />
+              <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${score}%` }} />
             </div>
-            <p className="mt-2 text-[11px] font-medium text-luxury-soft">{plan.scoreDetail}</p>
-            <p className="mt-3 text-sm leading-6 text-luxury-muted">{plan.summary}</p>
+            <p className="mt-2 text-[11px] font-medium text-luxury-soft">{plan?.scoreDetail || 'KPIs non disponibles'}</p>
+            <p className="mt-3 text-sm leading-6 text-luxury-muted">{plan?.summary || 'Données Search Console / GA4 absentes pour l’instant.'}</p>
           </div>
           <p className="max-w-md shrink-0 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950 md:max-w-xs">
             Payer peut aider à tester et vendre plus vite via Google Ads, mais ne fait pas monter directement le SEO naturel.
@@ -1186,7 +1212,7 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
 
       {/* Jalons : auto-fit, largeur mini pour éviter l’écrasement */}
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
-        {plan.milestones.map((item) => (
+        {milestones.map((item) => (
           <div key={item.label} className="min-w-0 rounded-[1.35rem] border border-white/70 bg-white/70 p-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">{item.label}</p>
             <p className="mt-2 break-words text-lg font-semibold leading-snug text-luxury-ink">{item.current}</p>
@@ -1208,7 +1234,7 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
 
       {/* Conseils : 1 col mobile → 2 → max 3 ; jamais 5 colonnes serrées */}
       <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-        {plan.pillars.map((pillar) => (
+        {pillars.map((pillar) => (
           <article
             key={pillar.title}
             className="min-w-0 rounded-[1.35rem] border border-white/70 bg-white/70 p-4 sm:p-5"
@@ -1216,36 +1242,13 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
               <span
-                className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${
-                  pillar.status === 'done'
-                    ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200'
-                    : pillar.status === 'in_progress'
-                      ? 'bg-amber-50 text-amber-950 ring-1 ring-amber-200'
-                      : 'bg-stone-100 text-stone-700 ring-1 ring-stone-200'
-                }`}
+                className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${seoPillarStatusBadgeClass(pillar.status)}`}
               >
                 {seoActionStatusLabel(pillar.status)}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-luxury-muted">{pillar.goal}</p>
-            <ul className="mt-4 space-y-3">
-              {pillar.actions.map((action) => (
-                <li key={action.text} className="min-w-0 rounded-xl border border-[#C45D3E]/10 bg-[#FFFAF5]/80 px-3 py-2.5">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
-                      action.status === 'done'
-                        ? 'bg-emerald-50 text-emerald-900'
-                        : action.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-950'
-                          : 'bg-stone-100 text-stone-600'
-                    }`}
-                  >
-                    {seoActionStatusLabel(action.status)}
-                  </span>
-                  <p className="mt-1.5 text-sm leading-6 text-luxury-ink/80">{action.text}</p>
-                </li>
-              ))}
-            </ul>
+            <SeoExcellencePillarActions actions={pillar.actions} />
           </article>
         ))}
       </div>
