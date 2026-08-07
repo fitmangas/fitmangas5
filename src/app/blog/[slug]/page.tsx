@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { BlogArticleShell } from '@/components/Blog/BlogArticleShell';
+import { alejandraPersonJsonLd } from '@/lib/blog/author-alejandra';
 import {
   fetchAnyArticleBySlugParam,
   fetchAnyArticleBySlugParamAdmin,
@@ -169,7 +170,7 @@ function BlogArticleJsonLd({ article }: { article: unknown }) {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'BlogPosting',
+        '@type': ['BlogPosting', 'Article'],
         headline: row.title_fr,
         description: row.meta_description_fr ?? row.description_fr,
         image: row.featured_image_url ? [row.featured_image_url] : [`${APP_URL}/og-default.jpg`],
@@ -177,10 +178,7 @@ function BlogArticleJsonLd({ article }: { article: unknown }) {
         dateModified: row.updated_at ?? row.published_at,
         mainEntityOfPage: url,
         url,
-        author: {
-          '@type': 'Person',
-          name: 'Alejandra — FitMangas',
-        },
+        author: alejandraPersonJsonLd(),
         publisher: {
           '@type': 'Organization',
           name: 'FitMangas',

@@ -101,7 +101,7 @@ Réponds STRICTEMENT en JSON avec les clés:
 - title_fr, title_es (titres SEO 45 à 59 caractères chacun — STRICTEMENT moins de 60)
 - meta_description_fr, meta_description_es (140 à 159 caractères — STRICTEMENT moins de 160)
 - description_fr, description_es (chapo 1-2 phrases, texte brut sans HTML)
-- content_fr, content_es (article complet 800 à 1000 mots en FR et sa traduction ES complète ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; inclure une courte FAQ en fin d'article)
+- content_fr, content_es (article complet : cible 1200 à 1800 mots de contenu RÉEL en FR et sa traduction ES ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin d'article. INTERDIT le remplissage creux : si le sujet ne porte pas 1200 mots utiles, préfère ~900 mots denses)
 - seo_keywords: string (5 à 8 mots-clés longue traîne séparés par virgules)
 - slug_suggestion: slug latin minuscules tirets, sans accents
 

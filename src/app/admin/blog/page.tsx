@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, ClipboardCheck, Mail } from 'lucide-react';
+import { BarChart3, ClipboardCheck, Mail, RefreshCw } from 'lucide-react';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { GenerateSeoArticleButton } from '@/components/Admin/blog/GenerateSeoArticleButton';
 
@@ -12,6 +12,12 @@ export default async function AdminBlogHubPage() {
       title: 'Validation mensuelle',
       desc: 'Valider les 8 articles du mois avant publication.',
       icon: ClipboardCheck,
+    },
+    {
+      href: '/admin/blog/refresh',
+      title: 'Mise à jour progressive',
+      desc: 'Liste priorisée + lots de 3–5 (longueur / GSC). Pas de réécriture en masse.',
+      icon: RefreshCw,
     },
     {
       href: '/admin/blog/stats',

@@ -4,6 +4,8 @@ import {
 } from '@/lib/blog/ai-providers';
 import {
   BLOG_MIN_BODY_WORDS,
+  BLOG_TARGET_WORDS_MAX,
+  BLOG_TARGET_WORDS_MIN,
   containsArticlePilatesPlaceholder,
   countBodyWords,
   ensureValidatedBlogCta,
@@ -73,7 +75,7 @@ Objectif stratégique FitMangas: clusters SEO autour de:
 - Pilates débutant à la maison (/pilates-debutant-maison)
 
 Retourne STRICTEMENT un JSON avec ces clés:
-- contentHtml (article HTML UNIQUE, 700 à 950 mots, balises <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin AVANT le CTA)
+- contentHtml (article HTML UNIQUE, cible ${BLOG_TARGET_WORDS_MIN} à ${BLOG_TARGET_WORDS_MAX} mots de contenu RÉEL ; balises <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin AVANT le CTA)
 - description (120 à 159 caractères, STRICTEMENT moins de 160)
 - metaDescription (140 à 159 caractères, STRICTEMENT moins de 160)
 - seoKeywords (5 à 8 mots-clés longue traîne séparés par virgules)`;
@@ -89,6 +91,7 @@ Date publication: ${params.publishDateIso}
 
 Règles de RÉDACTION (obligatoires):
 - Chaque article = contenu ORIGINAL rédigé pour CE sujet. Pas de texte recyclé.
+- LONGUEUR : viser ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots de vraie valeur (exemples terrain, nuances, erreurs courantes, variations d'exercices, FAQ utile). INTERDIT le remplissage creux, les reformulations vides et le padding. Si le sujet ne porte pas ${BLOG_TARGET_WORDS_MIN} mots utiles, préfère ~900 mots denses plutôt que 1500 dilués — mais jamais sous le plancher ${BLOG_MIN_BODY_WORDS}.
 - Les intertitres <h2>/<h3> doivent être SPÉCIFIQUES au sujet (ex. "Respiration latérale au bureau", "Quand 15 minutes battent une heure"). INTERDIT d'utiliser les titres de section figés suivants: "Pourquoi ce sujet change ta pratique", "Le contexte concret", "3 actions simples à appliquer cette semaine", "Exemple terrain", "Ce que tu peux retenir".
 - INTERDIT ABSOLU: "Article pilates N", "mouvement & souffle", tout placeholder non résolu, "Un guide concret pour progresser en pilates autour de…".
 - Viser une intention de recherche précise liée au sujet
@@ -97,7 +100,7 @@ Règles de RÉDACTION (obligatoires):
 - INTERDIT de reprendre l'angle précédent: ${params.lastAngle ?? '(aucun)'}
 - Angles récents à ne pas recycler: ${avoidAngles}
 - Intro = problème concret DU sujet (pas une amorce générique)
-- 3-5 conseils concrets propres au sujet + une mini-story réaliste
+- 4-6 conseils concrets propres au sujet + une mini-story réaliste
 - FAQ courte (2-3 questions) liées au sujet
 - NE PAS écrire le CTA final toi-même (le système l'ajoute). Termine après la FAQ.
 - Pas de liens HTML externes ; pas de promesse médicale / perte de poids / guérison

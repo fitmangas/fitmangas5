@@ -12,6 +12,7 @@ import { BlogShareButtons } from '@/components/Blog/BlogShareButtons';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { pickLocalizedArticle } from '@/lib/blog/localize';
+import { BLOG_AUTHOR_ALEJANDRA } from '@/lib/blog/author-alejandra';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import type { BlogLang } from '@/types/blog';
 
@@ -129,6 +130,15 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">{catLabel ?? 'Blog'}</p>
         <h1 className="hero-signature-title mt-4 text-3xl sm:text-4xl">{loc.title}</h1>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-luxury-muted">
+          <span>
+            {lang === 'es' ? 'Por' : 'Par'}{' '}
+            <strong className="font-semibold text-luxury-ink">{BLOG_AUTHOR_ALEJANDRA.name}</strong>
+            <span className="text-luxury-soft">
+              {' '}
+              — {lang === 'es' ? BLOG_AUTHOR_ALEJANDRA.roleShortEs : BLOG_AUTHOR_ALEJANDRA.roleShortFr}
+            </span>
+          </span>
+          <span>·</span>
           <span>{date}</span>
           <span>·</span>
           <span>⏱ ~{readingMinutes(loc.content)} min</span>
@@ -154,6 +164,19 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
             ) : null}
             <ArticleProse text={loc.content} />
           </div>
+
+          <aside className="mt-10 rounded-[1.75rem] border border-[#C45D3E]/15 bg-[#FFFAF5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.06)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">
+              {lang === 'es' ? 'Autora' : 'Auteure'}
+            </p>
+            <p className="mt-2 text-base font-semibold text-luxury-ink">{BLOG_AUTHOR_ALEJANDRA.name}</p>
+            <p className="mt-0.5 text-xs font-medium text-[#C45D3E]">
+              {lang === 'es' ? BLOG_AUTHOR_ALEJANDRA.roleShortEs : BLOG_AUTHOR_ALEJANDRA.roleShortFr}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-luxury-muted">
+              {lang === 'es' ? BLOG_AUTHOR_ALEJANDRA.bioEs : BLOG_AUTHOR_ALEJANDRA.bioFr}
+            </p>
+          </aside>
 
           {relatedArticles.length > 0 ? (
             <section className="mt-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">

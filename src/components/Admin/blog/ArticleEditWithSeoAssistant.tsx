@@ -1,10 +1,18 @@
 'use client';
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { PanelRightOpen, Sparkles, X } from 'lucide-react';
 
 import { analyzeArticleSeoAction } from '@/app/admin/blog/actions-article-seo';
+import { enrichPublishedArticleAction } from '@/app/admin/blog/actions-enrich-article';
+import {
+  BLOG_TARGET_WORDS_MAX,
+  BLOG_TARGET_WORDS_MIN,
+  bodyWordLengthLabelFr,
+  countBodyWords,
+  getBodyWordLengthZone,
+} from '@/lib/blog/blog-content-guards';
 
 type Article = {
   id: string;
@@ -80,6 +88,7 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
   const [saved, setSaved] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [enrichMsg, setEnrichMsg] = useState<string | null>(null);
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [seoLoading, setSeoLoading] = useState(false);
@@ -91,6 +100,17 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
     content_advice: string;
   } | null>(null);
   const slugLocked = article.status === 'published';
+
+  const wordCount = useMemo(() => countBodyWords(content), [content]);
+  const lengthZone = useMemo(() => getBodyWordLengthZone(wordCount), [wordCount]);
+  const lengthBadgeClass =
+    lengthZone === 'too_short'
+      ? 'bg-[#f4d4c8] text-[#7a2e1a]'
+      : lengthZone === 'below_ideal'
+        ? 'bg-amber-100 text-amber-950'
+        : lengthZone === 'ideal'
+          ? 'bg-emerald-50 text-emerald-900'
+          : 'bg-stone-100 text-stone-700';
 
   const save = useCallback(() => {
     setErr(null);
@@ -143,6 +163,28 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
     if (seoResult.keywords.length) setKeywords(seoResult.keywords.join(', '));
   }
 
+  function runEnrich() {
+    setErr(null);
+    setEnrichMsg(null);
+    start(async () => {
+      const result = await enrichPublishedArticleAction(article.id);
+      if (!result.ok) {
+        setErr(result.error);
+        if (result.reason === 'insufficient_rewrite' && result.rewriteRatio != null) {
+          setEnrichMsg(
+            `Signal : changement réel ${(result.rewriteRatio * 100).toFixed(0)}% < 30% — aucune fausse MàJ enregistrée.`,
+          );
+        }
+        return;
+      }
+      setContent(result.contentHtml);
+      setEnrichMsg(
+        `Enrichi : ${result.wordsBefore} → ${result.wordsAfter} mots · réécriture ${(result.rewriteRatio * 100).toFixed(0)}% · ${result.provider}/${result.model}. Trad ES invalidée.`,
+      );
+      setSaved('MàJ enregistrée');
+    });
+  }
+
   return (
     <div className="relative mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -184,10 +226,23 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
             Chapô / description
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm" />
           </label>
-          <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">
-            Contenu HTML
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={18} className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 font-mono text-xs leading-relaxed" />
-          </label>
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">Contenu HTML</span>
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${lengthBadgeClass}`}>
+                {bodyWordLengthLabelFr(lengthZone, wordCount)}
+              </span>
+              <span className="text-[10px] text-luxury-soft">
+                Idéal {BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} · pas de remplissage
+              </span>
+            </div>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={18}
+              className="w-full rounded-2xl border border-black/10 bg-white px-3 py-2 font-mono text-xs leading-relaxed"
+            />
+          </div>
           <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-soft">
             Meta description
             <textarea value={meta} onChange={(e) => setMeta(e.target.value)} rows={3} className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm" />
@@ -197,10 +252,27 @@ export function ArticleEditWithSeoAssistant({ article }: { article: Article }) {
             <input value={keywords} onChange={(e) => setKeywords(e.target.value)} className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm" />
           </label>
           {err ? <p className="text-sm text-red-700">{err}</p> : null}
+          {enrichMsg ? <p className="text-sm text-amber-900">{enrichMsg}</p> : null}
           {saved ? <p className="text-sm text-emerald-700">{saved}</p> : null}
-          <button type="button" className="btn-luxury-primary min-h-[44px] px-5 text-sm" disabled={pending} onClick={() => save()}>
-            {pending ? '…' : 'Enregistrer'}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" className="btn-luxury-primary min-h-[44px] px-5 text-sm" disabled={pending} onClick={() => save()}>
+              {pending ? '…' : 'Enregistrer'}
+            </button>
+            <button
+              type="button"
+              className="min-h-[44px] rounded-full border border-[#C45D3E]/35 bg-[#FFFAF5] px-5 text-sm font-semibold text-[#C45D3E] disabled:opacity-50"
+              disabled={pending}
+              onClick={() => runEnrich()}
+            >
+              Mettre à jour / enrichir
+            </button>
+            <Link
+              href="/admin/blog/refresh"
+              className="inline-flex min-h-[44px] items-center text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted hover:text-luxury-ink"
+            >
+              Lots progressifs →
+            </Link>
+          </div>
         </div>
 
         <aside className="hidden w-full max-w-md shrink-0 flex-col rounded-2xl border border-black/10 bg-[#fffdf8] p-5 shadow-md lg:flex">

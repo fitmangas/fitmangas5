@@ -29,8 +29,55 @@ export const BLOG_VALIDATED_CTA_ES_HTML =
 export const BLOG_VALIDATED_CTA_ES_PLAIN =
   'Si este artículo te ayuda, guárdalo y compártelo con una amiga que quiera retomar con suavidad.';
 
-/** Minimum de mots réels (hors HTML) pour un corps publiable. */
+/** Minimum de mots réels (hors HTML) pour un corps publiable — plancher dur (survie). */
 export const BLOG_MIN_BODY_WORDS = 300;
+
+/** Sous ce seuil → badge admin « trop court » (quick win MàJ). */
+export const BLOG_SHORT_WORDS_THRESHOLD = 800;
+
+/** Zone idéale SEO 2026 — contenu réel, pas de remplissage. */
+export const BLOG_TARGET_WORDS_MIN = 1200;
+export const BLOG_TARGET_WORDS_MAX = 1800;
+
+/** MàJ John Mueller : réécriture réelle minimale (1 − similarité Jaccard). */
+export const BLOG_SUBSTANTIAL_REWRITE_MIN_RATIO = 0.3;
+
+export type BodyWordLengthZone = 'too_short' | 'below_ideal' | 'ideal' | 'long';
+
+export function getBodyWordLengthZone(wordCount: number): BodyWordLengthZone {
+  if (wordCount < BLOG_SHORT_WORDS_THRESHOLD) return 'too_short';
+  if (wordCount < BLOG_TARGET_WORDS_MIN) return 'below_ideal';
+  if (wordCount <= BLOG_TARGET_WORDS_MAX) return 'ideal';
+  return 'long';
+}
+
+export function bodyWordLengthLabelFr(zone: BodyWordLengthZone, wordCount: number): string {
+  switch (zone) {
+    case 'too_short':
+      return `${wordCount} mots — trop court (cible ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX})`;
+    case 'below_ideal':
+      return `${wordCount} mots — sous la zone idéale (${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX})`;
+    case 'ideal':
+      return `${wordCount} mots — zone idéale ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX}`;
+    case 'long':
+      return `${wordCount} mots — au-dessus de ${BLOG_TARGET_WORDS_MAX} (vérifier densité, pas de remplissage)`;
+  }
+}
+
+/** Retire le CTA validé pour comparer / enrichir le corps seul. */
+export function stripValidatedBlogCta(contentHtml: string): string {
+  return sanitizeBlogContentHtml(contentHtml)
+    .replace(/<p>\s*Si cet article t['’]aide[\s\S]*?<\/p>\s*$/i, '')
+    .replace(/<p>\s*Si este artículo te ayuda[\s\S]*?<\/p>\s*$/i, '')
+    .trim();
+}
+
+/** Part de contenu réellement changée (0..1). ≥ 0.30 = MàJ substantielle. */
+export function substantialRewriteRatio(beforeHtml: string, afterHtml: string): number {
+  const a = stripValidatedBlogCta(beforeHtml);
+  const b = stripValidatedBlogCta(afterHtml);
+  return Math.max(0, Math.min(1, 1 - contentSimilarity(a, b)));
+}
 
 export function stripHtmlToText(html: string): string {
   return html

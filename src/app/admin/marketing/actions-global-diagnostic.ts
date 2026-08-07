@@ -153,11 +153,22 @@ function scoreArticleSeo(article: ArticleSeoRow) {
   const slug = article.slug_fr ?? '';
   const content = article.content_fr || '';
   const wordCount = content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const lengthOkIdeal = wordCount >= 1200 && wordCount <= 1800;
   const checks = [
     { label: 'Titre < 60', ok: title.length > 0 && title.length < 60 },
     { label: 'Description < 160', ok: description.length > 0 && description.length < 160 },
     { label: 'Image', ok: Boolean(article.featured_image_url) },
-    { label: 'Contenu > 300 mots', ok: wordCount > 300 },
+    {
+      label:
+        wordCount < 800
+          ? `Trop court (${wordCount} mots)`
+          : lengthOkIdeal
+            ? `Zone idéale (${wordCount} mots)`
+            : wordCount < 1200
+              ? `Sous idéal (${wordCount} mots)`
+              : `Long (${wordCount} mots)`,
+      ok: wordCount >= 300,
+    },
     { label: 'Slug propre', ok: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) },
   ];
   const score = Math.round((checks.filter((c) => c.ok).length / checks.length) * 100);

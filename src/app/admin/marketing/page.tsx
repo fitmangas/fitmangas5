@@ -1161,79 +1161,93 @@ function buildSeoExcellencePlan({
 
 function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
   return (
-    <section className="rounded-[2rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-5 shadow-[0_18px_42px_rgba(120,80,20,0.08)] backdrop-blur-xl md:p-6">
-      <div className="grid gap-5 lg:grid-cols-[0.85fr_1.4fr]">
-        <div className="rounded-[1.6rem] border border-white/70 bg-white/70 p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Objectif SEO excellence</p>
-          <div className="mt-4 flex items-end gap-3">
-            <p className="text-5xl font-semibold leading-none text-luxury-ink">{plan.score}%</p>
-            <p className="pb-1 text-sm font-semibold text-[#C45D3E]">{plan.level}</p>
+    <section className="rounded-[2rem] border border-[#C45D3E]/20 bg-[#FFFAF5]/95 p-5 shadow-[0_18px_42px_rgba(120,80,20,0.08)] backdrop-blur-xl md:p-6">
+      {/* Score en bandeau pleine largeur — plus de split 0.85/1.4 qui écrasait les conseils */}
+      <div className="rounded-[1.6rem] border border-white/70 bg-white/75 p-5 md:p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 max-w-3xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Objectif SEO excellence</p>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <p className="text-5xl font-semibold leading-none text-luxury-ink">{plan.score}%</p>
+              <p className="pb-1 text-sm font-semibold text-[#C45D3E]">{plan.level}</p>
+            </div>
+            <div className="mt-4 h-2 max-w-md overflow-hidden rounded-full bg-brand-sand/70">
+              <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${plan.score}%` }} />
+            </div>
+            <p className="mt-2 text-[11px] font-medium text-luxury-soft">{plan.scoreDetail}</p>
+            <p className="mt-3 text-sm leading-6 text-luxury-muted">{plan.summary}</p>
           </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-brand-sand/70">
-            <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${plan.score}%` }} />
-          </div>
-          <p className="mt-2 text-[11px] font-medium text-luxury-soft">{plan.scoreDetail}</p>
-          <p className="mt-4 text-sm leading-6 text-luxury-muted">{plan.summary}</p>
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950">
+          <p className="max-w-md shrink-0 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950 md:max-w-xs">
             Payer peut aider à tester et vendre plus vite via Google Ads, mais ne fait pas monter directement le SEO naturel.
             Pour “top partout”, il faut surtout contenu + pages piliers + liens externes + patience.
           </p>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {plan.milestones.map((item) => (
-              <div key={item.label} className="rounded-[1.35rem] border border-white/70 bg-white/65 p-4">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">{item.label}</p>
-                <p className="mt-2 text-lg font-semibold text-luxury-ink">{item.current}</p>
-                <p className="mt-1 text-xs leading-5 text-luxury-muted">Cible : {item.target}</p>
-                <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${item.done ? 'bg-white text-luxury-ink ring-1 ring-[#C45D3E]/20' : item.tone === 'bad' ? 'bg-[#f4d4c8] text-[#7a2e1a]' : 'bg-amber-100 text-amber-950'}`}>
-                  {item.done ? 'Atteint' : item.tone === 'bad' ? 'À construire' : 'En cours'}
-                </span>
-              </div>
-            ))}
+      {/* Jalons : auto-fit, largeur mini pour éviter l’écrasement */}
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+        {plan.milestones.map((item) => (
+          <div key={item.label} className="min-w-0 rounded-[1.35rem] border border-white/70 bg-white/70 p-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">{item.label}</p>
+            <p className="mt-2 break-words text-lg font-semibold leading-snug text-luxury-ink">{item.current}</p>
+            <p className="mt-1 text-xs leading-5 text-luxury-muted">Cible : {item.target}</p>
+            <span
+              className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                item.done
+                  ? 'bg-white text-luxury-ink ring-1 ring-[#C45D3E]/20'
+                  : item.tone === 'bad'
+                    ? 'bg-[#f4d4c8] text-[#7a2e1a]'
+                    : 'bg-amber-100 text-amber-950'
+              }`}
+            >
+              {item.done ? 'Atteint' : item.tone === 'bad' ? 'À construire' : 'En cours'}
+            </span>
           </div>
+        ))}
+      </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {plan.pillars.map((pillar) => (
-              <article key={pillar.title} className="rounded-[1.35rem] border border-white/70 bg-white/65 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
+      {/* Conseils : 1 col mobile → 2 → max 3 ; jamais 5 colonnes serrées */}
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+        {plan.pillars.map((pillar) => (
+          <article
+            key={pillar.title}
+            className="min-w-0 rounded-[1.35rem] border border-white/70 bg-white/70 p-4 sm:p-5"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${
+                  pillar.status === 'done'
+                    ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200'
+                    : pillar.status === 'in_progress'
+                      ? 'bg-amber-50 text-amber-950 ring-1 ring-amber-200'
+                      : 'bg-stone-100 text-stone-700 ring-1 ring-stone-200'
+                }`}
+              >
+                {seoActionStatusLabel(pillar.status)}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-luxury-muted">{pillar.goal}</p>
+            <ul className="mt-4 space-y-3">
+              {pillar.actions.map((action) => (
+                <li key={action.text} className="min-w-0 rounded-xl border border-[#C45D3E]/10 bg-[#FFFAF5]/80 px-3 py-2.5">
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${
-                      pillar.status === 'done'
-                        ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200'
-                        : pillar.status === 'in_progress'
-                          ? 'bg-amber-50 text-amber-950 ring-1 ring-amber-200'
-                          : 'bg-stone-100 text-stone-700 ring-1 ring-stone-200'
+                    className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
+                      action.status === 'done'
+                        ? 'bg-emerald-50 text-emerald-900'
+                        : action.status === 'in_progress'
+                          ? 'bg-amber-50 text-amber-950'
+                          : 'bg-stone-100 text-stone-600'
                     }`}
                   >
-                    {seoActionStatusLabel(pillar.status)}
+                    {seoActionStatusLabel(action.status)}
                   </span>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-luxury-muted">{pillar.goal}</p>
-                <ul className="mt-3 space-y-2.5 text-xs leading-5 text-luxury-muted">
-                  {pillar.actions.map((action) => (
-                    <li key={action.text} className="flex gap-2">
-                      <span
-                        className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] ${
-                          action.status === 'done'
-                            ? 'bg-emerald-50 text-emerald-900'
-                            : action.status === 'in_progress'
-                              ? 'bg-amber-50 text-amber-950'
-                              : 'bg-stone-100 text-stone-600'
-                        }`}
-                      >
-                        {seoActionStatusLabel(action.status)}
-                      </span>
-                      <span>{action.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </div>
+                  <p className="mt-1.5 text-sm leading-6 text-luxury-ink/80">{action.text}</p>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -1249,15 +1263,27 @@ function scoreArticleSeo(article: ArticleSeoRow) {
   const slug = article.slug_fr ?? '';
   const content = article.content_fr || '';
   const wordCount = content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const lengthOkIdeal = wordCount >= 1200 && wordCount <= 1800;
+  const lengthOkMin = wordCount >= 300;
   const checks = [
     { label: 'Titre < 60', ok: title.length > 0 && title.length < 60 },
     { label: 'Description < 160', ok: description.length > 0 && description.length < 160 },
     { label: 'Image', ok: Boolean(article.featured_image_url) },
-    { label: 'Contenu > 300 mots', ok: wordCount > 300 },
+    {
+      label:
+        wordCount < 800
+          ? `Trop court (${wordCount} mots)`
+          : lengthOkIdeal
+            ? `Zone idéale (${wordCount} mots)`
+            : wordCount < 1200
+              ? `Sous idéal (${wordCount} mots)`
+              : `Long (${wordCount} mots)`,
+      ok: lengthOkMin,
+    },
     { label: 'Slug propre', ok: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) },
   ];
   const score = Math.round((checks.filter((check) => check.ok).length / checks.length) * 100);
-  return { id: article.id, title, score, checks };
+  return { id: article.id, title, score, checks, wordCount, lengthOkIdeal };
 }
 
 function aggregateNotifications(rows: Array<{ channel: string | null; created_at: string }>): NotificationPoint[] {
