@@ -863,13 +863,40 @@ function buildMarketingKpis({
   ] satisfies Array<{ label: string; value: string; detail: string; info: string; tone: KpiTone }>;
 }
 
+type SeoActionStatus = 'done' | 'in_progress' | 'todo';
+
 type SeoExcellencePlan = {
   score: number;
   level: string;
+  /** Ex. "1/8 critères KPI atteints" — transparent sur le calcul. */
+  scoreDetail: string;
   summary: string;
   milestones: Array<{ label: string; current: string; target: string; done: boolean; tone: KpiTone }>;
-  pillars: Array<{ title: string; goal: string; actions: string[] }>;
+  pillars: Array<{
+    title: string;
+    goal: string;
+    status: SeoActionStatus;
+    actions: Array<{ text: string; status: SeoActionStatus }>;
+  }>;
 };
+
+const SEO_PILLAR_PATHS = SEO_PILLAR_PAGES.map((page) => `/${page.slug}`);
+
+function seoActionStatusLabel(status: SeoActionStatus): string {
+  if (status === 'done') return 'Fait';
+  if (status === 'in_progress') return 'En cours';
+  return 'À faire';
+}
+
+function pillarPageMatchesTopPage(pageUrl: string, pillarPath: string): boolean {
+  try {
+    const pathname = new URL(pageUrl).pathname.replace(/\/$/, '') || '/';
+    return pathname === pillarPath || pathname.endsWith(pillarPath);
+  } catch {
+    const normalized = pageUrl.replace(/\/$/, '');
+    return normalized.endsWith(pillarPath);
+  }
+}
 
 function buildSeoExcellencePlan({
   articlesPublished,
@@ -887,7 +914,8 @@ function buildSeoExcellencePlan({
   const impressions = overview?.impressions ?? 0;
   const clicks = overview?.clicks ?? 0;
   const keyEvents = gaSummary.keyEvents30d ?? 0;
-  const completedChecks = [
+  const gscOk = searchConsoleSummary.available;
+  const checks = [
     articlesPublished >= 40,
     articlesPublished >= 80,
     impressions >= 500,
@@ -896,8 +924,9 @@ function buildSeoExcellencePlan({
     keyEvents > 0,
     subscriptionStats.activeSubscribers >= 10,
     subscriptionStats.failedPayments === 0,
-  ].filter(Boolean).length;
-  const score = Math.round((completedChecks / 8) * 100);
+  ];
+  const completedChecks = checks.filter(Boolean).length;
+  const score = Math.round((completedChecks / checks.length) * 100);
 
   const level =
     score >= 80
@@ -908,11 +937,55 @@ function buildSeoExcellencePlan({
           ? 'Fondations solides'
           : 'Démarrage SEO';
 
+  // Proxy d’indexation déjà dispo : impressions GSC sur les URLs piliers (pas de nouvel appel API).
+  const pillarHits = SEO_PILLAR_PATHS.map((path) => {
+    const rows = searchConsoleSummary.topPages.filter((row) => pillarPageMatchesTopPage(row.page, path));
+    const pageImpressions = rows.reduce((sum, row) => sum + row.impressions, 0);
+    const pageClicks = rows.reduce((sum, row) => sum + row.clicks, 0);
+    return { path, impressions: pageImpressions, clicks: pageClicks, visible: pageImpressions > 0 };
+  });
+  const pillarsVisible = pillarHits.filter((row) => row.visible).length;
+  const pillarsWithTraffic = pillarHits.filter((row) => row.clicks > 0).length;
+
+  const contentStatus: SeoActionStatus =
+    articlesPublished >= 60 ? 'done' : articlesPublished >= 30 ? 'in_progress' : 'todo';
+  const visibilityStatus: SeoActionStatus =
+    impressions >= 500 ? 'done' : impressions > 0 ? 'in_progress' : 'todo';
+  const trafficStatus: SeoActionStatus = clicks >= 50 ? 'done' : clicks > 0 ? 'in_progress' : 'todo';
+  const conversionStatus: SeoActionStatus = keyEvents > 0 ? 'done' : gaSummary.available ? 'in_progress' : 'todo';
+
+  const pillarsStatus: SeoActionStatus = !gscOk
+    ? 'in_progress'
+    : pillarsVisible >= 3
+      ? pillarsWithTraffic >= 2
+        ? 'done'
+        : 'in_progress'
+      : pillarsVisible > 0
+        ? 'in_progress'
+        : 'todo';
+
+  const pillarGoal = !gscOk
+    ? 'Les 3 pages piliers sont en ligne (sitemap). Search Console indisponible ici — conseil neutre : renforcer le maillage interne.'
+    : pillarsVisible >= 3
+      ? `Les 3 pages piliers ont déjà des impressions GSC (${pillarsWithTraffic}/3 avec clics) — renforcer maillage et titres pour le CTR.`
+      : pillarsVisible > 0
+        ? `${pillarsVisible}/3 pages piliers apparaissent dans Search Console — renforcer les pages encore absentes des impressions.`
+        : 'Les 3 pages piliers sont en ligne ; pas encore d’impressions GSC visibles dans le top pages — renforcer le maillage depuis le blog.';
+
+  const nextArticleTarget = articlesPublished >= 100 ? 100 : articlesPublished >= 60 ? 100 : 60;
+
   return {
     score,
     level,
+    scoreDetail: `${completedChecks}/${checks.length} critères KPI atteints`,
     summary:
-      "Objectif réaliste : devenir une référence sur les requêtes longues autour du Pilates en ligne avant de viser les mots ultra concurrentiels comme \"Pilates\" seul.",
+      articlesPublished < 40
+        ? `Priorité actuelle : grossir la bibliothèque (${articlesPublished} articles → 60+). Les pages piliers et le suivi GSC suivent derrière.`
+        : clicks < 50
+          ? `Le volume éditorial avance (${articlesPublished} articles). Prochaine priorité : transformer impressions (${formatCompact(impressions)}) en clics (cible 50+/28j).`
+          : keyEvents <= 0
+            ? `Trafic SEO en marche (${formatCompact(clicks)} clics/28j). Prochaine priorité : mesurer et améliorer la conversion (key events GA4 encore à 0).`
+            : 'Base SEO en place. Continuer contenu + maillage piliers + autorités externes, sans promesse de ranking magique.',
     milestones: [
       {
         label: 'Bibliothèque éditoriale',
@@ -953,48 +1026,133 @@ function buildSeoExcellencePlan({
     pillars: [
       {
         title: '1. Pages piliers',
-        goal: 'Les 3 pages existent déjà : les renforcer et les faire indexer.',
+        goal: pillarGoal,
+        status: pillarsStatus,
         actions: [
-          'Demander l’indexation GSC de /pilates-en-ligne, /cours-pilates-visio et /pilates-debutant-maison.',
-          'Partager chaque page pilier sur Instagram / Stories avec un lien clair.',
-          'Relier chaque page pilier à 8-12 articles du blog (maillage interne).',
-          'Suivre impressions + clics de ces 3 URLs dans Search Console chaque mois.',
+          {
+            text:
+              !gscOk
+                ? 'État d’indexation non vérifiable ici (GSC indisponible) — ne pas supposer qu’elles manquent.'
+                : pillarsVisible >= 3
+                  ? 'Les 3 pages piliers ont des impressions GSC → signal d’indexation effective.'
+                  : `${pillarsVisible}/3 pages piliers avec impressions GSC — surveiller les absentes, sans relancer une indexation « à l’aveugle ».`,
+            status: !gscOk ? 'todo' : pillarsVisible >= 3 ? 'done' : pillarsVisible > 0 ? 'in_progress' : 'todo',
+          },
+          {
+            text: 'Renforcer le maillage interne : lier chaque page pilier à 8–12 articles du blog.',
+            status: articlesPublished >= 24 ? 'in_progress' : 'todo',
+          },
+          {
+            text: 'Partager chaque page pilier sur Instagram / Stories avec un lien clair.',
+            status: 'todo',
+          },
+          {
+            text: gscOk
+              ? `Suivre impressions + clics des 3 URLs piliers dans Search Console (${pillarsVisible}/3 visibles ce mois).`
+              : 'Suivre impressions + clics des 3 URLs piliers dès que Search Console répond.',
+            status: gscOk ? (pillarsVisible >= 3 ? 'done' : 'in_progress') : 'todo',
+          },
         ],
       },
       {
         title: '2. Doubler puis tripler le contenu',
-        goal: 'Couvrir toutes les recherches longues avant les mots génériques.',
+        goal:
+          articlesPublished >= 100
+            ? `${articlesPublished} articles publiés — cible volume atteinte ; qualité et mises à jour d’abord.`
+            : `${articlesPublished} articles publiés — prochaine cible : ${nextArticleTarget} articles experts.`,
+        status: contentStatus,
         actions: [
-          'Passer de 21 à 60 articles de qualité, puis viser 100.',
-          'Faire des séries : respiration, posture, dos, débutant, barre, mobilité, ventre plat sans promesse médicale.',
-          'Mettre à jour chaque mois les articles qui ont des impressions mais peu de clics.',
+          {
+            text:
+              articlesPublished >= 100
+                ? 'Volume atteint (100+) — prioriser la mise à jour des pages qui impressionnent sans cliquer.'
+                : articlesPublished >= 60
+                  ? `Passer de ${articlesPublished} à 100 articles de qualité.`
+                  : `Passer de ${articlesPublished} à 60 articles de qualité, puis viser 100.`,
+            status: contentStatus,
+          },
+          {
+            text: 'Séries thématiques : respiration, posture, dos, débutant, barre, mobilité (sans promesse médicale).',
+            status: articlesPublished >= 20 ? 'in_progress' : 'todo',
+          },
+          {
+            text:
+              impressions > 0 && clicks < 50
+                ? 'Mettre à jour les articles avec impressions mais peu de clics (titres / intros).'
+                : 'Chaque mois : retravailler les articles qui ont des impressions mais peu de clics.',
+            status: impressions > 0 ? 'in_progress' : 'todo',
+          },
         ],
       },
       {
         title: '3. Autorité externe',
-        goal: 'Google doit voir que d’autres sites fiables parlent de FitMangas.',
+        goal: 'Google doit voir que d’autres sites fiables parlent de FitMangas (non mesurable automatiquement ici).',
+        status: 'todo',
         actions: [
-          'Obtenir des liens depuis partenaires bien-être, studios, annuaires locaux qualitatifs et articles invités.',
-          'Publier des contenus invités sur Pilates, posture, visio et routine maison.',
-          'Transformer Instagram/YouTube/Pinterest en portes d’entrée vers les pages piliers.',
+          {
+            text: 'Obtenir des liens depuis partenaires bien-être, studios, annuaires locaux qualitatifs et articles invités.',
+            status: 'todo',
+          },
+          {
+            text: 'Publier des contenus invités sur Pilates, posture, visio et routine maison.',
+            status: 'todo',
+          },
+          {
+            text: 'Transformer Instagram / YouTube / Pinterest en portes d’entrée vers les pages piliers.',
+            status: 'todo',
+          },
         ],
       },
       {
         title: '4. Conversion et preuve',
-        goal: 'Transformer le trafic en clientes, pas seulement faire des vues.',
+        goal:
+          keyEvents > 0
+            ? `${formatCompact(keyEvents)} key events GA4 / 30j — conversions mesurées ; optimiser le tunnel.`
+            : gaSummary.available
+              ? 'GA4 répond mais 0 key event / 30j — vérifier le marquage des conversions (essai, checkout, abo).'
+              : 'GA4 indisponible ici — conseil neutre : brancher et marquer les key events dès que possible.',
+        status: conversionStatus,
         actions: [
-          'Configurer les conversions GA4 : inscription, clic “On démarre”, checkout, abonnement.',
-          'Ajouter FAQ, avis clientes, bénéfices concrets et captures de l’expérience visio.',
-          'Tester Google Ads sur les mots-clés qui convertissent, sans croire que payer améliore le SEO naturel.',
+          {
+            text:
+              keyEvents > 0
+                ? 'Key events GA4 actifs — surveiller begin_trial_click, begin_checkout, trial_started, purchase.'
+                : 'Marquer dans GA4 les key events : essai, checkout, trial démarré, abonnement.',
+            status: keyEvents > 0 ? 'done' : 'todo',
+          },
+          {
+            text: 'Ajouter FAQ, avis clientes, bénéfices concrets et captures de l’expérience visio.',
+            status: 'todo',
+          },
+          {
+            text: 'Tester Google Ads seulement sur les requêtes qui convertissent déjà — Ads ≠ boost SEO naturel.',
+            status: 'todo',
+          },
         ],
       },
       {
         title: '5. Routine mensuelle',
-        goal: 'Gagner par régularité, pas par action unique.',
+        goal:
+          gscOk || articlesPublished > 0
+            ? 'Gagner par régularité : analyse GSC + publication + retouches, chaque mois.'
+            : 'Mettre en place une routine mensuelle dès que GSC et le blog sont lisibles.',
+        status: gscOk && articlesPublished > 0 ? 'in_progress' : 'todo',
         actions: [
-          'Chaque mois : analyser Search Console, améliorer 5 articles, publier 4 nouveaux contenus.',
-          'Demander l’indexation des pages importantes après gros changements.',
-          'Suivre les requêtes où FitMangas est positions 11-30 : ce sont les victoires les plus proches.',
+          {
+            text: `Chaque mois : analyser Search Console, améliorer 5 articles, publier du neuf (stock actuel : ${articlesPublished}).`,
+            status: articlesPublished > 0 ? 'in_progress' : 'todo',
+          },
+          {
+            text: 'Après gros changements de contenu, vérifier dans GSC que les URLs touchées restent couvertes (sans relancer l’indexation « en masse »).',
+            status: gscOk ? 'in_progress' : 'todo',
+          },
+          {
+            text:
+              avgPosition != null && avgPosition > 10
+                ? `Prioriser les requêtes positions 11–30 (position moyenne actuelle : ${avgPosition.toFixed(1)}).`
+                : 'Suivre les requêtes où FitMangas est positions 11–30 : ce sont les victoires les plus proches.',
+            status: trafficStatus === 'done' ? 'done' : visibilityStatus === 'todo' ? 'todo' : 'in_progress',
+          },
         ],
       },
     ],
@@ -1014,6 +1172,7 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-brand-sand/70">
             <div className="h-full rounded-full bg-[#C45D3E]" style={{ width: `${plan.score}%` }} />
           </div>
+          <p className="mt-2 text-[11px] font-medium text-luxury-soft">{plan.scoreDetail}</p>
           <p className="mt-4 text-sm leading-6 text-luxury-muted">{plan.summary}</p>
           <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950">
             Payer peut aider à tester et vendre plus vite via Google Ads, mais ne fait pas monter directement le SEO naturel.
@@ -1029,7 +1188,7 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
                 <p className="mt-2 text-lg font-semibold text-luxury-ink">{item.current}</p>
                 <p className="mt-1 text-xs leading-5 text-luxury-muted">Cible : {item.target}</p>
                 <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${item.done ? 'bg-white text-luxury-ink ring-1 ring-[#C45D3E]/20' : item.tone === 'bad' ? 'bg-[#f4d4c8] text-[#7a2e1a]' : 'bg-amber-100 text-amber-950'}`}>
-                  {item.done ? '✅ Atteint' : item.tone === 'bad' ? '🔴 À construire' : '⚠️ En cours'}
+                  {item.done ? 'Atteint' : item.tone === 'bad' ? 'À construire' : 'En cours'}
                 </span>
               </div>
             ))}
@@ -1038,11 +1197,37 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {plan.pillars.map((pillar) => (
               <article key={pillar.title} className="rounded-[1.35rem] border border-white/70 bg-white/65 p-4">
-                <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-luxury-ink">{pillar.title}</h3>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${
+                      pillar.status === 'done'
+                        ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200'
+                        : pillar.status === 'in_progress'
+                          ? 'bg-amber-50 text-amber-950 ring-1 ring-amber-200'
+                          : 'bg-stone-100 text-stone-700 ring-1 ring-stone-200'
+                    }`}
+                  >
+                    {seoActionStatusLabel(pillar.status)}
+                  </span>
+                </div>
                 <p className="mt-2 text-xs leading-5 text-luxury-muted">{pillar.goal}</p>
-                <ul className="mt-3 space-y-2 text-xs leading-5 text-luxury-muted">
+                <ul className="mt-3 space-y-2.5 text-xs leading-5 text-luxury-muted">
                   {pillar.actions.map((action) => (
-                    <li key={action}>• {action}</li>
+                    <li key={action.text} className="flex gap-2">
+                      <span
+                        className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] ${
+                          action.status === 'done'
+                            ? 'bg-emerald-50 text-emerald-900'
+                            : action.status === 'in_progress'
+                              ? 'bg-amber-50 text-amber-950'
+                              : 'bg-stone-100 text-stone-600'
+                        }`}
+                      >
+                        {seoActionStatusLabel(action.status)}
+                      </span>
+                      <span>{action.text}</span>
+                    </li>
                   ))}
                 </ul>
               </article>
