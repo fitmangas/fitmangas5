@@ -20,6 +20,7 @@ import {
 import { resolvePhotaApiKey } from '@/lib/admin/phota-client';
 import {
   CAPTION_BY_FORMAT,
+  captionBandCharCeiling,
   adaptCaptionToLinkedIn,
   enforceFaceCamShotList,
   fallbackReelBrief,
@@ -95,15 +96,13 @@ function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax
     .trim();
 
   const band = CAPTION_BY_FORMAT[format];
-  // Reels / feed : viser la zone idéale, pas le max technique
+  // Reels : zone idéale en car. Feed/carousel : plafond car. dérivé des mots (algo 2026) — ne plus tronquer à 180 car.
   const targetMax =
     format === 'reel'
       ? Math.min(hardMax, band?.idealMax ?? 150)
-      : format === 'feed'
-        ? Math.min(hardMax, band?.idealMax ?? 180)
-        : format === 'carousel'
-          ? Math.min(hardMax, band?.idealMax ?? 900)
-          : hardMax;
+      : format === 'feed' || format === 'carousel'
+        ? Math.min(hardMax, captionBandCharCeiling(band ?? CAPTION_BY_FORMAT.feed))
+        : hardMax;
 
   if (c.length > targetMax) {
     const sliced = c.slice(0, targetMax);
@@ -302,18 +301,20 @@ Règles STRICTES (langue = ${locale}):
 - INTERDIT : 5 titres avec la même charpente syntaxique
 - overlayText / hookTitle: TOUJOURS une phrase autonome COURTE COMPLÈTE EN MAJUSCULES (max ~8–10 mots), lisible en 1s. JAMAIS recopier/tronquer le titre long. INTERDIT de finir sur une préposition/pronom (en, du, tu, te, si, pas du…). Si trop long → reformuler plus court, ne pas couper.
 - TRASH-TALK : tape sur le MENSONGE de l'industrie / l'excuse / la situation absurde — JAMAIS sur le corps, l'âge, le poids ou un défaut de la femme (interdit: vieille, trop vieille, grosse, molle, paresseuse, nulle). Elle doit se sentir comprise, pas jugée.
-- REEL caption: 70–140 caractères STRICT. 0 ou 1 emoji max. CTA = dernière ligne de la caption.
+- REEL caption: 70–150 caractères STRICT. 0 ou 1 emoji max. CTA = dernière ligne de la caption.
 - reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
 - shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
-- FEED caption: 100–180 car. overlayText = texte sur image (court, complet). Le CTA est la DERNIÈRE ligne de la caption.
+- FEED caption: 150–220 MOTS (~800–1200 car.). Mini-histoire / valeur. Hook dans les 125 PREMIERS caractères. CTA « essai gratuit 7 jours » UNE seule fois, dernière ligne. overlayText = texte sur image (court, complet).
 - CAROUSEL = LISTE de points AUTONOMES (JAMAIS une histoire découpée en 7 morceaux). slideTitles[7] OBLIGATOIRE :
   [0] = titre-promesse type « 5 RAISONS D'ARRÊTER… » / « 5 CHOSES QUE PERSONNE NE TE DIT… »
   [1]–[5] = UN point complet numéroté qui a du SENS SEUL (« 1. PERSONNE NE T'ATTEND », « 2. TU NE VOIS PAS TES ERREURS »…)
   [6] = CTA (« ESSAI 7 JOURS — ON T'ATTEND »)
   INTERDIT format narratif tranché (« ELLE A FAIT… », suite d'une phrase coupée, cliffhanger slide→slide).
   Orthographe soignée FR/ES (ERREURS pas ERROURS ; errores ; motivación avec accent ; jours/días).
-  caption 400–900 car. : 1 paragraphe développé PAR slide, même ordre. Hook dans les 125 premiers car. CTA = dernière ligne.
+  caption 150–300 MOTS : 1 paragraphe développé PAR slide, même ordre. Hook dans les 125 premiers car. CTA = dernière ligne.
   INTERDIT "Slide 1". Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA.
+- FRANÇAIS NATUREL : le calque « Tu paies pour X, pas pour Y » = MAX 1 post dans tout le batch. Autres posts : formulations variées (« Un tapis ne t'a jamais rappelée à l'ordre. », « La vidéo ne lève pas les yeux vers toi. », « Ce que tu paies, ce n'est pas le cours : c'est qu'on t'attende. »).
+- ANTI-RÉPÉTITION SEMAINE : thèmes/piliers DISTINCTS entre posts. Overlays à structures DIFFÉRENTES (interdit deux overlays « TU PAIES… PAS POUR… »).
 - WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
 - LinkedIn: ton pro, 350–700 car., question finale
 - hashtags = array sans #
@@ -490,7 +491,11 @@ export async function polishExistingSocialPostsAction() {
           ? withCarouselSlideCount(titleBase, post.carouselPaths.length)
           : titleBase;
       const captionMax =
-        post.format === 'feed' ? 180 : post.format === 'text' ? 420 : CAPTION_BY_FORMAT.carousel.idealMax;
+        post.format === 'feed'
+          ? captionBandCharCeiling(CAPTION_BY_FORMAT.feed)
+          : post.format === 'text'
+            ? 420
+            : captionBandCharCeiling(CAPTION_BY_FORMAT.carousel);
       const caption = sanitizeCaptionForFormat(
         post.caption,
         post.format === 'text' ? 'text' : post.format,
@@ -1574,7 +1579,13 @@ function normalizeGeneratedRowForPost(params: {
   const isReel = slot.mediaKind === 'video_brief';
   const band = CAPTION_BY_FORMAT[slot.format] ?? CAPTION_BY_FORMAT.feed;
   const captionMax =
-    slot.format === 'reel' ? 150 : slot.network === 'whatsapp' ? 420 : slot.network === 'linkedin' ? 900 : band.max;
+    slot.format === 'reel'
+      ? 150
+      : slot.network === 'whatsapp'
+        ? 420
+        : slot.network === 'linkedin'
+          ? 900
+          : captionBandCharCeiling(band);
   const rawTitle = typeof row.title === 'string' ? row.title : `Post ${SOCIAL_CM_GUIDELINES[slot.network].label}`;
   const rawHook =
     typeof row.hookTitle === 'string' && row.hookTitle.trim() ? row.hookTitle.trim() : isReel ? rawTitle : '';

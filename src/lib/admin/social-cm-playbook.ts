@@ -11,37 +11,50 @@ export type CaptionBand = {
   idealMin: number;
   idealMax: number;
   max: number;
+  /** Caractères (reel/WA) ou mots (feed/carousel algo 2026). */
+  unit: 'chars' | 'words';
   hint: string;
 };
 
-/** Légendes par format (données 2025–2026, pas une longueur unique). */
+export function countCaptionWords(text: string): number {
+  return (text || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+/** Légendes par format — seuils algo 2026 (feed/carousel en MOTS). */
 export const CAPTION_BY_FORMAT: Record<SocialPostFormat, CaptionBand> = {
   reel: {
     min: 40,
     idealMin: 70,
     idealMax: 150,
     max: 220,
-    hint: 'Reel : légende courte (hook + CTA). Le message est dans la vidéo (titre + sous-titres).',
+    unit: 'chars',
+    hint: 'Reel : 70–150 car. (hook + CTA). Le message est dans la vidéo.',
   },
   feed: {
-    min: 80,
-    idealMin: 100,
-    idealMax: 180,
+    min: 120,
+    idealMin: 150,
+    idealMax: 220,
     max: 280,
-    hint: 'Feed photo marque : légende courte ; l’image réelle porte. Pour un post éducatif long, préfère un carousel.',
+    unit: 'words',
+    hint: 'Feed : 150–220 mots (~800–1200 car.). Mini-histoire / valeur. Hook dans les 125 premiers car. CTA une seule fois en fin.',
   },
   carousel: {
-    min: 150,
-    idealMin: 200,
-    idealMax: 900,
-    max: 1500,
-    hint: 'Carousel éducatif : légende plus longue OK (hook dans les 125 premiers car. + valeur + CTA save).',
+    min: 120,
+    idealMin: 150,
+    idealMax: 300,
+    max: 400,
+    unit: 'words',
+    hint: 'Carousel : 150–300 mots, 1 paragraphe par slide. Hook dans les 125 premiers car.',
   },
   story: {
     min: 0,
     idealMin: 0,
     idealMax: 40,
     max: 80,
+    unit: 'chars',
     hint: 'Story : texte minimal.',
   },
   text: {
@@ -49,9 +62,16 @@ export const CAPTION_BY_FORMAT: Record<SocialPostFormat, CaptionBand> = {
     idealMin: 160,
     idealMax: 320,
     max: 420,
+    unit: 'chars',
     hint: 'WhatsApp communauté : résumé d’article chaleureux + lien. Pas d’acquisition.',
   },
 };
+
+/** Approx. caractères pour un plafond en mots (sanitizer / troncature). */
+export function captionBandCharCeiling(band: CaptionBand): number {
+  if (band.unit === 'chars') return band.max;
+  return Math.round(band.max * 6.5);
+}
 
 export function mediaKindForSlot(network: SocialNetwork, format: SocialPostFormat): SocialMediaKind {
   if (format === 'reel' || network === 'tiktok') return 'video_brief';
@@ -76,7 +96,7 @@ export const SOCIAL_CM_GUIDELINES: Record<SocialNetwork, NetworkGuideline> = {
   instagram: {
     label: 'Instagram',
     captionMax: 2200,
-    captionIdeal: 120,
+    captionIdeal: 900,
     hashtagMax: 5,
     hashtagIdeal: 4,
     bestHours: [7, 8, 11, 12, 17, 18, 19],
@@ -159,11 +179,79 @@ export const CM_STRATEGY_NOTES = [
   'WhatsApp = communauté déjà membre : teaser d’articles blog, pas d’acquisition.',
   'LinkedIn = ton pro / bien-être au travail ; case « Aussi LinkedIn » pour adapter un post IG.',
   'Carousels = LISTE de points autonomes (jamais une histoire découpée). Feed = vraie photo bibliothèque + overlay.',
+  'Feed légende = 150–220 MOTS (algo 2026), pas 150 car. Hook dans les 125 premiers caractères. CTA une seule fois.',
+  'INTERDIT de répéter le calque « Tu paies pour X, pas pour Y » plus d’une fois par semaine — préférer des formulations françaises variées.',
+  'Anti-répétition semaine : un thème unique par post ; overlays à structures différentes (pas deux « TU PAIES… PAS POUR… »).',
   'Une idée-pilier / semaine (dos, stress, bassin, hanches, sommeil, confiance, énergie) — pas deux semaines de suite le même.',
   'Cascade image : Gemini (payant, carousels éducatifs) → fond de marque local → bibliothèque Alejandra. Jamais Pollinations. Unsplash = blog seulement.',
   'Format viral Reel : Claude Code + HyperFrames local — parole naturelle, Whisper local, sous-titres blanc/contour + mot-clé terracotta.',
   'CTA carousel slide 7 : capture dashboard 4:5 réelle (produit-dashboard-02) — jamais chemin -4x5 fantôme.',
 ];
+
+/** Calque « tu paies pour X, pas pour Y » — max 1 post / semaine. */
+export const PAY_FOR_NOT_PATTERN =
+  /\b(tu\s+paies|elle\s+paie|on\s+paie|paga[s]?)\s+pour\b.{0,40}\bpas\s+pour\b/i;
+
+export const OVERLAY_PAY_FOR_SKELETON =
+  /^TU\s+PAIES\s+POUR\b.{0,48}\bPAS\s+POUR\b/i;
+
+/** Formulations FR naturelles recommandées à la place du calque. */
+export const NATURAL_VALUE_FRAMINGS_FR = [
+  'Ce que tu paies, ce n’est pas le cours. C’est le fait que quelqu’un t’attende.',
+  'Un tapis ne t’a jamais rappelée à l’ordre.',
+  'La vidéo ne lève pas les yeux vers toi.',
+  'Personne ne remarque si tu manques une séance YouTube.',
+  'Sur un replay, personne ne dit ton prénom.',
+  'Ce n’est pas le tapis qui te fait progresser : c’est qu’on te corrige.',
+] as const;
+
+export function isPayForNotFraming(text: string): boolean {
+  return PAY_FOR_NOT_PATTERN.test(text || '') || OVERLAY_PAY_FOR_SKELETON.test((text || '').trim());
+}
+
+/** Ossature d’overlay pour détecter les quasi-doublons (ex. PAS POUR UN TAPIS / REPLAY). */
+export function overlaySkeleton(text: string): string {
+  return (text || '')
+    .toLocaleUpperCase('fr-FR')
+    .replace(/[^A-ZÀÂÄÉÈÊËÏÎÔÙÛÜÇ0-9\s]/g, ' ')
+    .replace(/\b(UN|UNE|LE|LA|LES|DES|DU|DE|D|POUR|QU|QUE|QUON|PAS|TON|TA|TES)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function overlaysShareSkeleton(a: string, b: string): boolean {
+  const sa = overlaySkeleton(a);
+  const sb = overlaySkeleton(b);
+  if (!sa || !sb) return false;
+  if (sa === sb) return true;
+  // Même tête « PAIES … PAS » = même ossature
+  const head = (s: string) => s.split(' ').slice(0, 4).join(' ');
+  if (isPayForNotFraming(a) && isPayForNotFraming(b) && head(sa) === head(sb)) return true;
+  // Similarité Jaccard sur tokens
+  const ta = new Set(sa.split(' ').filter((w) => w.length > 2));
+  const tb = new Set(sb.split(' ').filter((w) => w.length > 2));
+  if (ta.size < 2 || tb.size < 2) return false;
+  let inter = 0;
+  for (const w of ta) if (tb.has(w)) inter += 1;
+  const union = ta.size + tb.size - inter;
+  return union > 0 && inter / union >= 0.55;
+}
+
+export function themeKeyFromPost(input: {
+  pillarId?: string | null;
+  title?: string;
+  overlayText?: string | null;
+  hookTitle?: string;
+}): string {
+  if (input.pillarId) return `pillar:${input.pillarId}`;
+  const base = (input.title || input.overlayText || input.hookTitle || '')
+    .toLocaleLowerCase('fr-FR')
+    .replace(/[^a-zàâäéèêëïîôùûüç0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 48);
+  return `title:${base}`;
+}
 
 /**
  * Piliers éditoriaux FitMangas — base de génération (problématiques femmes 30–55,
@@ -396,7 +484,7 @@ export function normalizeCarouselSlideTitles(
     '2. TU NE VOIS PAS TES ERREURS',
     '3. LA MOTIVATION NE SUFFIT PAS',
     '4. TU RECOMMENCES TOUJOURS À ZÉRO',
-    '5. TU PAIES POUR ÊTRE VUE',
+    '5. LE PRODUIT, C’EST LA CORRECTION',
     'ESSAI 7 JOURS — ON T’ATTEND',
   ];
   const defaultsEs = [
@@ -405,7 +493,7 @@ export function normalizeCarouselSlideTitles(
     '2. NO VES TUS ERRORES',
     '3. LA MOTIVACIÓN NO BASTA',
     '4. SIEMPRE VUELVES A CERO',
-    '5. PAGAS POR SER VISTA',
+    '5. EL PRODUCTO ES LA CORRECCIÓN',
     'PRUEBA 7 DÍAS — TE ESPERAMOS',
   ];
   const defaults = locale === 'es' ? defaultsEs : defaultsFr;
@@ -433,7 +521,7 @@ export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
       '2. NO VES TUS ERRORES',
       '3. LA MOTIVACIÓN NO BASTA',
       '4. SIEMPRE VUELVES A CERO',
-      '5. PAGAS POR SER VISTA, NO POR UN MAT',
+      '5. EL PRODUCTO ES LA CORRECCIÓN EN DIRECTO',
       'PRUEBA 7 DÍAS — TE ESPERAMOS EN VISIO',
     ];
     const caption = buildCarouselMappedCaption({
@@ -444,7 +532,7 @@ export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
         '2. No ves tus errores. El vídeo no te mira la pelvis ni te corrige el hombro.',
         '3. La motivación no basta. Lo que sostiene es que alguien note si faltas.',
         '4. Siempre vuelves a cero. Sin progresión guiada, reinicias la misma clase cada mes.',
-        '5. Pagas por ser vista, no por un mat. El producto es la corrección en directo.',
+        '5. El producto es la corrección en directo. La cámara no dice tu nombre ni ajusta tu hombro.',
         'Prueba gratis 7 días → fitmangas.com',
       ],
       cta: 'Prueba gratis 7 días → fitmangas.com',
@@ -458,18 +546,18 @@ export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
     '2. TU NE VOIS PAS TES ERREURS',
     '3. LA MOTIVATION NE SUFFIT PAS',
     '4. TU RECOMMENCES TOUJOURS À ZÉRO',
-    '5. TU PAIES POUR ÊTRE VUE, PAS POUR UN TAPIS',
+    '5. LE PRODUIT, C’EST LA CORRECTION EN DIRECT',
     'ESSAI 7 JOURS — ON T’ATTEND EN VISIO',
   ];
   const caption = buildCarouselMappedCaption({
     slideTitles,
     bodyParagraphs: [
-      '5 raisons d’arrêter le Pilates YouTube (et pourquoi le live change tout).',
-      '1. Personne ne t’attend. Sans rendez-vous fixe, le tapis retourne au placard dès que le mail arrive.',
-      '2. Tu ne vois pas tes erreurs. La vidéo ne regarde pas ton bassin et ne corrige pas ton épaule.',
-      '3. La motivation ne suffit pas. Ce qui tient, c’est que quelqu’un remarque si tu manques.',
-      '4. Tu recommences toujours à zéro. Sans progression guidée, tu rejoues la même séance chaque mois.',
-      '5. Tu paies pour être vue, pas pour un tapis. Le produit, c’est la correction en direct.',
+      '5 raisons d’arrêter le Pilates YouTube — et pourquoi un cours en direct change vraiment la donne quand tu veux tenir dans la durée.',
+      '1. Personne ne t’attend. Sans rendez-vous fixe, le tapis retourne au placard dès que le mail ou la charge mentale arrive. La régularité ne survit pas à l’improvisation.',
+      '2. Tu ne vois pas tes erreurs. La vidéo ne regarde pas ton bassin, ne corrige pas ton épaule, et ne te dit jamais si tu compenses. Tu peux « bien faire » pendant des mois… à côté.',
+      '3. La motivation ne suffit pas. Ce qui tient, c’est qu’une vraie personne remarque si tu manques — pas une notification, pas un favori YouTube.',
+      '4. Tu recommences toujours à zéro. Sans progression guidée, tu rejoues la même séance chaque mois et tu appelles ça de la constance. Ce n’en est pas.',
+      '5. Le produit, c’est la correction en direct. La caméra ne dit pas ton prénom et n’ajuste pas ton épaule. Être vue, c’est ce qui fait progresser — pas accumuler des replays.',
       'Essai gratuit 7 jours → fitmangas.com',
     ],
     cta: 'Essai gratuit 7 jours → fitmangas.com',
@@ -506,7 +594,8 @@ export function buildCarouselMappedCaption(params: {
   let caption = lines.filter(Boolean).join('\n\n');
   caption = mergeCaptionWithCta(caption, params.cta);
   caption = proofreadCarouselCopy(caption, locale);
-  if (caption.length > 900) caption = caption.slice(0, 897).trimEnd() + '…';
+  const ceiling = captionBandCharCeiling(CAPTION_BY_FORMAT.carousel);
+  if (caption.length > ceiling) caption = caption.slice(0, ceiling - 1).trimEnd() + '…';
   return caption;
 }
 
@@ -658,9 +747,16 @@ export function analyzeCaptionForPost(
   hashtagCount = 0,
 ) {
   const g = SOCIAL_CM_GUIDELINES[network];
-  const band =
+  const band: CaptionBand =
     network === 'facebook'
-      ? { min: 30, idealMin: 40, idealMax: 180, max: 500, hint: 'Facebook = miroir IG : légende IG OK.' }
+      ? {
+          min: 30,
+          idealMin: 40,
+          idealMax: 180,
+          max: 500,
+          unit: 'chars',
+          hint: 'Facebook = miroir IG : légende IG OK.',
+        }
       : network === 'whatsapp'
         ? CAPTION_BY_FORMAT.text
         : network === 'linkedin'
@@ -669,24 +765,37 @@ export function analyzeCaptionForPost(
               idealMin: 400,
               idealMax: 900,
               max: 1300,
+              unit: 'chars',
               hint: 'LinkedIn : hook + 2–4 courts paragraphes + question ouverte.',
             }
           : CAPTION_BY_FORMAT[format] ?? CAPTION_BY_FORMAT.feed;
 
-  const len = caption.trim().length;
+  const trimmed = caption.trim();
+  const length = band.unit === 'words' ? countCaptionWords(trimmed) : trimmed.length;
+  const unitLabel = band.unit === 'words' ? 'mots' : 'car.';
   const warnings: string[] = [];
-  if (len > band.max) warnings.push(`Trop longue (${len}/${band.max}). ${band.hint}`);
-  else if (len < band.min) warnings.push(`Trop courte (${len}). ${band.hint}`);
-  else if (len < band.idealMin || len > band.idealMax) {
-    warnings.push(`Hors zone idéale ${band.idealMin}–${band.idealMax} car. ${band.hint}`);
+  if (length > band.max) warnings.push(`Trop longue (${length}/${band.max} ${unitLabel}). ${band.hint}`);
+  else if (length < band.min) warnings.push(`Trop courte (${length} ${unitLabel}). ${band.hint}`);
+  else if (length < band.idealMin || length > band.idealMax) {
+    warnings.push(`Hors zone idéale ${band.idealMin}–${band.idealMax} ${unitLabel}. ${band.hint}`);
   }
+  if (trimmed.length >= 40 && (format === 'feed' || format === 'carousel' || format === 'reel')) {
+    const hookWindow = trimmed.slice(0, 125);
+    if (hookWindow.length < 40) {
+      warnings.push('Hook trop court dans les 125 premiers caractères (texte visible avant « …plus »).');
+    }
+  }
+  const ctaHits = (trimmed.match(/essai\s+gratuit\s+7\s+jours|prueba\s+gratis\s+7\s+d[ií]as/gi) || []).length;
+  if (ctaHits > 1) warnings.push('CTA « essai 7 jours » répété — une seule fois en fin de légende.');
   if (hashtagCount > g.hashtagMax) warnings.push(`Trop de hashtags (${hashtagCount}/${g.hashtagMax}).`);
   return {
-    length: len,
+    length,
     max: band.max,
     ideal: Math.round((band.idealMin + band.idealMax) / 2),
     idealMin: band.idealMin,
     idealMax: band.idealMax,
+    unit: band.unit,
+    unitLabel,
     warnings,
     ok: warnings.length === 0,
     hint: band.hint,

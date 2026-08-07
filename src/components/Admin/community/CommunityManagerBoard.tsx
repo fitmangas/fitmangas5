@@ -1832,7 +1832,7 @@ function PostCard({
           <textarea
             value={caption}
             onChange={(e) => onCaptionChange(e.target.value)}
-            rows={isReel ? 3 : 5}
+            rows={isReel ? 3 : post.format === 'feed' || post.format === 'carousel' ? 10 : 5}
             className="mt-1 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25"
             onBlur={() => {
               if (caption === post.caption) return;
@@ -1843,7 +1843,8 @@ function PostCard({
             }}
           />
           <p className={`mt-1 text-xs ${captionAnalysis.ok ? 'text-luxury-soft' : 'text-[#7a2e1a]'}`}>
-            {captionAnalysis.length} / {captionAnalysis.max} car.
+            {captionAnalysis.length} / {captionAnalysis.max} {captionAnalysis.unitLabel}
+            {` · zone idéale ${captionAnalysis.idealMin}–${captionAnalysis.idealMax} ${captionAnalysis.unitLabel}`}
             {captionAnalysis.warnings.length ? ` — ${captionAnalysis.warnings.join(' ')}` : ''}
           </p>
 
