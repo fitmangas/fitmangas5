@@ -22,6 +22,7 @@ import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 import { SHOW_MEXICO } from '@/lib/landing/feature-flags';
 import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
+import { trackBeginTrialClick } from '@/lib/analytics/ga4-client';
 
 const HERO_IMAGE_URL = process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL || LANDING_HERO_IMAGE;
 
@@ -75,6 +76,12 @@ export function LandingPage({
   const [count, setCount] = useState(2496);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  function openTrialSignup(course: Course | null | undefined, source: string) {
+    if (!course) return;
+    trackBeginTrialClick({ courseId: course.id, source });
+    setSelectedCourse(course);
+  }
 
   const t = translations[lang];
   const l =
@@ -259,7 +266,7 @@ export function LandingPage({
     const match =
       onboardingCourses.find((c) => c.id === initialOfferId) ??
       withLocalOfferImages([...t.courses.visio, ...t.courses.nantes, ...t.courses.mexico]).find((c) => c.id === initialOfferId);
-    if (match) setSelectedCourse(match);
+    if (match) openTrialSignup(match, 'deep_link');
   }, [initialOfferId, lang]);
   const fallbackPilatesCards: { title: string; imageUrl: string; level: string }[] = [
     { title: 'Pilates Mat 1', imageUrl: t.courses.visio[0]?.imageUrl ?? HERO_IMAGE_URL, level: l.levels.beginner },
@@ -337,7 +344,7 @@ export function LandingPage({
           <div className="flex items-center justify-center gap-4 md:gap-5">
             <button
               type="button"
-              onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
+              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
               className={`${goldCtaClass} border-[#c45d3e] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
             >
               {l.member}
@@ -423,7 +430,7 @@ export function LandingPage({
             {/* Bouton principal — pleine largeur sur mobile, terracotta plein */}
             <button
               type="button"
-              onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
+              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
               className="btn-luxury-primary mt-6 w-full px-8 py-4 text-[12px] font-bold uppercase tracking-[0.2em] md:!hidden"
             >
               {l.start}
@@ -484,7 +491,7 @@ export function LandingPage({
             <div className="mt-9 hidden flex-wrap items-center gap-6 md:flex">
               <button
                 type="button"
-                onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
+                onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
                 className="btn-luxury-primary shrink-0 px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]"
               >
                 {l.start}
@@ -701,11 +708,11 @@ export function LandingPage({
                 key={course.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => setSelectedCourse(course)}
+                onClick={() => openTrialSignup(course, 'offer_card')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    setSelectedCourse(course);
+                    openTrialSignup(course, 'offer_card');
                   }
                 }}
                 initial={{ opacity: 0, y: 15 }}
@@ -845,7 +852,7 @@ export function LandingPage({
           <div className="mt-8 flex justify-center">
             <button
               type="button"
-              onClick={() => setSelectedCourse(t.courses.visio[0] ?? null)}
+              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
               className={`${goldCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
             >
               {l.start}
@@ -947,7 +954,12 @@ export function LandingPage({
                 <button
                   key={article.titleFr}
                   type="button"
-                  onClick={() => setSelectedCourse(onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0] ?? null)}
+                  onClick={() =>
+                    openTrialSignup(
+                      onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
+                      'blog_preview',
+                    )
+                  }
                   className="group overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/70 text-left shadow-[0_18px_50px_rgba(48,35,28,0.08)] transition hover:-translate-y-1"
                 >
                   <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
@@ -966,7 +978,12 @@ export function LandingPage({
             <div className="mt-8 text-center">
               <button
                 type="button"
-                onClick={() => setSelectedCourse(onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0] ?? null)}
+                onClick={() =>
+                  openTrialSignup(
+                    onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
+                    'blog_cta',
+                  )
+                }
                 className={`${goldCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
               >
                 {l.blogCta}

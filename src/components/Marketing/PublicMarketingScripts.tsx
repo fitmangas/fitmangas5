@@ -7,6 +7,8 @@ function isPublicMarketingPath(pathname: string): boolean {
   if (pathname === '/') return true;
   if (pathname === '/privacy' || pathname === '/terms' || pathname === '/connexion') return true;
   if (pathname.startsWith('/blog')) return true;
+  // Espace compte / checkout abandonné : tunnel conversion (begin_checkout, trial_started).
+  if (pathname.startsWith('/compte') || pathname.startsWith('/checkout')) return true;
   return false;
 }
 

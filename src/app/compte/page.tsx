@@ -85,6 +85,8 @@ export default async function ComptePage({
     purchase_value?: string;
     purchase_currency?: string;
     course_id?: string;
+    session_id?: string;
+    trial?: string;
   }>;
 }) {
   const supabase = await createClient();
@@ -98,9 +100,40 @@ export default async function ComptePage({
 
   const params = await searchParams;
   const checkoutOk = params.checkout === 'success';
-  const purchaseValue = checkoutOk ? Number.parseFloat(params.purchase_value ?? '') : NaN;
-  const purchaseCurrency = params.purchase_currency?.trim() || 'EUR';
-  const purchaseCourseId = params.course_id?.trim() || null;
+  const checkoutSessionId = params.session_id?.trim() || null;
+
+  let isTrialCheckout = checkoutOk && params.trial === '1';
+  let purchaseValue = checkoutOk ? Number.parseFloat(params.purchase_value ?? '') : NaN;
+  let purchaseCurrency = params.purchase_currency?.trim() || 'EUR';
+  let purchaseCourseId = params.course_id?.trim() || null;
+
+  // Retour Stripe direct (/compte?checkout=success&session_id=…) : enrichir trial / montant.
+  if (checkoutOk && checkoutSessionId && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const session = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+      purchaseCourseId = session.metadata?.course_id?.trim() || purchaseCourseId;
+      purchaseCurrency = (session.currency ?? 'eur').toUpperCase();
+      const amountCents = session.amount_total ?? 0;
+      const trialFromSession =
+        session.mode === 'subscription' &&
+        (amountCents <= 0 || session.payment_status === 'no_payment_required');
+      if (trialFromSession) {
+        isTrialCheckout = true;
+        purchaseValue = 0;
+      } else if (!Number.isFinite(purchaseValue) || purchaseValue <= 0) {
+        const { purchaseAmountEurFromCheckout } = await import('@/lib/stripe/checkout-purchase-amount');
+        const eur = purchaseAmountEurFromCheckout({
+          courseId: purchaseCourseId,
+          amountTotalCents: session.amount_total,
+        });
+        if (eur != null) purchaseValue = eur;
+      }
+    } catch (e) {
+      console.error('[compte] enrichissement session Stripe GA4', e);
+    }
+  }
   const goal = getMonthlySessionGoal();
 
   const [marketingSettings, lang, hasVisioAccess, { data: profile }, monthly, nextAppointment, replayItems, standaloneVimeoItems, { count: unreadNotifications }, { count: replayUnread }, { count: blogUnread }, { count: liveUnread }, { count: publishedBlogCount }] = await Promise.all([
@@ -256,21 +289,25 @@ export default async function ComptePage({
   const gaId = marketingSettings.google_analytics_id?.startsWith('G-') ? marketingSettings.google_analytics_id : null;
   const metaPixelId = marketingSettings.meta_pixel_id ?? null;
   const trackedPurchaseValue =
-    checkoutOk && Number.isFinite(purchaseValue) && purchaseValue > 0
-      ? purchaseValue
-      : checkoutOk && purchaseCourseId && COURSE_PRICE_CENTS[purchaseCourseId]
-        ? COURSE_PRICE_CENTS[purchaseCourseId] / 100
-        : 0;
+    isTrialCheckout
+      ? 0
+      : checkoutOk && Number.isFinite(purchaseValue) && purchaseValue > 0
+        ? purchaseValue
+        : checkoutOk && purchaseCourseId && COURSE_PRICE_CENTS[purchaseCourseId]
+          ? COURSE_PRICE_CENTS[purchaseCourseId] / 100
+          : 0;
 
   return (
     <div className="mx-auto max-w-[1280px] min-w-0 space-y-3 pb-16 md:space-y-10 md:px-8">
-      {checkoutOk && trackedPurchaseValue > 0 ? (
+      {checkoutOk && (isTrialCheckout || trackedPurchaseValue > 0) ? (
         <CheckoutPurchaseTracker
           gaId={gaId}
           metaPixelId={metaPixelId}
           value={trackedPurchaseValue}
           currency={purchaseCurrency}
           courseId={purchaseCourseId}
+          sessionId={checkoutSessionId}
+          isTrial={isTrialCheckout}
         />
       ) : null}
       <section className="grid items-center gap-3 pt-1 text-center md:grid-cols-[1fr_auto] md:gap-5 md:pt-2 md:text-left">

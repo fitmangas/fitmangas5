@@ -7,6 +7,8 @@ import type { Course, Language, Segment } from '@/types';
 import { detectBrowserLocale, detectBrowserTimeZone, type DetectedLocale } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 import { REF_COOKIE, normalizeReferralCode, isValidReferralCode } from '@/lib/referrals/cookie';
+import { trackBeginCheckout } from '@/lib/analytics/ga4-client';
+import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
 
 function persistReferralCookie(code: string) {
   const normalized = normalizeReferralCode(code);
@@ -188,6 +190,12 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
       }
 
       if (checkoutJson.url) {
+        const catalogueEur = COURSE_PRICE_CENTS[course.id] != null ? COURSE_PRICE_CENTS[course.id] / 100 : undefined;
+        trackBeginCheckout({
+          courseId: course.id,
+          value: catalogueEur,
+          currency: 'EUR',
+        });
         window.location.href = checkoutJson.url;
         return;
       }

@@ -10,14 +10,32 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 function compteSuccessUrl(origin: string, session: Stripe.Checkout.Session): string {
   const courseId = session.metadata?.course_id?.trim() || '';
-  const purchaseValue = purchaseAmountEurFromCheckout({
-    courseId,
-    amountTotalCents: session.amount_total,
-  });
+  const isSubscription = session.mode === 'subscription';
+  const amountCents = session.amount_total ?? 0;
+  // Essai Visio : montant Stripe = 0 (ou no_payment_required) → trial, pas purchase.
+  const isTrial =
+    isSubscription &&
+    (amountCents <= 0 ||
+      session.payment_status === 'no_payment_required' ||
+      Boolean(session.metadata?.trial === '1'));
+
+  const purchaseValue = isTrial
+    ? 0
+    : purchaseAmountEurFromCheckout({
+        courseId,
+        amountTotalCents: session.amount_total,
+      });
+
   const url = new URL('/compte', origin);
   url.searchParams.set('checkout', 'success');
   if (courseId) url.searchParams.set('course_id', courseId);
-  if (purchaseValue != null) url.searchParams.set('purchase_value', String(purchaseValue));
+  url.searchParams.set('session_id', session.id);
+  if (isTrial) url.searchParams.set('trial', '1');
+  if (purchaseValue != null && purchaseValue > 0) {
+    url.searchParams.set('purchase_value', String(purchaseValue));
+  } else if (isTrial) {
+    url.searchParams.set('purchase_value', '0');
+  }
   url.searchParams.set('purchase_currency', (session.currency ?? 'eur').toUpperCase());
   return url.pathname + url.search;
 }
@@ -51,7 +69,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/?checkout=error`);
   }
 
-  if (session.payment_status !== 'paid' && session.status !== 'complete') {
+  // Essai Visio : payment_status = no_payment_required ; sinon paid / complete.
+  const okStatus =
+    session.payment_status === 'paid' ||
+    session.payment_status === 'no_payment_required' ||
+    session.status === 'complete';
+  if (!okStatus) {
     console.warn('[checkout-success] not paid / not complete', { sessionId, payment_status: session.payment_status, status: session.status });
     return NextResponse.redirect(`${origin}/checkout/abandoned?session_id=${encodeURIComponent(sessionId)}`);
   }
@@ -106,11 +129,19 @@ export async function GET(request: Request) {
     connexionUrl.searchParams.set('email', email);
     connexionUrl.searchParams.set('message', 'payment_ok');
     const courseId = session.metadata?.course_id?.trim();
-    const purchaseValue = purchaseAmountEurFromCheckout({
-      courseId,
-      amountTotalCents: session.amount_total,
-    });
+    const amountCents = session.amount_total ?? 0;
+    const isTrial =
+      session.mode === 'subscription' &&
+      (amountCents <= 0 || session.payment_status === 'no_payment_required');
+    const purchaseValue = isTrial
+      ? 0
+      : purchaseAmountEurFromCheckout({
+          courseId,
+          amountTotalCents: session.amount_total,
+        });
     if (courseId) connexionUrl.searchParams.set('course_id', courseId);
+    connexionUrl.searchParams.set('session_id', session.id);
+    if (isTrial) connexionUrl.searchParams.set('trial', '1');
     if (purchaseValue != null) connexionUrl.searchParams.set('purchase_value', String(purchaseValue));
     return NextResponse.redirect(connexionUrl.toString());
   }

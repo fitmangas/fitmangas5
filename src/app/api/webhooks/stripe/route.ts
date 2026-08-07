@@ -20,6 +20,7 @@ import {
   dispatchSubscriptionRenewed,
   markStripeEventProcessed,
 } from '@/lib/notifications/phase2';
+import { trackSubscriptionActiveServer } from '@/lib/analytics/ga4-mp';
 
 const stripeApiVersion = '2025-02-24.acacia';
 
@@ -343,6 +344,33 @@ export async function POST(request: Request) {
           } else {
             console.warn('[stripe webhook] invoice.payment_succeeded sans abonnement lié', { invoiceId: invoice.id, userId });
           }
+
+          // GA4 : première facture réellement payée (après trial ou abo sans trial).
+          // Uniquement sur invoice.paid (évite double si payment_succeeded aussi reçu).
+          const amountPaid = invoice.amount_paid ?? 0;
+          if (event.type === 'invoice.paid' && amountPaid > 0 && subscription) {
+            const billingReason = invoice.billing_reason;
+            const trialEnd = subscription.trial_end ?? null;
+            const periodStart = invoice.lines?.data?.[0]?.period?.start ?? null;
+            const isPaidWithoutTrial = billingReason === 'subscription_create';
+            const isFirstInvoiceAfterTrial =
+              (billingReason === 'subscription_cycle' || billingReason === 'subscription_update') &&
+              typeof trialEnd === 'number' &&
+              typeof periodStart === 'number' &&
+              Math.abs(periodStart - trialEnd) < 3 * 24 * 60 * 60;
+            if (isPaidWithoutTrial || isFirstInvoiceAfterTrial) {
+              const courseId = subscription.metadata?.course_id ?? null;
+              void trackSubscriptionActiveServer({
+                stripeEventId: event.id,
+                userId,
+                courseId,
+                invoiceId: invoice.id,
+                valueEur: amountPaid / 100,
+                currency: invoice.currency,
+              }).catch((e) => console.error('[stripe webhook] ga4 subscription_active', e));
+            }
+          }
+
           if (invoice.billing_reason === 'subscription_create') break;
           await dispatchSubscriptionRenewed(admin, userId, invoice.id);
           await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);

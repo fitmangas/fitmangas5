@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { LockKeyhole } from 'lucide-react';
 
 import { logVisioLockCheckoutInitiated } from '@/app/checkout/actions';
+import { trackBeginCheckout } from '@/lib/analytics/ga4-client';
+import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
 
 type Props = {
   children: ReactNode;
@@ -42,6 +44,13 @@ export function VisioLock({ children, featureDescription_fr, featureDescription_
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (json.url) {
+        const catalogueEur =
+          COURSE_PRICE_CENTS[state.ctaOffer] != null ? COURSE_PRICE_CENTS[state.ctaOffer] / 100 : undefined;
+        trackBeginCheckout({
+          courseId: state.ctaOffer,
+          value: catalogueEur,
+          currency: 'EUR',
+        });
         window.location.href = json.url;
         return;
       }

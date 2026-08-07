@@ -3,54 +3,81 @@
 import Script from 'next/script';
 import { useEffect, useRef } from 'react';
 
+import { trackPurchase, trackTrialStarted } from '@/lib/analytics/ga4-client';
+
 type Props = {
   gaId: string | null;
   metaPixelId: string | null;
-  value: number;
-  currency?: string;
+  /** ID Stripe session (déduplication). */
+  sessionId?: string | null;
   courseId?: string | null;
+  currency?: string;
+  /** true = essai Visio démarré (€0). */
+  isTrial?: boolean;
+  /** Montant réellement payé (présentiel / abo sans trial). 0 pour trial. */
+  value: number;
 };
 
-const STORAGE_KEY = 'fitmangas_purchase_tracked';
-
-export function CheckoutPurchaseTracker({ gaId, metaPixelId, value, currency = 'EUR', courseId }: Props) {
+/**
+ * Conversion post-checkout sur /compte.
+ * - trial → trial_started (pas purchase)
+ * - paiement réel → purchase
+ * Une seule fois par session Stripe (sessionStorage).
+ */
+export function CheckoutPurchaseTracker({
+  gaId,
+  metaPixelId,
+  sessionId,
+  courseId,
+  currency = 'EUR',
+  isTrial = false,
+  value,
+}: Props) {
   const fired = useRef(false);
 
   useEffect(() => {
-    if (fired.current || value <= 0) return;
-    const dedupeKey = `${courseId ?? 'checkout'}:${value}:${currency}`;
-    try {
-      if (sessionStorage.getItem(STORAGE_KEY) === dedupeKey) return;
-    } catch {
-      // sessionStorage indisponible
-    }
+    if (fired.current) return;
+    const transactionId = sessionId?.trim() || `${courseId ?? 'checkout'}:${isTrial ? 'trial' : value}:${currency}`;
 
     const fire = () => {
       if (fired.current) return;
       fired.current = true;
-      try {
-        sessionStorage.setItem(STORAGE_KEY, dedupeKey);
-      } catch {
-        // ignore
-      }
 
-      if (gaId && typeof window.gtag === 'function') {
-        window.gtag('event', 'purchase', {
-          transaction_id: dedupeKey,
-          value,
-          currency,
-          items: courseId ? [{ item_id: courseId, item_name: courseId }] : undefined,
-        });
+      if (gaId) {
+        if (isTrial) {
+          trackTrialStarted({
+            courseId: courseId || 'v-coll',
+            transactionId,
+            currency,
+          });
+        } else if (value > 0) {
+          trackPurchase({
+            courseId,
+            transactionId,
+            value,
+            currency,
+          });
+        } else {
+          console.warn('[ga4] checkout success sans trial ni montant — aucun événement purchase');
+        }
       }
 
       if (metaPixelId && typeof window.fbq === 'function') {
-        window.fbq('track', 'Purchase', { value, currency });
+        try {
+          if (isTrial) {
+            window.fbq('track', 'StartTrial', { value: 0, currency, predicted_ltv: value || 39 });
+          } else if (value > 0) {
+            window.fbq('track', 'Purchase', { value, currency });
+          }
+        } catch (e) {
+          console.error('[meta-pixel] track failed', e);
+        }
       }
     };
 
-    const t = window.setTimeout(fire, 400);
+    const t = window.setTimeout(fire, 500);
     return () => window.clearTimeout(t);
-  }, [gaId, metaPixelId, value, currency, courseId]);
+  }, [gaId, metaPixelId, sessionId, courseId, currency, isTrial, value]);
 
   if (!gaId && !metaPixelId) return null;
 
@@ -59,7 +86,7 @@ export function CheckoutPurchaseTracker({ gaId, metaPixelId, value, currency = '
       {gaId ? (
         <>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
-          <Script id="ga4-checkout-purchase" strategy="afterInteractive">
+          <Script id="ga4-checkout-conversion" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
@@ -70,7 +97,7 @@ export function CheckoutPurchaseTracker({ gaId, metaPixelId, value, currency = '
         </>
       ) : null}
       {metaPixelId ? (
-        <Script id="meta-pixel-checkout-purchase" strategy="afterInteractive">
+        <Script id="meta-pixel-checkout-conversion" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
