@@ -54,6 +54,73 @@ Ne **pas** forcer un block 3D / hors sujet.
 
 ---
 
+## Animations LMDM DE FOND (STANDARD — tout Reel, y compris témoignage)
+
+**INTERDIT : tout gros texte qui répète ou résume la voix** (hors hook 0–2,8 s et sous-titres).
+Un « mot-clé animé » n'est **PAS** du motion design — c'est l'erreur n°1 LMDM (la même info une 3e fois : voix + sous-titres + gros texte → le viewer se perd). Incident réel : « LE DÉCLIC » / « SANS MATÉRIEL » en texte statique sur trop-tard → rejeté.
+
+**Règle d'or LMDM** — pour chaque section du discours se demander :
+> « Comment je rends cette idée **VISUELLE** au lieu de l'écrire en gros ? »
+
+Réf. obligatoire @lemondedumarketing : **fenêtres/cartes ANIMÉES au-dessus de la tête** — navigateur avec timeline qui défile, cartes comparatives qui apparaissent, logos qui glissent dans un dossier, **checklist qui se coche item par item**, surlignages qui se dessinent. Chaque animation **illustre la phrase dite à ce moment**.
+
+**Les animations VIVENT** : elles bougent à l'intérieur (défilement, coche qui se dessine, glissement, zoom, pulsation) — jamais une carte statique posée.
+
+**Écriture du prompt motion** : décrire le **MOUVEMENT**, pas le contenu — **ce qui bouge, dans quel ordre, à quel moment, avec quel accent**.
+
+**Templates HyperFrames d'abord** (hyperframes.heygen.com/catalog) : partir d'un template proche, copier son prompt, rebrand FitMangas (cream `#FFFAF5`, terracotta `#C45D3E`, Inter, logo flamme). From scratch seulement s'il n'y a pas de template proche — toujours en décrivant le mouvement.
+
+**BRUITAGES (checklist LMDM « LES BRUITAGES ✓ ») : chaque apparition/transition d'animation a son SFX** (whoosh, pop, tick ~−20 dB). Tick sonore sur **chaque** coche de checklist. **Pas d'animation muette.**
+
+**Anti-surcharge** : une animation par phrase/idée max, jamais 3 effets/seconde. Face cam dominant, zones mortes IG.
+
+**Vrais logos SVG officiels** quand une marque est citée (jamais redessinés).
+
+### FORMAT SPLIT SCREEN (le vrai format LMDM — obligatoire pour les grosses animations)
+
+Quand une grosse animation arrive, **l'écran SE PARTAGE** :
+- **Zone haute (~48 %)** : l'animation sur un **fond dédié pleine largeur** (sombre `#1a1a1a` ou cream selon l'animation) — **PAS une petite carte flottante au-dessus de la tête**. L'animation est **GRANDE et lisible**, pas un timbre-poste.
+- **Zone basse** : la personne **recadrée** (technique `clip-path:inset(48%)` + `translateY`, seek-safe — même mécanique que le CTA).
+- **Sous-titres à la JONCTION** des deux zones pendant le split (pas en bas sur elle) — déplacer le conteneur subs (`y`), le remettre après.
+- Option : l'animation peut prendre **l'écran entier** quelques secondes (la personne disparaît), puis retour face cam.
+
+### DENSITÉ — une animation par phrase (règle LMDM exacte)
+
+> « Une animation par phrase, oui. Trois effets par seconde, non. Les plus efficaces sont souvent les plus simples : un surlignage posé au bon moment. »
+
+**Passe la transcription phrase par phrase et assigne à CHACUNE** : grosse animation (split) / micro-animation / punch-in. **Aucune phrase sans beat visuel.** Sur ~80 s : 2–4 splits (temps forts) + **une majorité de micro-animations** :
+- **surlignage terracotta** qui se dessine sous le mot-clé du sous-titre au moment où il est dit
+- cercle / soulignement animé, flèche qui pointe, **petit pictogramme qui pop** à côté d'elle
+- ~~punch-in (zoom léger sur le visage)~~ → **NE PAS UTILISER** : la coach n'aime pas le zoom sur elle (préférence FitMangas validée). Remplacer par un autre micro (soulignement, picto, soulignement d'un mot fort) — jamais un zoom sur la personne
+
+### TRANSITIONS — cut sec uniquement
+
+**INTERDIT : volets, wipes, sweeps colorés** (incident sweep diagonal orange trop-tard → rejeté). Chez LMDM les transitions sont quasi inexistantes : **cut sec + apparition de l'élément**. Les entrées/sorties de split se font en `tl.set` instantané (pas de fondu de zone).
+
+### SOUND DESIGN LMDM (palette par TYPE d'élément — pas que des whoosh)
+
+| Élément | Son |
+|---|---|
+| Apparition UI / carte / split | **clic de souris** (`click`) |
+| Texte qui s'écrit | **frappe clavier** (`typing` / `key-press`) |
+| Coche de checklist | **tick** (`click-soft`) |
+| Pictogramme qui pop | **pop** discret |
+| Soulignement / surlignage | **chime / ping** léger |
+| Apparition d'image/photo | obturateur si dispo |
+
+**Chaque micro-animation a son micro-son ~−20 dB** (sons fins un peu plus haut). Pas d'animation muette.
+
+### MUSIQUE — lounge légère
+
+Bed **lounge/hôtel très léger** (~−15 dB sous la voix), présent mais **presque subliminal**, fondu de sortie en fin. Jamais une piste qui s'entend « comme une musique ».
+
+Motifs validés (Reel trop-tard) :
+- « ça m'a fait mal (dos, chevilles) » → split sombre : **grande silhouette, zones douleur qui pulsent** l'une après l'autre
+- « à la maison, sans matériel » → split cream : **grande checklist, coches une à une** + tick
+- « un coach qui te guide » → split sombre : **grande fenêtre visio**, avatar coach + ondes de parole
+
+---
+
 ## From scratch — LA règle LMDM (la plus importante)
 
 > **Décris le mouvement, pas juste le contenu.**

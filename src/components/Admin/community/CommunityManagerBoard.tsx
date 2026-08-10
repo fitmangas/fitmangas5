@@ -66,6 +66,7 @@ import {
 } from '@/lib/admin/social-cm-playbook';
 import { allowedParisHours, parseParisSchedule } from '@/lib/admin/social-paris-time';
 import { downloadSocialPostImage, renderSocialPostDataUrl } from '@/lib/admin/social-image-render';
+import { buildClaudeCodeReelPrompt, copyTextToClipboardSync } from '@/lib/admin/reel-prompt-reference';
 import { resolveGenerationNetworks, weekPlanSummary } from '@/lib/admin/social-week-planner';
 import type { AlejandraDoubleProfile } from '@/lib/admin/alejandra-double';
 import {
@@ -1188,6 +1189,8 @@ function PostCard({
   const postLocale = post.locale ?? 'fr';
   const previewVideo = post.editedVideoPath || post.rawVideoPath;
   const networkColor = SOCIAL_NETWORK_COLORS[post.network];
+  const [claudePromptCopied, setClaudePromptCopied] = useState(false);
+  const [claudePromptError, setClaudePromptError] = useState<string | null>(null);
   const carouselSlides =
     isCarousel && post.carouselPaths?.length
       ? post.carouselPaths
@@ -1621,47 +1624,48 @@ function PostCard({
                 <button
                   type="button"
                   className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
+                  // Empêche le blur du textarea (brief) avant le click → sinon save + refresh
+                  // écrasent le message / cassent le geste presse-papiers (surtout Safari).
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
-                    const prompt = [
-                      'Méthode LMDM / FitMangas — monte cette vidéo en suivant STRICTEMENT mes skills (dossier FitMangas-Reels/skills/ ou reel-monteur-fitmangas/skills/).',
-                      'Lis aussi CLAUDE.md + STRATEGY.md si présents.',
-                      '',
-                      'Vidéo brute : [COLLE ICI LE CHEMIN DU FICHIER .mp4 ou .MOV]',
-                      '',
-                      'Brief FitMangas (AIDE-MÉMOIRE uniquement — PAS un script à sous-titrer) :',
-                      `- Hook / sujet : ${post.hookTitle || post.title}`,
-                      `- 3 idées max :`,
-                      post.reelScript || '—',
-                      `- Plans (FACE CAM ONLY) :`,
-                      enforceFaceCamShotList(post.shotList || '', post.locale ?? 'fr'),
-                      `- Légende cible : ${post.caption || '—'}`,
-                      '',
-                      'RÈGLE PAROLE NATURELLE :',
-                      '- Ne force AUCUN sous-titre depuis ce brief.',
-                      '- Transcris la VOIX RÉELLE (Whisper local). Sous-titres = ce qui a été prononcé.',
-                      '- Bafouillages / reprises : dérush = garder la meilleure prise orale.',
-                      '- Phase actuelle : FACE CAM ONLY — aucun plan exercice filmé.',
-                      '',
-                      'Pipeline obligatoire :',
-                      '0) Dérush : Whisper local + ffmpeg silencedetect (coupes DANS les silences).',
-                      '1) Sections à partir de la transcription réelle.',
-                      '2) Motion : Follow @fit.mangas + CTA pile 3 cartes (dashboard/blog/replays) — skills/03.',
-                      '3) Sous-titres 2–3 mots sync voix (style intangible).',
-                      '4) Attends mon OK section par section avant export.',
-                      '5) Audio : musique ~15 dB sous la voix (sauf si je demande son d’origine). Pas de RNNoise.',
-                      '6) Export MP4 1080x1920 LOCAL H.264 SDR — INTERDIT cloud HeyGen.',
-                      '',
-                      'Si quelque chose bloque, répare-toi-même. Dis-moi quand l’aperçu local est prêt.',
-                    ].join('\n');
-                    void navigator.clipboard.writeText(prompt).then(
-                      () => setMessage('Prompt Claude Code copié — colle-le dans Claude Code.'),
-                      () => setMessage('Impossible de copier.'),
-                    );
+                    // Copie SYNCHRONE dans le geste click — Safari refuse souvent
+                    // navigator.clipboard après un await / async IIFE.
+                    try {
+                      const prompt = buildClaudeCodeReelPrompt({
+                        hookTitle: post.hookTitle,
+                        overlayText: post.overlayText,
+                        title: post.title,
+                        reelScript: post.reelScript,
+                        caption: post.caption,
+                        locale: post.locale,
+                        rawVideoPath: post.rawVideoPath,
+                      });
+                      const ok = copyTextToClipboardSync(prompt);
+                      if (!ok) {
+                        setClaudePromptError('Copie impossible — réessaie ou autorise le presse-papiers.');
+                        setClaudePromptCopied(false);
+                        setMessage('Impossible de copier le prompt Claude Code.');
+                        return;
+                      }
+                      setClaudePromptError(null);
+                      setClaudePromptCopied(true);
+                      setMessage('Prompt Claude Code copié — colle-le dans Claude Code.');
+                      window.setTimeout(() => setClaudePromptCopied(false), 2500);
+                    } catch (err) {
+                      const msg =
+                        err instanceof Error ? err.message : 'Impossible de copier le prompt Claude Code.';
+                      setClaudePromptError(msg);
+                      setClaudePromptCopied(false);
+                      setMessage(msg);
+                    }
                   }}
                 >
                   <Copy size={14} />
-                  Copier prompt Claude Code
+                  {claudePromptCopied ? 'Copié !' : 'Copier prompt Claude Code'}
                 </button>
+                {claudePromptError ? (
+                  <p className="basis-full text-xs text-red-700">{claudePromptError}</p>
+                ) : null}
                 <label className="btn-luxury-primary inline-flex min-h-[40px] cursor-pointer items-center gap-2 px-4 text-[11px]">
                   {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   Importer le MP4 monté

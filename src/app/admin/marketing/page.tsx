@@ -20,6 +20,7 @@ import { getClientLang } from '@/lib/compte/i18n';
 import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
 import { getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
+import { scoreArticleSeoFields, seoCheckIcon } from '@/lib/blog/article-seo-score';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -134,7 +135,10 @@ export default async function AdminMarketingPage() {
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
-  const seoRows = articles.map((article) => scoreArticleSeo(article));
+  const seoRows = articles.map((article) => {
+    const scored = scoreArticleSeoFields(article);
+    return { id: article.id, ...scored };
+  });
   const allSeoAbove80 = seoRows.length > 0 && seoRows.every((row) => row.score >= 80);
   const businessData = ((businessRows ?? []) as Record<string, string | number>[]).map<BusinessStatsPoint>((row) => ({
     date: String(row.stat_date).slice(5),
@@ -362,7 +366,9 @@ export default async function AdminMarketingPage() {
                           {row.score}%
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-xs text-luxury-muted">{row.checks.map((check) => `${check.ok ? '✅' : '❌'} ${check.label}`).join(' · ')}</td>
+                      <td className="px-3 py-3 text-xs text-luxury-muted">
+                        {row.checks.map((check) => `${seoCheckIcon(check.status)} ${check.label}`).join(' · ')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1258,35 +1264,6 @@ function SeoExcellencePlanCard({ plan }: { plan: SeoExcellencePlan }) {
 
 function formatCompact(value: number): string {
   return new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
-}
-
-function scoreArticleSeo(article: ArticleSeoRow) {
-  const title = article.title_fr ?? '';
-  const description = article.meta_description_fr || article.description_fr || '';
-  const slug = article.slug_fr ?? '';
-  const content = article.content_fr || '';
-  const wordCount = content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
-  const lengthOkIdeal = wordCount >= 1200 && wordCount <= 1800;
-  const lengthOkMin = wordCount >= 300;
-  const checks = [
-    { label: 'Titre < 60', ok: title.length > 0 && title.length < 60 },
-    { label: 'Description < 160', ok: description.length > 0 && description.length < 160 },
-    { label: 'Image', ok: Boolean(article.featured_image_url) },
-    {
-      label:
-        wordCount < 800
-          ? `Trop court (${wordCount} mots)`
-          : lengthOkIdeal
-            ? `Zone idéale (${wordCount} mots)`
-            : wordCount < 1200
-              ? `Sous idéal (${wordCount} mots)`
-              : `Long (${wordCount} mots)`,
-      ok: lengthOkMin,
-    },
-    { label: 'Slug propre', ok: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) },
-  ];
-  const score = Math.round((checks.filter((check) => check.ok).length / checks.length) * 100);
-  return { id: article.id, title, score, checks, wordCount, lengthOkIdeal };
 }
 
 function aggregateNotifications(rows: Array<{ channel: string | null; created_at: string }>): NotificationPoint[] {

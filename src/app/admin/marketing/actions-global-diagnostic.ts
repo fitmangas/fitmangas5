@@ -14,6 +14,7 @@ import {
 } from '@/lib/google/analytics';
 import { getCrawlErrors, getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
+import { scoreArticleSeoFields } from '@/lib/blog/article-seo-score';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -146,38 +147,6 @@ Règles :
 - Ne calcule JAMAIS un "taux d'indexation" en divisant indexedUrlsLabel par submittedUrls : indexedUrlsLabel peut être un échantillon URL Inspection (ex. "3/3 vérifiées"), alors que submittedUrls est le total du sitemap. Si indexedUrlsSource=url_inspection et que les URLs inspectées sont indexées, ne parle PAS de faible indexation.
 - Les champs contents[].indexed de l'API sitemaps.list sont considérés comme non fiables/dépréciés : ne les utilise pas pour conclure que les pages ne sont pas indexées.
 - Ne mets JAMAIS la réponse dans un bloc code (\`\`\`) : le markdown doit être brut et simple.`;
-
-function scoreArticleSeo(article: ArticleSeoRow) {
-  const title = article.title_fr ?? '';
-  const description = article.meta_description_fr || article.description_fr || '';
-  const slug = article.slug_fr ?? '';
-  const content = article.content_fr || '';
-  const wordCount = content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
-  const lengthOkIdeal = wordCount >= 1200 && wordCount <= 1800;
-  const checks = [
-    { label: 'Titre < 60', ok: title.length > 0 && title.length < 60 },
-    { label: 'Description < 160', ok: description.length > 0 && description.length < 160 },
-    { label: 'Image', ok: Boolean(article.featured_image_url) },
-    {
-      label:
-        wordCount < 800
-          ? `Trop court (${wordCount} mots)`
-          : lengthOkIdeal
-            ? `Zone idéale (${wordCount} mots)`
-            : wordCount < 1200
-              ? `Sous idéal (${wordCount} mots)`
-              : `Long (${wordCount} mots)`,
-      ok: wordCount >= 300,
-    },
-    { label: 'Slug propre', ok: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) },
-  ];
-  const score = Math.round((checks.filter((c) => c.ok).length / checks.length) * 100);
-  return {
-    title,
-    score,
-    failingChecks: checks.filter((c) => !c.ok).map((c) => c.label),
-  };
-}
 
 function publicMetaPages() {
   return [
@@ -328,7 +297,14 @@ async function gatherGlobalMarketingSnapshot(): Promise<GlobalMarketingSnapshot>
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
-  const seoScores = articles.map((a) => scoreArticleSeo(a));
+  const seoScores = articles.map((a) => {
+    const scored = scoreArticleSeoFields(a);
+    return {
+      title: scored.title,
+      score: scored.score,
+      failingChecks: scored.checks.filter((c) => c.status !== 'pass').map((c) => c.label),
+    };
+  });
   const allArticlesAbove80 = seoScores.length > 0 && seoScores.every((r) => r.score >= 80);
 
   let searchConsole: GlobalMarketingSnapshot['seo']['searchConsole'] = {
