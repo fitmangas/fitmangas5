@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dispatch } from '@/lib/notifications/dispatcher';
 
-/** Notifie tous les membres qu’un article blog est publié (batch). */
+/**
+ * File le nouvel article dans le digest hebdo de chaque member.
+ * Pas d’in-app ni d’email immédiat (évite 1 notif × N articles × N members).
+ */
 export async function notifyMembersNewBlogArticle(
   admin: SupabaseClient,
   params: { articleId: string; title: string; slugFr: string; excerpt?: string | null },
@@ -22,14 +25,12 @@ export async function notifyMembersNewBlogArticle(
 
     if (error) {
       console.error('[notifyMembersNewBlogArticle]', error.message);
-      return;
+      return { notifiedUserIds };
     }
 
     const rows = members ?? [];
     if (rows.length === 0) break;
 
-    // DEPRECATED: replaced by dispatcher in Phase 3.
-    // Ancien chemin : insert direct dans user_notifications.
     for (const member of rows) {
       const result = await dispatch(admin, {
         event_type: 'blog.article_published',
@@ -43,9 +44,11 @@ export async function notifyMembersNewBlogArticle(
           excerpt: body,
           articleUrl: link,
         },
-        channel_hints: ['in_app', 'email'],
+        // Contenu non urgent → digest lundi uniquement (pas de doublon in-app + email).
+        channel_hints: ['digest'],
         idempotency_key: `blog.article_published:${params.articleId}:${member.id}`,
       });
+      // Toujours exclure le member de la newsletter externe, même si digest désactivé.
       if (result.ok) notifiedUserIds.push(member.id);
     }
 

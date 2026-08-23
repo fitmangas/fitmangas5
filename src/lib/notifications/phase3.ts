@@ -5,6 +5,7 @@ import { wrapResendEmail } from '@/lib/email/base-template';
 import { countActiveQualifiedReferrals, REFERRAL_REWARD_THRESHOLD } from '@/lib/referrals/reward';
 
 import { dispatch } from './dispatcher';
+import { mergePrefs } from './defaults';
 import { calendarDayKeyInTimeZone, formatInUserTimezone } from './timezone';
 import { renderTemplate, getEmailTemplate } from './templates';
 
@@ -169,6 +170,7 @@ export type DigestSummary = {
   nextCourseTitle: string | null;
   nextCourseWhen: string | null;
   blogTitles: string[];
+  replayTitles: string[];
   referralActiveCount: number;
   referralRewardActive: boolean;
 };
@@ -224,11 +226,24 @@ export async function buildDigestSummaryForUser(
     .eq('status', 'published')
     .gte('published_at', weekAgo)
     .order('published_at', { ascending: false })
-    .limit(3);
+    .limit(12);
 
   const blogTitles = ((articles ?? []) as Record<string, string | null>[])
     .map((a) => a[titleCol])
     .filter((t): t is string => Boolean(t?.trim()));
+
+  const { data: replays } = await client
+    .from('standalone_vimeo_videos')
+    .select('title, published_at')
+    .eq('validation_status', 'published')
+    .eq('is_hidden', false)
+    .gte('published_at', weekAgo)
+    .order('published_at', { ascending: false })
+    .limit(12);
+
+  const replayTitles = ((replays ?? []) as { title: string | null }[])
+    .map((r) => r.title?.trim())
+    .filter((t): t is string => Boolean(t));
 
   const referralActiveCount = await countActiveQualifiedReferrals(client, userId);
   const { data: prof } = await client.from('profiles').select('referral_reward_active').eq('id', userId).maybeSingle();
@@ -238,9 +253,35 @@ export async function buildDigestSummaryForUser(
     nextCourseTitle,
     nextCourseWhen,
     blogTitles,
+    replayTitles,
     referralActiveCount,
     referralRewardActive: prof?.referral_reward_active === true,
   };
+}
+
+function formatQueuedContentLines(
+  locale: DigestLocale,
+  rows: { digest_bucket: string; payload: Record<string, unknown> }[],
+): string[] {
+  const lines: string[] = [];
+  for (const row of rows) {
+    const eventType = String(row.payload.event_type ?? '');
+    const title =
+      String(row.payload.title ?? '').trim() ||
+      String((row.payload.payload as { title?: string } | undefined)?.title ?? '').trim();
+    if (eventType.startsWith('blog.')) {
+      lines.push(locale === 'es' ? `• Artículo : ${title || 'Blog'}` : `• Article : ${title || 'Blog'}`);
+      continue;
+    }
+    if (eventType.startsWith('replay.')) {
+      lines.push(locale === 'es' ? `• Replay : ${title || 'Nuevo replay'}` : `• Replay : ${title || 'Nouveau replay'}`);
+      continue;
+    }
+    // Quiet-hours / autres : ne pas lister les événements cours (déjà temps réel).
+    if (row.digest_bucket === 'courses' || eventType.startsWith('course.')) continue;
+    if (title) lines.push(`• ${title}`);
+  }
+  return lines;
 }
 
 function formatDigestSummaryLines(
@@ -248,19 +289,27 @@ function formatDigestSummaryLines(
   summary: DigestSummary,
   queuedLines: string[],
 ): string {
+  const articleCount = summary.blogTitles.length;
+  const replayCount = summary.replayTitles.length;
   const lines: string[] = [];
+
   if (locale === 'es') {
     lines.push(
-      `Esta semana has seguido ${summary.attendedThisWeek} sesión${summary.attendedThisWeek === 1 ? '' : 'es'}.`,
+      `Esta semana : ${articleCount} artículo${articleCount === 1 ? '' : 's'} nuevo${articleCount === 1 ? '' : 's'} + ${replayCount} replay${replayCount === 1 ? '' : 's'} nuevo${replayCount === 1 ? '' : 's'}.`,
+    );
+    if (summary.blogTitles.length) {
+      lines.push('En el blog :');
+      for (const title of summary.blogTitles) lines.push(`• ${title}`);
+    }
+    if (summary.replayTitles.length) {
+      lines.push('Replays :');
+      for (const title of summary.replayTitles) lines.push(`• ${title}`);
+    }
+    lines.push(
+      `Has seguido ${summary.attendedThisWeek} sesión${summary.attendedThisWeek === 1 ? '' : 'es'}.`,
     );
     if (summary.nextCourseTitle && summary.nextCourseWhen) {
       lines.push(`Próxima sesión : ${summary.nextCourseTitle} — ${summary.nextCourseWhen}.`);
-    } else {
-      lines.push('No tienes ninguna sesión reservada por el momento.');
-    }
-    if (summary.blogTitles.length) {
-      lines.push('Nuevo en el blog :');
-      for (const title of summary.blogTitles) lines.push(`• ${title}`);
     }
     if (summary.referralActiveCount > 0 || summary.referralRewardActive) {
       if (summary.referralRewardActive) {
@@ -273,16 +322,19 @@ function formatDigestSummaryLines(
     }
   } else {
     lines.push(
-      `Cette semaine, tu as suivi ${summary.attendedThisWeek} cours${summary.attendedThisWeek > 1 ? 's' : ''}.`,
+      `Cette semaine : ${articleCount} article${articleCount > 1 ? 's' : ''} + ${replayCount} replay${replayCount > 1 ? 's' : ''}.`,
     );
+    if (summary.blogTitles.length) {
+      lines.push('Sur le blog :');
+      for (const title of summary.blogTitles) lines.push(`• ${title}`);
+    }
+    if (summary.replayTitles.length) {
+      lines.push('Replays :');
+      for (const title of summary.replayTitles) lines.push(`• ${title}`);
+    }
+    lines.push(`Tu as suivi ${summary.attendedThisWeek} cours.`);
     if (summary.nextCourseTitle && summary.nextCourseWhen) {
       lines.push(`Prochain cours : ${summary.nextCourseTitle} — ${summary.nextCourseWhen}.`);
-    } else {
-      lines.push('Aucun cours réservé pour le moment.');
-    }
-    if (summary.blogTitles.length) {
-      lines.push('Nouveautés blog :');
-      for (const title of summary.blogTitles) lines.push(`• ${title}`);
     }
     if (summary.referralActiveCount > 0 || summary.referralRewardActive) {
       if (summary.referralRewardActive) {
@@ -295,7 +347,7 @@ function formatDigestSummaryLines(
     }
   }
   if (queuedLines.length) {
-    lines.push(locale === 'es' ? 'Otras notificaciones agrupadas :' : 'Autres notifications regroupées :');
+    lines.push(locale === 'es' ? 'También en tu fil :' : 'Aussi dans ta file :');
     lines.push(...queuedLines);
   }
   return lines.join('\n');
@@ -303,38 +355,56 @@ function formatDigestSummaryLines(
 
 export async function processDigestQueue(client: SupabaseClient, deps: Phase3Deps = {}) {
   const now = deps.now ?? new Date();
-  const { data: prefs, error } = await client
-    .from('notification_preferences')
-    .select('user_id, digest_frequency, profiles!inner(display_timezone, preferred_locale)')
-    .in('digest_frequency', ['daily', 'weekly', 'off']);
-  if (error) throw error;
+
+  // Destinataires = members (pas seulement les lignes prefs existantes).
+  const { data: members, error: membersError } = await client.from('profiles').select('id, display_timezone, preferred_locale').eq('role', 'member');
+  if (membersError) throw membersError;
 
   let sent = 0;
-  for (const pref of (prefs ?? []) as { user_id: string; digest_frequency: 'daily' | 'weekly' | 'off'; profiles: { display_timezone?: string | null; preferred_locale?: string | null } | Array<{ display_timezone?: string | null; preferred_locale?: string | null }> }[]) {
-    const profile = Array.isArray(pref.profiles) ? pref.profiles[0] : pref.profiles;
-    const tz = profile?.display_timezone || 'Europe/Paris';
+  for (const member of (members ?? []) as {
+    id: string;
+    display_timezone?: string | null;
+    preferred_locale?: string | null;
+  }[]) {
+    const { data: prefRow } = await client
+      .from('notification_preferences')
+      .select('*')
+      .eq('user_id', member.id)
+      .maybeSingle();
+    const prefs = mergePrefs(prefRow ?? null);
+    if (prefs.silence_mode_enabled) continue;
+    if (!prefs.content_email_enabled) continue;
+
+    const tz = member.display_timezone?.trim() || 'Europe/Paris';
     if (localHour(now, tz) !== 8) continue;
+
+    // Contenu = digest lundi (même si digest_frequency était « off » en base :
+    // c’est désormais le seul canal pour blog/replays standalone).
+    const contentDigestDay = isMonday(now, tz);
+    const scheduledDigest =
+      prefs.digest_frequency === 'daily' ||
+      (prefs.digest_frequency === 'weekly' && contentDigestDay) ||
+      (prefs.digest_frequency === 'off' && contentDigestDay);
+    if (!scheduledDigest) continue;
 
     const { data: queued } = await client
       .from('notification_digest_queue')
       .select('id, digest_bucket, payload')
-      .eq('user_id', pref.user_id)
+      .eq('user_id', member.id)
       .is('processed_at', null);
     const rows = (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
 
-    const scheduledDigest =
-      pref.digest_frequency === 'daily' || (pref.digest_frequency === 'weekly' && isMonday(now, tz));
-    if (!scheduledDigest && rows.length === 0) continue;
-    if (pref.digest_frequency === 'weekly' && !isMonday(now, tz)) continue;
-    if (pref.digest_frequency === 'off' && rows.length === 0) continue;
+    const locale: DigestLocale = member.preferred_locale === 'es' ? 'es' : 'fr';
+    const summary = await buildDigestSummaryForUser(client, member.id, tz, locale, now);
+    const hasContent = summary.blogTitles.length > 0 || summary.replayTitles.length > 0 || rows.length > 0;
+    // Pas d’email vide : le digest est le canal contenu, pas un ping gratuit.
+    if (!hasContent) continue;
 
-    const { data: userData } = await client.auth.admin.getUserById(pref.user_id);
+    const { data: userData } = await client.auth.admin.getUserById(member.id);
     const email = userData.user?.email;
     if (!email) continue;
 
-    const locale: DigestLocale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
-    const summary = await buildDigestSummaryForUser(client, pref.user_id, tz, locale, now);
-    const queuedLines = rows.map((row) => `• ${row.digest_bucket}: ${String(row.payload.event_type ?? 'FitMangas')}`);
+    const queuedLines = formatQueuedContentLines(locale, rows);
     const summaryLines = formatDigestSummaryLines(locale, summary, queuedLines);
 
     const template = getEmailTemplate('digest.summary');
@@ -353,14 +423,23 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
     if (!ok) continue;
 
     if (rows.length) {
-      await client.from('notification_digest_queue').update({ processed_at: now.toISOString() }).eq('user_id', pref.user_id).is('processed_at', null);
+      await client
+        .from('notification_digest_queue')
+        .update({ processed_at: now.toISOString() })
+        .eq('user_id', member.id)
+        .is('processed_at', null);
     }
     await client.from('notification_log').insert({
-      user_id: pref.user_id,
+      user_id: member.id,
       event_type: 'digest.summary',
       channel: 'email',
-      payload: { digest_count: rows.length, attendedThisWeek: summary.attendedThisWeek },
-      idempotency_key: `digest.summary:${pref.user_id}:${calendarDayKeyInTimeZone(tz, now)}:${pref.digest_frequency}`,
+      payload: {
+        digest_count: rows.length,
+        articleCount: summary.blogTitles.length,
+        replayCount: summary.replayTitles.length,
+        attendedThisWeek: summary.attendedThisWeek,
+      },
+      idempotency_key: `digest.summary:${member.id}:${calendarDayKeyInTimeZone(tz, now)}:${prefs.digest_frequency}`,
     });
     sent += 1;
   }

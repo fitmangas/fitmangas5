@@ -10,7 +10,9 @@ import {
 } from './phase3';
 
 function chain(data: unknown[], extras: { count?: number } = {}) {
-  const promise = Promise.resolve({ data, count: extras.count ?? data.length, error: null });
+  const singleData = Array.isArray(data) && data.length === 1 ? data[0] : data.length ? data[0] : null;
+  const listPromise = Promise.resolve({ data, count: extras.count ?? data.length, error: null });
+  const singlePromise = Promise.resolve({ data: singleData, error: null });
   const self = {
     select: vi.fn(() => self),
     eq: vi.fn(() => self),
@@ -19,12 +21,12 @@ function chain(data: unknown[], extras: { count?: number } = {}) {
     gte: vi.fn(() => self),
     order: vi.fn(() => self),
     limit: vi.fn(() => self),
-    maybeSingle: vi.fn(() => promise),
+    maybeSingle: vi.fn(() => singlePromise),
     update: vi.fn(() => self),
     insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-    then: promise.then.bind(promise),
-    catch: promise.catch.bind(promise),
-    finally: promise.finally.bind(promise),
+    then: listPromise.then.bind(listPromise),
+    catch: listPromise.catch.bind(listPromise),
+    finally: listPromise.finally.bind(listPromise),
   };
   return self;
 }
@@ -84,19 +86,24 @@ describe('Phase 3 notifications', () => {
     expect(dispatchMock).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'community.we_miss_you_60d', channel_hints: ['email'] }));
   });
 
-  it('queue vide + daily à 8h → digest enrichi tenté (0 sans Resend)', async () => {
+  it('queue vide + daily à 8h → pas d’email sans contenu', async () => {
     const client = mockClient({
-      notification_preferences: [{ user_id: 'u1', digest_frequency: 'daily', profiles: { display_timezone: 'Europe/Paris' } }],
+      profiles: [{ id: 'u1', display_timezone: 'Europe/Paris', preferred_locale: 'fr' }],
+      notification_preferences: [{ user_id: 'u1', digest_frequency: 'daily', content_email_enabled: true }],
       enrollments: [],
       blog_articles: [],
-      profiles: [{ referral_reward_active: false }],
+      standalone_vimeo_videos: [],
     });
     const result = await processDigestQueue(client, { now: new Date('2026-05-10T06:00:00Z') });
     expect(result.sent).toBe(0);
   });
 
   it('weekly + pas lundi → skip', async () => {
-    const client = mockClient({ notification_preferences: [{ user_id: 'u1', digest_frequency: 'weekly', profiles: { display_timezone: 'Europe/Paris' } }] });
+    const client = mockClient({
+      profiles: [{ id: 'u1', display_timezone: 'Europe/Paris' }],
+      notification_preferences: [{ user_id: 'u1', digest_frequency: 'weekly', content_email_enabled: true }],
+    });
+    // dimanche 10 mai 2026
     const result = await processDigestQueue(client, { now: new Date('2026-05-10T06:00:00Z') });
     expect(result.sent).toBe(0);
   });

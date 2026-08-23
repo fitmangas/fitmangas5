@@ -268,6 +268,31 @@ describe('dispatch', () => {
     expect(m.insertedLogs.some((l) => l.payload?._silence_skip)).toBe(true);
   });
 
+  it('channel_hints digest seul → file digest, pas in-app ni email', async () => {
+    prefsOverride = {
+      content_email_enabled: true,
+      content_inapp_enabled: true,
+    };
+    const m = buildMockSupabase();
+    const sendEmail = vi.fn().mockResolvedValue(undefined);
+    const r = await dispatch(
+      m.client,
+      {
+        event_type: 'blog.article_published',
+        user_id: 'u1',
+        payload: { title: 'Article', body: 'x', kind: 'blog_article' },
+        channel_hints: ['digest'],
+        idempotency_key: 'blog.a1.u1',
+      },
+      { sendEmailPlaceholder: sendEmail },
+    );
+    expect(r).toMatchObject({ ok: true, delivered: { digest: true } });
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(m.insertedNotifications.length).toBe(0);
+    expect(m.insertedDigestQueue.length).toBe(1);
+    expect(m.insertedLogs.some((l) => l.channel === 'digest')).toBe(true);
+  });
+
   it('cap email (RPC) atteint → pas email, in-app passe', async () => {
     scenario = 'email_cap';
     unreadTodayCount = 0;

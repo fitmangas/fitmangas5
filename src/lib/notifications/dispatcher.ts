@@ -20,6 +20,58 @@ function pushHintAllows(hints: DispatchInput['channel_hints']): boolean {
   return hints.includes('push');
 }
 
+/** Contenu non urgent : file digest uniquement (pas d’in-app / email / push immédiat). */
+function isDigestOnlyHints(hints: DispatchInput['channel_hints']): boolean {
+  if (!hints?.length) return false;
+  if (!hints.includes('digest')) return false;
+  return !hints.includes('in_app') && !hints.includes('email') && !hints.includes('push');
+}
+
+async function enqueueDigestItem(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    eventType: string;
+    category: ReturnType<typeof categoryFromEventType>;
+    payload: Record<string, unknown>;
+    idempotencyKey: string | null;
+    reason: 'digest_only' | 'quiet_hours';
+  },
+): Promise<{ queueId: string | null; logId: string | null }> {
+  const { data: queued, error: qErr } = await supabase
+    .from('notification_digest_queue')
+    .insert({
+      user_id: params.userId,
+      digest_bucket: params.category,
+      payload: {
+        event_type: params.eventType,
+        payload: params.payload,
+        title: params.payload.title ?? null,
+        body: params.payload.body ?? null,
+        _queued: params.reason,
+      },
+      scheduled_for: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (qErr) throw qErr;
+
+  const { data: queueLog, error: lErr } = await supabase
+    .from('notification_log')
+    .insert({
+      user_id: params.userId,
+      event_type: params.eventType,
+      channel: 'digest',
+      payload: { ...params.payload, _queued: params.reason, digest_queue_id: queued?.id },
+      idempotency_key: params.idempotencyKey,
+    })
+    .select('id')
+    .single();
+  if (lErr) throw lErr;
+
+  return { queueId: queued?.id ?? null, logId: queueLog?.id ?? null };
+}
+
 export async function dispatch(
   supabase: SupabaseClient,
   input: DispatchInput,
@@ -106,6 +158,42 @@ export async function dispatch(
   const category = categoryFromEventType(input.event_type);
   const hints = input.channel_hints;
 
+  // Contenu non urgent (blog, replay standalone) → file digest, jamais d’envoi immédiat.
+  if (!critical && isDigestOnlyHints(hints)) {
+    if (!isEmailEnabledForCategory(prefs, category)) {
+      const { data, error } = await supabase
+        .from('notification_log')
+        .insert({
+          user_id: userId,
+          event_type: input.event_type,
+          channel: 'log',
+          payload: { ...input.payload, _digest_skip: true, reason: 'content_email_disabled' },
+          idempotency_key: pickIdempotencyKey(),
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return {
+        ok: true,
+        notification_log_ids: data?.id ? [data.id] : [],
+      };
+    }
+
+    const enqueued = await enqueueDigestItem(supabase, {
+      userId,
+      eventType: input.event_type,
+      category,
+      payload: input.payload,
+      idempotencyKey: pickIdempotencyKey(),
+      reason: 'digest_only',
+    });
+    return {
+      ok: true,
+      notification_log_ids: enqueued.logId ? [enqueued.logId] : [],
+      delivered: { digest: true },
+    };
+  }
+
   if (
     !critical &&
     shouldSendNowOrQueue(userId, input.event_type, tz, now, {
@@ -113,38 +201,17 @@ export async function dispatch(
       quietHoursEnd: settings.quietHoursEnd,
     }) === 'queue_digest'
   ) {
-    const { data: queued, error: qErr } = await supabase
-      .from('notification_digest_queue')
-      .insert({
-        user_id: userId,
-        digest_bucket: category,
-        payload: {
-          event_type: input.event_type,
-          payload: input.payload,
-          _quiet_hours_queue: true,
-        },
-        scheduled_for: now.toISOString(),
-      })
-      .select('id')
-      .single();
-    if (qErr) throw qErr;
-
-    const { data: queueLog, error: lErr } = await supabase
-      .from('notification_log')
-      .insert({
-        user_id: userId,
-        event_type: input.event_type,
-        channel: 'digest',
-        payload: { ...input.payload, _queued: 'quiet_hours', digest_queue_id: queued?.id },
-        idempotency_key: pickIdempotencyKey(),
-      })
-      .select('id')
-      .single();
-    if (lErr) throw lErr;
-
+    const enqueued = await enqueueDigestItem(supabase, {
+      userId,
+      eventType: input.event_type,
+      category,
+      payload: input.payload,
+      idempotencyKey: pickIdempotencyKey(),
+      reason: 'quiet_hours',
+    });
     return {
       ok: true,
-      notification_log_ids: queueLog?.id ? [queueLog.id] : [],
+      notification_log_ids: enqueued.logId ? [enqueued.logId] : [],
       delivered: { digest: true },
     };
   }

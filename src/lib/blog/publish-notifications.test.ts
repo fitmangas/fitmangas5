@@ -23,9 +23,15 @@ function blogClient() {
 }
 
 describe('notifyMembersNewBlogArticle', () => {
-  it('article publié → dispatch via dispatcher', async () => {
+  it('article publié → file digest uniquement (pas in-app / email immédiat)', async () => {
     const client = blogClient();
     await notifyMembersNewBlogArticle(client as never, { articleId: 'a1', title: 'Pilates', slugFr: 'pilates' });
-    expect(mocks.dispatch).toHaveBeenCalledWith(client, expect.objectContaining({ event_type: 'blog.article_published' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        event_type: 'blog.article_published',
+        channel_hints: ['digest'],
+      }),
+    );
   });
 });
