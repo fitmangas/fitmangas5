@@ -8,9 +8,9 @@ alwaysApply: false
 
 ## Publication Instagram (validé)
 
-- Mix hebdo ~**60 % Reels / 25 % carousels / 15 % Feed photo** (~5 Reels + 1–2 carousels + 1–2 photos)
+- Mix hebdo ~**60 % Reels / 25 % carousels / 15 % feed photo** (~5 Reels + 1 carousel + 1 feed en pratique)
 - Reels = **vraie vidéo 9:16**, jamais photo Unsplash déguisée
-- Photos : bibliothèque réelle → Gemini → Pollinations → Unsplash (dernier recours)
+- Photos feed : **bibliothèque réelle** → Gemini (payant, si crédité) — **Pollinations BANNI** (corps déformés, inpubliable)
 - Légendes **par format** (`CAPTION_BY_FORMAT`), pas une longueur globale ; FB court ; WhatsApp court + réel
 - Horaires Paris (`social-paris-time`) ; Muapi abandonné
 
@@ -20,16 +20,21 @@ alwaysApply: false
 - Brief admin = **aide-mémoire** (3 idées), **pas** un script lu à l’écran
 - Sous-titres = transcription **voix réelle** (Whisper local)
 - Phase actuelle : **face cam** téléphone uniquement (pas de plan exercice filmé)
+- **Standard figé V1** (réf. `dolor-espalda` + `trop-tard`, `reel-monteur-fitmangas/PROMPT-REFERENCE.md`) :
+  - **Split screen** pour grosses animations : zone haute dédiée bord à bord, visage recadré en bas, sous-titres à la **jonction** des deux zones ; parfois animation **plein écran** quelques secondes puis retour cut sec au face cam
+  - **Une animation par phrase** : grosses animations (2–4) + micro-animations entre (surlignements terracotta, pictos, checklist…) — **aucune phrase sans beat visuel**
+  - Transitions = **cut sec** uniquement (pas de diagonale, volet ou sweep coloré) ; **punch-in INTERDIT** (jamais de zoom scale sur le visage)
 
 ## Montage (hors plateforme)
 
 - Claude Code + HyperFrames **local** dans `FitMangas-Reels/` (pas HeyGen cloud, pas Whisper OpenAI API dans l’app)
 - Skills source de vérité : `reel-monteur-fitmangas/skills/` (+ copie dans `FitMangas-Reels/skills/`)
-- Doc stratégie complète : `docs/cm-reels-strategy.md`
+- Doc stratégie complète : `docs/cm-reels-strategy.md` · prompt figé : `reel-monteur-fitmangas/PROMPT-REFERENCE.md`
 - Sous-titres intangibles : blanc + contour noir, mot-clé terracotta, 2–3 mots
-- Audio : **jamais RNNoise** si la voix s’affaiblit ; voix stable ~−16 dB ; musique ~15 dB sous
+- Audio : **jamais RNNoise** si la voix s’affaiblit ; voix stable ~−16 dB ; musique lounge **subliminale** ~−15 dB sous la voix
+- **Sound design varié** (skill 05) : clic souris, clavier, obturateur, tick, pop, chime — chaque animation a son micro-son (~−20 dB sous la voix) ; pas d’animation muette
 - Follow IG chaque Reel : block `instagram-follow` + avatar `hero.jpg` crop visage + badge vérifié bleu + handle **`@fit.mangas`** + bouton **Seguir** fixe
-- CTA chaque Reel : pile 3 cartes (dashboard + blog + replays) superposition LMDM + léger float — jamais mobile plein cadre
+- CTA chaque Reel : pile 3 cartes desktop (dashboard + blog + replays) en zone sombre haute, **APRÈS recadrage du visage en bas** — **PAS de float** (float **INTERDIT**) ; jamais mobile plein cadre
 
 ## Admin
 

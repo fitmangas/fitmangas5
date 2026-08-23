@@ -1,11 +1,11 @@
 ---
-description: FitMangas source de vérité v4 — faits acquis, chemins CM, règles non négociables. Appliquée à chaque session.
+description: FitMangas source de vérité v5 — faits acquis, plugins MCP, autonomie Cursor, chemins CM. Appliquée à chaque session.
 alwaysApply: true
 ---
 
-# FitMangas — Source de vérité v4 (contexte + chemins de décision)
+# FitMangas — Source de vérité v5 (contexte + chemins de décision)
 
-> **CETTE VERSION REMPLACE LA v2 ET LA v3.** Supprimer les précédentes, ne garder qu'un seul fichier vivant.
+> **CETTE VERSION REMPLACE LA v4.** Supprimer les précédentes, ne garder qu'un seul fichier vivant.
 >
 > Déposer à DEUX endroits :
 > 1. `.cursor/rules/fitmangas-source-de-verite.mdc` dans le repo (Cursor le lit à chaque session)
@@ -52,11 +52,33 @@ alwaysApply: true
 
 ---
 
-## 2. Règles de travail — NON NÉGOCIABLES
+## 2. Mode de travail Cursor + plugins MCP — NON NÉGOCIABLES
 
-- **Migrations Supabase** : JAMAIS sans GO écrit de Kevin. Proposer dans `PROPOSITIONS_MIGRATIONS.md`.
-- **Déploiement** : Kevin déploie via `npx vercel@58.7.1 deploy --prod`. Cursor ne déploie ni ne commit jamais sans demande.
+### Plugins connectés (août 2026)
+Cursor a accès aux plugins MCP suivants — les utiliser pour consulter et agir, dans les limites ci-dessous :
+| Plugin | État | Usage typique |
+|---|---|---|
+| **GitHub** | Connecté (PAT) | Lire repo, PR, issues ; commit/push **sur demande Kevin** |
+| **Vercel** | Connecté (OAuth) | Lire déploiements, logs runtime, analytics |
+| **Stripe** | Connecté (**LIVE**) | Lire paiements, abonnements, coupons |
+| **Supabase** | Connecté | Lire tables, lignes, état réel (consultation) |
+
+### Ce que Cursor peut faire SEUL, sans demander (réversible — vitesse max)
+- Lire / écrire le code, rechercher dans le repo, lancer des tests.
 - **Chaque prompt Cursor finit par** : `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
+- **LIRE** Stripe et Supabase (consultation) pour vérifier l'état réel sans que Kevin le fasse à la main.
+- **LIRE** Vercel (logs, déploiements, erreurs prod) pour diagnostiquer sans demander à Kevin.
+
+### Ce qui EXIGE TOUJOURS un GO explicite de Kevin (irréversible / argent / clientes)
+- **COMMIT + PUSH GitHub** : uniquement si Kevin le demande explicitement (un simple « commit + push » suffit). **Jamais** en auto — un push peut déclencher un déploiement Vercel automatique et contourner la règle « pas de deploy sans GO ».
+- **DÉPLOIEMENT production** (`npx vercel@58.7.1 deploy --prod`) : proposer, attendre le GO. Une version cassée touche les clientes en direct.
+- **ÉCRITURE Stripe LIVE** (créer / modifier / supprimer coupon, abonnement, prix, remboursement) : proposer l'action précise, attendre le GO. C'est du vrai argent sur de vraies cartes.
+- **MIGRATION Supabase** (schéma, `db push`, SQL destructif) : JAMAIS sans GO écrit. Proposer dans `PROPOSITIONS_MIGRATIONS.md`.
+
+### Raison (leçon des 2 dernières semaines)
+Plusieurs bugs (carousel, articles identiques, `finalize.sh` cassé ~1 semaine, page SEO qui plantait) ont été rattrapés **parce que Kevin vérifiait avant déploiement**. Un push GitHub → Vercel auto ou un deploy manuel sans contrôle les aurait envoyés en prod. Donc : **vitesse maximale sur le réversible** (code, build, lecture), **sécurité sur l'irréversible** (commit/push, deploy, Stripe write, migration).
+
+### Règles de travail inchangées
 - **Prompts consolidés** : un gros prompt, pas 40 petits.
 - **Réponses à Kevin** : français, simples, **objectives**. Ne jamais reprendre un chiffre ou une idée de Kevin sans la challenger, ni le suivre par confort. Il attend une analyse, pas un suiveur. **Répondre à TOUTES ses questions**, pas seulement aux plus faciles.
 - **Ne jamais faire de fallback silencieux.** Si une étape échoue, l'UI le dit.
@@ -89,7 +111,7 @@ Règles : rotation anti-répétition **par famille** (pas le même thème 2 sema
 
 ## 3. CHEMIN A — Que fait « GÉNÉRER INSTAGRAM (+ FB) »
 
-**Sortie : 7 posts/semaine = 5 Reels + 1 carousel + 1 feed.** Fuseau Paris.
+**Sortie : 7 posts/semaine ≈ 60 % Reels / 25 % carousels / 15 % feed** (~5 Reels + 1 carousel + 1 feed en pratique). Fuseau Paris.
 Créneaux IG : 07h, 08h, 11h, 12h, 17h, 18h, 19h
 
 | # | Slot | Jour/heure (défaut) | Média | Images IA |
@@ -282,8 +304,8 @@ Sans ça, le système génère à l'aveugle et la semaine 12 est identique à la
 
 ## 10. Chantiers séparés (ne pas mélanger avec la page CM)
 
-- **`finalize.sh` sur le VPS** : timeout TUS sur MP4 ~1 Go = cause racine des replays cassés. Doit supprimer le MP4 local UNIQUEMENT après confirmation Vimeo playable. Seuil disque 80 % = filet secondaire.
-- **Meta publication auto** : vérifier IG User ID vs Page ID, régénérer le Page Access Token.
+- **Replays VPS — RÉSOLU (août 2026)** : `finalize.sh` corrigé (upload TUS streaming) + `watch-stuck-recordings.sh` (cron 10 min) installé via `bash scripts/vps/deploy-from-mac.sh`. Après chaque cours : replay en « En attente » sous ~15–30 min. Kevin valide manuellement. Ne plus redemander l'install VPS sauf régression.
+- **Meta publication auto** : vérifier IG User ID vs Page ID, régénérer le Page Access Token. Carousel FB = 1 post multi-images (pas 1 photo par publication).
 
 ## 11. Questions ouvertes
 
