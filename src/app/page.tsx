@@ -115,7 +115,8 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: 'Fit Mangas',
+    name: 'FitMangas',
+    legalName: 'Alejandra Mangas',
     url: APP_URL,
     sameAs: ['https://www.instagram.com/fit.mangas/'],
     areaServed: ['France', 'Spain', 'Mexico'],

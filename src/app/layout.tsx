@@ -39,6 +39,12 @@ export const metadata: Metadata = {
     images: ['/og-default.jpg'],
   },
   manifest: '/manifest.json',
+  // Meta Business Suite — vérification du domaine fitmangas.com (portefeuille Ale Mangas)
+  verification: {
+    other: {
+      'facebook-domain-verification': 'pds2r3c7vxkiu85rpfx6rns6bqwv0u',
+    },
+  },
 };
 
 export const viewport: Viewport = {

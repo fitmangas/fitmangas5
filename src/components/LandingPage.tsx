@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
+import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { OfferCardFeatures } from './landing/OfferCardFeatures';
 import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
@@ -1018,11 +1019,20 @@ export function LandingPage({
           </div>
         </section>
 
+        <section className="py-12 md:py-16">
+          <div className="mx-auto max-w-2xl">
+            <NewsletterCta />
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="text-center">
           <div className="h-px w-12 bg-brand-accent/30 mx-auto mb-8" />
-          <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-4">
-            © {currentYear} {t.title} Studio
+          <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-2">
+            © {currentYear} Alejandra Mangas
+          </p>
+          <p className="mb-4 text-[10px] tracking-[0.12em] text-brand-ink/30">
+            FitMangas — Mangas Alejandra EI
           </p>
           <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
             <Link href="/privacy" className="hover:text-brand-ink transition-colors">{l.privacy}</Link>

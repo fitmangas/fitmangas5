@@ -6,16 +6,9 @@ import { X, Loader2, ArrowRight, Lock, ChevronDown } from 'lucide-react';
 import type { Course, Language, Segment } from '@/types';
 import { detectBrowserLocale, detectBrowserTimeZone, type DetectedLocale } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
-import { REF_COOKIE, normalizeReferralCode, isValidReferralCode } from '@/lib/referrals/cookie';
+import { REF_COOKIE } from '@/lib/referrals/cookie';
 import { trackBeginCheckout } from '@/lib/analytics/ga4-client';
 import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
-
-function persistReferralCookie(code: string) {
-  const normalized = normalizeReferralCode(code);
-  if (!isValidReferralCode(normalized)) return;
-  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${REF_COOKIE}=${encodeURIComponent(normalized)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax${secure}`;
-}
 
 function readReferralCookie(): string {
   if (typeof document === 'undefined') return '';
@@ -42,7 +35,8 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [offerCode, setOfferCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
@@ -54,7 +48,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
     setDetectedLocale(detectBrowserLocale());
     setDetectedTimeZone(detectBrowserTimeZone());
     const fromCookie = readReferralCookie();
-    if (fromCookie) setReferralCode(fromCookie);
+    if (fromCookie) setOfferCode(fromCookie);
   }, []);
 
   useEffect(() => {
@@ -78,8 +72,9 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           cta: 'Continuer vers le paiement',
           close: 'Fermer',
           missingSupabase: 'Configuration incomplète. Paiement indisponible pour le moment.',
-          referralCode: 'Code parrainage (optionnel)',
-          referralHint: 'Si une amie t’a partagé son lien, le code est pré-rempli.',
+          offerCode: 'Code promo / parrainage',
+          phone: 'Téléphone',
+          birthDate: 'Date de naissance',
         }
       : {
           title: 'Reservar',
@@ -91,8 +86,9 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           cta: 'Continuar al pago',
           close: 'Cerrar',
           missingSupabase: 'Configuración incompleta. Pago no disponible por ahora.',
-          referralCode: 'Código de referido (opcional)',
-          referralHint: 'Si una amiga compartió su enlace, el código ya está rellenado.',
+          offerCode: 'Código promo / referido',
+          phone: 'Teléfono',
+          birthDate: 'Fecha de nacimiento',
         };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -102,6 +98,11 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
 
     if (password.length < 8) {
       setError(lang === 'FR' ? 'Le mot de passe doit contenir au moins 8 caractères.' : 'Mínimo 8 caracteres.');
+      return;
+    }
+
+    if (!phone.trim()) {
+      setError(lang === 'FR' ? 'Indique ton numéro de téléphone.' : 'Indica tu número de teléfono.');
       return;
     }
 
@@ -127,6 +128,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             ...(birthDate.trim() ? { birth_date: birthDate.trim() } : {}),
+            phone: phone.trim(),
             preferred_locale: detectedLocale,
             display_timezone: detectedTimeZone,
             segment: effectiveSegment,
@@ -146,10 +148,8 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
         return;
       }
 
-      if (referralCode.trim()) {
-        persistReferralCookie(referralCode);
-      }
-
+      // Le cookie de parrainage vient du lien partagé ; le champ unique est résolu côté serveur
+      // (promo vs parrainage). On n’écrase pas le cookie avec un éventuel code promo.
       void fetch('/api/welcome-email', {
         method: 'POST',
         credentials: 'include',
@@ -157,29 +157,40 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
         body: JSON.stringify({ userId, email: email.trim() }),
       }).catch(() => {});
 
-      const refPayload = referralCode.trim()
-        ? { code: referralCode.trim() }
-        : undefined;
-      if (data.session || refPayload) {
+      if (data.session || offerCode.trim()) {
         void fetch('/api/referrals/attach', {
           method: 'POST',
           credentials: 'include',
-          headers: refPayload ? { 'Content-Type': 'application/json' } : undefined,
-          body: refPayload ? JSON.stringify(refPayload) : undefined,
+          headers: offerCode.trim() ? { 'Content-Type': 'application/json' } : undefined,
+          body: offerCode.trim() ? JSON.stringify({ code: offerCode.trim() }) : undefined,
         }).catch(() => {});
       }
+
+      const checkoutBody: {
+        courseId: string;
+        offerCode?: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
+      } = {
+        courseId: course.id,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+      };
+      if (offerCode.trim()) checkoutBody.offerCode = offerCode.trim().toUpperCase();
 
       const checkoutRes = data.session
         ? await fetch('/api/checkout', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ courseId: course.id }),
+            body: JSON.stringify(checkoutBody),
           })
         : await fetch('/api/checkout/post-signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ courseId: course.id, userId, email: email.trim() }),
+            body: JSON.stringify({ ...checkoutBody, userId, email: email.trim() }),
           });
 
       const checkoutJson = (await checkoutRes.json()) as { url?: string; error?: string };
@@ -347,7 +358,20 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                     />
                   </label>
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                    {lang === 'FR' ? 'Date de naissance' : 'Fecha de nacimiento'}
+                    {labels.phone}
+                    <input
+                      required
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="06 12 34 56 78"
+                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                    />
+                  </label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    {labels.birthDate}
                     <input
                       type="date"
                       value={birthDate}
@@ -356,18 +380,15 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                     />
                   </label>
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
-                    {labels.referralCode}
+                    {labels.offerCode}
                     <input
                       type="text"
                       autoComplete="off"
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                      placeholder="EX: MARIE-1234"
+                      value={offerCode}
+                      onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+                      placeholder="EX: FAMILLE1MOIS"
                       className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 font-mono text-sm uppercase tracking-wide text-brand-ink placeholder:text-brand-ink/25 outline-none ring-brand-accent/30 transition focus:ring-2"
                     />
-                    <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-brand-ink/45">
-                      {labels.referralHint}
-                    </span>
                   </label>
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
                     <span className="inline-flex items-center gap-1">
