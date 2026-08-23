@@ -6,9 +6,11 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   buildMetaOAuthUrl,
   exchangeMetaCodeForConnection,
+  facebookMirrorMediaReady,
   metaAppConfigured,
   publishFacebookPost,
   publishInstagramNow,
+  verifyFacebookPublishId,
 } from '@/lib/admin/meta-social';
 import {
   emptyAlejandraDouble,
@@ -21,6 +23,7 @@ import { resolvePhotaApiKey } from '@/lib/admin/phota-client';
 import {
   CAPTION_BY_FORMAT,
   captionBandCharCeiling,
+  captionForPublish,
   CAROUSEL_SLIDE_COUNT,
   CAROUSEL_LIST_FORMAT_RULES,
   enforceFaceCamShotList,
@@ -1163,7 +1166,7 @@ export async function attachSocialEditedVideoAction(postId: string, editedVideoP
     ),
   });
   revalidateCommunity();
-  return { ok: true as const, message: 'MP4 monté importé. Prêt à publier / programmer.' };
+  return { ok: true as const, message: 'MP4 monté importé. Prêt à publier / programmer.', editedVideoPath };
 }
 
 /** @deprecated Option API cloud retirée — montage = Claude Mac + HyperFrames local. */
@@ -1375,12 +1378,16 @@ export async function publishSocialPostNowAction(postId: string) {
       ),
     });
     revalidateCommunity();
+    const fbOk = Boolean(facebookExternalId);
     return {
       ok: true as const,
       externalId,
+      facebookExternalId,
       message:
         post.network === 'instagram' && post.alsoPublishFacebook
-          ? 'Publié sur Instagram + Facebook.'
+          ? fbOk
+            ? 'Publié sur Instagram + Facebook.'
+            : 'Publié sur Instagram. Miroir Facebook non confirmé — utilise « Publier miroir FB ».'
           : 'Publié sur Meta.',
     };
   } catch (e) {
@@ -1427,16 +1434,8 @@ export async function scheduleSocialPostAction(postId: string) {
   }
 
   if (post.network === 'instagram') {
-    const connection = await getMetaSocialConnection();
-    let facebookExternalId = post.facebookExternalId;
-    // Miroir FB programmé nativement si possible (image/vidéo déjà prête)
-    if (post.alsoPublishFacebook && connection.connected) {
-      try {
-        facebookExternalId = await publishFacebookPost(connection, post, { schedule: true });
-      } catch (e) {
-        console.error('[scheduleSocialPostAction] FB mirror schedule', post.id, e);
-      }
-    }
+    // Instagram : file FitMangas uniquement. Le miroir Facebook part au cron (même instant que IG),
+    // avec overlay composé côté serveur — évite les IDs fantômes d’un FB programmé trop tôt.
     await saveSocialCommsBoard({
       ...board,
       posts: board.posts.map((item) =>
@@ -1444,7 +1443,7 @@ export async function scheduleSocialPostAction(postId: string) {
           ? {
               ...item,
               status: 'scheduled',
-              facebookExternalId,
+              facebookExternalId: null,
               updatedAt: new Date().toISOString(),
             }
           : item,
@@ -1455,7 +1454,7 @@ export async function scheduleSocialPostAction(postId: string) {
       ok: true as const,
       mode: 'instagram_queue' as const,
       message: post.alsoPublishFacebook
-        ? 'Instagram en file FitMangas + Facebook programmé (si média prêt). Le cron publiera IG à l’heure.'
+        ? 'Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook (même visuel que la preview).'
         : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
     };
   }
@@ -1510,11 +1509,19 @@ export async function processDueSocialPostsAction() {
     try {
       const externalId = await publishInstagramNow(connection, post);
       let facebookExternalId = post.facebookExternalId;
-      if (post.alsoPublishFacebook && !facebookExternalId) {
-        try {
-          facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
-        } catch (fbError) {
-          console.error('[processDueSocialPostsAction] FB mirror', post.id, fbError);
+      if (post.alsoPublishFacebook) {
+        if (!facebookMirrorMediaReady(post)) {
+          console.error('[processDueSocialPostsAction] FB mirror skipped — média manquant', post.id);
+        } else {
+          const fbAlreadyLive =
+            facebookExternalId && (await verifyFacebookPublishId(connection, facebookExternalId, post.format));
+          if (!fbAlreadyLive) {
+            try {
+              facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
+            } catch (fbError) {
+              console.error('[processDueSocialPostsAction] FB mirror', post.id, fbError);
+            }
+          }
         }
       }
       nextPosts = nextPosts.map((item) =>
@@ -1539,6 +1546,135 @@ export async function processDueSocialPostsAction() {
     revalidateCommunity();
   }
   return { ok: true as const, published };
+}
+
+/** Publie / complète le miroir Facebook d’un post IG (refuse le doublon sauf force). */
+export async function publishFacebookMirrorNowAction(postId: string, opts?: { force?: boolean }) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.network !== 'instagram') {
+    return { ok: false as const, error: 'Miroir Facebook : réservé aux posts Instagram.' };
+  }
+  if (!post.alsoPublishFacebook) {
+    return { ok: false as const, error: 'Coche « Aussi Facebook » avant de publier le miroir.' };
+  }
+  if (post.facebookExternalId && !opts?.force) {
+    return {
+      ok: false as const,
+      error: `Déjà sur Facebook (ID ${post.facebookExternalId}). Évite de republier pour ne pas créer de doublon.`,
+      facebookExternalId: post.facebookExternalId,
+    };
+  }
+  if (!facebookMirrorMediaReady(post)) {
+    return {
+      ok: false as const,
+      error:
+        post.format === 'reel'
+          ? 'MP4 manquant pour Facebook.'
+          : 'Visuel manquant pour Facebook.',
+    };
+  }
+
+  const connection = await getMetaSocialConnection();
+  if (!connection.connected || !connection.accessToken || !connection.pageId) {
+    return { ok: false as const, error: 'Connecte d’abord Meta (Page Facebook).' };
+  }
+
+  try {
+    const facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
+    if (!facebookExternalId) {
+      return { ok: false as const, error: 'Facebook n’a renvoyé aucun ID de post.' };
+    }
+    await saveSocialCommsBoard({
+      ...board,
+      posts: board.posts.map((item) =>
+        item.id === postId
+          ? {
+              ...item,
+              facebookExternalId,
+              alsoPublishFacebook: true,
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    });
+    revalidateCommunity();
+    return {
+      ok: true as const,
+      facebookExternalId,
+      message: 'Miroir Facebook publié.',
+      previewCaption: captionForPublish(post).slice(0, 280),
+    };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : 'Publication Facebook échouée.' };
+  }
+}
+
+/** Crée un post manuel vierge (sans IA) dans « En cours ». */
+export async function createManualSocialPostAction(input: {
+  format: SocialPostFormat;
+  locale?: SocialLocale;
+}) {
+  await requireAdmin();
+  const format = input.format;
+  if (!['feed', 'reel', 'carousel', 'story', 'text'].includes(format)) {
+    return { ok: false as const, error: 'Format invalide.' };
+  }
+  const locale = input.locale === 'es' ? 'es' : 'fr';
+  const board = await getSocialCommsBoard();
+  const now = new Date().toISOString();
+  const isReel = format === 'reel';
+  const isCarousel = format === 'carousel';
+  const post: SocialPost = {
+    id: createSocialPostId(),
+    network: 'instagram',
+    format,
+    locale,
+    title: '',
+    caption: '',
+    hashtags: [],
+    cta: '',
+    imageHint: '',
+    imagePath: null,
+    imageSource: isReel ? 'none' : 'library',
+    aiImagePrompt: '',
+    imageFeedback: '',
+    overlayText: null,
+    useOverlay: format === 'feed' || isCarousel,
+    hookTitle: '',
+    reelScript: '',
+    shotList: '',
+    rawVideoPath: null,
+    editedVideoPath: null,
+    videoStatus: isReel ? 'brief' : null,
+    carouselPaths: isCarousel ? Array.from({ length: CAROUSEL_SLIDE_COUNT }, () => '') : [],
+    carouselSlideTitles: isCarousel ? Array.from({ length: CAROUSEL_SLIDE_COUNT }, () => '') : [],
+    plannedAt: null,
+    status: 'idea',
+    sourceType: 'manual',
+    sourceRef: null,
+    whyItWorks: 'Post manuel — à compléter.',
+    metaExternalId: null,
+    alsoPublishFacebook: true,
+    adaptedFromId: null,
+    facebookExternalId: null,
+    generationStatus: 'done',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [post, ...board.posts].slice(0, 80),
+  });
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    postId: post.id,
+    message: `Post ${format} manuel créé — complète les champs puis programme / publie.`,
+  };
 }
 
 function sleep(ms: number) {

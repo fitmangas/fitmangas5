@@ -26,10 +26,10 @@ export function countCaptionWords(text: string): number {
 /** Légendes par format — seuils algo 2026 (feed/carousel en MOTS). */
 export const CAPTION_BY_FORMAT: Record<SocialPostFormat, CaptionBand> = {
   reel: {
-    min: 40,
+    min: 70,
     idealMin: 70,
     idealMax: 150,
-    max: 220,
+    max: 150,
     unit: 'chars',
     hint: 'Reel : 70–150 car. (hook + CTA). Le message est dans la vidéo.',
   },
@@ -469,8 +469,24 @@ export function mergeCaptionWithCta(caption: string, cta: string): string {
   const tip = (cta || '').trim();
   if (!tip) return base;
   if (!base) return tip;
-  if (base.toLowerCase().includes(tip.toLowerCase().slice(0, Math.min(24, tip.length)))) return base;
+  const tipKey = tip.toLowerCase();
+  const tipHead = tipKey.slice(0, Math.min(24, tip.length));
+  if (tipHead && base.toLowerCase().includes(tipHead)) return base;
+  const lastLine = base.split(/\n/).pop()?.trim().toLowerCase() ?? '';
+  if (lastLine && (lastLine === tipKey || (tipHead && lastLine.includes(tipHead)))) return base;
   return `${base.replace(/\s+$/, '')}\n\n${tip}`;
+}
+
+/** Légende Meta / copie = caption (+ CTA une fois) + hashtags. Un seul champ éditable. */
+export function captionForPublish(post: {
+  title?: string;
+  caption: string;
+  cta: string;
+  hashtags: string[];
+}): string {
+  const body = mergeCaptionWithCta(post.caption, post.cta);
+  const hashtags = post.hashtags.map((tag) => (tag.startsWith('#') ? tag : `#${tag}`)).join(' ');
+  return [body, hashtags].filter(Boolean).join('\n\n');
 }
 
 /** Correcteur orthographe FR/ES pour titres/légendes carousel (fautes fréquentes IA). */

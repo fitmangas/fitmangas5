@@ -1,5 +1,9 @@
-import { absolutePublicUrl, type SocialPost } from '@/lib/admin/social-comms';
+import { absolutePublicUrl, facebookPermalinkUrl, type SocialPost } from '@/lib/admin/social-comms';
 import type { MetaSocialConnection } from '@/lib/admin/social-comms';
+import { captionForPublish } from '@/lib/admin/social-cm-playbook';
+import { resolveMetaPublishImageUrls } from '@/lib/admin/social-publish-image';
+
+export { captionForPublish } from '@/lib/admin/social-cm-playbook';
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 
@@ -67,14 +71,98 @@ export async function exchangeMetaCodeForConnection(code: string): Promise<MetaS
   };
 }
 
-function publicImageUrl(post: SocialPost) {
-  if (!post.imagePath) throw new Error('Ce post n’a pas d’image à publier.');
-  return absolutePublicUrl(post.imagePath);
+function resolveImagePaths(post: SocialPost): string[] {
+  if (post.format === 'carousel') {
+    const slides = (post.carouselPaths || []).map((p) => p.trim()).filter(Boolean);
+    if (slides.length) return slides;
+  }
+  if (post.imagePath?.trim()) return [post.imagePath.trim()];
+  return [];
 }
 
-function captionForPublish(post: SocialPost) {
-  const hashtags = post.hashtags.map((tag) => (tag.startsWith('#') ? tag : `#${tag}`)).join(' ');
-  return [post.caption, post.cta, hashtags].filter(Boolean).join('\n\n');
+/** Préfère post_id (permalink feed) à id (photo/vidéo seule). */
+function metaFeedPublishId(data: Record<string, unknown>): string {
+  if (data.post_id != null && String(data.post_id).trim()) return String(data.post_id);
+  if (data.id != null && String(data.id).trim()) return String(data.id);
+  return '';
+}
+
+/** Annule un post Facebook programmé (brouillon Meta visible admin seulement). */
+export async function cancelFacebookScheduledPost(connection: MetaSocialConnection, externalId: string) {
+  if (!connection.accessToken || !connection.pageId) {
+    throw new Error('Facebook Page non connectée.');
+  }
+  const raw = externalId.trim();
+  if (!raw) return false;
+  const postId = raw.includes('_') ? raw : `${connection.pageId}_${raw}`;
+  await graphJson(`${GRAPH}/${encodeURIComponent(postId)}?access_token=${encodeURIComponent(connection.accessToken)}`, {
+    method: 'DELETE',
+  });
+  return true;
+}
+
+/** Infos publication Facebook pour diagnostic UI. */
+export async function fetchFacebookPublishInfo(
+  connection: MetaSocialConnection,
+  externalId: string,
+  format: SocialPost['format'] = 'feed',
+): Promise<{ ok: true; isPublished: boolean; createdTime: string | null; permalink: string | null } | { ok: false; error: string }> {
+  if (!connection.accessToken || !connection.pageId || !externalId.trim()) {
+    return { ok: false, error: 'ID Facebook manquant.' };
+  }
+  const token = connection.accessToken;
+  const pageId = connection.pageId;
+  try {
+    if (format === 'reel') {
+      const data = await graphJson(
+        `${GRAPH}/${encodeURIComponent(externalId.trim())}?fields=id,published,privacy,permalink_url,post_id,status&access_token=${encodeURIComponent(token)}`,
+      );
+      const status = data.status as
+        | { publishing_phase?: { publish_status?: string; publish_time?: string } }
+        | undefined;
+      const publishTime = status?.publishing_phase?.publish_time ?? null;
+      return {
+        ok: true,
+        isPublished: data.published === true,
+        createdTime: publishTime,
+        permalink: typeof data.permalink_url === 'string' ? data.permalink_url : facebookPermalinkUrl(externalId, 'reel'),
+      };
+    }
+    const postId = externalId.includes('_') ? externalId.trim() : `${pageId}_${externalId.trim()}`;
+    const data = await graphJson(
+      `${GRAPH}/${encodeURIComponent(postId)}?fields=id,created_time,is_published,permalink_url,scheduled_publish_time&access_token=${encodeURIComponent(token)}`,
+    );
+    return {
+      ok: true,
+      isPublished: data.is_published !== false,
+      createdTime: typeof data.created_time === 'string' ? data.created_time : null,
+      permalink: typeof data.permalink_url === 'string' ? data.permalink_url : facebookPermalinkUrl(externalId, format),
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Lecture Facebook impossible.' };
+  }
+}
+
+/** Vérifie qu’un post Facebook est bien en ligne (pas seulement programmé / brouillon). */
+export async function verifyFacebookPublishId(
+  connection: MetaSocialConnection,
+  externalId: string,
+  format: SocialPost['format'] = 'feed',
+): Promise<boolean> {
+  if (!connection.accessToken || !externalId.trim()) return false;
+  try {
+    const info = await fetchFacebookPublishInfo(connection, externalId, format);
+    return info.ok && info.isPublished;
+  } catch {
+    return false;
+  }
+}
+
+/** True si le média requis pour un miroir Facebook est prêt (évite un post texte fantôme). */
+export function facebookMirrorMediaReady(post: SocialPost): boolean {
+  if (post.format === 'reel') return Boolean(post.editedVideoPath);
+  if (post.format === 'text') return true;
+  return resolveImagePaths(post).length > 0;
 }
 
 /** Publie immédiatement sur Instagram (compte pro lié à la Page). */
@@ -85,7 +173,8 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
   const caption = captionForPublish(post);
   const token = connection.accessToken;
 
-  // Reel vidéo (MP4 monté public)
+  // Reel vidéo (MP4 monté public) — URL Storage telle quelle, aucun ré-encodage FitMangas.
+  // Meta peut recompresser côté IG ; on ne touche pas au fichier.
   if (post.format === 'reel' && post.editedVideoPath) {
     const videoUrl = absolutePublicUrl(post.editedVideoPath);
     const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
@@ -134,7 +223,54 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
     throw new Error('Importe d’abord le MP4 monté avant de publier ce Reel.');
   }
 
-  const imageUrl = publicImageUrl(post);
+  const imagePaths = resolveImagePaths(post);
+  if (!imagePaths.length) {
+    throw new Error('Ce post n’a pas d’image à publier.');
+  }
+  const publishImageUrls = await resolveMetaPublishImageUrls(post);
+
+  // Carousel IG : plusieurs enfants + conteneur CAROUSEL
+  if (post.format === 'carousel' && publishImageUrls.length >= 2) {
+    const childIds: string[] = [];
+    for (const imageUrl of publishImageUrls.slice(0, 10)) {
+      const child = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_url: imageUrl,
+          is_carousel_item: true,
+          access_token: token,
+        }),
+      });
+      const childId = String(child.id || '');
+      if (!childId) throw new Error('Création slide carousel Instagram échouée.');
+      childIds.push(childId);
+    }
+    const container = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media_type: 'CAROUSEL',
+        children: childIds.join(','),
+        caption,
+        access_token: token,
+      }),
+    });
+    const creationId = String(container.id || '');
+    if (!creationId) throw new Error('Création carousel Instagram échouée.');
+    await new Promise((r) => setTimeout(r, 3500));
+    const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creation_id: creationId,
+        access_token: token,
+      }),
+    });
+    return String(published.id || creationId);
+  }
+
+  const imageUrl = publishImageUrls[0]!;
   const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -160,7 +296,198 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
   return String(published.id || creationId);
 }
 
-/** Publie ou programme un post Facebook Page (image, vidéo publique, ou texte). */
+/** Publie un Reel Facebook via l’API officielle video_reels (pas /videos — crée des Reels fantômes). */
+async function publishFacebookReel(
+  connection: MetaSocialConnection,
+  post: SocialPost,
+  message: string,
+  options?: { schedule?: boolean },
+) {
+  const token = connection.accessToken!;
+  const pageId = connection.pageId!;
+  if (!post.editedVideoPath) {
+    throw new Error('MP4 manquant : impossible de publier le miroir Facebook Reel.');
+  }
+  const videoUrl = absolutePublicUrl(post.editedVideoPath);
+
+  // 1) Start upload session
+  const start = await graphJson(`${GRAPH}/${pageId}/video_reels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      upload_phase: 'start',
+      access_token: token,
+    }),
+  });
+  const videoId = String(start.video_id || '');
+  const uploadUrl = String(start.upload_url || '');
+  if (!videoId || !uploadUrl) {
+    throw new Error('Facebook Reels : démarrage upload échoué (pas de video_id).');
+  }
+
+  // 2) Upload : binaire préféré (meilleure fidélité) — fallback file_url si trop lourd / échec
+  const sourceRes = await fetch(videoUrl);
+  if (!sourceRes.ok) {
+    throw new Error(`Impossible de télécharger le MP4 source (HTTP ${sourceRes.status}).`);
+  }
+  const fileBuffer = Buffer.from(await sourceRes.arrayBuffer());
+  const fileSize = fileBuffer.byteLength;
+  if (fileSize < 10_000) {
+    throw new Error('MP4 source trop petit / invalide pour Facebook Reels.');
+  }
+
+  let uploadData: Record<string, unknown> = {};
+  let uploadOk = false;
+
+  // Upload binaire (évite une 2e récupération Meta via file_url, souvent plus compressée)
+  try {
+    const binaryRes = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${token}`,
+        offset: '0',
+        file_size: String(fileSize),
+        'Content-Type': 'application/octet-stream',
+      },
+      body: fileBuffer,
+    });
+    uploadData = (await binaryRes.json().catch(() => ({}))) as Record<string, unknown>;
+    uploadOk = binaryRes.ok && uploadData.success !== false;
+  } catch {
+    uploadOk = false;
+  }
+
+  if (!uploadOk) {
+    const urlRes = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${token}`,
+        file_url: videoUrl,
+      },
+    });
+    uploadData = (await urlRes.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!urlRes.ok || uploadData.success === false) {
+      const err = uploadData.error as { message?: string } | undefined;
+      throw new Error(err?.message || `Facebook Reels upload échoué (HTTP ${urlRes.status}).`);
+    }
+  }
+
+  // Attendre fin d’upload (le finish déclenche ensuite le traitement public)
+  let uploadReady = false;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const statusRes = await graphJson(
+      `${GRAPH}/${videoId}?fields=status&access_token=${encodeURIComponent(token)}`,
+    );
+    const status = statusRes.status as
+      | {
+          video_status?: string;
+          uploading_phase?: { status?: string; error?: { message?: string } };
+          processing_phase?: { error?: { message?: string } };
+        }
+      | undefined;
+    if (status?.uploading_phase?.error?.message) {
+      throw new Error(`Facebook Reels upload : ${status.uploading_phase.error.message}`);
+    }
+    if (status?.processing_phase?.error?.message) {
+      throw new Error(`Facebook Reels traitement : ${status.processing_phase.error.message}`);
+    }
+    if (status?.uploading_phase?.status === 'complete' || status?.video_status === 'ready') {
+      uploadReady = true;
+      break;
+    }
+    if (status?.video_status === 'error') {
+      throw new Error('Facebook Reels : statut vidéo = error après upload.');
+    }
+  }
+  if (!uploadReady && uploadData.success !== true) {
+    throw new Error('Facebook Reels : timeout — upload non confirmé.');
+  }
+
+  // 3) Finish / publish
+  const finishBody: Record<string, unknown> = {
+    access_token: token,
+    upload_phase: 'finish',
+    video_id: videoId,
+    description: message,
+    title: (post.hookTitle || post.title || 'FitMangas').slice(0, 255),
+  };
+
+  if (options?.schedule && post.plannedAt) {
+    const ts = Math.floor(new Date(post.plannedAt).getTime() / 1000);
+    const min = Math.floor(Date.now() / 1000) + 600;
+    if (ts > min) {
+      finishBody.video_state = 'SCHEDULED';
+      finishBody.scheduled_publish_time = ts;
+    } else {
+      finishBody.video_state = 'PUBLISHED';
+    }
+  } else {
+    finishBody.video_state = 'PUBLISHED';
+  }
+
+  const finish = await graphJson(`${GRAPH}/${pageId}/video_reels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(finishBody),
+  });
+  if (finish.success === false) {
+    throw new Error('Facebook Reels : finish a renvoyé success=false.');
+  }
+  // Stocker l’ID vidéo (permalink /reel/{video_id}/), pas seulement post_id.
+  return String(videoId || finish.video_id || finish.post_id || '');
+}
+
+/** Upload photos non publiées puis un seul post feed multi-images (carousel FB). */
+async function publishFacebookMultiPhotoPost(
+  connection: MetaSocialConnection,
+  message: string,
+  imageUrls: string[],
+  scheduleBody: Record<string, unknown> = {},
+): Promise<string> {
+  const token = connection.accessToken!;
+  const pageId = connection.pageId!;
+  const urls = imageUrls.map((u) => u.trim()).filter(Boolean).slice(0, 10);
+  if (urls.length < 2) {
+    throw new Error('Carousel Facebook : au moins 2 slides requises.');
+  }
+
+  const mediaFbIds: string[] = [];
+  for (const imageUrl of urls) {
+    const photo = await graphJson(`${GRAPH}/${pageId}/photos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_token: token,
+        url: imageUrl,
+        published: false,
+        no_story: true,
+        temporary: true,
+      }),
+    });
+    const mediaId = String(photo.id || '');
+    if (!mediaId) throw new Error('Upload slide carousel Facebook échoué.');
+    mediaFbIds.push(mediaId);
+    // Meta peut rejeter attached_media si les photos ne sont pas encore indexées.
+    await new Promise((r) => setTimeout(r, 800));
+  }
+
+  const published = await graphJson(`${GRAPH}/${pageId}/feed`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_token: token,
+      message,
+      attached_media: mediaFbIds.map((id) => ({ media_fbid: id })),
+      ...scheduleBody,
+    }),
+  });
+  const publishId = metaFeedPublishId(published);
+  if (!publishId) throw new Error('Facebook n’a pas renvoyé d’ID pour le carousel.');
+  return publishId;
+}
+
+/** Publie ou programme un post Facebook Page (image, carousel, vidéo publique, ou texte). */
 export async function publishFacebookPost(
   connection: MetaSocialConnection,
   post: SocialPost,
@@ -169,49 +496,74 @@ export async function publishFacebookPost(
   if (!connection.accessToken || !connection.pageId) {
     throw new Error('Facebook Page non connectée.');
   }
+  if (connection.pageId && connection.igUserId && connection.pageId === connection.igUserId) {
+    throw new Error(
+      'Page Facebook ID = Instagram User ID (config invalide). Régénère le token Meta et sépare Page ID ≠ IG User ID.',
+    );
+  }
+
   const message = captionForPublish(post);
-  const body: Record<string, unknown> = {
-    access_token: connection.accessToken,
-  };
+  const token = connection.accessToken;
+  const scheduleBody: Record<string, unknown> = {};
 
   if (options?.schedule && post.plannedAt) {
     const ts = Math.floor(new Date(post.plannedAt).getTime() / 1000);
     const min = Math.floor(Date.now() / 1000) + 600;
     if (ts > min) {
-      body.published = false;
-      body.scheduled_publish_time = ts;
+      scheduleBody.published = false;
+      scheduleBody.scheduled_publish_time = ts;
     }
   }
 
-  // Miroir Reel : vidéo publique si dispo
-  if (post.format === 'reel' && post.editedVideoPath) {
-    const videoUrl = absolutePublicUrl(post.editedVideoPath);
-    const published = await graphJson(`${GRAPH}/${connection.pageId}/videos`, {
+  // Reel → API officielle video_reels (l’ancien POST /videos créait des Reels fantômes invisibles)
+  if (post.format === 'reel') {
+    return publishFacebookReel(connection, post, message, options);
+  }
+
+  const imagePaths = resolveImagePaths(post);
+  const publishImageUrls =
+    post.format === 'text' || imagePaths.length === 0 ? [] : await resolveMetaPublishImageUrls(post);
+
+  // Carousel / multi-images → un seul post feed avec toutes les slides
+  if (post.format === 'carousel' || publishImageUrls.length >= 2) {
+    if (publishImageUrls.length < 2) {
+      throw new Error(
+        `Carousel Facebook : ${publishImageUrls.length} slide(s) composée(s) — minimum 2. Vérifie les images avant publication.`,
+      );
+    }
+    return publishFacebookMultiPhotoPost(connection, message, publishImageUrls, scheduleBody);
+  }
+
+  if (post.format !== 'text' && imagePaths.length === 0) {
+    throw new Error('Visuel manquant : impossible de publier ce post sur Facebook (évite un post texte fantôme).');
+  }
+
+  if (publishImageUrls.length === 1) {
+    const published = await graphJson(`${GRAPH}/${connection.pageId}/photos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...body,
-        file_url: videoUrl,
-        description: message,
-        title: (post.hookTitle || post.title || 'FitMangas').slice(0, 255),
+        access_token: token,
+        ...scheduleBody,
+        url: publishImageUrls[0]!,
+        caption: message,
       }),
     });
-    return String(published.id || published.post_id || '');
+    const publishId = metaFeedPublishId(published);
+    if (!publishId) throw new Error('Facebook n’a pas renvoyé d’ID de publication.');
+    return publishId;
   }
 
-  body.message = message;
-  if (post.imagePath) {
-    body.url = publicImageUrl(post);
-  }
-
-  const endpoint = post.imagePath
-    ? `${GRAPH}/${connection.pageId}/photos`
-    : `${GRAPH}/${connection.pageId}/feed`;
-
-  const published = await graphJson(endpoint, {
+  const published = await graphJson(`${GRAPH}/${connection.pageId}/feed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      access_token: token,
+      ...scheduleBody,
+      message,
+    }),
   });
-  return String(published.id || published.post_id || '');
+  const publishId = metaFeedPublishId(published);
+  if (!publishId) throw new Error('Facebook n’a pas renvoyé d’ID de publication.');
+  return publishId;
 }

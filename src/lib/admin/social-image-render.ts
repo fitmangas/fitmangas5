@@ -75,14 +75,20 @@ async function drawLogo(ctx: CanvasRenderingContext2D, canvasW: number, canvasH:
 }
 
 export function resolveSlideOverlayText(
-  post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format'>,
+  post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format' | 'hookTitle' | 'title'>,
   slideIndex = 0,
 ): string {
   const titles = post.carouselSlideTitles ?? [];
   if (post.format === 'carousel' && titles[slideIndex]?.trim()) {
     return titles[slideIndex]!.trim().toLocaleUpperCase('fr-FR');
   }
-  return (post.overlayText || '').trim().toLocaleUpperCase('fr-FR');
+  const overlay = (post.overlayText || '').trim();
+  if (overlay) return overlay.toLocaleUpperCase('fr-FR');
+  if (slideIndex === 0) {
+    const hook = (post.hookTitle || post.title || '').trim();
+    if (hook) return hook.toLocaleUpperCase('fr-FR');
+  }
+  return '';
 }
 
 /** Rendu canvas partagé (preview + téléchargement) — ratio 4:5 Instagram. */

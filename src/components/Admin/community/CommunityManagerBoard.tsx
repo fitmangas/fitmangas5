@@ -4,14 +4,17 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
-  Film,
-  CalendarDays,
+  CalendarClock,
   Check,
+  CheckCircle2,
   CircleHelp,
   Copy,
   Download,
   Eye,
+  Film,
+  CalendarDays,
   Loader2,
+  Plus,
   Send,
   Sparkles,
   Trash2,
@@ -20,6 +23,7 @@ import {
 
 import {
   attachSocialEditedVideoAction,
+  createManualSocialPostAction,
   deleteSocialPostAction,
   disconnectMetaAction,
   finalizeWeekPlanAction,
@@ -31,6 +35,7 @@ import {
   getMetaConnectUrlAction,
   markAllSocialPostsReadyAction,
   polishExistingSocialPostsAction,
+  publishFacebookMirrorNowAction,
   publishSocialPostNowAction,
   markSocialPostManualSentAction,
   refineSocialImageAction,
@@ -51,26 +56,29 @@ import {
   updateSocialPostParisScheduleAction,
   updateSocialPostReelBriefAction,
   updateSocialPostStatusAction,
-  updateSocialPostTitleAction,
   updateSocialPostThemeAction,
 } from '@/app/admin/community/actions';
 import {
   analyzeCaptionForPost,
+  captionForPublish,
   CM_STRATEGY_NOTES,
-  enforceFaceCamShotList,
   formatBestHours,
   monthGridDays,
   SOCIAL_CM_GUIDELINES,
   statusLabelForPost,
   statusOptionsForFormat,
 } from '@/lib/admin/social-cm-playbook';
-import { allowedParisHours, parseParisSchedule } from '@/lib/admin/social-paris-time';
+import { allowedParisHours, formatParisDateTime, parseParisSchedule } from '@/lib/admin/social-paris-time';
 import { downloadSocialPostImage, renderSocialPostDataUrl } from '@/lib/admin/social-image-render';
-import { buildClaudeCodeReelPrompt, copyTextToClipboardSync } from '@/lib/admin/reel-prompt-reference';
+import {
+  buildClaudeCodeReelPrompt,
+  copyTextFromUserGesture,
+} from '@/lib/admin/reel-prompt-reference';
 import { resolveGenerationNetworks, weekPlanSummary } from '@/lib/admin/social-week-planner';
 import type { AlejandraDoubleProfile } from '@/lib/admin/alejandra-double';
 import {
   localDayKey,
+  facebookPermalinkUrl,
   SOCIAL_LIBRARY_IMAGES,
   SOCIAL_LOCALE_LABELS,
   SOCIAL_NETWORK_COLORS,
@@ -112,9 +120,50 @@ function calendarChipStyle(post: SocialPost): { bg: string; text: string; border
   return { bg: c.bg, text: c.text, border: c.border, label: c.short };
 }
 
+function postStatusAccent(status: SocialPost['status']) {
+  if (status === 'scheduled') {
+    return {
+      cardClass: 'border-l-[5px] border-l-[#2563eb] shadow-[inset_0_0_0_1px_rgba(37,99,235,0.14)]',
+      badgeClass: 'bg-[#dbeafe] text-[#1e40af] ring-1 ring-[#93c5fd]',
+    };
+  }
+  if (status === 'published') {
+    return {
+      cardClass: 'border-l-[5px] border-l-[#059669] shadow-[inset_0_0_0_1px_rgba(5,150,105,0.14)]',
+      badgeClass: 'bg-[#d1fae5] text-[#065f46] ring-1 ring-[#6ee7b7]',
+    };
+  }
+  return { cardClass: '', badgeClass: 'bg-white text-luxury-soft' };
+}
+
+function calendarPostStatusMeta(post: SocialPost) {
+  if (post.status === 'published') {
+    return { accentColor: '#059669', label: 'Publié' as const };
+  }
+  if (post.status === 'scheduled') {
+    return { accentColor: '#2563eb', label: 'Programmé' as const };
+  }
+  return { accentColor: null as string | null, label: null as 'Publié' | 'Programmé' | null };
+}
+
+function isPositiveActionMessage(message: string) {
+  return /programmé|publié|Instagram|Facebook|file FitMangas|cron publiera/i.test(message);
+}
+
+function isErrorActionMessage(message: string) {
+  return /impossible|échoué|erreur|bloqué|introuvable|revoir|manquante|périmée|connecte Meta/i.test(message);
+}
+
+type WorkflowTab = 'en_cours' | 'programmes' | 'archives';
+
+function postMatchesWorkflowTab(post: SocialPost, tab: WorkflowTab): boolean {
+  if (tab === 'en_cours') return post.status === 'idea' || post.status === 'ready';
+  if (tab === 'programmes') return post.status === 'scheduled';
+  return post.status === 'published' || post.status === 'skipped';
+}
+
 function buildCopyText(post: SocialPost) {
-  const hashtags = post.hashtags.map((tag) => (tag.startsWith('#') ? tag : `#${tag}`)).join(' ');
-  return [post.caption, post.cta, hashtags].filter(Boolean).join('\n\n');
+  return captionForPublish(post);
 }
 
 function imageOptionsForPost(post: SocialPost) {
@@ -147,6 +196,8 @@ export function CommunityManagerBoard({
 }: Props) {
   const router = useRouter();
   const [networkFilter, setNetworkFilter] = useState<SocialNetwork>('instagram');
+  const [workflowTab, setWorkflowTab] = useState<WorkflowTab>('en_cours');
+  const [manualMenuOpen, setManualMenuOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [calendarView, setCalendarView] = useState<'week' | 'month'>('month');
@@ -204,12 +255,24 @@ export function CommunityManagerBoard({
   const monthDays = useMemo(() => monthGridDays(monthAnchor), [monthAnchor]);
 
   const posts = useMemo(() => {
-    const filtered = board.posts.filter((post) => postMatchesNetworkFilter(post, networkFilter));
+    const filtered = board.posts.filter(
+      (post) => postMatchesNetworkFilter(post, networkFilter) && postMatchesWorkflowTab(post, workflowTab),
+    );
     return [...filtered].sort((a, b) => {
       const aTime = a.plannedAt ? new Date(a.plannedAt).getTime() : Number.MAX_SAFE_INTEGER;
       const bTime = b.plannedAt ? new Date(b.plannedAt).getTime() : Number.MAX_SAFE_INTEGER;
+      if (workflowTab === 'archives') return bTime - aTime;
       return aTime - bTime;
     });
+  }, [board.posts, networkFilter, workflowTab]);
+
+  const workflowCounts = useMemo(() => {
+    const forNetwork = board.posts.filter((post) => postMatchesNetworkFilter(post, networkFilter));
+    return {
+      en_cours: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'en_cours')).length,
+      programmes: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'programmes')).length,
+      archives: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'archives')).length,
+    };
   }, [board.posts, networkFilter]);
 
   const counts = useMemo(() => {
@@ -277,13 +340,20 @@ export function CommunityManagerBoard({
   function run(action: () => Promise<{ ok: boolean; error?: string; message?: string }>, successMessage: string) {
     setMessage('');
     startTransition(async () => {
-      const result = await action();
-      if (!result.ok) {
-        setMessage(result.error || 'Action impossible.');
-        return;
+      try {
+        const result = await action();
+        if (!result.ok) {
+          setMessage(result.error || 'Action impossible.');
+          return;
+        }
+        setMessage(result.message || successMessage);
+        router.refresh();
+      } catch (err) {
+        // Sans catch : un JSON invalide (ex. page 413 Vercel) plantait toute la page
+        // sur « Un imprévu est survenu » (app/error.tsx).
+        const msg = err instanceof Error ? err.message : 'Action impossible.';
+        setMessage(msg);
       }
-      setMessage(result.message || successMessage);
-      router.refresh();
     });
   }
 
@@ -718,7 +788,20 @@ export function CommunityManagerBoard({
           </div>
         ) : null}
 
-        {message ? <p className="mt-4 text-sm text-luxury-muted">{message}</p> : null}
+        {message ? (
+          <div
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium ${
+              isErrorActionMessage(message)
+                ? 'border-[#fecaca] bg-[#fef2f2] text-[#991b1b]'
+                : isPositiveActionMessage(message)
+                  ? 'border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]'
+                  : 'border-[#E8D9C8] bg-white text-luxury-muted'
+            }`}
+            role="status"
+          >
+            {message}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-[2rem] border border-white/65 bg-white/70 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
@@ -773,6 +856,17 @@ export function CommunityManagerBoard({
               </>
             )}
           </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-luxury-soft">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#2563eb]" aria-hidden />
+            Programmé
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#059669]" aria-hidden />
+            Publié
+          </span>
         </div>
 
         {calendarView === 'week' ? (
@@ -864,9 +958,118 @@ export function CommunityManagerBoard({
       ) : null}
 
       <section className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-white/65 bg-white/70 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+          {(
+            [
+              {
+                id: 'en_cours' as const,
+                label: 'En cours',
+                hint: 'Posts générés à valider (idée / prêt)',
+              },
+              {
+                id: 'programmes' as const,
+                label: 'Programmés',
+                hint: 'Validés, en file d’attente de publication',
+              },
+              {
+                id: 'archives' as const,
+                label: 'Archivés',
+                hint: 'Publiés (immédiat ou après programmation)',
+              },
+            ] as const
+          ).map((tab) => {
+            const active = workflowTab === tab.id;
+            const count = workflowCounts[tab.id];
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                title={tab.hint}
+                onClick={() => setWorkflowTab(tab.id)}
+                className={`inline-flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.12em] transition sm:flex-none ${
+                  active
+                    ? tab.id === 'programmes'
+                      ? 'bg-[#2563eb] text-white'
+                      : tab.id === 'archives'
+                        ? 'bg-[#059669] text-white'
+                        : 'bg-[#C45D3E] text-white'
+                    : 'bg-white/80 text-luxury-soft hover:bg-white'
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    active ? 'bg-white/20 text-white' : 'bg-[#F3EEE7] text-luxury-ink'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+
+          <div className="relative ml-auto">
+            <button
+              type="button"
+              title="Créer un post manuel (sans IA)"
+              aria-expanded={manualMenuOpen}
+              onClick={() => setManualMenuOpen((v) => !v)}
+              className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E8D9C8] bg-white text-luxury-ink shadow-sm transition hover:border-[#C45D3E] hover:text-[#C45D3E]"
+            >
+              <Plus size={18} strokeWidth={2.25} />
+            </button>
+            {manualMenuOpen ? (
+              <div className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-2xl border border-[#E8D9C8]/80 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]">
+                <p className="border-b border-[#F0E6DA] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
+                  Nouveau post manuel
+                </p>
+                {(
+                  [
+                    { format: 'reel' as const, label: 'Vidéo / Reel à créer' },
+                    { format: 'carousel' as const, label: 'Carousel' },
+                    { format: 'feed' as const, label: 'Feed (photo)' },
+                    { format: 'story' as const, label: 'Story' },
+                    { format: 'text' as const, label: 'Texte seul' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.format}
+                    type="button"
+                    disabled={pending}
+                    className="block w-full px-3 py-2.5 text-left text-[12px] font-medium text-luxury-ink hover:bg-[#FBF7F2] disabled:opacity-50"
+                    onClick={() => {
+                      setManualMenuOpen(false);
+                      run(async () => {
+                        const result = await createManualSocialPostAction({ format: opt.format });
+                        if (result.ok) {
+                          setWorkflowTab('en_cours');
+                          if (result.postId) {
+                            window.setTimeout(() => {
+                              document
+                                .getElementById(`post-${result.postId}`)
+                                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 250);
+                          }
+                        }
+                        return result;
+                      }, `Post ${opt.label} créé.`);
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
         {posts.length === 0 ? (
           <div className="rounded-[1.75rem] border border-dashed border-[#C45D3E]/25 bg-white/55 px-5 py-10 text-center text-sm text-luxury-muted">
-            Aucun post. Clique sur « Générer la semaine ».
+            {workflowTab === 'en_cours'
+              ? 'Aucun post en cours. Clique sur « Générer Instagram » pour en créer.'
+              : workflowTab === 'programmes'
+                ? 'Aucun post programmé. Valide un post puis clique sur « Programmer ».'
+                : 'Aucun post archivé pour cet onglet réseau.'}
           </div>
         ) : (
           posts.map((post) => (
@@ -890,6 +1093,7 @@ export function CommunityManagerBoard({
               onCopy={() => void copyPost(post)}
               run={run}
               setMessage={setMessage}
+              onWorkflowTabChange={setWorkflowTab}
             />
           ))
         )}
@@ -929,8 +1133,24 @@ export function CommunityManagerBoard({
               </div>
             </div>
 
-            <div className="relative aspect-[4/5] w-full bg-[#111]">
-              {previewLoading ? (
+            {/* Reel = 9:16 plein cadre. Feed/carousel = 4:5. Ne jamais forcer 4:5 sur un Reel
+                (sinon bandes noires gauche/droite = artefact UI, pas le fichier). */}
+            <div
+              className={`relative w-full max-h-[70vh] bg-[#111] ${
+                previewPost.format === 'reel' ? 'aspect-[9/16]' : 'aspect-[4/5]'
+              }`}
+            >
+              {previewPost.format === 'reel' &&
+              (previewPost.editedVideoPath || previewPost.rawVideoPath) ? (
+                <video
+                  key={previewPost.editedVideoPath || previewPost.rawVideoPath || previewPost.id}
+                  src={previewPost.editedVideoPath || previewPost.rawVideoPath || undefined}
+                  className="h-full w-full object-cover"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
+              ) : previewLoading ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="animate-spin text-white" size={28} />
                 </div>
@@ -1103,21 +1323,14 @@ function DayCell({
       <div className="mt-1 space-y-1">
         {dayPosts.map((post) => {
           const chip = calendarChipStyle(post);
+          const statusMeta = calendarPostStatusMeta(post);
           const localeTag = (post.locale ?? 'fr').toUpperCase();
           const tip = [
             `${chip.label} · ${localeTag} · ${post.format}`,
+            statusMeta.label,
             post.hookTitle || post.title,
             post.title !== post.hookTitle ? post.title : null,
-            post.plannedAt
-              ? new Date(post.plannedAt).toLocaleString('fr-FR', {
-                  timeZone: 'Europe/Paris',
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : null,
+            post.plannedAt ? formatParisDateTime(post.plannedAt) : null,
           ]
             .filter(Boolean)
             .join('\n');
@@ -1130,15 +1343,32 @@ function DayCell({
               style={{
                 backgroundColor: chip.bg,
                 color: chip.text,
-                boxShadow: `inset 3px 0 0 ${chip.border}`,
+                boxShadow: statusMeta.accentColor
+                  ? `inset 4px 0 0 ${statusMeta.accentColor}`
+                  : `inset 3px 0 0 ${chip.border}`,
               }}
             >
-              <span className="block text-[8px] font-bold uppercase tracking-[0.08em] opacity-80">
-                {chip.label} · {localeTag}
+              <span className="flex items-center justify-between gap-1 text-[8px] font-bold uppercase tracking-[0.08em] opacity-90">
+                <span>
+                  {chip.label} · {localeTag}
+                </span>
+                {statusMeta.label ? (
+                  <span
+                    className="rounded px-1 py-px text-[7px] font-bold"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.35)' }}
+                  >
+                    {statusMeta.label}
+                  </span>
+                ) : null}
               </span>
               <span className={`block font-semibold leading-tight ${compact ? 'line-clamp-2 text-[9px]' : 'line-clamp-2 text-[10px]'}`}>
                 {post.hookTitle || post.title}
               </span>
+              {post.status === 'scheduled' && post.plannedAt ? (
+                <span className="mt-0.5 block text-[7px] font-semibold opacity-85">
+                  {formatParisDateTime(post.plannedAt)}
+                </span>
+              ) : null}
             </a>
           );
         })}
@@ -1162,6 +1392,7 @@ function PostCard({
   onCopy,
   run,
   setMessage,
+  onWorkflowTabChange,
 }: {
   post: SocialPost;
   hasLinkedInAdaptation: boolean;
@@ -1176,6 +1407,7 @@ function PostCard({
   onCopy: () => void;
   run: (action: () => Promise<{ ok: boolean; error?: string; message?: string }>, successMessage: string) => void;
   setMessage: (msg: string) => void;
+  onWorkflowTabChange: (tab: WorkflowTab) => void;
 }) {
   const captionAnalysis = analyzeCaptionForPost(caption, post.network, post.format, post.hashtags.length);
   const canPublishMeta = post.network === 'instagram' || post.network === 'facebook';
@@ -1187,10 +1419,30 @@ function PostCard({
   const isCarousel = post.format === 'carousel';
   const showAiImageTools = !isReel;
   const postLocale = post.locale ?? 'fr';
-  const previewVideo = post.editedVideoPath || post.rawVideoPath;
+  const [localEditedVideo, setLocalEditedVideo] = useState<string | null>(null);
+  const [reelUploadStatus, setReelUploadStatus] = useState<string | null>(null);
+  const [reelUploadError, setReelUploadError] = useState<string | null>(null);
+  const previewVideo = localEditedVideo || post.editedVideoPath || post.rawVideoPath;
   const networkColor = SOCIAL_NETWORK_COLORS[post.network];
   const [claudePromptCopied, setClaudePromptCopied] = useState(false);
   const [claudePromptError, setClaudePromptError] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ kind: 'scheduled' | 'published'; message: string } | null>(
+    null,
+  );
+  const [reelUploadPending, startReelUpload] = useTransition();
+  const router = useRouter();
+  const statusAccent = postStatusAccent(post.status);
+  const showStatusBanner = post.status === 'scheduled' || post.status === 'published' || Boolean(actionFeedback);
+  const bannerKind =
+    actionFeedback?.kind === 'published' || (!actionFeedback && post.status === 'published') ? 'published' : 'scheduled';
+  const justScheduled = actionFeedback?.kind === 'scheduled';
+  const justPublished = actionFeedback?.kind === 'published';
+
+  useEffect(() => {
+    if (!actionFeedback) return;
+    const timer = window.setTimeout(() => setActionFeedback(null), 12000);
+    return () => window.clearTimeout(timer);
+  }, [actionFeedback]);
   const carouselSlides =
     isCarousel && post.carouselPaths?.length
       ? post.carouselPaths
@@ -1208,11 +1460,34 @@ function PostCard({
   };
 
   return (
-    <article id={`post-${post.id}`} className="overflow-hidden rounded-[1.5rem] border border-[#E8D9C8]/50 bg-white/80 shadow-sm">
+    <article
+      id={`post-${post.id}`}
+      className={`overflow-hidden rounded-[1.5rem] border border-[#E8D9C8]/50 bg-white/80 shadow-sm ${statusAccent.cardClass}`}
+    >
       <div className="grid gap-0 lg:grid-cols-[200px_minmax(0,1fr)]">
         <div className="group relative min-h-[220px] bg-brand-beige">
           {isReel && previewVideo ? (
-            <video src={previewVideo} className="absolute inset-0 h-full w-full object-cover" muted playsInline controls />
+            <>
+              <video
+                src={previewVideo}
+                className="absolute inset-0 h-full w-full object-cover"
+                muted
+                playsInline
+                controls
+                preload="metadata"
+              />
+              <button
+                type="button"
+                onClick={() => onPreview(0)}
+                className="absolute inset-0 z-[1] flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100"
+                aria-label="Prévisualiser le Reel"
+              >
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-luxury-ink shadow-lg">
+                  <Eye size={16} />
+                  Aperçu
+                </span>
+              </button>
+            </>
           ) : isCarousel && carouselSlides.length ? (
             <div className="absolute inset-0 flex flex-col">
               <div className="relative min-h-0 flex-1">
@@ -1324,6 +1599,58 @@ function PostCard({
         </div>
 
         <div className="p-5">
+          {showStatusBanner ? (
+            <div
+              className={`mb-4 flex items-start gap-2.5 rounded-xl border px-3.5 py-3 ${
+                bannerKind === 'published'
+                  ? post.alsoPublishFacebook && !post.facebookExternalId
+                    ? 'border-[#fcd34d] bg-[#fffbeb] text-[#92400e]'
+                    : 'border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]'
+                  : 'border-[#bfdbfe] bg-[#eff6ff] text-[#1e40af]'
+              }`}
+              role="status"
+            >
+              {bannerKind === 'published' ? (
+                <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden />
+              ) : (
+                <CalendarClock size={18} className="mt-0.5 shrink-0" aria-hidden />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">
+                  {bannerKind === 'published'
+                    ? post.network === 'instagram' && post.alsoPublishFacebook
+                      ? post.facebookExternalId
+                        ? 'Publié sur Instagram + Facebook'
+                        : 'Publié sur Instagram — miroir Facebook manquant'
+                      : 'Publié sur Meta'
+                    : `Programmé — ${formatParisDateTime(post.plannedAt)}`}
+                </p>
+                <p className="mt-0.5 text-[12px] leading-snug opacity-90">
+                  {actionFeedback?.message ||
+                    (bannerKind === 'published'
+                      ? post.alsoPublishFacebook && !post.facebookExternalId
+                        ? 'Instagram est en ligne, mais Facebook n’a pas d’ID de publication. Clique « Publier miroir FB » ci-dessous.'
+                        : 'Le post est en ligne. Le statut reste visible ici.'
+                      : post.alsoPublishFacebook
+                        ? 'Instagram en file. Miroir Facebook au même instant (cron FitMangas).'
+                        : 'En file FitMangas. Publication automatique à l’heure prévue.')}
+                </p>
+                {post.facebookExternalId ? (
+                  <p className="mt-1.5 text-[12px]">
+                    <a
+                      href={facebookPermalinkUrl(post.facebookExternalId, post.format)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold underline underline-offset-2"
+                    >
+                      Ouvrir sur Facebook →
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-2">
             <span
               className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
@@ -1358,7 +1685,9 @@ function PostCard({
                 {getContentTheme(post.pillarId)?.label ?? post.pillarId}
               </span>
             ) : null}
-            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusAccent.badgeClass}`}
+            >
               {statusLabelForPost(post.status, post.format)}
             </span>
             {post.adaptedFromId ? (
@@ -1431,24 +1760,11 @@ function PostCard({
             ) : null}
           </div>
 
-          <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-            Titre long (description Instagram)
-          </label>
-          <textarea
-            key={`title-${post.id}-${post.updatedAt}`}
-            rows={2}
-            className="mt-1 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-2 text-sm font-semibold text-luxury-ink outline-none focus:border-[#C45D3E]/60"
-            defaultValue={post.title}
-            onBlur={(e) => {
-              if (e.target.value.trim() === post.title) return;
-              run(() => updateSocialPostTitleAction(post.id, e.target.value), 'Titre enregistré.');
-            }}
-          />
           {post.generationStatus === 'failed' && post.generationError ? (
-            <p className="mt-1 text-[11px] text-[#991b1b]">Erreur génération: {post.generationError}</p>
+            <p className="mt-2 text-[11px] text-[#991b1b]">Erreur génération: {post.generationError}</p>
           ) : null}
           {post.network === 'whatsapp' && post.sourceRef ? (
-            <p className="mt-1 text-[11px] text-[#065f46]">
+            <p className="mt-2 text-[11px] text-[#065f46]">
               Article lié :{' '}
               <a
                 className="underline"
@@ -1607,57 +1923,40 @@ function PostCard({
                   )
                 }
               />
-              <textarea
-                rows={3}
-                className="w-full rounded-2xl border border-[#E8D9C8]/80 bg-white/90 px-4 py-2 text-sm text-luxury-ink outline-none focus:border-[#C45D3E]/60"
-                defaultValue={enforceFaceCamShotList(post.shotList, post.locale ?? 'fr')}
-                placeholder="Face cam uniquement…"
-                key={`shot-${post.id}-${post.updatedAt}`}
-                onBlur={(e) =>
-                  run(
-                    () => updateSocialPostReelBriefAction(post.id, { shotList: e.target.value }),
-                    'Shot list enregistrée (face cam).',
-                  )
-                }
-              />
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   type="button"
                   className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
-                  // Empêche le blur du textarea (brief) avant le click → sinon save + refresh
-                  // écrasent le message / cassent le geste presse-papiers (surtout Safari).
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    // Copie SYNCHRONE dans le geste click — Safari refuse souvent
-                    // navigator.clipboard après un await / async IIFE.
-                    try {
-                      const prompt = buildClaudeCodeReelPrompt({
-                        hookTitle: post.hookTitle,
-                        overlayText: post.overlayText,
-                        title: post.title,
-                        reelScript: post.reelScript,
-                        caption: post.caption,
-                        locale: post.locale,
-                        rawVideoPath: post.rawVideoPath,
-                      });
-                      const ok = copyTextToClipboardSync(prompt);
-                      if (!ok) {
-                        setClaudePromptError('Copie impossible — réessaie ou autorise le presse-papiers.');
+                  // Safari : writeText doit partir dans le geste (pointerdown), avant blur du brief.
+                  onPointerDownCapture={(e) => {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    const prompt = buildClaudeCodeReelPrompt({
+                      hookTitle: post.hookTitle,
+                      overlayText: post.overlayText,
+                      title: post.title,
+                      reelScript: post.reelScript,
+                      caption: post.caption,
+                      locale: post.locale,
+                      rawVideoPath: post.rawVideoPath,
+                    });
+                    setClaudePromptError(null);
+                    void copyTextFromUserGesture(prompt).then(
+                      () => {
+                        setClaudePromptCopied(true);
+                        setMessage('Prompt Claude Code copié — colle-le dans Claude Code.');
+                        window.setTimeout(() => setClaudePromptCopied(false), 2500);
+                      },
+                      (err: unknown) => {
+                        const msg =
+                          err instanceof Error
+                            ? err.message
+                            : 'Copie impossible — autorise le presse-papiers Safari.';
+                        setClaudePromptError(msg);
                         setClaudePromptCopied(false);
-                        setMessage('Impossible de copier le prompt Claude Code.');
-                        return;
-                      }
-                      setClaudePromptError(null);
-                      setClaudePromptCopied(true);
-                      setMessage('Prompt Claude Code copié — colle-le dans Claude Code.');
-                      window.setTimeout(() => setClaudePromptCopied(false), 2500);
-                    } catch (err) {
-                      const msg =
-                        err instanceof Error ? err.message : 'Impossible de copier le prompt Claude Code.';
-                      setClaudePromptError(msg);
-                      setClaudePromptCopied(false);
-                      setMessage(msg);
-                    }
+                        setMessage(msg);
+                      },
+                    );
                   }}
                 >
                   <Copy size={14} />
@@ -1667,40 +1966,137 @@ function PostCard({
                   <p className="basis-full text-xs text-red-700">{claudePromptError}</p>
                 ) : null}
                 <label className="btn-luxury-primary inline-flex min-h-[40px] cursor-pointer items-center gap-2 px-4 text-[11px]">
-                  {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  Importer le MP4 monté
+                  {reelUploadPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  {reelUploadPending ? 'Import en cours…' : 'Importer le MP4 monté'}
                   <input
                     type="file"
                     accept="video/mp4,video/quicktime,video/webm"
                     className="hidden"
-                    disabled={pending}
+                    disabled={reelUploadPending || pending}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       e.target.value = '';
                       if (!file) return;
-                      run(async () => {
-                        const body = new FormData();
-                        body.append('file', file);
-                        body.append('postId', post.id);
-                        body.append('kind', 'edited');
-                        const res = await fetch('/api/admin/community/upload-reel', { method: 'POST', body });
-                        const json = (await res.json()) as { ok: boolean; url?: string; error?: string };
-                        if (!json.ok || !json.url) return { ok: false, error: json.error || 'Upload échoué.' };
-                        return attachSocialEditedVideoAction(post.id, json.url);
-                      }, 'MP4 monté importé.');
+                      const sizeMo = Math.round(file.size / (1024 * 1024));
+                      setReelUploadError(null);
+                      setReelUploadStatus(`Upload ${sizeMo} Mo en cours… (1 à 2 min)`);
+                      startReelUpload(async () => {
+                        try {
+                          const signRes = await fetch('/api/admin/community/upload-reel', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              postId: post.id,
+                              kind: 'edited',
+                              fileName: file.name,
+                              contentType: file.type || 'video/mp4',
+                              byteSize: file.size,
+                            }),
+                          });
+                          let signJson: {
+                            ok: boolean;
+                            signedUrl?: string;
+                            publicUrl?: string;
+                            error?: string;
+                          };
+                          try {
+                            signJson = (await signRes.json()) as typeof signJson;
+                          } catch {
+                            const err = `Signature upload impossible (HTTP ${signRes.status}). Recharge et réessaie.`;
+                            setReelUploadStatus(null);
+                            setReelUploadError(err);
+                            setMessage(err);
+                            return;
+                          }
+                          if (!signJson.ok || !signJson.signedUrl || !signJson.publicUrl) {
+                            const err = signJson.error || `Signature upload échouée (HTTP ${signRes.status}).`;
+                            setReelUploadStatus(null);
+                            setReelUploadError(err);
+                            setMessage(err);
+                            return;
+                          }
+
+                          let putRes: Response;
+                          try {
+                            putRes = await fetch(signJson.signedUrl, {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': file.type || 'video/mp4',
+                                'x-upsert': 'true',
+                              },
+                              body: file,
+                            });
+                          } catch (err) {
+                            const msg = err instanceof Error ? err.message : 'Erreur réseau';
+                            const full = `Upload Storage interrompu : ${msg}. Vérifie ta connexion et réessaie.`;
+                            setReelUploadStatus(null);
+                            setReelUploadError(full);
+                            setMessage(full);
+                            return;
+                          }
+                          if (!putRes.ok) {
+                            const detail = (await putRes.text().catch(() => '')).slice(0, 400);
+                            const sizeHint =
+                              putRes.status === 413 ||
+                              putRes.status === 400 ||
+                              /maximum|size|too large|payload|EntityTooLarge/i.test(detail)
+                                ? ` Limite Supabase encore trop basse. Dans le Dashboard Supabase → Storage → Settings : mets « Global file size limit » à 200 MB (ou plus). Puis bucket avatars → Edit → file size 200 MB. Puis réessaie.`
+                                : '';
+                            const err = `Upload Storage échoué (HTTP ${putRes.status})${detail ? ` : ${detail}` : ''}.${sizeHint}`;
+                            setReelUploadStatus(null);
+                            setReelUploadError(err);
+                            setMessage(err);
+                            return;
+                          }
+
+                          const attached = await attachSocialEditedVideoAction(post.id, signJson.publicUrl);
+                          if (!attached.ok) {
+                            setReelUploadStatus(null);
+                            setReelUploadError(attached.error || 'Enregistrement post échoué.');
+                            setMessage(attached.error || 'Enregistrement post échoué.');
+                            return;
+                          }
+                          setLocalEditedVideo(signJson.publicUrl);
+                          setReelUploadStatus(null);
+                          setReelUploadError(null);
+                          setMessage(attached.message || `MP4 monté importé (${sizeMo} Mo) — aperçu dispo à gauche.`);
+                          router.refresh();
+                        } catch (err) {
+                          const msg = err instanceof Error ? err.message : 'Import MP4 impossible.';
+                          setReelUploadStatus(null);
+                          setReelUploadError(msg);
+                          setMessage(msg);
+                        }
+                      });
                     }}
                   />
                 </label>
-                {post.editedVideoPath ? (
-                  <a
-                    href={post.editedVideoPath}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
-                  >
-                    <Download size={14} />
-                    Voir le MP4
-                  </a>
+                {reelUploadStatus ? (
+                  <p className="basis-full text-xs text-luxury-soft">{reelUploadStatus}</p>
+                ) : null}
+                {reelUploadError ? (
+                  <p className="basis-full text-xs text-red-700">{reelUploadError}</p>
+                ) : null}
+                {(localEditedVideo || post.editedVideoPath) ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
+                      onClick={() => onPreview(0)}
+                    >
+                      <Eye size={14} />
+                      Prévisualiser
+                    </button>
+                    <a
+                      href={localEditedVideo || post.editedVideoPath || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
+                    >
+                      <Download size={14} />
+                      Voir le MP4
+                    </a>
+                  </>
                 ) : null}
               </div>
             </div>
@@ -1872,8 +2268,8 @@ function PostCard({
             }}
           />
           <p className={`mt-1 text-xs ${captionAnalysis.ok ? 'text-luxury-soft' : 'text-[#7a2e1a]'}`}>
-            {captionAnalysis.length} / {captionAnalysis.max} {captionAnalysis.unitLabel}
-            {` · zone idéale ${captionAnalysis.idealMin}–${captionAnalysis.idealMax} ${captionAnalysis.unitLabel}`}
+            {captionAnalysis.length} / {captionAnalysis.idealMin}–{captionAnalysis.idealMax}{' '}
+            {captionAnalysis.unitLabel}
             {captionAnalysis.warnings.length ? ` — ${captionAnalysis.warnings.join(' ')}` : ''}
           </p>
 
@@ -1919,27 +2315,80 @@ function PostCard({
             {canPublishMeta ? (
               <button
                 type="button"
-                disabled={pending || (isReel && !post.editedVideoPath)}
+                disabled={pending || (isReel && !post.editedVideoPath) || post.status === 'published'}
                 title={
-                  isReel && !post.editedVideoPath
-                    ? 'Importe le MP4 monté avant de publier ce Reel.'
-                    : undefined
+                  post.status === 'published'
+                    ? 'Ce post est déjà publié.'
+                    : isReel && !post.editedVideoPath
+                      ? 'Importe le MP4 monté avant de publier ce Reel.'
+                      : undefined
                 }
                 onClick={() =>
-                  run(
-                    () => publishSocialPostNowAction(post.id),
-                    post.network === 'instagram' && post.alsoPublishFacebook
-                      ? isReel
-                        ? 'Reel publié sur Instagram + Facebook.'
-                        : 'Publié sur Instagram + Facebook.'
-                      : 'Publié sur Meta.',
-                  )
+                  run(async () => {
+                    const result = await publishSocialPostNowAction(post.id);
+                    if (result.ok) {
+                      setActionFeedback({
+                        kind: 'published',
+                        message: result.message || 'Publié sur Meta.',
+                      });
+                      onWorkflowTabChange('archives');
+                      window.setTimeout(() => {
+                        document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 150);
+                    }
+                    return result;
+                  }, post.network === 'instagram' && post.alsoPublishFacebook
+                    ? 'Publié sur Instagram (+ Facebook si OK).'
+                    : 'Publié sur Meta.')
                 }
-                className="btn-luxury-primary inline-flex min-h-[40px] items-center gap-2 px-4 text-[11px] disabled:opacity-60"
+                className={`inline-flex min-h-[40px] items-center gap-2 px-4 text-[11px] disabled:opacity-60 ${
+                  justPublished || post.status === 'published' ? 'rounded-full bg-[#059669] text-white' : 'btn-luxury-primary'
+                }`}
               >
-                <Send size={14} />
-                {post.network === 'instagram' && post.alsoPublishFacebook ? 'Publier IG + FB' : 'Publier'}
+                {justPublished || post.status === 'published' ? <CheckCircle2 size={14} /> : <Send size={14} />}
+                {justPublished
+                  ? 'Publié ✓'
+                  : post.status === 'published'
+                    ? 'Publié'
+                    : post.network === 'instagram' && post.alsoPublishFacebook
+                      ? 'Publier IG + FB'
+                      : 'Publier'}
               </button>
+            ) : null}
+            {canPublishMeta && post.status === 'published' && post.alsoPublishFacebook ? (
+              post.facebookExternalId ? (
+                <a
+                  href={facebookPermalinkUrl(post.facebookExternalId, post.format)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-[#1877F2]/30 bg-[#e8f0fe] px-4 text-[11px] font-semibold text-[#1877F2]"
+                >
+                  Voir sur Facebook
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled={pending || (isReel && !post.editedVideoPath)}
+                  title="Publie le miroir Facebook (une seule fois — pas de republier)"
+                  onClick={() =>
+                    run(async () => {
+                      const result = await publishFacebookMirrorNowAction(post.id);
+                      if (result.ok) {
+                        setActionFeedback({
+                          kind: 'published',
+                          message: result.message || 'Miroir Facebook publié.',
+                        });
+                        onWorkflowTabChange('archives');
+                      }
+                      return result;
+                    }, 'Miroir Facebook publié.')
+                  }
+                  className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-[#1877F2]/30 bg-[#e8f0fe] px-4 text-[11px] font-semibold text-[#1877F2] disabled:opacity-60"
+                >
+                  <Send size={14} />
+                  Publier miroir FB
+                </button>
+              )
             ) : null}
             {isTikTok ? (
               <button
@@ -1965,11 +2414,43 @@ function PostCard({
             ) : null}
             <button
               type="button"
-              disabled={pending}
-              onClick={() => run(() => scheduleSocialPostAction(post.id), 'Post programmé.')}
-              className="btn-luxury-ghost min-h-[40px] px-4 text-[11px]"
+              disabled={pending || post.status === 'published'}
+              title={post.status === 'published' ? 'Post déjà publié — reprogrammation impossible.' : undefined}
+              onClick={() =>
+                run(async () => {
+                  const result = await scheduleSocialPostAction(post.id);
+                  if (result.ok) {
+                    setActionFeedback({
+                      kind: 'scheduled',
+                      message: result.message || 'Post programmé.',
+                    });
+                    onWorkflowTabChange('programmes');
+                    window.setTimeout(() => {
+                      document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 150);
+                  }
+                  return result;
+                }, 'Post programmé.')
+              }
+              className={`min-h-[40px] px-4 text-[11px] disabled:opacity-60 ${
+                justScheduled || post.status === 'scheduled'
+                  ? 'inline-flex items-center gap-2 rounded-full border border-[#93c5fd] bg-[#dbeafe] font-semibold text-[#1e40af]'
+                  : 'btn-luxury-ghost'
+              }`}
             >
-              Programmer
+              {justScheduled ? (
+                <>
+                  <Check size={14} />
+                  Programmé ✓
+                </>
+              ) : post.status === 'scheduled' ? (
+                <>
+                  <CalendarClock size={14} />
+                  Programmé
+                </>
+              ) : (
+                'Programmer'
+              )}
             </button>
             <select
               className={`${ADMIN_FIELD_CLASS} min-h-[40px] max-w-[180px] text-[11px]`}

@@ -525,6 +525,18 @@ export function absolutePublicUrl(path: string): string {
   return `${base}${encoded}`;
 }
 
+/** Permalink Facebook depuis l’ID stocké (post_id feed ou video_id Reel). */
+export function facebookPermalinkUrl(
+  externalId: string,
+  format: SocialPostFormat = 'feed',
+): string {
+  const id = externalId.trim();
+  if (!id) return '';
+  if (format === 'reel') return `https://www.facebook.com/reel/${id}/`;
+  if (id.includes('_')) return `https://www.facebook.com/${id}`;
+  return `https://www.facebook.com/photo/?fbid=${id}`;
+}
+
 /** Jour local YYYY-MM-DD (évite le décalage UTC du calendrier). */
 export function localDayKey(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');

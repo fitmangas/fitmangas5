@@ -201,8 +201,8 @@ export function buildClaudeCodeReelPrompt(post: ReelPromptPostFields): string {
 }
 
 /**
- * Copie synchrone (execCommand) — fiable dans le geste click Safari.
- * À appeler directement dans onClick, sans async/await avant.
+ * Fallback execCommand. Safari peut renvoyer true sans rien mettre
+ * dans le presse-papiers — ne pas s’y fier seul pour le feedback UI.
  */
 export function copyTextToClipboardSync(text: string): boolean {
   const value = typeof text === 'string' ? text : String(text ?? '');
@@ -210,25 +210,12 @@ export function copyTextToClipboardSync(text: string): boolean {
 
   const ta = document.createElement('textarea');
   ta.value = value;
-  ta.setAttribute('readonly', '');
-  // iOS Safari : hors écran mais sélectionnable
-  ta.style.position = 'fixed';
-  ta.style.top = '0';
-  ta.style.left = '0';
-  ta.style.width = '2px';
-  ta.style.height = '2px';
-  ta.style.padding = '0';
-  ta.style.margin = '0';
-  ta.style.border = 'none';
-  ta.style.outline = 'none';
-  ta.style.boxShadow = 'none';
-  ta.style.background = 'transparent';
-  ta.style.opacity = '0';
-  ta.style.zIndex = '-1';
+  // Pas de readonly : Safari ignore parfois la sélection sinon.
+  ta.style.cssText =
+    'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;margin:0;border:0;outline:none;opacity:0.01;z-index:2147483647;';
   document.body.appendChild(ta);
 
-  const previous = document.activeElement as HTMLElement | null;
-  ta.focus();
+  ta.focus({ preventScroll: true });
   ta.select();
   ta.setSelectionRange(0, value.length);
 
@@ -239,25 +226,34 @@ export function copyTextToClipboardSync(text: string): boolean {
     ok = false;
   }
 
-  document.body.removeChild(ta);
-  previous?.focus?.();
+  // Laisser le temps à Safari d’écrire avant de retirer le nœud.
+  window.setTimeout(() => {
+    ta.remove();
+  }, 120);
+
   return ok;
 }
 
 /**
- * Copie presse-papiers : sync d’abord (Safari), puis Clipboard API.
- * Préférer copyTextToClipboardSync dans un onClick pour le geste utilisateur.
+ * Copie depuis un geste utilisateur (pointerdown / click).
+ * writeText d’abord (synchrone dans le geste) ; execCommand en secours silencieux
+ * uniquement si l’API Clipboard est absente — jamais de faux « Copié ! » via execCommand seul.
  */
-export async function copyTextToClipboard(text: string): Promise<void> {
+export async function copyTextFromUserGesture(text: string): Promise<void> {
   const value = typeof text === 'string' ? text : String(text ?? '');
   if (!value) throw new Error('Prompt vide — rien à copier.');
-
-  if (copyTextToClipboardSync(value)) return;
 
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
     return;
   }
 
-  throw new Error('Impossible de copier dans le presse-papiers.');
+  if (copyTextToClipboardSync(value)) return;
+
+  throw new Error('Impossible de copier dans le presse-papiers (autorise le site dans Safari).');
+}
+
+/** Alias historique — même chaîne que copyTextFromUserGesture. */
+export async function copyTextToClipboard(text: string): Promise<void> {
+  return copyTextFromUserGesture(text);
 }
