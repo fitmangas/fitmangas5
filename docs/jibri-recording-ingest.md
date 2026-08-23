@@ -53,6 +53,25 @@ Content-Type: application/json
 | 429 | Rate limit (30 req/min/IP) |
 | 503 | `RECORDING_INGEST_SECRET` absent |
 
+## Automatisation (filet + finalize)
+
+Même si le hook Jibri ne déclenche pas `finalize.sh`, un **cron toutes les 10 min**
+(`fitmangas-watch-stuck-recordings.sh`) détecte les MP4 stables et lance finalize → ingest →
+admin `/admin/replays` en **EN ATTENTE**.
+
+Install (depuis le Mac) :
+
+```bash
+cd /Users/kevinpicard/Projets/fitmangas5
+mkdir -p /tmp/fitmangas-vps-upload
+cp scripts/vps/finalize.sh scripts/vps/watch-stuck-recordings.sh scripts/vps/install-auto-finalize.sh /tmp/fitmangas-vps-upload/
+scp -r /tmp/fitmangas-vps-upload root@178.104.206.202:/tmp/fitmangas-vps
+ssh root@178.104.206.202 'bash /tmp/fitmangas-vps/install-auto-finalize.sh'
+```
+
+Logs VPS : `/opt/docker-jitsi-meet/.jitsi-meet-cfg/web/jibri/recordings/finalize.log`  
+et `watch-stuck.log`.
+
 ## finalize.sh (VPS Hetzner)
 
 Script canonique dans le repo : **`scripts/vps/finalize.sh`**.

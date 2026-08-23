@@ -7,8 +7,8 @@ import {
   type ManagedCourseReplayCard,
 } from '@/components/Admin/AdminCourseReplaysManaged';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { probeVimeoPlaybackMany } from '@/lib/vimeo-playback';
 
 type RecordingRow = {
   id: string;
@@ -58,7 +58,12 @@ export default async function AdminCourseReplaysPage() {
   const selectCols =
     'id, vimeo_video_id, title, thumbnail_url, embed_url, duration_seconds, upload_status, created_at, course_id, is_ready, courses ( title, starts_at )';
 
-  const [pendingRes, approvedRes] = await Promise.all([
+  const recoverPromise = recoverOrphanCourseReplays({ lookbackDays: 45 }).catch((err) => {
+    console.error('[admin/replays] silent recover', err);
+    return null;
+  });
+
+  let [pendingRes, approvedRes, recoverResult] = await Promise.all([
     admin
       .from('video_recordings')
       .select(selectCols)
@@ -70,7 +75,16 @@ export default async function AdminCourseReplaysPage() {
       .eq('validation_status', 'approved')
       .order('created_at', { ascending: false })
       .limit(80),
+    recoverPromise,
   ]);
+
+  if (recoverResult && recoverResult.linked > 0) {
+    pendingRes = await admin
+      .from('video_recordings')
+      .select(selectCols)
+      .eq('validation_status', 'pending')
+      .order('created_at', { ascending: false });
+  }
 
   if (pendingRes.error) console.error('[admin/replays] pending', pendingRes.error);
   if (approvedRes.error) console.error('[admin/replays] approved', approvedRes.error);
@@ -81,25 +95,15 @@ export default async function AdminCourseReplaysPage() {
     if (card) pending.push(card);
   }
 
-  const approvedRows = (approvedRes.data ?? []) as RecordingRow[];
-  const probes = await probeVimeoPlaybackMany(
-    approvedRows.map((r) => r.vimeo_video_id).filter(Boolean),
-  );
-
   const approved: ManagedCourseReplayCard[] = [];
-  for (const row of approvedRows) {
+  for (const row of (approvedRes.data ?? []) as RecordingRow[]) {
     const card = toCard(row);
     if (!card) continue;
-    const probe = probes.get(String(row.vimeo_video_id).trim());
     approved.push({
       ...card,
       is_ready: row.is_ready === true,
-      vimeoPlayable: probe ? probe.isPlayable : null,
-      vimeoStatus: probe?.status ?? null,
     });
   }
-
-  const brokenCount = approved.filter((item) => item.vimeoPlayable === false).length;
 
   return (
     <div className="min-h-screen px-6 py-10 md:py-14">
@@ -110,12 +114,6 @@ export default async function AdminCourseReplaysPage() {
             Validez les replays des lives avant publication dans l’espace cliente. Les emails et notifications partent
             à la validation. Les replays déjà validés restent visibles ici pour les masquer ou les réafficher.
           </p>
-          {brokenCount > 0 ? (
-            <p className="mt-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              {brokenCount} replay(s) validé(s) mais <strong>non lisible(s) sur Vimeo</strong> (upload incomplet ou
-              fichier manquant). Ils n’apparaissent pas côté cliente tant que l’asset n’est pas re-uploadé.
-            </p>
-          ) : null}
         </header>
         <AdminCourseReplaysPending pending={pending} />
         <AdminCourseReplaysManaged items={approved} />

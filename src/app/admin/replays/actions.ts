@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { approveCourseReplay, linkCourseReplay, rejectCourseReplay } from '@/lib/replay-admin';
+import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ReplayActionResult = { ok: true } | { ok: false; message: string };
@@ -83,6 +84,37 @@ export async function rejectCourseReplayAction(recordingId: string): Promise<Rep
  * Masquer / réafficher un replay validé sans migration :
  * is_ready=false conserve validation_status='approved' mais retire l’accès client.
  */
+/** Scan Vimeo → crée les pending manquants (fichiers déjà uploadés mais jamais liés). */
+export async function recoverOrphanReplaysAction(): Promise<
+  | { ok: true; message: string; linked: number; stillMissing: number }
+  | { ok: false; message: string }
+> {
+  try {
+    await requireAdmin();
+    const result = await recoverOrphanCourseReplays({ lookbackDays: 90 });
+    revalidatePath('/admin/replays');
+    revalidatePath('/admin/courses');
+    revalidatePath('/compte/replays');
+    const parts = [
+      result.linked > 0
+        ? `${result.linked} replay(s) remis en validation.`
+        : 'Aucun fichier Vimeo orphelin à relier.',
+      result.stillMissingRecent.length > 0
+        ? `${result.stillMissingRecent.length} séance(s) récente(s) sans fichier sur Vimeo (pipeline enregistrement).`
+        : null,
+      result.failed > 0 ? `${result.failed} échec(s).` : null,
+    ].filter(Boolean);
+    return {
+      ok: true,
+      message: parts.join(' '),
+      linked: result.linked,
+      stillMissing: result.stillMissingRecent.length,
+    };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'Récupération impossible.' };
+  }
+}
+
 export async function setCourseReplayClientVisibilityAction(
   recordingId: string,
   visible: boolean,

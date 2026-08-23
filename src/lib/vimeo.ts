@@ -272,7 +272,8 @@ export async function listAllMeVideos(): Promise<VimeoVideoMetadata[]> {
         /* uri invalide — ignoré */
       }
     }
-    nextUrl = json.paging?.next?.trim() || null;
+    const rawNext = json.paging?.next?.trim() || null;
+    nextUrl = rawNext ? new URL(rawNext, VIMEO_API_BASE).toString() : null;
   }
 
   return out;

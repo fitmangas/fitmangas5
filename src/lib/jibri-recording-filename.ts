@@ -60,20 +60,35 @@ export async function findCourseIdForJibriRecording(
 
   const { data: rows, error } = await admin
     .from('courses')
-    .select('id, slug, title')
+    .select('id, slug, title, starts_at')
     .eq('course_format', 'online')
     .gte('starts_at', windowStart)
     .lte('starts_at', windowEnd);
 
   if (error) throw error;
-  if (!rows?.length) return null;
+  return pickClosestJibriCourseMatch(rows ?? [], parsed)?.id ?? null;
+}
 
+export function courseMatchesJibriSlug(
+  row: { slug?: string | null; title?: string | null },
+  slugNorm: string,
+): boolean {
+  const courseSlug = String(row.slug ?? '').trim().toLowerCase();
+  if (courseSlug === slugNorm) return true;
+  return slugifyCourseTitle(String(row.title ?? '')) === slugNorm;
+}
+
+/** Si deux « Fit Dance » tombent dans ±10 min, on prend l’horaire le plus proche du fichier. */
+export function pickClosestJibriCourseMatch<
+  T extends { id: string; slug?: string | null; title?: string | null; starts_at?: string | null },
+>(rows: T[], parsed: ParsedJibriRecordingFileName): T | null {
   const slugNorm = parsed.slug.toLowerCase();
-  const hit = rows.find((row) => {
-    const courseSlug = String(row.slug ?? '').trim().toLowerCase();
-    if (courseSlug === slugNorm) return true;
-    return slugifyCourseTitle(String(row.title ?? '')) === slugNorm;
-  });
-
-  return hit?.id ?? null;
+  const hits = rows.filter((row) => courseMatchesJibriSlug(row, slugNorm));
+  if (!hits.length) return null;
+  const target = parsed.startsAtParis.getTime();
+  return [...hits].sort((a, b) => {
+    const da = Math.abs(new Date(a.starts_at ?? 0).getTime() - target);
+    const db = Math.abs(new Date(b.starts_at ?? 0).getTime() - target);
+    return da - db;
+  })[0];
 }

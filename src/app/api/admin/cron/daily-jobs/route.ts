@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { processDueSocialPostsAction } from '@/app/admin/community/actions';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { runCourseCycles, runPhase2DailyJobs } from '@/lib/notifications/phase2';
+import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
@@ -15,7 +16,20 @@ export async function GET(request: Request) {
     const courseReminders = await runCourseCycles(admin);
     const result = await runPhase2DailyJobs(admin);
     const social = await processDueSocialPostsAction();
-    return NextResponse.json({ courseReminders, ...result, social });
+    let replayRecover: Awaited<ReturnType<typeof recoverOrphanCourseReplays>> | { error: string };
+    try {
+      replayRecover = await recoverOrphanCourseReplays({ lookbackDays: 45 });
+      if (replayRecover.linked > 0 || replayRecover.stillMissingRecent.length > 0) {
+        console.info('[daily jobs] replay recover', {
+          linked: replayRecover.linked,
+          stillMissingRecent: replayRecover.stillMissingRecent.length,
+        });
+      }
+    } catch (e) {
+      console.error('[daily jobs] replay recover', e);
+      replayRecover = { error: e instanceof Error ? e.message : 'recover failed' };
+    }
+    return NextResponse.json({ courseReminders, ...result, social, replayRecover });
   } catch (error) {
     console.error('[daily jobs]', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

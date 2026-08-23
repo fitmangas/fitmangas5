@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseJibriParisStartAt,
   parseJibriRecordingFileName,
+  pickClosestJibriCourseMatch,
   slugifyCourseTitle,
 } from '@/lib/jibri-recording-filename';
 
@@ -42,5 +43,24 @@ describe('slugifyCourseTitle', () => {
   it('normalise un titre cours', () => {
     expect(slugifyCourseTitle('Renfo Core')).toBe('renfo-core');
     expect(slugifyCourseTitle('Pilates Mat')).toBe('pilates-mat');
+    expect(slugifyCourseTitle('Fit-Dance')).toBe('fit-dance');
+    expect(slugifyCourseTitle('Fit Dance')).toBe('fit-dance');
+  });
+});
+
+describe('pickClosestJibriCourseMatch', () => {
+  it('choisit le cours à 18:35 plutôt que 18:30 pour un fichier 1835', () => {
+    const parsed = parseJibriRecordingFileName(
+      'fitmangas-fit-dance-202608041835_2026-08-04-18-35-02.mp4',
+    );
+    expect(parsed).not.toBeNull();
+    const hit = pickClosestJibriCourseMatch(
+      [
+        { id: '1830', title: 'Fit Dance', starts_at: '2026-08-04T16:30:00.000Z' },
+        { id: '1835', title: 'Fit-Dance', starts_at: '2026-08-04T16:35:00.000Z' },
+      ],
+      parsed!,
+    );
+    expect(hit?.id).toBe('1835');
   });
 });

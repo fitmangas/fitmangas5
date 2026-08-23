@@ -1,9 +1,17 @@
 import type { StandaloneVimeoRow } from '@/types/standalone-vimeo';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { dispatch } from '@/lib/notifications/dispatcher';
 
-/** Notifie tous les membres quand une vidéo standalone est publiée. */
+/**
+ * Nouveau replay standalone → file digest (via dispatcher).
+ * Respecte prefs / silence / caps ; plus d’insert direct dans user_notifications.
+ */
 export async function notifyStandaloneVideoPublished(row: StandaloneVimeoRow): Promise<void> {
   const admin = createAdminClient();
+  const title = row.title?.trim() || 'Nouveau replay';
+  const body = row.title?.trim()
+    ? `Replay : ${row.title}`
+    : 'Un nouveau replay est disponible dans ton espace.';
   const pageSize = 500;
   let from = 0;
 
@@ -22,16 +30,29 @@ export async function notifyStandaloneVideoPublished(row: StandaloneVimeoRow): P
     const list = members ?? [];
     if (list.length === 0) break;
 
-    const insertRows = list.map((m) => ({
-      user_id: m.id,
-      kind: 'replay_video',
-      title: 'Nouveau replay disponible',
-      body: row.title?.trim() ? `Replay: ${row.title}` : 'Un nouveau replay est disponible.',
-    }));
-
-    const { error: insertError } = await admin.from('user_notifications').insert(insertRows);
-    if (insertError) {
-      console.error('[standalone notify] insert', insertError.message);
+    for (const member of list) {
+      try {
+        await dispatch(admin, {
+          event_type: 'replay.standalone_published',
+          user_id: member.id,
+          payload: {
+            title: 'Nouveau replay disponible',
+            body,
+            kind: 'replay_video',
+            video_id: row.id,
+            video_title: title,
+            replayUrl: '/compte/replays',
+          },
+          channel_hints: ['digest'],
+          idempotency_key: `replay.standalone_published:${row.id}:${member.id}`,
+        });
+      } catch (err) {
+        console.error(
+          '[standalone notify] dispatch',
+          member.id,
+          err instanceof Error ? err.message : err,
+        );
+      }
     }
 
     if (list.length < pageSize) break;

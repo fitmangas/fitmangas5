@@ -137,6 +137,12 @@ export function AdminCourseReplaysPending({ pending }: Props) {
                   Vimeo {v.vimeo_video_id} · Durée {formatDuration(v.duration_seconds)} · Statut transcode{' '}
                   <span className="font-medium text-luxury-ink/80">{v.upload_status}</span>
                 </p>
+                {v.upload_status !== 'ready' ? (
+                  <p className="mt-2 text-xs text-amber-900">
+                    Fichier Vimeo pas lisible. Si ça dépasse 24 h, l’upload a échoué — le MP4 est peut‑être encore
+                    sur le serveur live.
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setPreview(v)}
