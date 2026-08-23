@@ -52,31 +52,39 @@ alwaysApply: true
 
 ---
 
-## 2. Mode de travail Cursor + plugins MCP — NON NÉGOCIABLES
+## 2. Mode de travail Cursor — AUTONOME (décision Kevin, assumée)
+
+> **Remplace l’ancien mode « GO obligatoire »** (commit/push, deploy, Stripe write, migrations additives). Cursor n’attend plus de validation manuelle systématique. Objectif : **vitesse maximale**, ne plus jamais accumuler de travail non commité sur le Mac.
 
 ### Plugins connectés (août 2026)
-Cursor a accès aux plugins MCP suivants — les utiliser pour consulter et agir, dans les limites ci-dessous :
+Cursor a accès aux plugins MCP suivants — **lire ET agir** selon le besoin de la tâche :
 | Plugin | État | Usage typique |
 |---|---|---|
-| **GitHub** | Connecté (PAT) | Lire repo, PR, issues ; commit/push **sur demande Kevin** |
-| **Vercel** | Connecté (OAuth) | Lire déploiements, logs runtime, analytics |
-| **Stripe** | Connecté (**LIVE**) | Lire paiements, abonnements, coupons |
-| **Supabase** | Connecté | Lire tables, lignes, état réel (consultation) |
+| **GitHub** | Connecté (PAT) | Lire repo, PR, issues ; **commit + push auto** en fin de tâche |
+| **Vercel** | Connecté (OAuth) | Lire déploiements/logs ; **laisser / déclencher le deploy prod** |
+| **Stripe** | Connecté (**LIVE**) | Lire **et** écrire (coupons, abonnements, prix…) avec notification |
+| **Supabase** | Connecté | Lire **et** migrations **additives** avec notification |
 
-### Ce que Cursor peut faire SEUL, sans demander (réversible — vitesse max)
-- Lire / écrire le code, rechercher dans le repo, lancer des tests.
+### Cursor FAIT AUTOMATIQUEMENT, SANS DEMANDER
+- Écrire / modifier le code, rechercher dans le repo, lancer des tests.
 - **Chaque prompt Cursor finit par** : `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
-- **LIRE** Stripe et Supabase (consultation) pour vérifier l'état réel sans que Kevin le fasse à la main.
-- **LIRE** Vercel (logs, déploiements, erreurs prod) pour diagnostiquer sans demander à Kevin.
+- **COMMIT + PUSH GitHub automatiquement** dès qu’une tâche / amélioration est terminée **et** le build est vert. Un commit descriptif + push à chaque fin de travail. **Ne plus jamais laisser de working tree accumulé.**
+- Lire **et agir** via Vercel, Stripe, Supabase, GitHub selon le besoin.
+- Déclencher / laisser le déploiement Vercel se faire (push → auto-deploy ou `npx vercel@58.7.1 deploy --prod` si nécessaire).
 
-### Ce qui EXIGE TOUJOURS un GO explicite de Kevin (irréversible / argent / clientes)
-- **COMMIT + PUSH GitHub** : uniquement si Kevin le demande explicitement (un simple « commit + push » suffit). **Jamais** en auto — un push peut déclencher un déploiement Vercel automatique et contourner la règle « pas de deploy sans GO ».
-- **DÉPLOIEMENT production** (`npx vercel@58.7.1 deploy --prod`) : proposer, attendre le GO. Une version cassée touche les clientes en direct.
-- **ÉCRITURE Stripe LIVE** (créer / modifier / supprimer coupon, abonnement, prix, remboursement) : proposer l'action précise, attendre le GO. C'est du vrai argent sur de vraies cartes.
-- **MIGRATION Supabase** (schéma, `db push`, SQL destructif) : JAMAIS sans GO écrit. Proposer dans `PROPOSITIONS_MIGRATIONS.md`.
+### Opérations irréversibles — exécution auto + NOTIFICATION (pas de GO)
+Cursor peut les exécuter dans le cadre d’une tâche, **mais doit IMMÉDIATEMENT après** signaler clairement à Kevin **en tête de sa réponse** (notification pour vérification rapide, **pas** une demande d’autorisation — Cursor n’attend pas de réponse pour continuer) :
+- `⚠️ STRIPE MODIFIÉ : [quoi exactement]`
+- `⚠️ MIGRATION SUPABASE APPLIQUÉE : [quelle table/colonne / effet]`
+- `⚠️ DÉPLOYÉ EN PROD : [quels changements]`
 
-### Raison (leçon des 2 dernières semaines)
-Plusieurs bugs (carousel, articles identiques, `finalize.sh` cassé ~1 semaine, page SEO qui plantait) ont été rattrapés **parce que Kevin vérifiait avant déploiement**. Un push GitHub → Vercel auto ou un deploy manuel sans contrôle les aurait envoyés en prod. Donc : **vitesse maximale sur le réversible** (code, build, lecture), **sécurité sur l'irréversible** (commit/push, deploy, Stripe write, migration).
+Migrations **additives** (ajout, changement de limite, nouveau champ) = auto + notification ci-dessus.
+
+### EXCEPTION ABSOLUE — seul GO écrit encore obligatoire
+- **SQL / migration DESTRUCTIF** : `DROP`, `DELETE`, `TRUNCATE`, suppression de colonne/table, effacement de données clientes. **JAMAIS en auto.** Proposer dans `PROPOSITIONS_MIGRATIONS.md` et attendre le **GO écrit** de Kevin.
+
+### Raison (évolution assumée)
+L’ancien frein « GO sur tout l’irréversible » protégeait la prod mais **accumulait** le travail non commité et ralentissait. Désormais : **autonomie + notification** pour l’argent / le schéma additif / le deploy ; **GO écrit uniquement** pour le destructif (données clientes).
 
 ### Règles de travail inchangées
 - **Prompts consolidés** : un gros prompt, pas 40 petits.
