@@ -80,10 +80,16 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
     <div className="space-y-6">
       <div className="rounded-[1.5rem] border border-[#C45D3E]/20 bg-[#FFFAF5]/95 p-5">
         <p className="text-sm leading-6 text-luxury-muted">
-          Cible longueur : <strong className="text-luxury-ink">{BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} mots</strong> de
-          contenu réel. Badge « trop court » sous {BLOG_SHORT_WORDS_THRESHOLD} mots. Lots de{' '}
-          <strong className="text-luxury-ink">3 à 5</strong> max — jamais les 25 d’un coup. Vérifie chaque lot avant le
-          suivant. Espace les MàJ dans le temps.
+          Cible longueur : <strong className="text-luxury-ink">{BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} mots</strong>{' '}
+          (zone idéale). Une MàJ n’est <strong className="text-luxury-ink">acceptée que dans cette fourchette</strong> —
+          sinon échec affiché dans le journal (pas de sauvetage en « Long » ou « Sous idéal »). Badge « trop court » sous{' '}
+          {BLOG_SHORT_WORDS_THRESHOLD} mots. Lots de <strong className="text-luxury-ink">3 à 5</strong> max. Espace les
+          MàJ dans le temps.
+        </p>
+        <p className="mt-2 text-xs leading-5 text-luxury-soft">
+          <strong className="text-luxury-ink">Lancer le lot</strong> = même enrichissement IA pour plusieurs cases
+          cochées. <strong className="text-luxury-ink">Mettre à jour</strong> (fin de ligne) = exactement la même
+          action, mais pour <em>un seul</em> article.
         </p>
         {!gscAvailable ? (
           <p className="mt-3 text-xs text-amber-900">
@@ -194,7 +200,7 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
                     disabled={pending}
                     onClick={() => runUnit(item.id)}
                   >
-                    Mettre à jour
+                    MàJ seul
                   </button>
                 </td>
               </tr>
