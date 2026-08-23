@@ -92,4 +92,77 @@ describe('createStripeCheckoutSession', () => {
     expect(create.mock.calls[0]?.[0]).not.toHaveProperty('subscription_data');
     expect(create.mock.calls[0]?.[0]).not.toHaveProperty('payment_method_collection');
   });
+
+  it('applique un code promo Stripe et trace les metadata', async () => {
+    const { stripe, create } = stripeMock();
+
+    await createStripeCheckoutSession(stripe as never, {
+      userId: 'user_1',
+      email: 'client@example.com',
+      courseId: 'v-coll',
+      promoCode: {
+        id: 'promo-db-1',
+        code: 'FIT10',
+        benefitType: 'percent',
+        discountPercent: 10,
+        freeMonths: null,
+        stripePromotionCodeId: 'promo_stripe_abc',
+      },
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone_number_collection: { enabled: true },
+        discounts: [{ promotion_code: 'promo_stripe_abc' }],
+        metadata: expect.objectContaining({
+          promo_code: 'FIT10',
+          promo_code_id: 'promo-db-1',
+        }),
+      }),
+    );
+  });
+
+  it('préremplit le customer Stripe et ne redemande pas le téléphone', async () => {
+    const { stripe, create } = stripeMock();
+
+    await createStripeCheckoutSession(stripe as never, {
+      userId: 'user_1',
+      email: 'client@example.com',
+      courseId: 'v-coll',
+      stripeCustomerId: 'cus_prefill',
+      skipPhoneCollection: true,
+    });
+
+    const params = create.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(params.customer).toBe('cus_prefill');
+    expect(params).not.toHaveProperty('customer_email');
+    expect(params).not.toHaveProperty('phone_number_collection');
+  });
+
+  it('n’ajoute pas les 7 jours d’essai si le code offre des mois gratuits', async () => {
+    const { stripe, create } = stripeMock();
+
+    await createStripeCheckoutSession(stripe as never, {
+      userId: 'user_1',
+      email: 'client@example.com',
+      courseId: 'v-coll',
+      promoCode: {
+        id: 'promo-db-2',
+        code: 'FAMILLE1MOIS',
+        benefitType: 'free_months',
+        discountPercent: 0,
+        freeMonths: 1,
+        stripePromotionCodeId: 'promo_stripe_free',
+      },
+    });
+
+    const params = create.mock.calls[0]?.[0] as { subscription_data?: { trial_period_days?: number } };
+    expect(params.subscription_data).toBeDefined();
+    expect(params.subscription_data?.trial_period_days).toBeUndefined();
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        discounts: [{ promotion_code: 'promo_stripe_free' }],
+      }),
+    );
+  });
 });

@@ -14,7 +14,8 @@ export default async function AdminPromosPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-luxury-ink">Codes promos</h1>
             <p className="mt-2 max-w-xl text-sm text-luxury-muted">
-              Stockage interne — branchement Stripe Checkout / Promotion Codes à prévoir pour application automatique.
+              Crée des codes promo synchronisés avec Stripe (réduction % ou mois gratuits). Les clients les saisissent à
+              l&apos;inscription ; le compteur d&apos;utilisations se met à jour au paiement.
             </p>
           </div>
           {error ? (

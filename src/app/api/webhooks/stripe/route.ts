@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { confirmUserEmailIfNeeded } from '@/lib/auth/confirm-user-email';
+import { incrementPromoRedemption } from '@/lib/promo-codes/increment-redemption';
 import { attachReferralForNewUser, markReferralsSubscribedForUser } from '@/lib/referrals/attach';
 import { isValidReferralCode, normalizeReferralCode } from '@/lib/referrals/cookie';
 import { syncReferralRewardForReferrer, syncReferrerRewardAfterReferredUserChange } from '@/lib/referrals/reward';
@@ -213,6 +214,36 @@ export async function POST(request: Request) {
         }
 
         await confirmUserEmailIfNeeded(admin, userId);
+
+        const checkoutPhone = session.customer_details?.phone?.trim();
+        if (checkoutPhone) {
+          try {
+            const { data: existingAuth } = await admin.auth.admin.getUserById(userId);
+            const existingMeta =
+              existingAuth.user?.user_metadata && typeof existingAuth.user.user_metadata === 'object'
+                ? existingAuth.user.user_metadata
+                : {};
+            const already = typeof (existingMeta as Record<string, unknown>).phone === 'string'
+              ? String((existingMeta as Record<string, unknown>).phone).trim()
+              : '';
+            if (!already) {
+              await admin.auth.admin.updateUserById(userId, {
+                user_metadata: { ...existingMeta, phone: checkoutPhone },
+              });
+            }
+          } catch (phoneErr) {
+            console.error('[stripe webhook] phone metadata sync failed', phoneErr);
+          }
+        }
+
+        const promoCodeId = session.metadata?.promo_code_id;
+        if (typeof promoCodeId === 'string' && promoCodeId.trim()) {
+          try {
+            await incrementPromoRedemption(admin, promoCodeId);
+          } catch (promoErr) {
+            console.error('[stripe webhook] promo redemption increment failed', promoErr);
+          }
+        }
 
         if (session.mode === 'subscription') {
           const subscription = await resolveCheckoutSubscription(stripe, session);

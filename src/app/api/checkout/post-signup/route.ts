@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+import { phoneFromAuthUser } from '@/lib/admin/client-phone';
 import { getReferralCodeForCheckout } from '@/lib/referrals/checkout-referral';
+import {
+  parseCheckoutCustomerFields,
+  parseOfferCodeFromBody,
+  resolveOfferCode,
+} from '@/lib/promo-codes/resolve-offer-code';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createStripeCheckoutSession, parseCheckoutCourseId } from '@/lib/stripe/create-checkout-session';
+import { ensureStripeCustomerForCheckout } from '@/lib/stripe/ensure-customer';
 
 /**
  * Checkout après inscription : vérifie userId + e-mail (service role), sans cookie.
@@ -50,14 +57,51 @@ export async function POST(request: Request) {
   }
 
   const stripe = new Stripe(stripeSecret);
+  const customerFields = parseCheckoutCustomerFields(body);
+  const meta = userData.user.user_metadata;
+  const metaFirst = meta && typeof meta === 'object' && typeof (meta as Record<string, unknown>).first_name === 'string'
+    ? String((meta as Record<string, unknown>).first_name)
+    : null;
+  const metaLast = meta && typeof meta === 'object' && typeof (meta as Record<string, unknown>).last_name === 'string'
+    ? String((meta as Record<string, unknown>).last_name)
+    : null;
+  const firstName = customerFields.firstName ?? metaFirst;
+  const lastName = customerFields.lastName ?? metaLast;
+  const phone = customerFields.phone ?? phoneFromAuthUser(userData.user);
 
   try {
-    const referralCode = await getReferralCodeForCheckout();
+    const cookieReferral = await getReferralCodeForCheckout();
+    const resolved = await resolveOfferCode(admin, parseOfferCodeFromBody(body));
+    if (resolved.kind === 'invalid') {
+      return NextResponse.json({ error: resolved.message }, { status: 400 });
+    }
+
+    const promoCode = resolved.kind === 'promo' ? resolved.promo : null;
+    const referralCode =
+      resolved.kind === 'referral'
+        ? resolved.code
+        : resolved.kind === 'promo'
+          ? cookieReferral && cookieReferral !== resolved.promo.code
+            ? cookieReferral
+            : null
+          : cookieReferral;
+
+    const stripeCustomerId = await ensureStripeCustomerForCheckout(stripe, admin, {
+      userId,
+      email: authEmail,
+      firstName,
+      lastName,
+      phone,
+    });
+
     const session = await createStripeCheckoutSession(stripe, {
       userId,
       email: authEmail,
       courseId,
       referralCode,
+      promoCode,
+      stripeCustomerId,
+      skipPhoneCollection: Boolean(phone),
     });
 
     if (!session.url) {
