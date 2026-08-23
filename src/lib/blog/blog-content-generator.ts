@@ -9,6 +9,8 @@ import {
   containsArticlePilatesPlaceholder,
   countBodyWords,
   ensureValidatedBlogCta,
+  idealZoneOutOfRangeDetail,
+  isIdealBodyWordCount,
   looksLikeFallbackTemplate,
   sanitizeBlogContentHtml,
 } from '@/lib/blog/blog-content-guards';
@@ -64,6 +66,7 @@ function buildPrompts(params: {
   title?: string;
   recentAngles?: BlogAngleId[];
   lastAngle?: BlogAngleId | null;
+  lengthCorrection?: { wordsGot: number };
 }): {
   system: string;
   user: string;
@@ -75,13 +78,17 @@ Objectif stratégique FitMangas: clusters SEO autour de:
 - Pilates débutant à la maison (/pilates-debutant-maison)
 
 Retourne STRICTEMENT un JSON avec ces clés:
-- contentHtml (article HTML UNIQUE, cible ${BLOG_TARGET_WORDS_MIN} à ${BLOG_TARGET_WORDS_MAX} mots de contenu RÉEL ; balises <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin AVANT le CTA)
+- contentHtml (article HTML UNIQUE ; OBLIGATOIRE ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots de contenu RÉEL ; hors fourchette = échec ; balises <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin AVANT le CTA)
 - description (120 à 159 caractères, STRICTEMENT moins de 160)
 - metaDescription (140 à 159 caractères, STRICTEMENT moins de 160)
 - seoKeywords (5 à 8 mots-clés longue traîne séparés par virgules)`;
 
   const avoidAngles = (params.recentAngles ?? []).slice(-8).join(', ') || '(aucun)';
   const lockedTitle = params.title?.trim();
+  const correction =
+    params.lengthCorrection != null
+      ? `\n\nCORRECTION: ta version précédente faisait ${params.lengthCorrection.wordsGot} mots — HORS zone. Réécris pour atterrir STRICTEMENT entre ${BLOG_TARGET_WORDS_MIN} et ${BLOG_TARGET_WORDS_MAX} mots (vise ~1500). Coupe le superflu ou densifie, sans remplissage.`
+      : '';
 
   const user = `Sujet SPÉCIFIQUE à traiter (un seul angle, contenu propre à CE sujet):
 ${params.topicBrief}
@@ -91,7 +98,7 @@ Date publication: ${params.publishDateIso}
 
 Règles de RÉDACTION (obligatoires):
 - Chaque article = contenu ORIGINAL rédigé pour CE sujet. Pas de texte recyclé.
-- LONGUEUR : viser ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots de vraie valeur (exemples terrain, nuances, erreurs courantes, variations d'exercices, FAQ utile). INTERDIT le remplissage creux, les reformulations vides et le padding. Si le sujet ne porte pas ${BLOG_TARGET_WORDS_MIN} mots utiles, préfère ~900 mots denses plutôt que 1500 dilués — mais jamais sous le plancher ${BLOG_MIN_BODY_WORDS}.
+- LONGUEUR FINALE OBLIGATOIRE: ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots de vraie valeur (exemples terrain, nuances, erreurs courantes, variations d'exercices, FAQ utile). Vise le milieu (~1500). INTERDIT le remplissage creux, les reformulations vides, le padding, et dépasser ${BLOG_TARGET_WORDS_MAX} mots.
 - Les intertitres <h2>/<h3> doivent être SPÉCIFIQUES au sujet (ex. "Respiration latérale au bureau", "Quand 15 minutes battent une heure"). INTERDIT d'utiliser les titres de section figés suivants: "Pourquoi ce sujet change ta pratique", "Le contexte concret", "3 actions simples à appliquer cette semaine", "Exemple terrain", "Ce que tu peux retenir".
 - INTERDIT ABSOLU: "Article pilates N", "mouvement & souffle", tout placeholder non résolu, "Un guide concret pour progresser en pilates autour de…".
 - Viser une intention de recherche précise liée au sujet
@@ -104,7 +111,7 @@ Règles de RÉDACTION (obligatoires):
 - FAQ courte (2-3 questions) liées au sujet
 - NE PAS écrire le CTA final toi-même (le système l'ajoute). Termine après la FAQ.
 - Pas de liens HTML externes ; pas de promesse médicale / perte de poids / guérison
-- Minimum ${BLOG_MIN_BODY_WORDS} mots de contenu réel unique`;
+- Minimum technique ${BLOG_MIN_BODY_WORDS} mots, mais la cible métier est ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX}.${correction}`;
 
   return { system, user };
 }
@@ -152,27 +159,29 @@ function parseGeneratedArticle(
 /**
  * Génère un article via la cascade Claude → Gemini → Mistral → Groq → OpenAI.
  * Ne renvoie JAMAIS le template de secours : en cas d’échec total → generation_failed.
+ * Garde-fou longueur = même règle que la MàJ : sauver UNIQUEMENT en zone idéale 1200–1800 (1 retry).
  */
 /** Qualité éditoriale prioritaire : Claude puis Gemini puis Mistral. */
 export const PREMIUM_BLOG_AI_ORDER: BlogAiProviderId[] = ['claude', 'gemini', 'mistral'];
 
-export async function tryGenerateFrenchArticle(params: {
+type GenerateParams = {
   topicBrief: string;
   category: string;
   publishDateIso: string;
-  /** Titre déjà validé (corps aligné dessus, non réécrit). */
   title?: string;
-  /** Ordre de cascade optionnel (ex. PREMIUM_BLOG_AI_ORDER). */
   providerOrder?: BlogAiProviderId[];
   recentAngles?: BlogAngleId[];
   lastAngle?: BlogAngleId | null;
-}): Promise<ArticleGenerationAttemptResult> {
+  lengthCorrection?: { wordsGot: number };
+};
+
+async function runOneGenerationPass(params: GenerateParams): Promise<ArticleGenerationAttemptResult> {
   const { system, user } = buildPrompts(params);
   const cascade = await runBlogAiCascade(
     {
       system,
       user,
-      temperature: 0.85,
+      temperature: params.lengthCorrection ? 0.55 : 0.85,
       maxOutputTokens: 12288,
     },
     params.providerOrder,
@@ -197,21 +206,56 @@ export async function tryGenerateFrenchArticle(params: {
     };
   }
 
-  console.info(
-    `[generateFrenchArticle] contenu généré par ${article.provider}/${article.model} (${countBodyWords(article.contentHtml)} mots)`,
-  );
   return { ok: true, article };
 }
 
+export async function tryGenerateFrenchArticle(params: {
+  topicBrief: string;
+  category: string;
+  publishDateIso: string;
+  /** Titre déjà validé (corps aligné dessus, non réécrit). */
+  title?: string;
+  /** Ordre de cascade optionnel (ex. PREMIUM_BLOG_AI_ORDER). */
+  providerOrder?: BlogAiProviderId[];
+  recentAngles?: BlogAngleId[];
+  lastAngle?: BlogAngleId | null;
+}): Promise<ArticleGenerationAttemptResult> {
+  let result = await runOneGenerationPass(params);
+  if (!result.ok) return result;
+
+  let words = countBodyWords(result.article.contentHtml);
+  if (!isIdealBodyWordCount(words)) {
+    const retry = await runOneGenerationPass({
+      ...params,
+      lengthCorrection: { wordsGot: words },
+    });
+    if (!retry.ok) {
+      return {
+        ok: false,
+        reason: 'generation_failed',
+        detail: `Hors zone (${words} mots) puis retry échoué: ${retry.detail}`,
+      };
+    }
+    result = retry;
+    words = countBodyWords(result.article.contentHtml);
+  }
+
+  if (!isIdealBodyWordCount(words)) {
+    return {
+      ok: false,
+      reason: 'generation_failed',
+      detail: `${idealZoneOutOfRangeDetail(words)} Après 2 essais.`,
+    };
+  }
+
+  console.info(
+    `[generateFrenchArticle] contenu généré par ${result.article.provider}/${result.article.model} (${words} mots, zone idéale)`,
+  );
+  return result;
+}
+
 async function retryParseAcrossProviders(
-  params: {
-    topicBrief: string;
-    category: string;
-    publishDateIso: string;
-    title?: string;
-    recentAngles?: BlogAngleId[];
-    lastAngle?: BlogAngleId | null;
-  },
+  params: GenerateParams,
   skipProvider: BlogAiProviderId,
   providerOrder?: BlogAiProviderId[],
 ): Promise<GeneratedArticle | null> {
@@ -229,7 +273,7 @@ async function retryParseAcrossProviders(
     const parsed = parseGeneratedArticle(result.text, result.provider, result.model);
     if (parsed) {
       console.info(
-        `[generateFrenchArticle] contenu généré par ${parsed.provider}/${parsed.model} (retry)`,
+        `[generateFrenchArticle] contenu généré par ${parsed.provider}/${parsed.model} (retry parse)`,
       );
       return parsed;
     }

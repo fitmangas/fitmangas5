@@ -4,6 +4,15 @@ import { revalidatePath } from 'next/cache';
 import { GoogleGenAI } from '@google/genai';
 
 import { requireAdmin } from '@/lib/auth/require-admin';
+import {
+  BLOG_TARGET_WORDS_MAX,
+  BLOG_TARGET_WORDS_MIN,
+  countBodyWords,
+  ensureValidatedBlogCta,
+  idealZoneOutOfRangeDetail,
+  isIdealBodyWordCount,
+  sanitizeBlogContentHtml,
+} from '@/lib/blog/blog-content-guards';
 import { enforceBlogSeoMeta, enforceBlogSeoTitle } from '@/lib/blog/blog-seo-limits';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -93,7 +102,13 @@ export async function generateSeoArticleDraftAction(theme: string) {
 
   const model = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = `Tu es rédactrice SEO expert pilates / fitness (FitMangas, Alejandra).
+
+  const buildPrompt = (lengthCorrection?: { wordsGot: number }) => {
+    const correction =
+      lengthCorrection != null
+        ? `\nCORRECTION: content_fr faisait ${lengthCorrection.wordsGot} mots — HORS zone. Réécris content_fr (et content_es aligné) pour atterrir STRICTEMENT entre ${BLOG_TARGET_WORDS_MIN} et ${BLOG_TARGET_WORDS_MAX} mots (vise ~1500).`
+        : '';
+    return `Tu es rédactrice SEO expert pilates / fitness (FitMangas, Alejandra).
 Thème demandé: ${themeTrim}
 
 Génère un article de blog bilingue FR + ES.
@@ -101,7 +116,7 @@ Réponds STRICTEMENT en JSON avec les clés:
 - title_fr, title_es (titres SEO 45 à 59 caractères chacun — STRICTEMENT moins de 60)
 - meta_description_fr, meta_description_es (140 à 159 caractères — STRICTEMENT moins de 160)
 - description_fr, description_es (chapo 1-2 phrases, texte brut sans HTML)
-- content_fr, content_es (article complet : cible 1200 à 1800 mots de contenu RÉEL en FR et sa traduction ES ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin d'article. INTERDIT le remplissage creux : si le sujet ne porte pas 1200 mots utiles, préfère ~900 mots denses)
+- content_fr, content_es (article complet : OBLIGATOIRE ${BLOG_TARGET_WORDS_MIN} à ${BLOG_TARGET_WORDS_MAX} mots de contenu RÉEL en FR et sa traduction ES ; hors fourchette = échec ; HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement ; courte FAQ en fin d'article. INTERDIT le remplissage creux et dépasser ${BLOG_TARGET_WORDS_MAX} mots)
 - seo_keywords: string (5 à 8 mots-clés longue traîne séparés par virgules)
 - slug_suggestion: slug latin minuscules tirets, sans accents
 
@@ -114,22 +129,48 @@ Contraintes SEO:
 - inclure une FAQ qui répond à une vraie question Google autour du cluster choisi
 - ne pas inventer de liens HTML externes ; le site ajoute le maillage interne automatiquement
 - ne pas promettre de guérison, transformation médicale, perte de poids garantie ou résultat irréaliste
-
+${correction}
 Sans markdown ni texte hors JSON.`;
+  };
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: prompt,
-    config: { temperature: 0.75, maxOutputTokens: 8192 },
-  });
-  const parsed = extractJsonBlock(response.text ?? '');
+  async function generateOnce(lengthCorrection?: { wordsGot: number }) {
+    const response = await ai.models.generateContent({
+      model,
+      contents: buildPrompt(lengthCorrection),
+      config: { temperature: lengthCorrection ? 0.55 : 0.75, maxOutputTokens: 8192 },
+    });
+    return extractJsonBlock(response.text ?? '');
+  }
+
+  let parsed = await generateOnce();
   if (!parsed) return { ok: false as const, error: 'Réponse Gemini invalide.' };
 
-  const title_fr = enforceBlogSeoTitle(String(parsed.title_fr ?? '').trim());
-  const title_es = enforceBlogSeoTitle(String(parsed.title_es ?? '').trim());
-  const content_fr = String(parsed.content_fr ?? '').trim();
-  const content_es = String(parsed.content_es ?? '').trim();
+  let title_fr = enforceBlogSeoTitle(String(parsed.title_fr ?? '').trim());
+  let title_es = enforceBlogSeoTitle(String(parsed.title_es ?? '').trim());
+  let content_fr = ensureValidatedBlogCta(sanitizeBlogContentHtml(String(parsed.content_fr ?? '').trim()));
+  let content_es = String(parsed.content_es ?? '').trim();
   if (!title_fr || !content_fr) return { ok: false as const, error: 'Contenu généré incomplet.' };
+
+  let wordsFr = countBodyWords(content_fr);
+  if (!isIdealBodyWordCount(wordsFr)) {
+    const retryParsed = await generateOnce({ wordsGot: wordsFr });
+    if (!retryParsed) {
+      return {
+        ok: false as const,
+        error: `Hors zone (${wordsFr} mots) puis retry Gemini invalide.`,
+      };
+    }
+    parsed = retryParsed;
+    title_fr = enforceBlogSeoTitle(String(parsed.title_fr ?? '').trim()) || title_fr;
+    title_es = enforceBlogSeoTitle(String(parsed.title_es ?? '').trim()) || title_es;
+    content_fr = ensureValidatedBlogCta(sanitizeBlogContentHtml(String(parsed.content_fr ?? '').trim()));
+    content_es = String(parsed.content_es ?? '').trim();
+    wordsFr = countBodyWords(content_fr);
+  }
+
+  if (!isIdealBodyWordCount(wordsFr)) {
+    return { ok: false as const, error: `${idealZoneOutOfRangeDetail(wordsFr)} Après 2 essais.` };
+  }
 
   const admin = createAdminClient();
   const { data: coachRow } = await admin.from('profiles').select('id').eq('role', 'admin').order('created_at', { ascending: true }).limit(1).maybeSingle();

@@ -7,6 +7,8 @@ import {
   assertContentSafeToPublish,
   containsArticlePilatesPlaceholder,
   countBodyWords,
+  idealZoneOutOfRangeDetail,
+  isIdealBodyWordCount,
   looksLikeFallbackTemplate,
   substantialRewriteRatio,
 } from '@/lib/blog/blog-content-guards';
@@ -120,6 +122,14 @@ export async function prepareUnpublishedArticleBody(params: {
   });
   if (!guard.allowed) {
     return { ok: false, detail: guard.reason, wordsBefore };
+  }
+
+  if (!isIdealBodyWordCount(wordsAfter)) {
+    return {
+      ok: false,
+      detail: idealZoneOutOfRangeDetail(wordsAfter),
+      wordsBefore,
+    };
   }
 
   return {

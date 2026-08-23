@@ -10,6 +10,8 @@ import {
   containsArticlePilatesPlaceholder,
   countBodyWords,
   ensureValidatedBlogCta,
+  idealZoneOutOfRangeDetail,
+  isIdealBodyWordCount,
   looksLikeFallbackTemplate,
   sanitizeBlogContentHtml,
   stripValidatedBlogCta,
@@ -175,7 +177,7 @@ export async function enrichArticleBodyHtml(params: {
   }
 
   // Hors zone idéale → une seule correction auto, sinon refus (évite « Long » / « Sous idéal » sauvés).
-  if (generated.wordsAfter < BLOG_TARGET_WORDS_MIN || generated.wordsAfter > BLOG_TARGET_WORDS_MAX) {
+  if (!isIdealBodyWordCount(generated.wordsAfter)) {
     const retry = await generateEnrichedHtml({
       title: params.title,
       description: params.description,
@@ -194,11 +196,11 @@ export async function enrichArticleBodyHtml(params: {
     generated = retry;
   }
 
-  if (generated.wordsAfter < BLOG_TARGET_WORDS_MIN || generated.wordsAfter > BLOG_TARGET_WORDS_MAX) {
+  if (!isIdealBodyWordCount(generated.wordsAfter)) {
     return {
       ok: false,
       reason: 'invalid_content',
-      detail: `Longueur hors zone idéale après 2 essais (${generated.wordsAfter} mots ; cible ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX}). Relance ou édite manuellement.`,
+      detail: `${idealZoneOutOfRangeDetail(generated.wordsAfter)} Après 2 essais.`,
       wordsBefore,
       wordsAfter: generated.wordsAfter,
     };

@@ -62,6 +62,15 @@ export function getBodyWordLengthZone(wordCount: number): BodyWordLengthZone {
   return 'long';
 }
 
+/** Garde-fou partagé génération + MàJ : corps sauvable uniquement en 1200–1800. */
+export function isIdealBodyWordCount(wordCount: number): boolean {
+  return wordCount >= BLOG_TARGET_WORDS_MIN && wordCount <= BLOG_TARGET_WORDS_MAX;
+}
+
+export function idealZoneOutOfRangeDetail(wordCount: number): string {
+  return `Longueur hors zone idéale (${wordCount} mots ; cible ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX}). Relance ou édite manuellement.`;
+}
+
 export function bodyWordLengthLabelFr(zone: BodyWordLengthZone, wordCount: number): string {
   switch (zone) {
     case 'too_short':
