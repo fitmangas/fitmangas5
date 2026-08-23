@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import {
   enrichPublishedArticleAction,
@@ -30,6 +31,7 @@ function zoneLabel(zone: BlogRefreshPriorityItem['lengthZone']) {
 }
 
 export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
+  const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [log, setLog] = useState<string[]>([]);
@@ -53,6 +55,8 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
           `OK ${id.slice(0, 8)}… : ${result.wordsBefore}→${result.wordsAfter} mots, réécriture ${(result.rewriteRatio * 100).toFixed(0)}% (${result.provider}/${result.model})`,
           ...prev,
         ]);
+        setSelected((prev) => prev.filter((x) => x !== id));
+        router.refresh();
       } else {
         setLog((prev) => [
           `ÉCHEC ${id.slice(0, 8)}… : ${result.error}${result.rewriteRatio != null ? ` (Δ ${(result.rewriteRatio * 100).toFixed(0)}%)` : ''}`,
@@ -66,6 +70,7 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
     const ids = selected.length > 0 ? selected : topUrgent;
     start(async () => {
       const result = await enrichPublishedArticlesBatchAction({ articleIds: ids, limit: batchSize });
+      const okIds = result.results.filter((row) => row.ok && row.articleId).map((row) => row.articleId as string);
       const lines = result.results.map((row) => {
         if (row.ok) {
           return `OK ${row.articleId.slice(0, 8)}… : ${row.wordsBefore}→${row.wordsAfter} mots, Δ ${(row.rewriteRatio * 100).toFixed(0)}%`;
@@ -73,23 +78,49 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
         return `ÉCHEC ${row.articleId?.slice(0, 8) ?? '?'}… : ${row.error}`;
       });
       setLog((prev) => [`— Lot de ${result.processed} —`, ...lines, ...prev]);
+      if (okIds.length > 0) {
+        setSelected((prev) => prev.filter((id) => !okIds.includes(id)));
+        router.refresh();
+      }
     });
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="space-y-4">
+        {log.length > 0 ? (
+          <div className="rounded-2xl border border-black/10 bg-white/80 p-4 font-mono text-xs leading-5 text-luxury-muted">
+            {log.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        ) : null}
+        <div className="rounded-[1.5rem] border border-emerald-200/80 bg-emerald-50/90 px-6 py-10 text-center shadow-sm">
+          <p className="text-lg font-semibold text-emerald-950">
+            ✅ Tous les articles sont en zone idéale — rien à mettre à jour
+          </p>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-emerald-900/80">
+            Cible {BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} mots atteinte partout. Un nouvel article hors fourchette,
+            ou une édition manuelle qui ressort de la zone, réapparaîtra ici automatiquement.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="rounded-[1.5rem] border border-[#C45D3E]/20 bg-[#FFFAF5]/95 p-5">
         <p className="text-sm leading-6 text-luxury-muted">
-          Cible longueur : <strong className="text-luxury-ink">{BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} mots</strong>{' '}
-          (zone idéale). Une MàJ n’est <strong className="text-luxury-ink">acceptée que dans cette fourchette</strong> —
-          sinon échec affiché dans le journal (pas de sauvetage en « Long » ou « Sous idéal »). Badge « trop court » sous{' '}
-          {BLOG_SHORT_WORDS_THRESHOLD} mots. Lots de <strong className="text-luxury-ink">3 à 5</strong> max. Espace les
-          MàJ dans le temps.
+          Liste de tâches : <strong className="text-luxury-ink">{items.length} article{items.length > 1 ? 's' : ''}</strong>{' '}
+          hors zone idéale ({BLOG_TARGET_WORDS_MIN}–{BLOG_TARGET_WORDS_MAX} mots). Une MàJ n’est acceptée que dans cette
+          fourchette — sinon échec dans le journal. Badge « trop court » sous {BLOG_SHORT_WORDS_THRESHOLD} mots. Lots de{' '}
+          <strong className="text-luxury-ink">3 à 5</strong> max.
         </p>
         <p className="mt-2 text-xs leading-5 text-luxury-soft">
-          <strong className="text-luxury-ink">Lancer le lot</strong> = même enrichissement IA pour plusieurs cases
-          cochées. <strong className="text-luxury-ink">Mettre à jour</strong> (fin de ligne) = exactement la même
-          action, mais pour <em>un seul</em> article.
+          <strong className="text-luxury-ink">Lancer le lot</strong> = enrichissement IA pour plusieurs cases cochées.{' '}
+          <strong className="text-luxury-ink">MàJ seul</strong> = la même action pour une ligne. Dès qu’un article passe
+          en zone idéale, il disparaît de cette liste.
         </p>
         {!gscAvailable ? (
           <p className="mt-3 text-xs text-amber-900">
@@ -117,7 +148,7 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
             className="rounded-full border border-[#C45D3E]/30 bg-white px-4 py-2 text-xs font-semibold text-[#C45D3E]"
             onClick={selectTopN}
           >
-            Sélectionner les {batchSize} plus urgents
+            Sélectionner les {Math.min(batchSize, items.length)} plus urgents
           </button>
           <button
             type="button"
@@ -125,7 +156,9 @@ export function BlogRefreshPriorityClient({ items, gscAvailable }: Props) {
             disabled={pending}
             onClick={() => runBatch()}
           >
-            {pending ? 'MàJ en cours…' : `Lancer le lot (${Math.min(batchSize, selected.length || batchSize)})`}
+            {pending
+              ? 'MàJ en cours…'
+              : `Lancer le lot (${Math.min(batchSize, selected.length || Math.min(batchSize, items.length))})`}
           </button>
         </div>
       </div>

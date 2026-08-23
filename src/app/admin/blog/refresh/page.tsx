@@ -41,8 +41,9 @@ export default async function AdminBlogRefreshPage() {
       <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-soft">SEO qualité 2026</p>
       <h1 className="hero-signature-title mt-2 text-3xl text-luxury-ink">Mise à jour progressive</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-luxury-muted">
-        Liste priorisée des {items.length} articles publiés — du plus urgent au moins urgent. Aucune réécriture automatique
-        au chargement : tu lances les lots toi-même (3–5 max).
+        Liste de tâches : uniquement les articles publiés <strong className="text-luxury-ink">hors zone idéale</strong>{' '}
+        (trop court / sous idéal / long). Ceux déjà en 1200–1800 mots n’apparaissent plus. Aucune réécriture automatique au
+        chargement — tu lances les lots toi-même (3–5 max).
       </p>
 
       <div className="mt-8">

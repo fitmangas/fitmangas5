@@ -1,5 +1,6 @@
 import {
   BLOG_SHORT_WORDS_THRESHOLD,
+  BLOG_TARGET_WORDS_MAX,
   BLOG_TARGET_WORDS_MIN,
   countBodyWords,
   getBodyWordLengthZone,
@@ -39,8 +40,9 @@ function matchBlogSlug(pageUrl: string, slug: string): boolean {
 }
 
 /**
- * Classe les articles publiés du plus urgent au moins urgent pour MàJ progressive.
- * Priorité : trop courts (<800) puis impressions GSC élevées / CTR bas.
+ * Liste de tâches MàJ progressive : uniquement les articles HORS zone idéale
+ * (trop court / sous idéal / long). Les articles en zone idéale (1200–1800) sont exclus —
+ * ils réapparaissent automatiquement s’ils ressortent de la fourchette (recalcul à chaque chargement).
  */
 export function buildBlogRefreshPriorityList(params: {
   articles: Array<{
@@ -66,14 +68,17 @@ export function buildBlogRefreshPriorityList(params: {
     const reasons: string[] = [];
     let priorityScore = 0;
 
-    if (wordCount < BLOG_SHORT_WORDS_THRESHOLD) {
+    if (lengthZone === 'too_short') {
       priorityScore += 1000 + (BLOG_SHORT_WORDS_THRESHOLD - wordCount);
       reasons.push(`Trop court (${wordCount} mots)`);
-    } else if (wordCount < BLOG_TARGET_WORDS_MIN) {
+    } else if (lengthZone === 'below_ideal') {
       priorityScore += 400 + (BLOG_TARGET_WORDS_MIN - wordCount) / 2;
       reasons.push(`Sous zone idéale (${wordCount} mots)`);
+    } else if (lengthZone === 'long') {
+      priorityScore += 300 + Math.min(wordCount - BLOG_TARGET_WORDS_MAX, 2000) / 10;
+      reasons.push(`Long (${wordCount} mots — au-dessus de ${BLOG_TARGET_WORDS_MAX})`);
     } else {
-      reasons.push(`${wordCount} mots (longueur OK)`);
+      reasons.push(`${wordCount} mots (zone idéale — tâche faite)`);
     }
 
     if (gscImpressions >= 50 && (gscCtr == null || gscCtr < 0.02)) {
@@ -104,5 +109,7 @@ export function buildBlogRefreshPriorityList(params: {
     };
   });
 
-  return items.sort((a, b) => b.priorityScore - a.priorityScore || a.wordCount - b.wordCount);
+  return items
+    .filter((item) => item.lengthZone !== 'ideal')
+    .sort((a, b) => b.priorityScore - a.priorityScore || a.wordCount - b.wordCount);
 }
