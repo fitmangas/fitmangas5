@@ -835,10 +835,24 @@ function buildMarketingKpis({
     {
       label: 'Position moyenne',
       value: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
-      detail: avgPosition == null ? 'donnée Search Console absente' : 'Search Console global 28j',
+      detail:
+        avgPosition == null
+          ? 'donnée Search Console absente'
+          : searchImpressions < 100
+            ? `échantillon faible (${searchImpressions} impressions) — chiffre peu fiable`
+            : 'Search Console global 28j',
       info:
-        "Position moyenne dans les résultats Google. Environ 98% des clics se font sur la 1re page (positions 1 à 10). Au-delà de 20, le site est en page 3 ou plus : quasi invisible, d'où très peu de clics malgré les impressions.",
-      tone: avgPosition == null ? 'neutral' : avgPosition <= 10 ? 'good' : avgPosition <= 30 ? 'watch' : 'bad',
+        "Position moyenne dans les résultats Google, toutes requêtes confondues. Avec peu d'impressions, ce chiffre bouge beaucoup : publier plus d'articles ajoute des requêtes longues (positions 20–50) et fait monter la moyenne même si les bonnes requêtes restent stables. Ce n'est pas forcément une perte de ranking. Priorité : grossir impressions et clics, pas « tout réécrire d'un coup ».",
+      tone:
+        avgPosition == null
+          ? 'neutral'
+          : searchImpressions < 100
+            ? 'watch'
+            : avgPosition <= 10
+              ? 'good'
+              : avgPosition <= 30
+                ? 'watch'
+                : 'bad',
     },
     {
       label: 'Articles publiés',
@@ -1032,10 +1046,24 @@ function buildSeoExcellencePlan({
       },
       {
         label: 'Position moyenne',
-        current: avgPosition == null ? 'Non disponible' : avgPosition.toFixed(1),
-        target: 'Top 10 stable',
-        done: avgPosition != null && avgPosition <= 10,
-        tone: avgPosition == null ? 'neutral' : avgPosition <= 10 ? 'good' : avgPosition <= 30 ? 'watch' : 'bad',
+        current:
+          avgPosition == null
+            ? 'Non disponible'
+            : impressions < 100
+              ? `${avgPosition.toFixed(1)} (échantillon faible)`
+              : avgPosition.toFixed(1),
+        target: 'Top 10 stable (après volume d’impressions)',
+        done: avgPosition != null && avgPosition <= 10 && impressions >= 100,
+        tone:
+          avgPosition == null
+            ? 'neutral'
+            : impressions < 100
+              ? 'watch'
+              : avgPosition <= 10
+                ? 'good'
+                : avgPosition <= 30
+                  ? 'watch'
+                  : 'bad',
       },
       {
         label: 'Conversions mesurées',

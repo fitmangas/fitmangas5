@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { ClientAdminActions } from '@/app/admin/clients/[id]/ClientAdminActions';
 import { ADMIN_HEAD_TR } from '@/components/Admin/adminSurfaceClasses';
+import { resolveClientPhone } from '@/lib/admin/client-phone';
 import { computeGamificationGrade, gradeLabel, gradeRibbonClass } from '@/lib/gamification';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -61,6 +62,10 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
   };
 
   const email = authUser.user?.email ?? null;
+  const phone = await resolveClientPhone({
+    authUser: authUser.user,
+    stripeCustomerId: p.stripe_customer_id,
+  });
   const grade =
     p.gamification_grade ??
     computeGamificationGrade({
@@ -141,6 +146,18 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
             <div>
               <dt className="text-luxury-muted">E-mail</dt>
               <dd className="mt-0.5 break-all font-medium text-luxury-ink">{email ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-luxury-muted">Téléphone</dt>
+              <dd className="mt-0.5 font-medium text-luxury-ink">
+                {phone ? (
+                  <a href={`tel:${phone.replace(/\s+/g, '')}`} className="text-luxury-orange underline-offset-4 hover:underline">
+                    {phone}
+                  </a>
+                ) : (
+                  <span className="text-luxury-muted">Non renseigné</span>
+                )}
+              </dd>
             </div>
             <div>
               <dt className="text-luxury-muted">Inscription</dt>

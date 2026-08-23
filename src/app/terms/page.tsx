@@ -27,8 +27,8 @@ export default function TermsPage() {
 
       <section className="mt-8 space-y-4 text-sm leading-7 text-luxury-muted">
         <p>
-          Le site FitMangas est édité par Mangas Alejandra EI, SIREN 947964508, 17 Passage Leroy, 44300 Nantes, France.
-          Contact : info@casamangas.fr.
+          Le site FitMangas est édité par Alejandra Mangas (raison sociale : Mangas Alejandra EI), SIREN 947964508,
+          17 Passage Leroy, 44300 Nantes, France. Contact : info@casamangas.fr.
         </p>
         <p>
           Les offres Visio collectif et Visio individuel sont des abonnements mensuels donnant accès aux contenus et services

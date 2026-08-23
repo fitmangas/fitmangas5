@@ -27,8 +27,8 @@ export default function PrivacyPage() {
 
       <section className="mt-8 space-y-4 text-sm leading-7 text-luxury-muted">
         <p>
-          FitMangas est exploité par Mangas Alejandra EI, entreprise individuelle immatriculée sous le SIREN 947964508,
-          dont le siège est situé 17 Passage Leroy, 44300 Nantes, France.
+          FitMangas est exploité par Alejandra Mangas, entreprise individuelle (raison sociale : Mangas Alejandra EI),
+          immatriculée sous le SIREN 947964508, dont le siège est situé 17 Passage Leroy, 44300 Nantes, France.
         </p>
         <p>
           Nous collectons les données nécessaires à la création de compte, à la gestion des abonnements, aux réservations,

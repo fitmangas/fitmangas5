@@ -27,3 +27,6 @@ scripts/add-sa-to-ga.mjs
 
 # Originaux photo CM (hors déploiement Vercel)
 library-originals/
+
+# Rapports ops blog temporaires (bruit — ne pas versionner)
+data/blog-*.json

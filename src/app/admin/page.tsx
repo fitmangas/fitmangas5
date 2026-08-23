@@ -29,7 +29,7 @@ type ProfileRow = {
   avatar_url: string | null;
   role: string | null;
   last_checkout_course_id: string | null;
-  updated_at: string | null;
+  created_at: string | null;
 };
 
 type UpcomingCourseRow = {
@@ -149,10 +149,10 @@ export default async function AdminPage() {
   ] = await Promise.all([
     adminDb
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, role, last_checkout_course_id, updated_at')
+      .select('id, first_name, last_name, avatar_url, role, last_checkout_course_id, created_at')
       .eq('archived', false)
       .eq('role', 'member')
-      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(4),
     adminDb.from('video_recordings').select('*', { count: 'exact', head: true }).eq('is_ready', true),
     getCachedAdminKpis(),
@@ -433,7 +433,7 @@ export default async function AdminPage() {
                 <th className="rounded-l-full border-b border-t border-l border-[#ece8e0] px-3 py-3">Nom</th>
                 <th className="border-y border-[#ece8e0] px-3 py-3">Rôle</th>
                 <th className="border-y border-[#ece8e0] px-3 py-3">Dernière offre</th>
-                <th className="rounded-r-full border-b border-t border-r border-[#ece8e0] px-3 py-3">Mise à jour</th>
+                <th className="rounded-r-full border-b border-t border-r border-[#ece8e0] px-3 py-3">Inscription</th>
               </tr>
             </thead>
             <tbody className="text-sm text-luxury-ink">
@@ -455,7 +455,7 @@ export default async function AdminPage() {
                   <td className="px-2 py-3 text-luxury-muted">{profile.role || 'member'}</td>
                   <td className="px-2 py-3 text-luxury-muted">{profile.last_checkout_course_id || '—'}</td>
                   <td className="px-2 py-3 text-luxury-muted">
-                    {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString('fr-FR') : '—'}
+                    {profile.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR') : '—'}
                   </td>
                 </tr>
               ))}

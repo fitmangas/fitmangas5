@@ -362,3 +362,110 @@ commit;
 - pas de colonne `status` (schéma actuel : pas de champ status)
 
 **Alternative (non retenue) :** table dédiée `newsletter_send_log`.
+
+## CM Reels — limite taille bucket `avatars` (200 Mo)
+
+**Statut :** proposition (pas exécutée). Le code tente déjà `storage.updateBucket('avatars', { fileSizeLimit: 209715200 })` à chaque signature d’upload. Si Supabase refuse encore les MP4 > ~50 Mo, appliquer manuellement :
+
+```sql
+-- Remonter la limite fichier du bucket public utilisé pour social/reels/*
+update storage.buckets
+set file_size_limit = 209715200  -- 200 Mo
+where id = 'avatars';
+```
+
+**Pourquoi :** import MP4 monté en direct navigateur → Supabase (contourne le plafond body Vercel 4,5 Mo). Pas de ré-encodage.
+
+## Téléphone client (`profiles.phone`)
+
+**Statut :** proposition (pas exécutée). En attendant, le téléphone est stocké dans `auth.users.raw_user_meta_data.phone` (inscription + sync Stripe Checkout) et affiché sur `/admin/clients/[id]`.
+
+**Pourquoi :** fiche admin, contact support/cours ; colonne dédiée plus propre que metadata seule, éditable depuis le compte cliente.
+
+```sql
+begin;
+
+alter table public.profiles
+  add column if not exists phone text;
+
+comment on column public.profiles.phone is
+  'Téléphone de contact (inscription / Stripe / profil). Affiché admin.';
+
+-- Autoriser la cliente à mettre à jour son téléphone (policy colonnes sûres).
+grant update (
+  first_name,
+  last_name,
+  avatar_url,
+  birth_date,
+  phone,
+  onboarding_completed,
+  preferred_locale,
+  preferred_blog_language,
+  display_timezone,
+  display_timezone_manual_locked,
+  marketing_email_opt_in,
+  marketing_email_opt_in_at
+) on public.profiles to authenticated;
+
+-- Copier le téléphone depuis metadata à la création du profil.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  bd date;
+  detected_locale text;
+  detected_timezone text;
+  phone_raw text;
+begin
+  begin
+    bd := nullif(trim(coalesce(new.raw_user_meta_data->>'birth_date', '')), '')::date;
+  exception
+    when others then
+      bd := null;
+  end;
+
+  detected_locale := lower(nullif(trim(coalesce(new.raw_user_meta_data->>'preferred_locale', '')), ''));
+  if detected_locale not in ('fr', 'es') then
+    detected_locale := 'fr';
+  end if;
+
+  detected_timezone := nullif(trim(coalesce(new.raw_user_meta_data->>'display_timezone', '')), '');
+  if detected_timezone is null then
+    detected_timezone := 'Europe/Paris';
+  end if;
+
+  phone_raw := nullif(trim(coalesce(new.raw_user_meta_data->>'phone', '')), '');
+
+  insert into public.profiles (
+    id,
+    first_name,
+    last_name,
+    birth_date,
+    phone,
+    preferred_locale,
+    display_timezone,
+    display_timezone_manual_locked
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'first_name', ''),
+    coalesce(new.raw_user_meta_data->>'last_name', ''),
+    bd,
+    phone_raw,
+    detected_locale,
+    detected_timezone,
+    false
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+commit;
+```
+
+**Côté code (après GO) :** lire `profiles.phone` en priorité sur la fiche admin ; permettre l’édition dans Mon profil.
