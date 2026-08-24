@@ -55,9 +55,9 @@ describe('composeSocialPublishImageBuffer', () => {
     const { data, info } = await (await import('sharp')).default(buffer).raw().toBuffer({ resolveWithObject: true });
     const w = info.width;
     const h = info.height;
-    // Zone haute (carousel) : overlay dans le tiers supérieur — espace négatif.
+    // Zone basse où le texte overlay est dessiné — doit contenir du blanc cassé (#FFFAF5)
     let lightPixels = 0;
-    for (let y = Math.floor(h * 0.08); y < Math.floor(h * 0.32); y += 1) {
+    for (let y = Math.floor(h * 0.72); y < h; y += 1) {
       for (let x = 0; x < w; x += 4) {
         const i = (y * w + x) * info.channels;
         const r = data[i]!;

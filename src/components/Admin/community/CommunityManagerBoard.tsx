@@ -1162,8 +1162,8 @@ export function CommunityManagerBoard({
                     alt="Aperçu Instagram"
                     className="h-full w-full object-contain"
                   />
-                      {/* Pas de texte CSS en haut : l’image composée a déjà logo + overlay
-                          (carousel = tiers haut, feed = bas). */}
+                  {/* Pas de texte CSS en haut : l’image composée a déjà logo (haut) + grand texte (bas).
+                      Exception Reel sans overlay brûlé : hook seul en haut (pas de doublon bas). */}
                   {previewPost.format === 'reel' &&
                   !previewPost.useOverlay &&
                   (previewPost.overlayText || previewPost.hookTitle) ? (

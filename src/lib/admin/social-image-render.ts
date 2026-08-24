@@ -143,31 +143,19 @@ export async function renderSocialPostCanvas(
   const burnOverlay = post.useOverlay || post.format === 'carousel';
 
   if (burnOverlay && overlayText) {
-    const overlayTop = post.format === 'carousel';
-    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
-    const lineH = 58;
-    const startY = overlayTop
-      ? Math.round(EXPORT_HEIGHT * 0.18)
-      : EXPORT_HEIGHT - 140 - (lines.length - 1) * lineH;
-
-    const gradient = overlayTop
-      ? ctx.createLinearGradient(0, 0, 0, EXPORT_HEIGHT * 0.42)
-      : ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
-    if (overlayTop) {
-      gradient.addColorStop(0, 'rgba(30,24,20,0.72)');
-      gradient.addColorStop(1, 'rgba(30,24,20,0)');
-    } else {
-      gradient.addColorStop(0, 'rgba(30,24,20,0)');
-      gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
-    }
+    const gradient = ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
+    gradient.addColorStop(0, 'rgba(30,24,20,0)');
+    gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
     ctx.fillStyle = '#fffaf5';
     ctx.font = '600 52px Georgia, serif';
     ctx.textAlign = 'center';
+    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
+    const startY = EXPORT_HEIGHT - 140 - (lines.length - 1) * 58;
     lines.forEach((item, index) => {
-      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * lineH);
+      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * 58);
     });
   }
 

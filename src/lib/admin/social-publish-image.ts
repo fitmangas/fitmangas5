@@ -91,23 +91,13 @@ function shouldBurnOverlay(post: SocialPost, slideIndex: number, imagePath: stri
   return Boolean(resolveSlideOverlayText(post, slideIndex));
 }
 
-function buildOverlaySvg(
-  width: number,
-  height: number,
-  lines: string[],
-  placement: 'top' | 'bottom',
-): Buffer {
+function buildOverlaySvg(width: number, height: number, lines: string[]): Buffer {
   const fontBase64 = getOverlayFontBase64();
-  const lineH = 58;
-  const startY = placement === 'top' ? Math.round(height * 0.18) : height - 140 - (lines.length - 1) * lineH;
-  const gY1 = placement === 'top' ? 0 : Math.round(height * 0.55);
-  const gY2 = placement === 'top' ? Math.round(height * 0.42) : height;
-  const stop0 = placement === 'top' ? 'rgba(30,24,20,0.72)' : 'rgba(30,24,20,0)';
-  const stop1 = placement === 'top' ? 'rgba(30,24,20,0)' : 'rgba(30,24,20,0.82)';
+  const startY = height - 140 - (lines.length - 1) * 58;
   const textSvg = lines
     .map(
       (line, index) =>
-        `<text x="${width / 2}" y="${startY + index * lineH}" text-anchor="middle" font-family="FitMangasOverlay, serif" font-size="52" font-weight="600" fill="#FFFAF5">${escapeXml(line)}</text>`,
+        `<text x="${width / 2}" y="${startY + index * 58}" text-anchor="middle" font-family="FitMangasOverlay, serif" font-size="52" font-weight="600" fill="#FFFAF5">${escapeXml(line)}</text>`,
     )
     .join('\n');
 
@@ -122,9 +112,9 @@ function buildOverlaySvg(
             font-style: normal;
           }
         ]]></style>
-        <linearGradient id="g" x1="0" y1="${gY1}" x2="0" y2="${gY2}" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="${stop0}"/>
-          <stop offset="100%" stop-color="${stop1}"/>
+        <linearGradient id="g" x1="0" y1="${Math.round(height * 0.55)}" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(30,24,20,0)"/>
+          <stop offset="100%" stop-color="rgba(30,24,20,0.82)"/>
         </linearGradient>
       </defs>
       <rect width="${width}" height="${height}" fill="url(#g)"/>
@@ -161,7 +151,7 @@ export async function composeSocialPublishImageBuffer(
   }
 
   const lines = wrapOverlayLines(overlayText);
-  const gradientSvg = buildOverlaySvg(w, h, lines, post.format === 'carousel' ? 'top' : 'bottom');
+  const gradientSvg = buildOverlaySvg(w, h, lines);
 
   return composeWithLogo(
     await sharp(base)
