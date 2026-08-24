@@ -88,7 +88,7 @@ export const CONTENT_THEMES: ContentTheme[] = [
     angle: 'Segment massif négligé — corps qui change, besoin d’être accompagnée.',
     angleEs: 'Segmento masivo descuidado — cuerpo que cambia, necesita acompañamiento.',
     reelAnglesFr: [
-      'À 45+ tu n’es pas « trop vieille pour bouger »',
+      'À 45+ le corps change — ce n’est pas un verdict',
       'Ce que la périménopause fait au bassin',
       'Énergie qui chute : ce n’est pas la volonté',
       'Un cours où on te regarde vraiment',
@@ -113,14 +113,14 @@ export const CONTENT_THEMES: ContentTheme[] = [
       'Après 8h assise, le corps demande un rendez-vous',
       'Hanches raides : pas l’âge, la chaise',
       'Nuque crispée en visio pro',
-      'Ce que YouTube ne corrige jamais',
+      'Le bassin coincé après la 8e heure',
       'Bouger avec quelqu’un qui te voit',
     ],
     reelAnglesEs: [
       'Tras 8h sentada, el cuerpo pide una cita',
       'Caderas rígidas: no es la edad, es la silla',
       'Cuello tenso en visio pro',
-      'Lo que YouTube nunca corrige',
+      'La pelvis bloqueada a las 17h',
       'Moverse con alguien que te ve',
     ],
   },
@@ -201,17 +201,17 @@ export const CONTENT_THEMES: ContentTheme[] = [
     showProductOrCoach: true,
     reelAnglesFr: [
       'Ce que tu vois à l’écran en vrai',
-      'Comment Alejandra te corrige à distance',
-      'Le groupe des Mangitas en live',
-      'Un créneau, pas une vidéo figée',
-      'Pourquoi ce n’est pas YouTube',
+      'Ce que tu vois à l’écran : le groupe en live',
+      'Le créneau du mardi déjà dans l’agenda',
+      'Un écran, plusieurs tapis, une seule heure',
+      'Elle te dit d’abord où poser les mains',
     ],
     reelAnglesEs: [
       'Lo que ves en pantalla de verdad',
-      'Cómo Alejandra te corrige a distancia',
-      'El grupo de Mangitas en vivo',
-      'Un horario, no un vídeo fijo',
-      'Por qué no es YouTube',
+      'Lo que ves en pantalla: el grupo en vivo',
+      'El martes ya está en la agenda',
+      'Una pantalla, varios mats, una sola hora',
+      'Primero te dice dónde poner las manos',
     ],
   },
   {
@@ -248,14 +248,14 @@ export const CONTENT_THEMES: ContentTheme[] = [
     reelAnglesFr: [
       'La phrase qu’elle te dit en live',
       'Ajustement bassin vu à l’écran',
-      'YouTube ne te dira jamais « stop »',
+      'Le « stop » qu’elle te dit avant que ça force',
       'Le détail qui change ta posture',
       'Être vue = progresser plus vite',
     ],
     reelAnglesEs: [
       'La frase que te dice en vivo',
       'Ajuste de pelvis visto en pantalla',
-      'YouTube nunca te dirá « stop »',
+      'El « stop » que te dice antes de forzar',
       'El detalle que cambia tu postura',
       'Ser vista = progresar más rápido',
     ],
@@ -564,13 +564,15 @@ export function describeMix(families: ContentFamilyId[]): string {
   return `Cette semaine : ${counts.portee} portée · ${counts.confiance} confiance · ${counts.conversion} conversion`;
 }
 
+/** 8 derniers thèmes DE CETTE FAMILLE (pas les 8 derniers posts toutes familles). */
 function lastThemeIdsInFamily(history: PillarHistoryStore, family: ContentFamilyId, lookback = 8): Set<string> {
   const set = new Set<string>();
-  for (const e of history.entries.slice(0, lookback)) {
+  for (const e of history.entries) {
     const theme = getContentTheme(e.pillarId);
-    if (theme?.family === family || e.family === family) {
-      set.add(e.pillarId);
-    }
+    const fam = e.family || theme?.family;
+    if (fam !== family) continue;
+    set.add(e.pillarId);
+    if (set.size >= lookback) break;
   }
   return set;
 }

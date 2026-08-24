@@ -29,7 +29,7 @@ const fixturePost = (overrides: Partial<SocialPost> = {}): SocialPost =>
     editedVideoPath: null,
     videoStatus: null,
     carouselPaths: ['/logo.png'],
-    carouselSlideTitles: ['5 RAISONS', "1. PERSONNE NE T'ATTEND", '', '', '', ''],
+    carouselSlideTitles: ['5 RAISONS', "1. PERSONNE NE T'ATTEND", '2. TU NE VOIS PAS TES ERREURS', '', '', ''],
     plannedAt: null,
     status: 'ready',
     sourceType: 'ai',
@@ -49,15 +49,15 @@ describe('composeSocialPublishImageBuffer', () => {
     const logoPath = path.join(process.cwd(), 'public/logo.png');
     expect(fs.existsSync(logoPath)).toBe(true);
 
-    const buffer = await composeSocialPublishImageBuffer(fixturePost(), '/logo.png', 1);
+    const buffer = await composeSocialPublishImageBuffer(fixturePost(), '/logo.png', 2);
     expect(buffer.length).toBeGreaterThan(10_000);
 
     const { data, info } = await (await import('sharp')).default(buffer).raw().toBuffer({ resolveWithObject: true });
     const w = info.width;
     const h = info.height;
-    // Zone basse où le texte overlay est dessiné — doit contenir du blanc cassé (#FFFAF5)
+    // Zone haute (carousel) : overlay dans le tiers supérieur — espace négatif.
     let lightPixels = 0;
-    for (let y = Math.floor(h * 0.72); y < h; y += 1) {
+    for (let y = Math.floor(h * 0.08); y < Math.floor(h * 0.32); y += 1) {
       for (let x = 0; x < w; x += 4) {
         const i = (y * w + x) * info.channels;
         const r = data[i]!;
@@ -67,5 +67,13 @@ describe('composeSocialPublishImageBuffer', () => {
       }
     }
     expect(lightPixels).toBeGreaterThan(20);
+  });
+
+  it('garde le titre numéroté du slide 3 sur une ou deux lignes sans orphelin', async () => {
+    const { wrapOverlayLines } = await import('@/lib/admin/social-publish-image');
+    const lines = wrapOverlayLines('2. TU NE VOIS PAS TES ERREURS');
+    expect(lines.join(' ')).toContain('ERREURS');
+    expect(lines[0]).toMatch(/^2\./);
+    expect(lines.every((l) => l.length > 2)).toBe(true);
   });
 });

@@ -1162,8 +1162,8 @@ export function CommunityManagerBoard({
                     alt="Aperçu Instagram"
                     className="h-full w-full object-contain"
                   />
-                  {/* Pas de texte CSS en haut : l’image composée a déjà logo (haut) + grand texte (bas).
-                      Exception Reel sans overlay brûlé : hook seul en haut (pas de doublon bas). */}
+                      {/* Pas de texte CSS en haut : l’image composée a déjà logo + overlay
+                          (carousel = tiers haut, feed = bas). */}
                   {previewPost.format === 'reel' &&
                   !previewPost.useOverlay &&
                   (previewPost.overlayText || previewPost.hookTitle) ? (
@@ -2239,7 +2239,7 @@ function PostCard({
               {isCarousel && post.carouselSlideTitles?.length ? (
                 <div className="mt-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
-                    Titres des 7 slides
+                    Titres des 6 slides
                   </p>
                   <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-[12px] text-luxury-ink">
                     {post.carouselSlideTitles.map((t, i) => (

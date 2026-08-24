@@ -39,20 +39,25 @@ function getOverlayFontBase64(): string {
   throw new Error('Police overlay introuvable (public/fonts/PlayfairDisplay-*.ttf).');
 }
 
-function wrapOverlayLines(text: string, maxChars = 28): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
+export function wrapOverlayLines(text: string, maxChars = 36): string[] {
+  const numbered = text.match(/^(\d+[.)]\s+)(.+)$/);
+  const prefix = numbered ? numbered[1]! : '';
+  const words = (numbered ? numbered[2]! : text).split(/\s+/).filter(Boolean);
+  const firstBudget = Math.max(12, maxChars - prefix.length);
   const lines: string[] = [];
   let line = '';
+  let budget = firstBudget;
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
-    if (test.length > maxChars) {
-      if (line) lines.push(line);
+    if (test.length > budget) {
+      if (line) lines.push(lines.length === 0 && prefix ? `${prefix}${line}` : line);
       line = word;
+      budget = maxChars;
     } else {
       line = test;
     }
   }
-  if (line) lines.push(line);
+  if (line) lines.push(lines.length === 0 && prefix ? `${prefix}${line}` : line);
   return lines.slice(0, 4);
 }
 
@@ -86,13 +91,23 @@ function shouldBurnOverlay(post: SocialPost, slideIndex: number, imagePath: stri
   return Boolean(resolveSlideOverlayText(post, slideIndex));
 }
 
-function buildOverlaySvg(width: number, height: number, lines: string[]): Buffer {
+function buildOverlaySvg(
+  width: number,
+  height: number,
+  lines: string[],
+  placement: 'top' | 'bottom',
+): Buffer {
   const fontBase64 = getOverlayFontBase64();
-  const startY = height - 140 - (lines.length - 1) * 58;
+  const lineH = 58;
+  const startY = placement === 'top' ? Math.round(height * 0.18) : height - 140 - (lines.length - 1) * lineH;
+  const gY1 = placement === 'top' ? 0 : Math.round(height * 0.55);
+  const gY2 = placement === 'top' ? Math.round(height * 0.42) : height;
+  const stop0 = placement === 'top' ? 'rgba(30,24,20,0.72)' : 'rgba(30,24,20,0)';
+  const stop1 = placement === 'top' ? 'rgba(30,24,20,0)' : 'rgba(30,24,20,0.82)';
   const textSvg = lines
     .map(
       (line, index) =>
-        `<text x="${width / 2}" y="${startY + index * 58}" text-anchor="middle" font-family="FitMangasOverlay, serif" font-size="52" font-weight="600" fill="#FFFAF5">${escapeXml(line)}</text>`,
+        `<text x="${width / 2}" y="${startY + index * lineH}" text-anchor="middle" font-family="FitMangasOverlay, serif" font-size="52" font-weight="600" fill="#FFFAF5">${escapeXml(line)}</text>`,
     )
     .join('\n');
 
@@ -107,9 +122,9 @@ function buildOverlaySvg(width: number, height: number, lines: string[]): Buffer
             font-style: normal;
           }
         ]]></style>
-        <linearGradient id="g" x1="0" y1="${Math.round(height * 0.55)}" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="rgba(30,24,20,0)"/>
-          <stop offset="100%" stop-color="rgba(30,24,20,0.82)"/>
+        <linearGradient id="g" x1="0" y1="${gY1}" x2="0" y2="${gY2}" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="${stop0}"/>
+          <stop offset="100%" stop-color="${stop1}"/>
         </linearGradient>
       </defs>
       <rect width="${width}" height="${height}" fill="url(#g)"/>
@@ -146,7 +161,7 @@ export async function composeSocialPublishImageBuffer(
   }
 
   const lines = wrapOverlayLines(overlayText);
-  const gradientSvg = buildOverlaySvg(w, h, lines);
+  const gradientSvg = buildOverlaySvg(w, h, lines, post.format === 'carousel' ? 'top' : 'bottom');
 
   return composeWithLogo(
     await sharp(base)

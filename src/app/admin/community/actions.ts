@@ -318,8 +318,10 @@ ${CAROUSEL_LIST_FORMAT_RULES}
   INTERDIT titre = numéro nu. INTERDIT narration (« CE QU'UNE MANGITA A COMPRIS », « LA COACH DIT SON PRÉNOM »).
   Orthographe soignée FR/ES (ERREURS pas ERROURS).
   Si progrès adhérente : anonymiser (« une Mangita »), JAMAIS prénom + visage IA — mais les TITRES restent une LISTE autonome (pas un récit à son sujet).
-- FRANÇAIS NATUREL : le calque « Tu paies pour X, pas pour Y » = MAX 1 post dans tout le batch. Autres posts : formulations variées (« Un tapis ne t'a jamais rappelée à l'ordre. », « La vidéo ne lève pas les yeux vers toi. », « Ce que tu paies, ce n'est pas le cours : c'est qu'on t'attende. »).
-- ANTI-RÉPÉTITION SEMAINE : thèmes/piliers DISTINCTS entre posts. Overlays à structures DIFFÉRENTES (interdit deux overlays « TU PAIES… PAS POUR… »).
+- FRANÇAIS NATUREL : le calque « Tu paies pour X, pas pour Y » = MAX 1 post dans tout le batch. Autres posts : formulations variées (« Le mardi 19h est déjà pris. », « Après 8h de chaise le bassin est coincé. », « Ce que tu paies, ce n'est pas le cours : c'est qu'on t'attende. »).
+- ANTI-RÉPÉTITION SEMAINE : thèmes DISTINCTS. Overlay SPÉCIFIQUE au thème du slot (périnée ≠ 45+ ≠ bureau ≠ visio).
+  INTERDIT de recycler dans le même batch : « trop tard », « la vidéo ne te corrige pas », « dit ton prénom », « YouTube » — MAX 1 occurrence de chaque punchline dans les 7 posts.
+  INTERDIT deux overlays « TU PAIES… PAS POUR… ». INTERDIT de recopier le pack carousel YouTube.
 - WhatsApp: teaser article communauté (pas d'acquisition), sourceType=blog, sourceRef=slug, lien url, 160–300 car.
 - LinkedIn: ton pro, 350–700 car., question finale
 - hashtags = array sans #

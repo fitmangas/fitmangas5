@@ -16,19 +16,27 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
+  const numbered = text.match(/^(\d+[.)]\s+)(.+)$/);
+  const prefix = numbered ? numbered[1]! : '';
+  const words = (numbered ? numbered[2]! : text).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = '';
+  const push = () => {
+    if (!line) return;
+    lines.push(lines.length === 0 && prefix ? `${prefix}${line}` : line);
+    line = '';
+  };
   for (const word of words) {
     const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth) {
-      if (line) lines.push(line);
+    const measured = lines.length === 0 && prefix ? `${prefix}${test}` : test;
+    if (ctx.measureText(measured).width > maxWidth && line) {
+      push();
       line = word;
     } else {
       line = test;
     }
   }
-  if (line) lines.push(line);
+  push();
   return lines.slice(0, 4);
 }
 
@@ -135,19 +143,31 @@ export async function renderSocialPostCanvas(
   const burnOverlay = post.useOverlay || post.format === 'carousel';
 
   if (burnOverlay && overlayText) {
-    const gradient = ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
-    gradient.addColorStop(0, 'rgba(30,24,20,0)');
-    gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
+    const overlayTop = post.format === 'carousel';
+    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
+    const lineH = 58;
+    const startY = overlayTop
+      ? Math.round(EXPORT_HEIGHT * 0.18)
+      : EXPORT_HEIGHT - 140 - (lines.length - 1) * lineH;
+
+    const gradient = overlayTop
+      ? ctx.createLinearGradient(0, 0, 0, EXPORT_HEIGHT * 0.42)
+      : ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
+    if (overlayTop) {
+      gradient.addColorStop(0, 'rgba(30,24,20,0.72)');
+      gradient.addColorStop(1, 'rgba(30,24,20,0)');
+    } else {
+      gradient.addColorStop(0, 'rgba(30,24,20,0)');
+      gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
+    }
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
     ctx.fillStyle = '#fffaf5';
     ctx.font = '600 52px Georgia, serif';
     ctx.textAlign = 'center';
-    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
-    const startY = EXPORT_HEIGHT - 140 - (lines.length - 1) * 58;
     lines.forEach((item, index) => {
-      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * 58);
+      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * lineH);
     });
   }
 

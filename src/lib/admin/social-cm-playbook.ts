@@ -201,11 +201,27 @@ export const OVERLAY_PAY_FOR_SKELETON =
 export const NATURAL_VALUE_FRAMINGS_FR = [
   'Ce que tu paies, ce n’est pas le cours. C’est le fait que quelqu’un t’attende.',
   'Un tapis ne t’a jamais rappelée à l’ordre.',
-  'La vidéo ne lève pas les yeux vers toi.',
-  'Personne ne remarque si tu manques une séance YouTube.',
-  'Sur un replay, personne ne dit ton prénom.',
-  'Ce n’est pas le tapis qui te fait progresser : c’est qu’on te corrige.',
+  'Le mardi 19h est déjà pris — ce n’est pas une intention, c’est un créneau.',
+  'Après 8h de chaise, le bassin ne se déverrouille pas tout seul.',
+  'À 22h le corps est encore en réunion. Un cours fixe lui donne l’heure de sortir.',
+  'Tu n’as pas besoin d’un 8e tuto. Tu as besoin qu’on te voie ce soir.',
 ] as const;
+
+/** Punchlines trop collées — max 1 par semaine (hooks + overlays). */
+export const WEEKLY_PUNCHLINE_CAPS: Array<{ id: string; re: RegExp; label: string }> = [
+  { id: 'trop_tard', re: /trop tard|demasiado tarde/i, label: '« trop tard »' },
+  { id: 'youtube_video', re: /youtube|vid[eé]o ne (te |l['’e])|tuto|le replay ne/i, label: 'YouTube / la vidéo ne…' },
+  { id: 'prenom', re: /pr[eé]nom/i, label: '« dit ton prénom »' },
+  { id: 'corrige_pas', re: /ne te corrige|no te corrige/i, label: '« la vidéo ne te corrige pas »' },
+];
+
+export function punchlineFamilyOf(text: string): string | null {
+  const t = text || '';
+  for (const cap of WEEKLY_PUNCHLINE_CAPS) {
+    if (cap.re.test(t)) return cap.id;
+  }
+  return null;
+}
 
 export function isPayForNotFraming(text: string): boolean {
   return PAY_FOR_NOT_PATTERN.test(text || '') || OVERLAY_PAY_FOR_SKELETON.test((text || '').trim());
@@ -388,8 +404,8 @@ export function sanitizeTrashTalkCopy(raw: string, locale: SocialLocale = 'fr'):
   if (!violatesTrashTalkDignity(t)) return t;
   if (/trop\s+vieille|vieille|viej/i.test(t)) {
     return locale === 'es'
-      ? 'TE DIJERON QUE ERA DEMASIADO TARDE. ES FALSO.'
-      : "ON T'A DIT QUE C'ÉTAIT TROP TARD. C'EST FAUX.";
+      ? 'TE VENDIERON QUE ERA EL FINAL. ES FALSO.'
+      : "ON T'A VENDU QUE C'ÉTAIT FINI. C'EST FAUX.";
   }
   if (/grosse|gorda|molle|floja|obèse|obesa|flasque/i.test(t)) {
     return locale === 'es'
@@ -417,6 +433,8 @@ export function isIncompleteOverlay(text: string): boolean {
   // « NE … PAS » = négation complète FR, pas une troncature
   if (/\bne\b[\s\S]{1,40}\bpas$/i.test(t)) return false;
   if (OVERLAY_HANGING_END.test(t)) return true;
+  // Phrase coupée : « IL CHERCHE » / « ELLE ATTEND » sans complément
+  if (/\b(IL|ELLE|TU|ON)\s+(CHERCHE|ATTEND|VEUT|MANQUE|DEMANDE)$/i.test(t)) return true;
   return false;
 }
 
@@ -521,11 +539,12 @@ export const CAROUSEL_SLIDE_COUNT = 6;
 export const CAROUSEL_LIST_FORMAT_RULES = `
 CAROUSEL = LISTE de points AUTONOMES (JAMAIS une histoire / récit découpé en slides).
 - Slide 1 = titre-promesse CHIFFRÉ : « 5 RAISONS DE… », « 5 CHOSES QUE PERSONNE NE TE DIT SUR… ».
-- Slides 2–5 = UN point complet AUTONOME numéroté (« 1. PERSONNE NE T'ATTEND »).
+  INTERDIT de recopier le pack « 5 RAISONS D'ARRÊTER LE PILATES YOUTUBE » — inventer une liste LIÉE AU THÈME DU SLOT.
+- Slides 2–5 = UN point complet AUTONOME numéroté (« 1. LE MARDI EST DÉJÀ PRIS »).
   Chaque titre a du SENS lu SEUL, hors contexte.
   INTERDIT fragments de récit : « CE QU'UNE MANGITA A COMPRIS », « LA COACH DIT SON PRÉNOM »,
   « AVANT PERSONNE NE L'ATTENDAIT », « ELLE NE RATE PLUS LE MARDI », cliffhangers, suite d'histoire.
-  OBLIGATOIRE affirmations autonomes à la 2e personne : « PERSONNE NE T'ATTEND », « TU NE VOIS PAS TES ERREURS ».
+  OBLIGATOIRE affirmations autonomes à la 2e personne, SPÉCIFIQUES au thème (pas toujours « TU NE VOIS PAS TES ERREURS »).
 - Slide 6 = CTA (« ESSAI 7 JOURS — ON T'ATTEND EN VISIO »).
 - Légende = 1 paragraphe développé PAR point, MÊME ORDRE que les slides (150–300 mots).
   Hook dans les 125 premiers car. CTA essai 7 jours UNE seule fois en dernière ligne.
@@ -624,6 +643,7 @@ export function normalizeCarouselSlideTitles(
     out.push(proofreadCarouselCopy(polished, locale));
   }
   if (overlaysNeedReviewFromTitles(out)) needsReview = true;
+  if (out.some((t) => /PILATES\s+(DE\s+)?YOUTUBE/i.test(t))) needsReview = true;
   return { titles: out, overlaysNeedReview: needsReview };
 }
 
@@ -638,21 +658,21 @@ export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
 } {
   if (locale === 'es') {
     const slideTitles = [
-      '5 RAZONES PARA DEJAR EL PILATES DE YOUTUBE',
-      '1. NADIE TE ESPERA',
-      '2. NO VES TUS ERRORES',
-      '3. LA MOTIVACIÓN NO BASTA',
-      '4. SIEMPRE VUELVES A CERO',
+      '5 RAZONES POR LAS QUE UN GRUPO AGUANTA',
+      '1. ALGUIEN NOTA SI FALTAS',
+      '2. EL MARTES A LAS 19H YA ESTÁ PILLADO',
+      '3. YA NO IMPROVISAS SOLA',
+      '4. VES QUE LAS OTRAS TAMBIÉN AGUANTAN',
       'PRUEBA 7 DÍAS — TE ESPERAMOS EN VISIO',
     ];
     const caption = buildCarouselMappedCaption({
       slideTitles,
       bodyParagraphs: [
-        '5 razones para dejar el Pilates de YouTube (y por qué el directo cambia todo).',
-        '1. Nadie te espera. Sin cita fija, el mat vuelve al armario en cuanto llega el correo.',
-        '2. No ves tus errores. El vídeo no te mira la pelvis ni te corrige el hombro.',
-        '3. La motivación no basta. Lo que sostiene es que alguien note si faltas.',
-        '4. Siempre vuelves a cero. Sin progresión guiada, reinicias la misma clase cada mes.',
+        '5 razones por las que un grupo aguanta — y por qué no es una cuestión de voluntad aislada.',
+        '1. Alguien nota si faltas. Sin cita fija, el mat vuelve al armario en cuanto llega el correo.',
+        '2. El martes a las 19h ya está pillado. Ya no es una intención: es un hueco, como una cita médica.',
+        '3. Ya no improvisas sola. No tienes que elegir « qué vídeo esta noche » a las 21h, agotada.',
+        '4. Ves que las otras también aguantan. El grupo enseña que el problema no eres tú.',
         'Prueba gratis 7 días → fitmangas.com',
       ],
       cta: 'Prueba gratis 7 días → fitmangas.com',
@@ -661,23 +681,23 @@ export function exampleListCarouselCopy(locale: SocialLocale = 'fr'): {
     return { slideTitles, caption, note: 'Formato LISTA — 6 slides, no narrativa troceada.' };
   }
   const slideTitles = [
-    '5 RAISONS D’ARRÊTER LE PILATES YOUTUBE',
-    '1. PERSONNE NE T’ATTEND',
-    '2. TU NE VOIS PAS TES ERREURS',
-    '3. LA MOTIVATION NE SUFFIT PAS',
-    '4. TU RECOMMENCES TOUJOURS À ZÉRO',
+    '5 RAISONS POUR LESQUELLES UN GROUPE TIENT',
+    '1. QUELQU’UN REMARQUE TON ABSENCE',
+    '2. LE MARDI 19H EST DÉJÀ PRIS',
+    '3. TU N’IMPROVISES PLUS SEULE',
+    '4. TU VOIS QUE LES AUTRES TIENTENT AUSSI',
     'ESSAI 7 JOURS — ON T’ATTEND EN VISIO',
   ];
   const caption = buildCarouselMappedCaption({
     slideTitles,
-    bodyParagraphs: [
-      '5 raisons d’arrêter le Pilates YouTube — et pourquoi un cours en direct change vraiment la donne quand tu veux tenir dans la durée, sans recommencer à zéro chaque mois.',
-      '1. Personne ne t’attend. Sans rendez-vous fixe, le tapis retourne au placard dès que le mail ou la charge mentale arrive. La régularité ne survit pas à l’improvisation : ce qui manque, ce n’est pas une nouvelle vidéo, c’est quelqu’un qui remarque ton absence.',
-      '2. Tu ne vois pas tes erreurs. La vidéo ne regarde pas ton bassin, ne corrige pas ton épaule, et ne te dit jamais si tu compenses. Tu peux « bien faire » pendant des semaines… à côté de la posture qui te soulagerait vraiment.',
-      '3. La motivation ne suffit pas. Ce qui tient, c’est qu’une vraie personne remarque si tu manques — pas une notification, pas un favori YouTube, pas une promesse du dimanche soir.',
-      '4. Tu recommences toujours à zéro. Sans progression guidée, tu rejoues la même séance chaque mois et tu appelles ça de la constance. Ce n’en est pas : c’est de la répétition sans correction.',
-      'Essai gratuit 7 jours → fitmangas.com',
-    ],
+        bodyParagraphs: [
+          '5 raisons pour lesquelles un groupe tient — et pourquoi ce n’est pas une question de volonté isolée.',
+          '1. Quelqu’un remarque ton absence. Sans rendez-vous, le tapis retourne au placard dès que le mail arrive.',
+          '2. Le mardi 19h est déjà pris. Ce n’est plus une intention : c’est un créneau, comme un rendez-vous médical.',
+          '3. Tu n’improvises plus seule. Tu n’as plus à choisir « quelle vidéo ce soir » à 21h, épuisée.',
+          '4. Tu vois que les autres tiennent aussi. Le groupe rend visible que ce n’est pas toi le problème.',
+          'Essai gratuit 7 jours → fitmangas.com',
+        ],
     cta: 'Essai gratuit 7 jours → fitmangas.com',
     locale: 'fr',
   });
@@ -699,24 +719,24 @@ export function mangitaProgressListCarouselCopy(locale: SocialLocale = 'fr'): {
 } {
   if (locale === 'es') {
     const slideTitles = [
-      '5 RAZONES PARA DEJAR EL PILATES DE YOUTUBE',
-      '1. NADIE TE ESPERA',
-      '2. NO VES TUS ERRORES',
-      '3. LA MOTIVACIÓN NO BASTA',
-      '4. SIEMPRE VUELVES A CERO',
+      '5 RAZONES POR LAS QUE UN GRUPO AGUANTA',
+      '1. ALGUIEN NOTA SI FALTAS',
+      '2. EL MARTES A LAS 19H YA ESTÁ PILLADO',
+      '3. YA NO IMPROVISAS SOLA',
+      '4. VES QUE LAS OTRAS TAMBIÉN AGUANTAN',
       'PRUEBA 7 DÍAS — TE ESPERAMOS EN VISIO',
     ];
     return {
       slideTitles,
-      title: '5 razones para dejar el Pilates de YouTube',
+      title: '5 razones por las que un grupo aguanta',
       caption: buildCarouselMappedCaption({
         slideTitles,
         bodyParagraphs: [
-          '5 razones para dejar el Pilates de YouTube cuando lo que buscas es progresar de verdad — no acumular favoritos.',
-          '1. Nadie te espera. Sin cita fija, el mat vuelve al armario en cuanto llega el correo o la carga mental.',
-          '2. No ves tus errores. El vídeo no mira tu pelvis ni corrige tu hombro: puedes “hacerlo bien” semanas… al lado.',
-          '3. La motivación no basta. Lo que sostiene es que alguien note si faltas — no una notificación.',
-          '4. Siempre vuelves a cero. Sin progresión guiada, repites la misma clase cada mes y lo llamas constancia.',
+          '5 razones por las que un grupo aguanta cuando lo que buscas es sostenerte — no acumular favoritos.',
+          '1. Alguien nota si faltas. Sin cita fija, el mat vuelve al armario en cuanto llega el correo o la carga mental.',
+          '2. El martes a las 19h ya está pillado. Ya no es una intención: es un hueco en la semana.',
+          '3. Ya no improvisas sola. No eliges un vídeo a las 21h, agotada.',
+          '4. Ves que las otras también aguantan. El grupo enseña que el problema no eres tú.',
           'Prueba gratis 7 días → fitmangas.com',
         ],
         cta: 'Prueba gratis 7 días → fitmangas.com',
@@ -729,7 +749,7 @@ export function mangitaProgressListCarouselCopy(locale: SocialLocale = 'fr'): {
   return {
     slideTitles: base.slideTitles,
     caption: base.caption,
-    title: '5 raisons d’arrêter le Pilates YouTube',
+    title: '5 raisons pour lesquelles un groupe tient',
   };
 }
 
