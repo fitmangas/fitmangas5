@@ -91,6 +91,24 @@ function revalidateCommunity() {
   revalidatePath('/admin');
 }
 
+function patchCarouselOrFeedImage(
+  item: SocialPost,
+  slideIndex: number,
+  imagePath: string,
+): Pick<SocialPost, 'imagePath' | 'carouselPaths'> {
+  if (item.format !== 'carousel') {
+    return { imagePath, carouselPaths: item.carouselPaths };
+  }
+  const paths = [...(item.carouselPaths ?? [])];
+  const idx = Math.max(0, Math.min(slideIndex, Math.max(paths.length - 1, CAROUSEL_SLIDE_COUNT - 1)));
+  while (paths.length <= idx) paths.push('');
+  paths[idx] = imagePath;
+  return {
+    carouselPaths: paths,
+    imagePath: idx === 0 ? imagePath : item.imagePath,
+  };
+}
+
 /** Nettoie les légendes IA pour coller aux bandes idéales (surtout Reels). */
 function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax: number): string {
   let c = raw
@@ -620,16 +638,54 @@ export async function updateSocialPostImageFeedbackAction(postId: string, feedba
   return { ok: true as const };
 }
 
-export async function generateSocialImageAction(postId: string, feedbackOverride?: string) {
+export async function generateSocialImageAction(postId: string, feedbackOverride?: string, slideIndex = 0) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
   const post = board.posts.find((item) => item.id === postId);
   if (!post) return { ok: false as const, error: 'Post introuvable.' };
 
   const feedback = (feedbackOverride ?? post.imageFeedback).trim();
+  const isCarousel = post.format === 'carousel';
+  const idx = Math.max(0, slideIndex);
+  const lastIdx = Math.max((post.carouselPaths?.length || CAROUSEL_SLIDE_COUNT) - 1, 0);
+  const sourceForCta = isCarousel ? post.carouselPaths?.[idx] || '' : '';
+  const { isCarouselCtaSlide } = await import('@/lib/admin/social-image-render');
+  const isCtaSlide =
+    isCarousel &&
+    (idx === lastIdx || Boolean(sourceForCta && isCarouselCtaSlide(post, sourceForCta, idx)));
+
+  if (isCtaSlide && idx === lastIdx) {
+    const { composeCarouselCtaSlideBuffer } = await import('@/lib/admin/compose-carousel-cta');
+    const { uploadSocialGeneratedImage } = await import('@/lib/admin/social-ai-image');
+    const title = post.carouselSlideTitles?.[idx] || "ESSAI 7 JOURS — ON T'ATTEND EN VISIO";
+    const ctaBuf = await composeCarouselCtaSlideBuffer({ overlayText: title });
+    const imagePath = await uploadSocialGeneratedImage(ctaBuf, `${post.id}-cta`, {
+      prompt: 'carousel-cta-dashboard-contain',
+      provider: 'brand',
+      theme: 'cta-dashboard',
+    });
+    await saveSocialCommsBoard({
+      ...board,
+      posts: board.posts.map((item) =>
+        item.id === postId
+          ? { ...item, ...patchCarouselOrFeedImage(item, idx, imagePath), updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
+    revalidateCommunity();
+    return { ok: true as const, message: `Slide ${idx + 1} (dashboard CTA) régénérée.` };
+  }
+
   const double = await getAlejandraDoubleProfile();
   const { generateSocialAiImage } = await import('@/lib/admin/social-ai-image');
-  const result = await generateSocialAiImage(post, feedback, post.id.length);
+  const slideHint = isCarousel
+    ? post.carouselSlideTitles?.[idx] || post.imageHint || post.title
+    : post.imageHint || post.title;
+  const result = await generateSocialAiImage(
+    { ...post, imageHint: slideHint, title: slideHint, overlayText: slideHint, useOverlay: true },
+    feedback,
+    post.id.length + idx * 13,
+  );
   if (!result.ok) return result;
 
   const source = imageSourceFromProviderName(result.provider);
@@ -640,7 +696,7 @@ export async function generateSocialImageAction(postId: string, feedbackOverride
       item.id === postId
         ? {
             ...item,
-            imagePath: result.imagePath,
+            ...patchCarouselOrFeedImage(item, idx, result.imagePath),
             imageSource: source,
             aiImagePrompt: result.prompt,
             imageFeedback: '',
@@ -660,21 +716,69 @@ export async function generateSocialImageAction(postId: string, feedbackOverride
     double.enabled && (result.provider === 'gemini' || result.provider === 'phota')
       ? ` · Double (${engineLabel})`
       : '';
+  const slideNote = isCarousel ? ` · slide ${idx + 1}` : '';
   return {
     ok: true as const,
-    message: `Visuel Nano Banana 2 (${engineLabel})${doubleNote}.`,
+    message: `Visuel Nano Banana 2 (${engineLabel})${doubleNote}${slideNote}.`,
   };
 }
 
-/** Applique une correction image-to-image sur l’image existante. */
-export async function refineSocialImageAction(postId: string, feedbackOverride?: string) {
+/** Applique une correction image-to-image sur la slide courante (carousel) ou le visuel feed. */
+export async function refineSocialImageAction(postId: string, feedbackOverride?: string, slideIndex = 0) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
   const post = board.posts.find((item) => item.id === postId);
   if (!post) return { ok: false as const, error: 'Post introuvable.' };
   const feedback = (feedbackOverride ?? post.imageFeedback).trim();
+  const idx = Math.max(0, slideIndex);
+  const isCarousel = post.format === 'carousel';
+  const sourcePath = isCarousel ? post.carouselPaths?.[idx] || post.imagePath : post.imagePath;
+  const lastIdx = Math.max((post.carouselPaths?.length || CAROUSEL_SLIDE_COUNT) - 1, 0);
+  const sourceForCta = isCarousel ? post.carouselPaths?.[idx] || '' : '';
+  const { isCarouselCtaSlide } = await import('@/lib/admin/social-image-render');
+  const isCtaSlide =
+    isCarousel &&
+    (idx === lastIdx || Boolean(sourceForCta && isCarouselCtaSlide(post, sourceForCta, idx)));
+
+  if (isCtaSlide && idx === lastIdx) {
+    const { composeCarouselCtaSlideBuffer } = await import('@/lib/admin/compose-carousel-cta');
+    const { uploadSocialGeneratedImage } = await import('@/lib/admin/social-ai-image');
+    const title = post.carouselSlideTitles?.[idx] || "ESSAI 7 JOURS — ON T'ATTEND EN VISIO";
+    const ctaBuf = await composeCarouselCtaSlideBuffer({ overlayText: title });
+    const imagePath = await uploadSocialGeneratedImage(ctaBuf, `${post.id}-cta`, {
+      prompt: 'carousel-cta-dashboard-contain',
+      provider: 'brand',
+      theme: 'cta-dashboard',
+    });
+    await saveSocialCommsBoard({
+      ...board,
+      posts: board.posts.map((item) =>
+        item.id === postId
+          ? {
+              ...item,
+              ...patchCarouselOrFeedImage(item, idx, imagePath),
+              imageFeedback: '',
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    });
+    revalidateCommunity();
+    return {
+      ok: true as const,
+      message: `Slide ${idx + 1} : dashboard entier (volontaire). Le titre est gravé à l'aperçu et à la publication.`,
+    };
+  }
+
   const { refineSocialAiImage } = await import('@/lib/admin/social-ai-image');
-  const result = await refineSocialAiImage(post, feedback);
+  const result = await refineSocialAiImage(
+    {
+      ...post,
+      imageHint: isCarousel ? post.carouselSlideTitles?.[idx] || post.imageHint : post.imageHint,
+    },
+    feedback,
+    sourcePath,
+  );
   if (!result.ok) return result;
   await saveSocialCommsBoard({
     ...board,
@@ -682,7 +786,7 @@ export async function refineSocialImageAction(postId: string, feedbackOverride?:
       item.id === postId
         ? {
             ...item,
-            imagePath: result.imagePath,
+            ...patchCarouselOrFeedImage(item, idx, result.imagePath),
             imageSource: 'ai',
             aiImagePrompt: result.prompt,
             imageFeedback: '',
@@ -692,7 +796,12 @@ export async function refineSocialImageAction(postId: string, feedbackOverride?:
     ),
   });
   revalidateCommunity();
-  return { ok: true as const, message: 'Correction visuelle appliquée (image-to-image).' };
+  return {
+    ok: true as const,
+    message: isCarousel
+      ? `Correction visuelle appliquée sur la slide ${idx + 1}.`
+      : 'Correction visuelle appliquée (image-to-image).',
+  };
 }
 
 export async function updateSocialPostTitleAction(postId: string, title: string) {

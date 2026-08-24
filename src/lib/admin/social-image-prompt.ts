@@ -1,6 +1,6 @@
 /**
  * Formule de prompt image FitMangas — 10 composants (source de vérité §6).
- * Toujours assemblés ; cadrage PARTIEL = clé anatomie ; espace négatif haut = overlay carousel.
+ * Toujours assemblés ; cadrage PARTIEL = clé anatomie ; espace négatif bas = overlay carousel.
  */
 
 export type ImagePromptTemplateId =
@@ -68,7 +68,7 @@ const TEMPLATES: Record<ImagePromptTemplateId, TemplateParts> = {
     decor: 'cream mat, warm off-white wall softly blurred.',
   },
   'objet-nature-morte': {
-    framing: 'Still-life editorial frame, no people. Negative space dominates the upper third.',
+    framing: 'Still-life editorial frame, no people. Subject fills most of the frame; modest darker space at the very bottom for overlay text.',
     subject: 'A rolled cream Pilates towel and a single terracotta clay-colored prop on a mat.',
     decor: 'warm plaster wall backdrop, soft shadows, quiet wellness studio.',
   },
@@ -128,8 +128,8 @@ export function buildEditorialImagePrompt(opts?: {
     ? `Scene cue (keep partial framing): ${opts.sceneHint.trim().slice(0, 220)}`
     : '';
   const negative = opts?.forCarousel
-    ? 'Large negative space in the upper third of the frame (mandatory — text overlay will sit there).'
-    : 'Large negative space in the upper third of the frame.';
+    ? 'Fill the 4:5 frame edge to edge. No letterboxing, no large empty cream band at the top. Modest darker space only in the bottom 15% for a text overlay.'
+    : 'Fill the 4:5 portrait frame. No letterboxing or empty cream bands.';
 
   return [
     // 1 format

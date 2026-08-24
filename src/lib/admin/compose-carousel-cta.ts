@@ -77,41 +77,17 @@ export async function composeCarouselCtaSlideBuffer(opts?: {
 
   const dashLeft = marginX + Math.round((cardW - dashW) / 2);
   const dashTop = marginTop + Math.round((cardH - dashH) / 2);
+  void overlay;
 
-  // Pill fitmangas.com
+  // Pill fitmangas.com — le titre overlay est gravé ensuite (police embarquée).
   const pillLabel = 'fitmangas.com';
   const pillW = 220;
   const pillH = 44;
   const pillX = Math.round((EXPORT_W - pillW) / 2);
   const pillY = EXPORT_H - 118;
-  const textY = EXPORT_H - 175;
-
-  const escapeXml = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-  // Wrap overlay roughly
-  const words = overlay.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (test.length > 28) {
-      if (line) lines.push(line);
-      line = w;
-    } else line = test;
-  }
-  if (line) lines.push(line);
-  const textLines = lines.slice(0, 3);
-  const textSvg = textLines
-    .map(
-      (l, i) =>
-        `<text x="${EXPORT_W / 2}" y="${textY - (textLines.length - 1 - i) * 42}" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="600" fill="#FFFAF5">${escapeXml(l)}</text>`,
-    )
-    .join('\n');
 
   const uiSvg = Buffer.from(`
     <svg width="${EXPORT_W}" height="${EXPORT_H}" xmlns="http://www.w3.org/2000/svg">
-      ${textSvg}
       <rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="22" ry="22" fill="#C45D3E"/>
       <text x="${EXPORT_W / 2}" y="${pillY + 29}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#FFFAF5">${pillLabel}</text>
     </svg>

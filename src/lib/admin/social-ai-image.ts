@@ -137,26 +137,30 @@ export async function refineSocialAiImage(
     'id' | 'title' | 'caption' | 'imageHint' | 'network' | 'format' | 'overlayText' | 'useOverlay' | 'locale' | 'imagePath'
   > & { pillarId?: string | null },
   feedback: string,
+  sourceImagePath?: string | null,
 ): Promise<
   | { ok: true; imagePath: string; prompt: string; provider: SocialImageProvider }
   | { ok: false; error: string }
 > {
   const note = feedback.trim();
   if (!note) return { ok: false, error: 'Indique une correction (ex. : cadrage plus serré, moins de mains…).' };
-  if (!post.imagePath) return { ok: false, error: 'Aucune image source à corriger.' };
+  const sourcePath = (sourceImagePath || post.imagePath || '').trim();
+  if (!sourcePath) return { ok: false, error: 'Aucune image source à corriger.' };
 
   const apiKey = resolveGeminiApiKey();
   if (!apiKey) return { ok: false, error: 'GEMINI_API_KEY manquante.' };
 
   try {
-    const src = post.imagePath.startsWith('http')
-      ? post.imagePath
-      : `${(process.env.NEXT_PUBLIC_APP_URL || 'https://fitmangas.com').replace(/\/$/, '')}${post.imagePath.startsWith('/') ? '' : '/'}${post.imagePath}`;
+    const src = sourcePath.startsWith('http')
+      ? sourcePath
+      : `${(process.env.NEXT_PUBLIC_APP_URL || 'https://fitmangas.com').replace(/\/$/, '')}${sourcePath.startsWith('/') ? '' : '/'}${sourcePath}`;
     const imgRes = await fetch(src);
     if (!imgRes.ok) return { ok: false, error: `Impossible de charger l’image source (${imgRes.status}).` };
     const bytes = Buffer.from(await imgRes.arrayBuffer());
     const mime = imgRes.headers.get('content-type') || 'image/jpeg';
-    const prompt = buildSocialImageScenePrompt(post, note, post.id.length + 17);
+    const fillRule =
+      ' Fill the entire 4:5 portrait frame edge-to-edge. No letterboxing, no large empty cream or beige bands.';
+    const prompt = `${buildSocialImageScenePrompt(post, note, post.id.length + 17)}${fillRule}`;
     const { GeminiImageProvider } = await import('@/lib/admin/image-providers/gemini-image-provider');
     const gemini = new GeminiImageProvider();
     const result = await gemini.generate(prompt, { width: 1080, height: 1350 }, {

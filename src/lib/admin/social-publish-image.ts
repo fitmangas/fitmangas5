@@ -5,7 +5,8 @@ import sharp from 'sharp';
 
 import { uploadSocialGeneratedImage } from '@/lib/admin/social-ai-image';
 import { absolutePublicUrl, type SocialPost } from '@/lib/admin/social-comms';
-import { resolveSlideOverlayText } from '@/lib/admin/social-image-render';
+import { creamTopCropRows } from '@/lib/admin/social-image-letterbox';
+import { isCarouselCtaSlide, resolveSlideOverlayText } from '@/lib/admin/social-image-render';
 
 export const PUBLISH_EXPORT_WIDTH = 1080;
 export const PUBLISH_EXPORT_HEIGHT = 1350;
@@ -75,25 +76,20 @@ async function loadSourceBuffer(imagePath: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-function isPrecomposedCtaSlide(post: SocialPost, imagePath: string, slideIndex: number): boolean {
-  return (
-    post.format === 'carousel' &&
-    (/[-_]cta[-_]/i.test(imagePath) ||
-      (post.carouselPaths?.length
-        ? slideIndex === post.carouselPaths.length - 1 && /cta|dashboard/i.test(imagePath)
-        : false))
-  );
-}
-
-function shouldBurnOverlay(post: SocialPost, slideIndex: number, imagePath: string): boolean {
-  if (isPrecomposedCtaSlide(post, imagePath, slideIndex)) return false;
+function shouldBurnOverlay(post: SocialPost, slideIndex: number): boolean {
   if (post.format !== 'carousel' && !post.useOverlay) return false;
   return Boolean(resolveSlideOverlayText(post, slideIndex));
 }
 
-function buildOverlaySvg(width: number, height: number, lines: string[]): Buffer {
+export function buildOverlaySvg(
+  width: number,
+  height: number,
+  lines: string[],
+  options?: { anchorBottom?: number },
+): Buffer {
   const fontBase64 = getOverlayFontBase64();
-  const startY = height - 140 - (lines.length - 1) * 58;
+  const anchorBottom = options?.anchorBottom ?? 140;
+  const startY = height - anchorBottom - (lines.length - 1) * 58;
   const textSvg = lines
     .map(
       (line, index) =>
@@ -133,32 +129,46 @@ export async function composeSocialPublishImageBuffer(
   const w = PUBLISH_EXPORT_WIDTH;
   const h = PUBLISH_EXPORT_HEIGHT;
 
-  if (isPrecomposedCtaSlide(post, imagePath, slideIndex)) {
-    return sharp(source)
+  const ctaSlide = isCarouselCtaSlide(post, imagePath, slideIndex);
+  let base: Buffer;
+  if (ctaSlide) {
+    base = await sharp(source)
       .resize(w, h, { fit: 'contain', background: { r: 42, g: 36, b: 32 } })
       .jpeg({ quality: 90, mozjpeg: true })
       .toBuffer();
+  } else {
+    const raw = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const cropTop = creamTopCropRows(raw.data, raw.info.width, raw.info.height, raw.info.channels);
+    const cropped =
+      cropTop > 0
+        ? await sharp(source)
+            .extract({
+              left: 0,
+              top: cropTop,
+              width: raw.info.width,
+              height: raw.info.height - cropTop,
+            })
+            .toBuffer()
+        : source;
+    base = await sharp(cropped)
+      .resize(w, h, { fit: 'cover', position: 'center' })
+      .jpeg({ quality: 92, mozjpeg: true })
+      .toBuffer();
   }
 
-  const base = await sharp(source)
-    .resize(w, h, { fit: 'cover', position: 'center' })
-    .jpeg({ quality: 92, mozjpeg: true })
-    .toBuffer();
-
   const overlayText = resolveSlideOverlayText(post, slideIndex);
-  if (!shouldBurnOverlay(post, slideIndex, imagePath) || !overlayText) {
-    return composeWithLogo(base);
+  if (!shouldBurnOverlay(post, slideIndex) || !overlayText) {
+    return ctaSlide ? base : composeWithLogo(base);
   }
 
   const lines = wrapOverlayLines(overlayText);
-  const gradientSvg = buildOverlaySvg(w, h, lines);
+  const gradientSvg = buildOverlaySvg(w, h, lines, ctaSlide ? { anchorBottom: 210 } : undefined);
+  const withText = await sharp(base)
+    .composite([{ input: gradientSvg, top: 0, left: 0 }])
+    .jpeg({ quality: 90, mozjpeg: true })
+    .toBuffer();
 
-  return composeWithLogo(
-    await sharp(base)
-      .composite([{ input: gradientSvg, top: 0, left: 0 }])
-      .jpeg({ quality: 90, mozjpeg: true })
-      .toBuffer(),
-  );
+  return ctaSlide ? withText : composeWithLogo(withText);
 }
 
 async function composeWithLogo(baseJpeg: Buffer): Promise<Buffer> {
@@ -190,7 +200,7 @@ export async function resolveMetaPublishImageUrl(
   const trimmed = imagePath.trim();
   if (!trimmed) throw new Error('Chemin image vide.');
 
-  if (!shouldBurnOverlay(post, slideIndex, trimmed)) {
+  if (post.format !== 'carousel' && !shouldBurnOverlay(post, slideIndex)) {
     return absolutePublicUrl(trimmed);
   }
 

@@ -327,7 +327,7 @@ export function CommunityManagerBoard({
         if (!cancelled) setPreviewUrl(url);
       })
       .catch(() => {
-        if (!cancelled) setPreviewUrl(previewPost.imagePath);
+        if (!cancelled) setPreviewUrl(slide);
       })
       .finally(() => {
         if (!cancelled) setPreviewLoading(false);
@@ -1160,7 +1160,7 @@ export function CommunityManagerBoard({
                   <img
                     src={previewUrl || previewPost.imagePath || ''}
                     alt="Aperçu Instagram"
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-cover"
                   />
                   {/* Pas de texte CSS en haut : l’image composée a déjà logo (haut) + grand texte (bas).
                       Exception Reel sans overlay brûlé : hook seul en haut (pas de doublon bas). */}
@@ -2102,19 +2102,23 @@ function PostCard({
             </div>
           ) : null}
 
-          {!isReel && post.imagePath ? (
+          {!isReel && (post.imagePath || activeCarouselSrc) ? (
             <div className="mt-3">
               <button
                 type="button"
                 className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
-                onClick={() => void downloadSocialPostImage(post).catch(() => setMessage('Export image impossible.'))}
+                onClick={() =>
+                  void downloadSocialPostImage(post, isCarousel ? carouselIndex : 0).catch(() =>
+                    setMessage('Export image impossible.'),
+                  )
+                }
               >
                 <Download size={14} />
                 Télécharger le visuel
               </button>
             </div>
           ) : null}
-          {!isReel && !post.imagePath ? (
+          {!isReel && !post.imagePath && !activeCarouselSrc ? (
             <p className="mt-3 text-xs text-luxury-muted">Visuel manquant — regénère la semaine ou choisis une photo bibliothèque.</p>
           ) : null}
 
@@ -2123,27 +2127,33 @@ function PostCard({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={pending}
+                  disabled={pending || !(isCarousel ? activeCarouselSrc : post.imagePath)}
                   className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-3 text-[11px]"
-                  title="Régénère une image de zéro (Nano Banana 2)"
+                  title={
+                    isCarousel
+                      ? `Régénère la slide ${carouselIndex + 1} (Nano Banana 2)`
+                      : 'Régénère une image de zéro (Nano Banana 2)'
+                  }
                   onClick={() =>
                     run(
                       async () => {
                         if (feedback.trim()) {
                           await updateSocialPostImageFeedbackAction(post.id, feedback);
                         }
-                        return generateSocialImageAction(post.id, feedback);
+                        return generateSocialImageAction(post.id, feedback, isCarousel ? carouselIndex : 0);
                       },
-                      'Visuel Nano Banana 2…',
+                      isCarousel ? `Visuel Nano Banana 2 · slide ${carouselIndex + 1}…` : 'Visuel Nano Banana 2…',
                     )
                   }
                 >
                   {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   Nano Banana 2{useDouble ? ' + Double' : ''}
+                  {isCarousel ? ` · S${carouselIndex + 1}` : ''}
                 </button>
               </div>
               <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
                 Corrections visuel (image-to-image)
+                {isCarousel ? ` — slide ${carouselIndex + 1}` : ''}
               </label>
               <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-start">
                 <textarea
@@ -2162,22 +2172,34 @@ function PostCard({
                 />
                 <button
                   type="button"
-                  disabled={pending || !feedback.trim() || !post.imagePath}
+                  disabled={pending || !feedback.trim() || !(isCarousel ? activeCarouselSrc : post.imagePath)}
                   className="btn-luxury-primary inline-flex min-h-[40px] shrink-0 items-center gap-2 px-3 text-[11px] disabled:opacity-50"
-                  title="Applique la correction sur l’image actuelle"
+                  title={
+                    isCarousel
+                      ? `Applique la correction sur la slide ${carouselIndex + 1}`
+                      : 'Applique la correction sur l’image actuelle'
+                  }
                   onClick={() =>
                     run(
                       async () => {
                         await updateSocialPostImageFeedbackAction(post.id, feedback);
-                        return refineSocialImageAction(post.id, feedback);
+                        return refineSocialImageAction(post.id, feedback, isCarousel ? carouselIndex : 0);
                       },
-                      'Correction appliquée…',
+                      isCarousel
+                        ? `Correction slide ${carouselIndex + 1}…`
+                        : 'Correction appliquée…',
                     )
                   }
                 >
+                  {pending ? <Loader2 size={14} className="animate-spin" /> : null}
                   Appliquer la correction
                 </button>
               </div>
+              {isCarousel ? (
+                <p className="mt-1 text-[11px] text-luxury-soft">
+                  La correction s’applique à la slide affichée à gauche ({carouselIndex + 1}/{carouselSlides.length || 1}).
+                </p>
+              ) : null}
             </>
           ) : null}
 

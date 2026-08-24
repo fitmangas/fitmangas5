@@ -1,4 +1,5 @@
 import type { SocialPost } from '@/lib/admin/social-comms';
+import { creamTopCropRows } from '@/lib/admin/social-image-letterbox';
 
 export const SOCIAL_LOGO_PATH = '/logo.png';
 /** Instagram feed / carousel portrait (4:5). */
@@ -82,6 +83,17 @@ async function drawLogo(ctx: CanvasRenderingContext2D, canvasW: number, canvasH:
   }
 }
 
+export function isCarouselCtaSlide(
+  post: Pick<SocialPost, 'format' | 'carouselPaths'>,
+  imagePath: string,
+  slideIndex = 0,
+): boolean {
+  if (post.format !== 'carousel') return false;
+  if (/[-_]cta[-_]/i.test(imagePath)) return true;
+  const paths = post.carouselPaths ?? [];
+  return Boolean(paths.length && slideIndex === paths.length - 1 && /cta|dashboard/i.test(imagePath));
+}
+
 export function resolveSlideOverlayText(
   post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format' | 'hookTitle' | 'title'>,
   slideIndex = 0,
@@ -115,29 +127,42 @@ export async function renderSocialPostCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas indisponible');
 
-  const isPrecomposedCta =
-    post.format === 'carousel' &&
-    (/[-_]cta[-_]/i.test(imagePath) ||
-      (post.carouselPaths?.length
-        ? slideIndex === post.carouselPaths.length - 1 && /cta|dashboard/i.test(imagePath)
-        : false));
+  const isPrecomposedCta = isCarouselCtaSlide(post, imagePath, slideIndex);
 
   if (isPrecomposedCta) {
-    // Image déjà composée 4:5 (dashboard contain + carte) — pas de cover zoom
     const scale = Math.min(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
     ctx.fillStyle = '#2a2420';
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
     ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
-    return canvas;
+  } else {
+    let sx = 0;
+    let sy = 0;
+    let sw = img.width;
+    let sh = img.height;
+    try {
+      const probe = document.createElement('canvas');
+      probe.width = img.width;
+      probe.height = img.height;
+      const pctx = probe.getContext('2d');
+      if (pctx) {
+        pctx.drawImage(img, 0, 0);
+        const sampled = pctx.getImageData(0, 0, img.width, img.height);
+        const cropTop = creamTopCropRows(sampled.data, img.width, img.height, 4);
+        if (cropTop > 0) {
+          sy = cropTop;
+          sh = img.height - cropTop;
+        }
+      }
+    } catch {
+      // Recadrage optionnel — on garde l’image entière
+    }
+    const scale = Math.max(EXPORT_WIDTH / sw, EXPORT_HEIGHT / sh);
+    const w = sw * scale;
+    const h = sh * scale;
+    ctx.drawImage(img, sx, sy, sw, sh, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
   }
-
-  // Cover 4:5
-  const scale = Math.max(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
-  const w = img.width * scale;
-  const h = img.height * scale;
-  ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
 
   const overlayText = resolveSlideOverlayText(post, slideIndex);
   const burnOverlay = post.useOverlay || post.format === 'carousel';
@@ -153,13 +178,16 @@ export async function renderSocialPostCanvas(
     ctx.font = '600 52px Georgia, serif';
     ctx.textAlign = 'center';
     const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
-    const startY = EXPORT_HEIGHT - 140 - (lines.length - 1) * 58;
+    const anchorBottom = isPrecomposedCta ? 210 : 140;
+    const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * 58;
     lines.forEach((item, index) => {
       ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * 58);
     });
   }
 
-  await drawLogo(ctx, EXPORT_WIDTH, EXPORT_HEIGHT);
+  if (!isPrecomposedCta) {
+    await drawLogo(ctx, EXPORT_WIDTH, EXPORT_HEIGHT);
+  }
   return canvas;
 }
 
