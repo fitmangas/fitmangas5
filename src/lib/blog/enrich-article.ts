@@ -304,6 +304,23 @@ export async function enrichArticleBodyHtml(params: {
     generated = retry;
   }
 
+  // Juste hors borne (ex. 1195) → 3e essai ciblé
+  if (!isIdealBodyWordCount(generated.wordsAfter)) {
+    const got = generated.wordsAfter;
+    const nearMiss =
+      (got >= BLOG_TARGET_WORDS_MIN - 80 && got < BLOG_TARGET_WORDS_MIN) ||
+      (got > BLOG_TARGET_WORDS_MAX && got <= BLOG_TARGET_WORDS_MAX + 120);
+    if (nearMiss) {
+      const near = await generateEnrichedHtml({
+        title: params.title,
+        description: params.description,
+        bodyOnly: stripValidatedBlogCta(generated.cleaned),
+        lengthCorrection: { wordsGot: got },
+      });
+      if (near.ok) generated = near;
+    }
+  }
+
   if (!isIdealBodyWordCount(generated.wordsAfter)) {
     return {
       ok: false,
