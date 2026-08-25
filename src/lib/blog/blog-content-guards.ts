@@ -114,12 +114,15 @@ export function countBodyWords(html: string): number {
   return plain.split(/\s+/).filter(Boolean).length;
 }
 
-/** Placeholder seed / template non résolu. */
+/** Placeholder seed / template non résolu (pas un vrai titre éditorial). */
 export function containsArticlePilatesPlaceholder(text: string): boolean {
+  const t = text ?? '';
   return (
-    /article\s+pilates\s*\d+/i.test(text) ||
-    /mouvement\s*&\s*souffle/i.test(text) ||
-    /description courte pour l['’]article\s*\d+/i.test(text)
+    /article[\s_-]*pilates[\s_-]*\d+/i.test(t) ||
+    /description courte pour l['’]article\s*\d+/i.test(t) ||
+    // Ancien H2 seed figé (pas « mouvement et souffle » en rédaction libre)
+    /mouvement\s*&\s*souffle\s*:\s*l['’]harmonie essentielle/i.test(t) ||
+    /<h[1-3][^>]*>\s*mouvement\s*&\s*souffle\s*<\/h[1-3]>/i.test(t)
   );
 }
 

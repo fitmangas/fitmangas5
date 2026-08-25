@@ -38,15 +38,93 @@ export type EnrichArticleResult =
       wordsAfter?: number;
     };
 
-function extractJsonBlock(raw: string): Record<string, unknown> | null {
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start < 0 || end <= start) return null;
-  try {
-    return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
-  } catch {
-    return null;
+function repairAiJson(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const start = s.indexOf('{');
+  if (start < 0) return s;
+  s = s.slice(start);
+
+  // Newlines / tabs bruts dans des strings → \n
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i]!;
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        out += ch;
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        out += ch;
+        continue;
+      }
+      if (ch === '\n') {
+        out += '\\n';
+        continue;
+      }
+      if (ch === '\r') continue;
+      if (ch === '\t') {
+        out += '\\t';
+        continue;
+      }
+      out += ch;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      continue;
+    }
+    out += ch;
   }
+  return out;
+}
+
+function extractContentHtmlFromLooseText(raw: string): string | null {
+  const fenced = raw.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1] && /<(?:h2|h3|p)\b/i.test(fenced[1])) {
+    return fenced[1].trim();
+  }
+  const keyMatch = raw.match(/"contentHtml"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"[a-zA-Z]+"|})/);
+  if (keyMatch?.[1]) {
+    try {
+      return JSON.parse(`"${keyMatch[1]}"`) as string;
+    } catch {
+      return keyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    }
+  }
+  // Dernier recours : gros bloc HTML dans la réponse
+  const htmlStart = raw.search(/<(?:h2|h3|p)\b/i);
+  if (htmlStart >= 0) {
+    const chunk = raw.slice(htmlStart).replace(/```[\s\S]*$/, '').trim();
+    if (chunk.length > 400 && /<\/(?:h2|h3|p)>/i.test(chunk)) return chunk;
+  }
+  return null;
+}
+
+function extractJsonBlock(raw: string): Record<string, unknown> | null {
+  const repaired = repairAiJson(raw);
+  const start = repaired.indexOf('{');
+  const end = repaired.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(repaired.slice(start, end + 1)) as Record<string, unknown>;
+    } catch {
+      // continue
+    }
+  }
+  const looseHtml = extractContentHtmlFromLooseText(raw);
+  if (looseHtml) return { contentHtml: looseHtml };
+  return null;
 }
 
 function buildEnrichPrompts(params: {
@@ -54,31 +132,46 @@ function buildEnrichPrompts(params: {
   description?: string | null;
   bodyOnly: string;
   lengthCorrection?: { wordsGot: number };
+  banTemplateRetry?: boolean;
 }): { system: string; user: string } {
   const system = `Tu es rédactrice SEO senior (FitMangas / Alejandra, coach Pilates & Barre).
 Tu ENRICHIS un article : réécriture substantielle (>30% du contenu réellement retravaillé), pas un polish cosmétique.
 OBLIGATOIRE: le corps final doit faire ENTRE ${BLOG_TARGET_WORDS_MIN} et ${BLOG_TARGET_WORDS_MAX} mots (contenu RÉEL, unique). Hors de cette fourchette = échec.
 INTERDIT: remplissage creux, reformulations vides, promesse médicale / perte de poids, dépasser ${BLOG_TARGET_WORDS_MAX} mots.
+INTERDIT: titres génériques seed « Mouvement & Souffle : L'Harmonie Essentielle », « Article pilates N », sections template listées plus bas.
 Retourne STRICTEMENT un JSON: { "contentHtml": "..." } — HTML avec <h2>, <h3>, <p>, <ul>, <li>, <strong> uniquement.
-NE PAS écrire le CTA final (le système l'ajoute). Termine après une courte FAQ si utile.`;
+Échappe correctement les guillemets dans le JSON. NE PAS écrire le CTA final (le système l'ajoute). Termine après une courte FAQ si utile.`;
 
   const correction =
     params.lengthCorrection != null
-      ? `\n\nCORRECTION: ta version précédente faisait ${params.lengthCorrection.wordsGot} mots — HORS zone. Réécris pour atterrir STRICTEMENT entre ${BLOG_TARGET_WORDS_MIN} et ${BLOG_TARGET_WORDS_MAX} mots (vise ~1500). Coupe le superflu ou densifie, sans remplissage.`
+      ? params.lengthCorrection.wordsGot > BLOG_TARGET_WORDS_MAX
+        ? `\n\nCORRECTION LONGUEUR: ta version précédente faisait ${params.lengthCorrection.wordsGot} mots — TROP LONG. Coupe agressivement (sections redondantes, exemples en trop, FAQ trop longue). Cible STRICTE: ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots, vise ~1450. Pas de remplissage.`
+        : `\n\nCORRECTION: ta version précédente faisait ${params.lengthCorrection.wordsGot} mots — HORS zone. Réécris pour atterrir STRICTEMENT entre ${BLOG_TARGET_WORDS_MIN} et ${BLOG_TARGET_WORDS_MAX} mots (vise ~1500). Coupe le superflu ou densifie, sans remplissage.`
       : '';
+
+  const banRetry = params.banTemplateRetry
+    ? `\n\nCORRECTION ANTI-TEMPLATE: ta version précédente a été refusée (titres / sections seed). Réécris entièrement autour du titre ci-dessous. Interdits absolus: « Mouvement & Souffle : L'Harmonie Essentielle », « Article pilates », « Pourquoi ce sujet change ta pratique », « Le contexte concret », « Exemple terrain », « Ce que tu peux retenir », « 3 actions simples ».`
+    : '';
+
+  // Corps source : on retire les H2 seed pour ne pas les réinjecter
+  const cleanedSource = params.bodyOnly
+    .replace(/<h[1-3][^>]*>\s*Mouvement\s*&\s*Souffle[\s\S]*?<\/h[1-3]>/gi, '')
+    .replace(/##\s*Mouvement\s*&\s*Souffle[^\n]*/gi, '')
+    .slice(0, 14000);
 
   const user = `Titre (à conserver comme fil rouge, NE PAS mettre de <h1>): ${params.title}
 
 Chapô actuel (contexte): ${params.description?.trim() || '(aucun)'}
 
 Corps actuel à enrichir (HTML, sans CTA):
-${params.bodyOnly.slice(0, 14000)}
+${cleanedSource}
 
 Consignes:
-- Réécris et enrichis en profondeur: exemples terrain, nuances, erreurs courantes, variations, FAQ utile.
+- Réécris et enrichis en profondeur: exemples terrain concrets (sans titre « Exemple terrain »), nuances, erreurs courantes, variations, FAQ utile.
+- Les <h2> doivent paraphraser le titre / le sujet réel — jamais le H2 seed « Mouvement & Souffle… ».
 - Conserve l'intention SEO et le sujet du titre.
 - Longueur FINALE OBLIGATOIRE: ${BLOG_TARGET_WORDS_MIN}–${BLOG_TARGET_WORDS_MAX} mots (vise le milieu ~1500).
-- Interdits de section template: "Pourquoi ce sujet change ta pratique", "Le contexte concret", "3 actions simples…", "Exemple terrain", "Ce que tu peux retenir".${correction}`;
+- Interdits de section template: "Pourquoi ce sujet change ta pratique", "Le contexte concret", "3 actions simples…", "Exemple terrain", "Ce que tu peux retenir".${correction}${banRetry}`;
 
   return { system, user };
 }
@@ -88,6 +181,7 @@ async function generateEnrichedHtml(params: {
   description?: string | null;
   bodyOnly: string;
   lengthCorrection?: { wordsGot: number };
+  banTemplateRetry?: boolean;
 }): Promise<
   | { ok: true; cleaned: string; wordsAfter: number; provider: BlogAiProviderId; model: string }
   | { ok: false; reason: 'generation_failed' | 'invalid_content'; detail: string; wordsAfter?: number }
@@ -97,7 +191,7 @@ async function generateEnrichedHtml(params: {
     {
       system,
       user,
-      temperature: params.lengthCorrection ? 0.55 : 0.7,
+      temperature: params.lengthCorrection || params.banTemplateRetry ? 0.55 : 0.7,
       maxOutputTokens: 12288,
     },
     PREMIUM_BLOG_AI_ORDER,
@@ -165,6 +259,20 @@ export async function enrichArticleBodyHtml(params: {
     description: params.description,
     bodyOnly,
   });
+
+  // 1er échec template / JSON → un retry avec consignes anti-seed renforcées
+  if (
+    !generated.ok &&
+    generated.reason === 'invalid_content' &&
+    /template|placeholder|contentHtml/i.test(generated.detail)
+  ) {
+    generated = await generateEnrichedHtml({
+      title: params.title,
+      description: params.description,
+      bodyOnly,
+      banTemplateRetry: true,
+    });
+  }
 
   if (!generated.ok) {
     return {
