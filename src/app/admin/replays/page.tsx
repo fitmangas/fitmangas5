@@ -58,12 +58,12 @@ export default async function AdminCourseReplaysPage() {
   const selectCols =
     'id, vimeo_video_id, title, thumbnail_url, embed_url, duration_seconds, upload_status, created_at, course_id, is_ready, courses ( title, starts_at )';
 
-  const recoverPromise = recoverOrphanCourseReplays({ lookbackDays: 45 }).catch((err) => {
+  // Recover orphelins en arrière-plan — ne bloque plus l’affichage (scan Vimeo lent).
+  void recoverOrphanCourseReplays({ lookbackDays: 45 }).catch((err) => {
     console.error('[admin/replays] silent recover', err);
-    return null;
   });
 
-  let [pendingRes, approvedRes, recoverResult] = await Promise.all([
+  const [pendingRes, approvedRes] = await Promise.all([
     admin
       .from('video_recordings')
       .select(selectCols)
@@ -75,16 +75,7 @@ export default async function AdminCourseReplaysPage() {
       .eq('validation_status', 'approved')
       .order('created_at', { ascending: false })
       .limit(80),
-    recoverPromise,
   ]);
-
-  if (recoverResult && recoverResult.linked > 0) {
-    pendingRes = await admin
-      .from('video_recordings')
-      .select(selectCols)
-      .eq('validation_status', 'pending')
-      .order('created_at', { ascending: false });
-  }
 
   if (pendingRes.error) console.error('[admin/replays] pending', pendingRes.error);
   if (approvedRes.error) console.error('[admin/replays] approved', approvedRes.error);

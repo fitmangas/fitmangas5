@@ -17,9 +17,8 @@ import {
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
-import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
-import { getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
+import type { IndexingStatus } from '@/lib/google/search-console';
 import { scoreArticleSeoFields, seoCheckIcon } from '@/lib/blog/article-seo-score';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -100,6 +99,7 @@ export default async function AdminMarketingPage() {
   const since = new Date();
   since.setDate(since.getDate() - 30);
   const sinceIso = since.toISOString();
+  const nowIsoMarketing = new Date().toISOString();
 
   const [
     { data: businessRows },
@@ -110,15 +110,19 @@ export default async function AdminMarketingPage() {
     { data: checklistRaw },
     { count: memberCount },
     { data: subscriptionRows },
+    { data: scheduledRaw },
+    { data: suggestionsRaw },
+    { data: referralRows },
   ] = await Promise.all([
     admin.from('business_stats_daily').select('*').order('stat_date', { ascending: true }).limit(30),
     admin
       .from('blog_articles')
       .select(
-        'id,title_fr,title_es,slug_fr,slug_es,description_fr,description_es,meta_description_fr,meta_description_es,content_fr,content_es,featured_image_url,published_at,view_count,average_time_spent_seconds,average_scroll_percentage,average_rating,rating_count',
+        'id,title_fr,title_es,slug_fr,slug_es,description_fr,description_es,meta_description_fr,meta_description_es,content_fr,featured_image_url,published_at,view_count,average_time_spent_seconds,average_scroll_percentage,average_rating,rating_count',
       )
       .eq('status', 'published')
-      .order('view_count', { ascending: false }),
+      .order('view_count', { ascending: false })
+      .limit(80),
     admin.from('newsletter_subscriptions').select('*', { count: 'exact', head: true }).eq('unsubscribed', false),
     admin
       .from('newsletter_subscriptions')
@@ -132,6 +136,19 @@ export default async function AdminMarketingPage() {
       .from('subscriptions')
       .select('status, price_cents, ends_at, stripe_subscription_id')
       .like('stripe_subscription_id', 'sub_%'),
+    admin
+      .from('blog_articles')
+      .select('id, title_fr, scheduled_publication_at, status')
+      .gte('scheduled_publication_at', nowIsoMarketing)
+      .in('status', ['draft', 'validated'])
+      .order('scheduled_publication_at', { ascending: true })
+      .limit(8),
+    admin
+      .from('marketing_editorial_suggestions')
+      .select('id, suggestion_fr, suggestion_es, topics_hint, created_at')
+      .order('created_at', { ascending: false })
+      .limit(12),
+    admin.from('referrals').select('referrer_user_id'),
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
@@ -157,8 +174,29 @@ export default async function AdminMarketingPage() {
   const seoPages = publicSeoPages(t);
   const googleApisConnected = hasGoogleServiceAccountJson();
   const googleSetupDocLabel = 'docs/google-cloud-setup.md';
+  // GSC / GA : chargés côté client (Marketing*Live). Ne plus bloquer le 1er paint serveur.
+  const searchConsoleSummary: SearchConsoleSummary = {
+    available: googleApisConnected,
+    overview: null,
+    queries: [],
+    topPages: [],
+    indexing: null,
+  };
+  const gaSummary: GaSummary = {
+    available: googleApisConnected,
+    users30d: null,
+    pageViews30d: null,
+    keyEvents30d: null,
+    conversionRatePercent: null,
+  };
+
   const subscriptionStats = summarizeSubscriptions(
-    (subscriptionRows ?? []) as Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
+    (subscriptionRows ?? []) as Array<{
+      status: string | null;
+      price_cents: number | null;
+      ends_at: string | null;
+      stripe_subscription_id: string | null;
+    }>,
   );
   const liveBusinessData =
     businessData.length > 0
@@ -180,51 +218,6 @@ export default async function AdminMarketingPage() {
           },
         ];
 
-  const searchConsoleSummaryPromise = googleApisConnected
-    ? fetchSearchConsoleSummary()
-    : Promise.resolve({
-        available: false,
-        error: 'Credentials Google non configurés',
-        overview: null,
-        queries: [],
-        topPages: [],
-        indexing: null,
-      });
-  const gaSummaryPromise = googleApisConnected
-    ? fetchGaSummary()
-    : Promise.resolve({
-        available: false,
-        error: 'Credentials Google non configurés',
-        users30d: null,
-        pageViews30d: null,
-        keyEvents30d: null,
-        conversionRatePercent: null,
-      });
-
-  const nowIsoMarketing = new Date().toISOString();
-  const [
-    searchConsoleSummary,
-    gaSummary,
-    { data: scheduledRaw },
-    { data: suggestionsRaw },
-    { data: referralRows },
-  ] = await Promise.all([
-    searchConsoleSummaryPromise,
-    gaSummaryPromise,
-    admin
-      .from('blog_articles')
-      .select('id, title_fr, scheduled_publication_at, status')
-      .gte('scheduled_publication_at', nowIsoMarketing)
-      .in('status', ['draft', 'validated'])
-      .order('scheduled_publication_at', { ascending: true })
-      .limit(8),
-    admin
-      .from('marketing_editorial_suggestions')
-      .select('id, suggestion_fr, suggestion_es, topics_hint, created_at')
-      .order('created_at', { ascending: false })
-      .limit(12),
-    admin.from('referrals').select('referrer_user_id'),
-  ]);
   const refList = (referralRows ?? []) as { referrer_user_id: string }[];
   const countMap = new Map<string, number>();
   for (const r of refList) {
@@ -397,19 +390,19 @@ export default async function AdminMarketingPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <StatusCard
             title="Google Analytics"
-            ok={Boolean(settings.google_analytics_id) && gaSummary.available}
+            ok={Boolean(settings.google_analytics_id) && googleApisConnected}
             value={
-              gaSummary.available
-                ? t.active
-                : settings.google_analytics_id
-                  ? 'ID installé, API GA4 indisponible'
-                  : t.notConfigured
+              settings.google_analytics_id
+                ? googleApisConnected
+                  ? `${t.active} — détail live ci-dessous`
+                  : 'ID installé, credentials API manquants'
+                : t.notConfigured
             }
           />
           <StatusCard
             title="Google Search Console"
-            ok={searchConsoleSummary.available}
-            value={searchConsoleSummary.available ? t.searchConsoleDnsStatus : 'API indisponible'}
+            ok={googleApisConnected}
+            value={googleApisConnected ? `${t.searchConsoleDnsStatus} — détail live ci-dessous` : 'Credentials API manquants'}
           />
           <StatusCard
             title="Meta Pixel"
@@ -634,10 +627,15 @@ export default async function AdminMarketingPage() {
 type SearchConsoleSummary = {
   available: boolean;
   error?: string;
-  overview: Awaited<ReturnType<typeof getSearchOverview>> | null;
+  overview: {
+    clicks?: number;
+    impressions?: number;
+    ctr?: number;
+    position?: number;
+  } | null;
   queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
   topPages: Array<{ page: string; clicks: number; impressions: number }>;
-  indexing: Awaited<ReturnType<typeof getIndexingStatus>> | null;
+  indexing: IndexingStatus | null;
 };
 
 type GaSummary = {
@@ -654,59 +652,6 @@ type SubscriptionStats = {
   failedPayments: number;
   mrrEur: number;
 };
-
-async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
-  try {
-    const [overview, queries, topPages, indexing] = await Promise.all([
-      getSearchOverview(28),
-      getSearchQueries(28, 50),
-      getSearchTopPages(28, 50),
-      getIndexingStatus(),
-    ]);
-    return {
-      available: true,
-      overview: overview ?? null,
-      queries: Array.isArray(queries) ? queries : [],
-      topPages: Array.isArray(topPages) ? topPages : [],
-      indexing: indexing ?? null,
-    };
-  } catch (e) {
-    return {
-      available: false,
-      error: e instanceof Error ? e.message : 'Erreur Search Console',
-      overview: null,
-      queries: [],
-      topPages: [],
-      indexing: null,
-    };
-  }
-}
-
-async function fetchGaSummary(): Promise<GaSummary> {
-  try {
-    const [pageViews, countries, conversion] = await Promise.all([
-      getPageViews(30),
-      getUsersByCountry(30),
-      getConversionRate(30),
-    ]);
-    return {
-      available: true,
-      users30d: countries.reduce((sum, row) => sum + row.users, 0),
-      pageViews30d: pageViews.reduce((sum, row) => sum + row.views, 0),
-      keyEvents30d: conversion.keyEvents,
-      conversionRatePercent: conversion.ratePercent,
-    };
-  } catch (e) {
-    return {
-      available: false,
-      error: e instanceof Error ? e.message : 'Erreur GA4',
-      users30d: null,
-      pageViews30d: null,
-      keyEvents30d: null,
-      conversionRatePercent: null,
-    };
-  }
-}
 
 function summarizeSubscriptions(
   rows: Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,

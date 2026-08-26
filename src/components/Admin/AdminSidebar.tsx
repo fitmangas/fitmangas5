@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState, useTransition } from 'react';
 import { BookOpen, Clapperboard, Film, Inbox, Megaphone, Rocket, ShoppingBag, TicketPercent, Users, Video } from 'lucide-react';
 
 const links = [
@@ -21,9 +21,16 @@ const links = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [vimeoPending, setVimeoPending] = useState<number | null>(null);
   const [replaysPending, setReplaysPending] = useState<number | null>(null);
   const [inboxPending, setInboxPending] = useState<number | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,14 +62,29 @@ export function AdminSidebar() {
     };
   }, []);
 
+  function navigate(href: string) {
+    if (pathname === href || pathname.startsWith(`${href}/`)) return;
+    setPendingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
   return (
     <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
       <Link
         href="/admin"
         title="Dashboard"
+        prefetch
+        onMouseEnter={() => router.prefetch('/admin')}
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
+          navigate('/admin');
+        }}
         className={`relative flex h-12 w-12 items-center justify-center rounded-full border border-white/55 bg-white/72 shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.16)] ${
           pathname === '/admin' ? 'ring-2 ring-orange-300/70' : ''
-        }`}
+        } ${isPending && pendingHref === '/admin' ? 'animate-pulse ring-2 ring-orange-300/50' : ''}`}
       >
         <Image
           src="/logo.png"
@@ -95,23 +117,32 @@ export function AdminSidebar() {
             </span>
           ) : null;
 
-        const vimeoHref =
+        const targetHref =
           href === '/admin/vimeo' && vimeoPending != null && vimeoPending > 0
             ? '/admin/vimeo#vimeo-pending-section'
             : href === '/admin/replays' && replaysPending != null && replaysPending > 0
               ? '/admin/replays#course-replays-pending'
               : href;
 
+        const showPending = isPending && pendingHref === href;
+
         return (
           <Link
             key={href}
-            href={vimeoHref}
+            href={targetHref}
             title={label}
+            prefetch
+            onMouseEnter={() => router.prefetch(href)}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              navigate(href);
+            }}
             className={`relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-200 hover:-translate-y-0.5 ${
               isActive
                 ? 'bg-white/82 text-luxury-ink shadow-[0_8px_20px_rgba(15,23,42,0.12)] ring-1 ring-[#C5A572]/55'
                 : 'text-luxury-muted hover:bg-white/62 hover:text-luxury-ink hover:shadow-sm'
-            }`}
+            } ${showPending ? 'animate-pulse bg-white/70 text-luxury-ink ring-2 ring-orange-300/45' : ''}`}
           >
             <Icon size={23} strokeWidth={2} aria-hidden />
             {badge}
