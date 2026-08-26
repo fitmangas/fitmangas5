@@ -10,24 +10,52 @@ import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
-
-export const metadata: Metadata = {
-  title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
-  description: 'Blog Pilates FitMangas : exercices simples, respiration, posture, souplesse et conseils pour progresser à la maison avec Alejandra.',
-  openGraph: {
-    title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
-    description: 'Exercices Pilates, respiration, posture et conseils concrets pour progresser à la maison avec FitMangas.',
-    images: ['/og-default.jpg'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Blog Pilates — exercices, respiration et posture | FitMangas',
-    description: 'Exercices Pilates, respiration, posture et conseils concrets pour progresser à la maison.',
-    images: ['/og-default.jpg'],
-  },
-};
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(
+  /\/$/,
+  '',
+);
 
 type Search = { q?: string; category?: string; page?: string; lang?: string };
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page ?? '1') || 1);
+  const q = (sp.q ?? '').trim();
+  const categorySlug = (sp.category ?? '').trim();
+  const lang = sp.lang === 'es' ? 'es' : 'fr';
+  const isFiltered = Boolean(q || categorySlug || lang === 'es' || page > 1);
+
+  const title =
+    lang === 'es'
+      ? 'Blog Pilates — ejercicios, respiración y postura | FitMangas'
+      : 'Blog Pilates — exercices, respiration et posture | FitMangas';
+  const description =
+    lang === 'es'
+      ? 'Blog Pilates FitMangas: ejercicios simples, respiración, postura y consejos para progresar en casa con Alejandra.'
+      : 'Blog Pilates FitMangas : exercices simples, respiration, posture, souplesse et conseils pour progresser à la maison avec Alejandra.';
+
+  return {
+    title,
+    description,
+    alternates: {
+      // Une seule URL indexable pour le listing — évite les doublons GSC (?lang=&category=)
+      canonical: `${APP_URL}/blog`,
+    },
+    robots: isFiltered ? { index: false, follow: true } : { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: `${APP_URL}/blog`,
+      images: ['/og-default.jpg'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-default.jpg'],
+    },
+  };
+}
 
 export default async function BlogListPage({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;

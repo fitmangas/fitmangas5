@@ -83,9 +83,26 @@ const nextConfig: NextConfig = {
     ];
 
     return [
-      // URL cassée indexée par Google : https://fitmangas.com/&
+      // URLs foireuses / typos crawlées par Google
       { source: '/&', destination: '/', permanent: true },
       { source: '/%26', destination: '/', permanent: true },
+      { source: '/S', destination: '/', permanent: true },
+      // Slash manquant (GSC : « blog-les-bases… » au lieu de « /blog/les-bases… »)
+      {
+        source: '/blog-les-bases-du-pilates-respiration-et-posture',
+        destination: '/blog/les-bases-du-pilates-respiration-et-posture',
+        permanent: true,
+      },
+      {
+        source: '/blog/articulo-pilates-4-movimiento-y-respiracion',
+        destination: '/blog/article-pilates-4-mouvement-souffle-004',
+        permanent: true,
+      },
+      {
+        source: '/blog/articulo-pilates-14-movimiento-y-respiracion',
+        destination: '/blog/article-pilates-14-mouvement-souffle-014',
+        permanent: true,
+      },
       ...blogSlugRedirects.map((item) => ({
         ...item,
         permanent: true,
