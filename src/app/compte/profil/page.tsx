@@ -34,8 +34,18 @@ export default async function ProfilPage() {
           emailLabel: 'Email',
           billingSection: 'Billing',
           openStripeSub: 'Subscription',
+          openUnsubscribe: 'Unsubscribe',
           openStripeInvoices: 'Invoices',
           openShopArea: 'Shop orders',
+          cancelConfirmTitle: 'Cancel your subscription?',
+          cancelConfirmBody:
+            'Are you sure you want to permanently cancel your subscription? This stops renewal immediately.',
+          cancelConfirmYes: 'Yes',
+          cancelConfirmNo: 'No',
+          cancelPending: 'Cancelling…',
+          cancelSuccess: 'Subscription cancelled. A confirmation email has been sent.',
+          cancelError: 'Could not cancel the subscription. Please try again or contact support.',
+          cancelUnavailable: 'No active subscription to cancel.',
         }
       : blogLang === 'es'
         ? {
@@ -46,8 +56,18 @@ export default async function ProfilPage() {
             emailLabel: 'Correo',
             billingSection: 'Facturación',
             openStripeSub: 'Suscripción',
+            openUnsubscribe: 'Cancelar suscripción',
             openStripeInvoices: 'Facturas',
             openShopArea: 'Pedidos tienda',
+            cancelConfirmTitle: '¿Cancelar tu suscripción?',
+            cancelConfirmBody:
+              '¿Estás segura de querer cancelar definitivamente tu suscripción? La renovación se detiene de inmediato.',
+            cancelConfirmYes: 'Sí',
+            cancelConfirmNo: 'No',
+            cancelPending: 'Cancelando…',
+            cancelSuccess: 'Suscripción cancelada. Se ha enviado un correo de confirmación.',
+            cancelError: 'No se pudo cancelar la suscripción. Inténtalo de nuevo o contacta soporte.',
+            cancelUnavailable: 'No hay suscripción activa para cancelar.',
           }
         : {
             title: 'Paramètres du compte',
@@ -57,11 +77,21 @@ export default async function ProfilPage() {
             emailLabel: 'E-mail',
             billingSection: 'Facturation',
             openStripeSub: 'Abonnement',
+            openUnsubscribe: 'Désabonnement',
             openStripeInvoices: 'Factures',
             openShopArea: 'Commandes boutique',
+            cancelConfirmTitle: 'Te désabonner ?',
+            cancelConfirmBody:
+              'Es-tu sûre de vouloir te désabonner définitivement ? L’abonnement s’arrête immédiatement.',
+            cancelConfirmYes: 'Oui',
+            cancelConfirmNo: 'Non',
+            cancelPending: 'Annulation…',
+            cancelSuccess: 'Abonnement annulé. Un e-mail de confirmation t’a été envoyé.',
+            cancelError: 'Impossible d’annuler l’abonnement. Réessaie ou contacte le support.',
+            cancelUnavailable: 'Aucun abonnement actif à annuler.',
           };
 
-  const [{ data: profile }, { data: prefRow }] = await Promise.all([
+  const [{ data: profile }, { data: prefRow }, { data: activeSub }] = await Promise.all([
     supabase
       .from('profiles')
       .select(
@@ -70,6 +100,14 @@ export default async function ProfilPage() {
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing'])
+      .not('stripe_subscription_id', 'is', null)
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const merged = mergePrefs(prefRow);
@@ -79,6 +117,7 @@ export default async function ProfilPage() {
 
   const preferred_locale: 'fr' | 'es' = profile?.preferred_locale === 'es' ? 'es' : 'fr';
   const customerId = profile?.stripe_customer_id?.trim() ?? null;
+  const hasActiveSubscription = Boolean(activeSub?.id);
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-5 pb-16 pt-2 md:px-8">
@@ -105,10 +144,20 @@ export default async function ProfilPage() {
         />
         <ProfileBillingCard
           customerId={customerId}
+          hasActiveSubscription={hasActiveSubscription}
           title={t.billingSection}
           openStripeSub={t.openStripeSub}
+          openUnsubscribe={t.openUnsubscribe}
           openStripeInvoices={t.openStripeInvoices}
           openShopArea={t.openShopArea}
+          confirmTitle={t.cancelConfirmTitle}
+          confirmBody={t.cancelConfirmBody}
+          confirmYes={t.cancelConfirmYes}
+          confirmNo={t.cancelConfirmNo}
+          cancelPending={t.cancelPending}
+          cancelSuccess={t.cancelSuccess}
+          cancelError={t.cancelError}
+          cancelUnavailable={t.cancelUnavailable}
         />
       </div>
 
