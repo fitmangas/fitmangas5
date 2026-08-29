@@ -17,8 +17,9 @@ import {
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { getClientLang } from '@/lib/compte/i18n';
+import { getConversionRate, getPageViews, getUsersByCountry } from '@/lib/google/analytics';
+import { getIndexingStatus, getSearchOverview, getSearchQueries, getSearchTopPages, type IndexingStatus } from '@/lib/google/search-console';
 import { hasGoogleServiceAccountJson } from '@/lib/google/service-account';
-import type { IndexingStatus } from '@/lib/google/search-console';
 import { scoreArticleSeoFields, seoCheckIcon } from '@/lib/blog/article-seo-score';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -101,6 +102,29 @@ export default async function AdminMarketingPage() {
   const sinceIso = since.toISOString();
   const nowIsoMarketing = new Date().toISOString();
 
+  const googleApisConnected = hasGoogleServiceAccountJson();
+  const googleSetupDocLabel = 'docs/google-cloud-setup.md';
+  const searchConsoleSummaryPromise = googleApisConnected
+    ? fetchSearchConsoleSummary()
+    : Promise.resolve({
+        available: false,
+        error: 'Credentials Google non configurés',
+        overview: null,
+        queries: [],
+        topPages: [],
+        indexing: null,
+      });
+  const gaSummaryPromise = googleApisConnected
+    ? fetchGaSummary()
+    : Promise.resolve({
+        available: false,
+        error: 'Credentials Google non configurés',
+        users30d: null,
+        pageViews30d: null,
+        keyEvents30d: null,
+        conversionRatePercent: null,
+      });
+
   const [
     { data: businessRows },
     { data: articlesRaw },
@@ -113,6 +137,8 @@ export default async function AdminMarketingPage() {
     { data: scheduledRaw },
     { data: suggestionsRaw },
     { data: referralRows },
+    searchConsoleSummary,
+    gaSummary,
   ] = await Promise.all([
     admin.from('business_stats_daily').select('*').order('stat_date', { ascending: true }).limit(30),
     admin
@@ -149,6 +175,8 @@ export default async function AdminMarketingPage() {
       .order('created_at', { ascending: false })
       .limit(12),
     admin.from('referrals').select('referrer_user_id'),
+    searchConsoleSummaryPromise,
+    gaSummaryPromise,
   ]);
 
   const articles = (articlesRaw ?? []) as ArticleSeoRow[];
@@ -172,23 +200,6 @@ export default async function AdminMarketingPage() {
   const confirmedRate = newsletterTotal ? Math.round(((newsletterConfirmed ?? 0) / newsletterTotal) * 100) : 0;
   const topArticles = articles.slice(0, 10);
   const seoPages = publicSeoPages(t);
-  const googleApisConnected = hasGoogleServiceAccountJson();
-  const googleSetupDocLabel = 'docs/google-cloud-setup.md';
-  // GSC / GA : chargés côté client (Marketing*Live). Ne plus bloquer le 1er paint serveur.
-  const searchConsoleSummary: SearchConsoleSummary = {
-    available: googleApisConnected,
-    overview: null,
-    queries: [],
-    topPages: [],
-    indexing: null,
-  };
-  const gaSummary: GaSummary = {
-    available: googleApisConnected,
-    users30d: null,
-    pageViews30d: null,
-    keyEvents30d: null,
-    conversionRatePercent: null,
-  };
 
   const subscriptionStats = summarizeSubscriptions(
     (subscriptionRows ?? []) as Array<{
@@ -631,7 +642,7 @@ type SearchConsoleSummary = {
     clicks?: number;
     impressions?: number;
     ctr?: number;
-    position?: number;
+    position?: number | null;
   } | null;
   queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
   topPages: Array<{ page: string; clicks: number; impressions: number }>;
@@ -652,6 +663,59 @@ type SubscriptionStats = {
   failedPayments: number;
   mrrEur: number;
 };
+
+async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
+  try {
+    const [overview, queries, topPages, indexing] = await Promise.all([
+      getSearchOverview(28),
+      getSearchQueries(28, 50),
+      getSearchTopPages(28, 50),
+      getIndexingStatus(),
+    ]);
+    return {
+      available: true,
+      overview: overview ?? null,
+      queries: Array.isArray(queries) ? queries : [],
+      topPages: Array.isArray(topPages) ? topPages : [],
+      indexing: indexing ?? null,
+    };
+  } catch (e) {
+    return {
+      available: false,
+      error: e instanceof Error ? e.message : 'Erreur Search Console',
+      overview: null,
+      queries: [],
+      topPages: [],
+      indexing: null,
+    };
+  }
+}
+
+async function fetchGaSummary(): Promise<GaSummary> {
+  try {
+    const [pageViews, countries, conversion] = await Promise.all([
+      getPageViews(30),
+      getUsersByCountry(30),
+      getConversionRate(30),
+    ]);
+    return {
+      available: true,
+      users30d: countries.reduce((sum, row) => sum + row.users, 0),
+      pageViews30d: pageViews.reduce((sum, row) => sum + row.views, 0),
+      keyEvents30d: conversion.keyEvents,
+      conversionRatePercent: conversion.ratePercent,
+    };
+  } catch (e) {
+    return {
+      available: false,
+      error: e instanceof Error ? e.message : 'Erreur GA4',
+      users30d: null,
+      pageViews30d: null,
+      keyEvents30d: null,
+      conversionRatePercent: null,
+    };
+  }
+}
 
 function summarizeSubscriptions(
   rows: Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,

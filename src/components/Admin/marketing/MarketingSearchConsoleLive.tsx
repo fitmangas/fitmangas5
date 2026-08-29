@@ -26,7 +26,7 @@ export function MarketingSearchConsoleLive({ docFileLabel, connected }: Props) {
   if (!connected) {
     return (
       <div className="rounded-[2rem] border border-amber-200/80 bg-amber-50/50 p-5 text-sm text-amber-950">
-        Google Analytics API non connecté. Suivez les instructions dans le fichier <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">{docFileLabel}</code> du dépôt.
+        Search Console API non connectée. Suivez les instructions dans le fichier <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">{docFileLabel}</code> du dépôt.
       </div>
     );
   }
