@@ -5,6 +5,9 @@ export const OVERLAY_FONT_PUBLIC_PATH = '/fonts/PlayfairDisplay-Variable.ttf';
 export const OVERLAY_FONT_CSS_STACK = `${OVERLAY_FONT_FAMILY}, Georgia, 'Times New Roman', serif`;
 export const OVERLAY_FONT_SIZE = 52;
 export const OVERLAY_LINE_HEIGHT = 58;
+/** ~12 % de marge de chaque côté sur 1080 px. */
+export const OVERLAY_MAX_WIDTH_RATIO = 0.76;
+export const OVERLAY_MIN_FONT_SIZE = 40;
 
 /** Évite les tofu □ (apostrophes typographiques, tirets Unicode, etc.). */
 export function normalizeOverlayForRender(text: string): string {

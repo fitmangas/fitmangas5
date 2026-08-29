@@ -6,11 +6,12 @@ import opentype from 'opentype.js';
 import {
   OVERLAY_FONT_SIZE,
   OVERLAY_LINE_HEIGHT,
+  OVERLAY_MAX_WIDTH_RATIO,
+  OVERLAY_MIN_FONT_SIZE,
   normalizeOverlayForRender,
-  wrapOverlayLines,
 } from '@/lib/admin/social-overlay-text-shared';
 
-/** Serif éditorial FitMangas — même rendu qu'avant (Playfair, pas Roboto IG). */
+/** Serif éditorial FitMangas — SemiBold statique (meilleur rendu que Variable sur librsvg). */
 const OVERLAY_FONT_FILES = [
   'PlayfairDisplay-Variable.ttf',
   'PlayfairDisplay-SemiBold.ttf',
@@ -24,7 +25,7 @@ function resolvePublicFile(publicPath: string): string {
 
 let cachedFont: opentype.Font | null = null;
 
-function getOverlayFont(): opentype.Font {
+export function getOverlayFont(): opentype.Font {
   if (cachedFont) return cachedFont;
   for (const file of OVERLAY_FONT_FILES) {
     const fontPath = resolvePublicFile(`/fonts/${file}`);
@@ -36,18 +37,93 @@ function getOverlayFont(): opentype.Font {
   throw new Error('Police overlay introuvable (public/fonts/PlayfairDisplay-Variable.ttf).');
 }
 
+function lineWidth(font: opentype.Font, line: string, fontSize: number): number {
+  return font.getAdvanceWidth(line, fontSize);
+}
+
+/** Retour à la ligne selon la largeur réelle en pixels (pas un nombre de caractères). */
+export function wrapOverlayLinesToWidth(
+  font: opentype.Font,
+  text: string,
+  maxWidth: number,
+  fontSize: number,
+): string[] {
+  const normalized = normalizeOverlayForRender(text);
+  const numbered = normalized.match(/^(\d+[.)]\s+)(.+)$/);
+  const prefix = numbered ? numbered[1]! : '';
+  const words = (numbered ? numbered[2]! : normalized).split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  let prefixPending = Boolean(prefix);
+
+  const fits = (candidate: string) => lineWidth(font, candidate, fontSize) <= maxWidth;
+
+  for (const word of words) {
+    if (!line) {
+      const starter = prefixPending ? `${prefix}${word}` : word;
+      if (fits(starter)) {
+        line = starter;
+        prefixPending = false;
+        continue;
+      }
+      if (prefixPending && prefix) {
+        lines.push(prefix.trim());
+        prefixPending = false;
+        line = fits(word) ? word : '';
+        if (!line && word) lines.push(word);
+        continue;
+      }
+      line = word;
+      continue;
+    }
+
+    const next = `${line} ${word}`;
+    if (fits(next)) {
+      line = next;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.slice(0, 4);
+}
+
+export function fitOverlayTextLayout(
+  font: opentype.Font,
+  text: string,
+  canvasWidth: number,
+): { lines: string[]; fontSize: number; maxWidth: number } {
+  const maxWidth = canvasWidth * OVERLAY_MAX_WIDTH_RATIO;
+  let fontSize = OVERLAY_FONT_SIZE;
+
+  while (fontSize >= OVERLAY_MIN_FONT_SIZE) {
+    const lines = wrapOverlayLinesToWidth(font, text, maxWidth, fontSize);
+    const widest = Math.max(0, ...lines.map((line) => lineWidth(font, line, fontSize)));
+    if (widest <= maxWidth) {
+      return { lines, fontSize, maxWidth };
+    }
+    fontSize -= 2;
+  }
+
+  const lines = wrapOverlayLinesToWidth(font, text, maxWidth, OVERLAY_MIN_FONT_SIZE);
+  return { lines, fontSize: OVERLAY_MIN_FONT_SIZE, maxWidth };
+}
+
 function buildTextPathLayers(
   font: opentype.Font,
   lines: string[],
   width: number,
   startY: number,
+  fontSize: number,
+  lineHeight: number,
 ): string {
   return lines
     .map((line, index) => {
-      const y = startY + index * OVERLAY_LINE_HEIGHT;
-      const advance = font.getAdvanceWidth(line, OVERLAY_FONT_SIZE);
+      const y = startY + index * lineHeight;
+      const advance = lineWidth(font, line, fontSize);
       const x = (width - advance) / 2;
-      const d = font.getPath(line, x, y, OVERLAY_FONT_SIZE).toPathData(2);
+      const d = font.getPath(line, x, y, fontSize).toPathData(2);
       return `<path d="${d}" fill="#FFFAF5"/>`;
     })
     .join('\n');
@@ -59,13 +135,15 @@ function buildTextPathLayers(
 export function buildOverlaySvg(
   width: number,
   height: number,
-  lines: string[],
+  overlayText: string,
   options?: { anchorBottom?: number },
 ): Buffer {
   const font = getOverlayFont();
+  const { lines, fontSize } = fitOverlayTextLayout(font, overlayText, width);
+  const lineHeight = Math.round(fontSize * (OVERLAY_LINE_HEIGHT / OVERLAY_FONT_SIZE));
   const anchorBottom = options?.anchorBottom ?? 140;
-  const startY = height - anchorBottom - (lines.length - 1) * OVERLAY_LINE_HEIGHT;
-  const textSvg = buildTextPathLayers(font, lines, width, startY);
+  const startY = height - anchorBottom - (lines.length - 1) * lineHeight;
+  const textSvg = buildTextPathLayers(font, lines, width, startY, fontSize, lineHeight);
 
   return Buffer.from(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">

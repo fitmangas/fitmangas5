@@ -11,7 +11,6 @@ import {
   buildOverlaySvg,
   isLibraryImagePath,
   normalizeOverlayForRender,
-  wrapOverlayLines,
 } from '@/lib/admin/social-overlay-text.server';
 
 export { wrapOverlayLines } from '@/lib/admin/social-overlay-text-shared';
@@ -107,8 +106,12 @@ export async function composeSocialPublishImageBuffer(
     return ctaSlide ? base : composeWithLogo(base);
   }
 
-  const lines = wrapOverlayLines(normalizeOverlayForRender(overlayText));
-  const gradientSvg = buildOverlaySvg(w, h, lines, ctaSlide ? { anchorBottom: 210 } : undefined);
+  const gradientSvg = buildOverlaySvg(
+    w,
+    h,
+    normalizeOverlayForRender(overlayText),
+    ctaSlide ? { anchorBottom: 210 } : undefined,
+  );
   const withText = await sharp(base)
     .composite([{ input: gradientSvg, top: 0, left: 0 }])
     .jpeg({ quality: 90, mozjpeg: true })

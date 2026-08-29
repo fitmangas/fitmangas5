@@ -73,6 +73,35 @@ describe('composeSocialPublishImageBuffer', () => {
     expect(edgeTransitions).toBeGreaterThan(40);
   });
 
+  it('casse les titres longs avec marge latérale (pas de débordement)', async () => {
+    const buffer = await composeSocialPublishImageBuffer(
+      fixturePost({
+        carouselSlideTitles: [
+          '5 RAISONS DE REJOINDRE LA COMMUNAUTÉ MANGITAS',
+          '1. POINT',
+          '2. POINT',
+          '3. POINT',
+          '4. POINT',
+          'ESSAI 7 JOURS',
+        ],
+      }),
+      '/logo.png',
+      0,
+    );
+    const { data, info } = await (await import('sharp')).default(buffer).raw().toBuffer({ resolveWithObject: true });
+    const margin = Math.floor(info.width * 0.06);
+    const y = Math.floor(info.height * 0.86);
+    let textPixelsInMargin = 0;
+    for (let x = 0; x < margin; x += 2) {
+      for (const yRow of [y - 20, y, y + 20]) {
+        if (yRow < 0 || yRow >= info.height) continue;
+        const i = (yRow * info.width + x) * info.channels;
+        if (data[i]! > 230 && data[i + 1]! > 225 && data[i + 2]! > 220) textPixelsInMargin += 1;
+      }
+    }
+    expect(textPixelsInMargin).toBeLessThan(5);
+  });
+
   it('n’affiche pas le marqueur admin OVERLAY À REVOIR sur l’image', async () => {
     const buffer = await composeSocialPublishImageBuffer(
       fixturePost({

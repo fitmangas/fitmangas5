@@ -7,6 +7,7 @@ import {
   OVERLAY_FONT_PUBLIC_PATH,
   OVERLAY_FONT_SIZE,
   OVERLAY_LINE_HEIGHT,
+  OVERLAY_MAX_WIDTH_RATIO,
 } from '@/lib/admin/social-overlay-text-shared';
 import {
   CAROUSEL_SLIDE_COUNT,
@@ -235,7 +236,7 @@ export async function renderSocialPostCanvas(
     ctx.font = `600 ${OVERLAY_FONT_SIZE}px ${OVERLAY_FONT_CSS_STACK}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
+    const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * OVERLAY_MAX_WIDTH_RATIO);
     const anchorBottom = isPrecomposedCta ? 210 : 140;
     const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * OVERLAY_LINE_HEIGHT;
     lines.forEach((item, index) => {
