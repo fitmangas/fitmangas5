@@ -1,8 +1,8 @@
 /** Partagé client + serveur — pas de node:fs. */
 
 export const OVERLAY_FONT_FAMILY = 'FitMangasSocialOverlay';
-export const OVERLAY_FONT_PUBLIC_PATH = '/fonts/LibreBaskerville-Bold.ttf';
-export const OVERLAY_FONT_CSS_STACK = `${OVERLAY_FONT_FAMILY}, 'Libre Baskerville', Georgia, serif`;
+export const OVERLAY_FONT_PUBLIC_PATH = '/fonts/Lora-Bold.ttf';
+export const OVERLAY_FONT_CSS_STACK = `${OVERLAY_FONT_FAMILY}, Lora, Georgia, serif`;
 export const OVERLAY_FONT_SIZE = 52;
 export const OVERLAY_LINE_HEIGHT = 58;
 export const OVERLAY_FONT_WEIGHT = 700;
@@ -10,19 +10,31 @@ export const OVERLAY_FONT_WEIGHT = 700;
 export const OVERLAY_MAX_WIDTH_RATIO = 0.76;
 export const OVERLAY_MIN_FONT_SIZE = 40;
 
+/** Pas « Mangitas » sur les visuels publics — FitMangas ou « la communauté » seule. */
+export function sanitizeOverlayBrandTerms(text: string): string {
+  return (text || '')
+    .replace(/\b(la\s+)?communauté\s+mangitas\b/gi, 'la communauté')
+    .replace(/\b(la\s+)?comunidad\s+mangitas\b/gi, 'la comunidad')
+    .replace(/\bmangitas\b/gi, 'FitMangas')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 /** Évite les tofu □ (apostrophes typographiques, tirets Unicode, etc.). */
 export function normalizeOverlayForRender(text: string): string {
-  return text
-    .replace(/\u2019/g, "'")
-    .replace(/\u2018/g, "'")
-    .replace(/\u2032/g, "'")
-    .replace(/\u201C/g, '"')
-    .replace(/\u201D/g, '"')
-    .replace(/\u2014/g, ' - ')
-    .replace(/\u2013/g, '-')
-    .replace(/\u00A0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return sanitizeOverlayBrandTerms(
+    text
+      .replace(/\u2019/g, "'")
+      .replace(/\u2018/g, "'")
+      .replace(/\u2032/g, "'")
+      .replace(/\u201C/g, '"')
+      .replace(/\u201D/g, '"')
+      .replace(/\u2014/g, ' - ')
+      .replace(/\u2013/g, '-')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  )
     .toLocaleUpperCase('fr-FR');
 }
 

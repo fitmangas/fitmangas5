@@ -387,6 +387,7 @@ Règles STRICTES (langue = ${locale}):
 - INTERDIT : hurle, sauvage, guerrière, plume, fantôme, inébranlable, rayonne, doux, suave, « un geste qui », « libère ta », « éveille ta », « sculpte ta », « déverrouille », « active ton noyau », « force invisible », « prestance »
 - INTERDIT : commencer par un nom d'exercice
 - INTERDIT : 5 titres avec la même charpente syntaxique
+- INTERDIT « Mangitas » / « MANGITAS » dans overlayText, slideTitles et titres visibles : « FitMangas » ou « la communauté » / « la comunidad » (jamais « communauté Mangitas »).
 - overlayText / hookTitle: TOUJOURS une phrase autonome COURTE COMPLÈTE EN MAJUSCULES (max ~8–10 mots), lisible en 1s. JAMAIS recopier/tronquer le titre long. INTERDIT de finir sur une préposition/pronom (en, du, tu, te, si, pas du…). Si trop long → reformuler plus court, ne pas couper.
 - TRASH-TALK : tape sur le MENSONGE de l'industrie / l'excuse / la situation absurde — JAMAIS sur le corps, l'âge, le poids ou un défaut de la femme (interdit: vieille, trop vieille, grosse, molle, paresseuse, nulle). Elle doit se sentir comprise, pas jugée.
 - REEL caption: 70–150 caractères STRICT. 0 ou 1 emoji max. CTA = dernière ligne de la caption.

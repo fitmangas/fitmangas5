@@ -45,6 +45,18 @@ const fixturePost = (overrides: Partial<SocialPost> = {}): SocialPost =>
     ...overrides,
   }) as SocialPost;
 
+describe('sanitizeOverlayBrandTerms', () => {
+  it('retire Mangitas des titres overlay', async () => {
+    const { sanitizeOverlayBrandTerms, normalizeOverlayForRender } = await import(
+      '@/lib/admin/social-overlay-text-shared'
+    );
+    expect(sanitizeOverlayBrandTerms('Rejoindre la communauté Mangitas')).toBe('Rejoindre la communauté');
+    expect(normalizeOverlayForRender('5 RAISONS DE REJOINDRE LA COMMUNAUTÉ MANGITAS')).toBe(
+      '5 RAISONS DE REJOINDRE LA COMMUNAUTÉ',
+    );
+  });
+});
+
 describe('composeSocialPublishImageBuffer', () => {
   it('brûle le titre carousel avec police embarquée (pas de carrés blancs)', async () => {
     const logoPath = path.join(process.cwd(), 'public/logo.png');
@@ -77,7 +89,7 @@ describe('composeSocialPublishImageBuffer', () => {
     const buffer = await composeSocialPublishImageBuffer(
       fixturePost({
         carouselSlideTitles: [
-          '5 RAISONS DE REJOINDRE LA COMMUNAUTÉ MANGITAS',
+          '5 RAISONS DE REJOINDRE LA COMMUNAUTÉ',
           '1. POINT',
           '2. POINT',
           '3. POINT',

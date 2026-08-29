@@ -11,12 +11,12 @@ import {
   normalizeOverlayForRender,
 } from '@/lib/admin/social-overlay-text-shared';
 
-/** Serif lisible sur photo — Libre Baskerville Bold (moins contrastée que Playfair). */
+/** Serif douce sur photo — Lora Bold (lisible, moins rigide que Baskerville/Playfair). */
 const OVERLAY_FONT_FILES = [
-  'LibreBaskerville-Bold.ttf',
   'Lora-Bold.ttf',
-  'PlayfairDisplay-Bold.ttf',
-  'PlayfairDisplay-Variable.ttf',
+  'Merriweather-Bold.ttf',
+  'SourceSerif4-SemiBold.ttf',
+  'LibreBaskerville-Bold.ttf',
   'Roboto-Bold.ttf',
 ];
 
@@ -36,7 +36,7 @@ export function getOverlayFont(): opentype.Font {
       return cachedFont;
     }
   }
-  throw new Error('Police overlay introuvable (public/fonts/LibreBaskerville-Bold.ttf).');
+  throw new Error('Police overlay introuvable (public/fonts/Lora-Bold.ttf).');
 }
 
 function lineWidth(font: opentype.Font, line: string, fontSize: number): number {

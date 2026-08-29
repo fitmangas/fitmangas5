@@ -1,5 +1,6 @@
 import type { SocialLocale, SocialNetwork, SocialPostFormat } from '@/lib/admin/social-comms';
 import { SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT } from '@/lib/admin/social-image-prompt';
+import { sanitizeOverlayBrandTerms } from '@/lib/admin/social-overlay-text-shared';
 
 export { SOCIAL_EDITORIAL_IMAGE_BASE_PROMPT };
 
@@ -456,6 +457,7 @@ export function polishOverlayText(raw: string, locale: SocialLocale = 'fr', max 
     t = (t.split(/[.!?|\n]/)[0] || t).trim();
   }
   t = t.replace(/[?¿!¡]+$/g, '').trim();
+  t = sanitizeOverlayBrandTerms(t);
   const loc = locale === 'es' ? 'es-ES' : 'fr-FR';
   t = t.toLocaleUpperCase(loc);
 
@@ -526,7 +528,7 @@ export function proofreadCarouselCopy(text: string, locale: SocialLocale = 'fr')
   t = t.replace(/\bpilates youtube\b/gi, (m) =>
     m === m.toUpperCase() ? 'PILATES YOUTUBE' : 'Pilates YouTube',
   );
-  return t;
+  return sanitizeOverlayBrandTerms(t);
 }
 
 /** Nombre de slides carousel (couverture + 4 points + CTA). Plus de slide « citation » vide. */
@@ -548,6 +550,7 @@ CAROUSEL = LISTE de points AUTONOMES (JAMAIS une histoire / récit découpé en 
 - Slide 6 = CTA (« ESSAI 7 JOURS — ON T'ATTEND EN VISIO »).
 - Légende = 1 paragraphe développé PAR point, MÊME ORDRE que les slides (150–300 mots).
   Hook dans les 125 premiers car. CTA essai 7 jours UNE seule fois en dernière ligne.
+- INTERDIT « Mangitas » / « MANGITAS » dans slideTitles, overlayText et titres visibles : dire « FitMangas » ou « la communauté » / « la comunidad » (sans suffixe Mangitas).
 `.trim();
 
 /** Couverture chiffrée type « 5 RAISONS… » / « 5 CHOSES… ». */
