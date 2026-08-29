@@ -319,19 +319,34 @@ export function CommunityManagerBoard({
     }
     let cancelled = false;
     setPreviewLoading(true);
-    void renderSocialPostDataUrl(previewPost, {
-      slideIndex: previewIndex,
-      imagePathOverride: slide,
-    })
-      .then((url) => {
-        if (!cancelled) setPreviewUrl(url);
-      })
+
+    const loadPreview = async () => {
+      if (previewPost.format === 'carousel') {
+        const { previewSocialPostSlideAction } = await import('@/app/admin/community/actions');
+        const res = await previewSocialPostSlideAction(previewPost.id, previewIndex);
+        if (cancelled) return;
+        if (res.ok && res.dataUrl) {
+          setPreviewUrl(res.dataUrl);
+        } else {
+          setPreviewUrl(slide);
+        }
+        return;
+      }
+      const url = await renderSocialPostDataUrl(previewPost, {
+        slideIndex: previewIndex,
+        imagePathOverride: slide,
+      });
+      if (!cancelled) setPreviewUrl(url);
+    };
+
+    void loadPreview()
       .catch(() => {
         if (!cancelled) setPreviewUrl(slide);
       })
       .finally(() => {
         if (!cancelled) setPreviewLoading(false);
       });
+
     return () => {
       cancelled = true;
     };

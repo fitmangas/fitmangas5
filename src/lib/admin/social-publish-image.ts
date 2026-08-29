@@ -132,10 +132,9 @@ export async function composeSocialPublishImageBuffer(
   const ctaSlide = isCarouselCtaSlide(post, imagePath, slideIndex);
   let base: Buffer;
   if (ctaSlide) {
-    base = await sharp(source)
-      .resize(w, h, { fit: 'contain', background: { r: 42, g: 36, b: 32 } })
-      .jpeg({ quality: 90, mozjpeg: true })
-      .toBuffer();
+    // Base CTA toujours régénérée (sans texte gravé) — évite les carrés / double overlay sur anciennes images.
+    const { composeCarouselCtaSlideBuffer } = await import('@/lib/admin/compose-carousel-cta');
+    base = await composeCarouselCtaSlideBuffer();
   } else {
     const raw = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const cropTop = creamTopCropRows(raw.data, raw.info.width, raw.info.height, raw.info.channels);
@@ -150,8 +149,9 @@ export async function composeSocialPublishImageBuffer(
             })
             .toBuffer()
         : source;
+    const cropPosition = post.format === 'carousel' && slideIndex === 0 ? 'top' : 'center';
     base = await sharp(cropped)
-      .resize(w, h, { fit: 'cover', position: 'center' })
+      .resize(w, h, { fit: 'cover', position: cropPosition })
       .jpeg({ quality: 92, mozjpeg: true })
       .toBuffer();
   }

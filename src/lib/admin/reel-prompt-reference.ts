@@ -52,10 +52,14 @@ AVANT TOUT — lis et applique STRICTEMENT, dans l'ordre :
 8. CTA = PILE 3 CARTES desktop en zone sombre haute (dashboard centre / blog gauche / replays droite),
    lockup pastille+logo + pill fitmangas.com, visage recadré bas. Jamais de screenshot mobile plein cadre.
 9. AUDIO :
-   - Voix STABLE ~−16 dB de bout en bout. Débruitage MINIMAL (highpass + loudnorm) — JAMAIS \`arnndn\`/RNNoise,
-     JAMAIS \`anlmdn\` (effet « tunnel/caverneux »). Vérifier RMS par fenêtres.
-   - Musique = bed LOUNGE très léger (~−15 dB sous la voix, presque subliminal), fondu d'entrée court,
-     fondu de sortie seulement en toute fin.
+   - Voix STABLE ~−16 dB de bout en bout. Débruitage MINIMAL (highpass + loudnorm) — JAMAIS arnndn/RNNoise,
+     JAMAIS anlmdn (effet « tunnel/caverneux »). Vérifier RMS par fenêtres.
+   - Musique = bed LOUNGE/hôtel très léger (~−15 dB sous la voix, presque subliminal) qui RESPIRE — JAMAIS
+     un accord tenu unique (= « bruit de basse constant », rejeté). Recette figée (script
+     scripts/gen-lounge-bed.py, Python pur car numpy absent) : progression Dm7→G7→Cmaj7→Am7 4 s/accord,
+     notes medium 130–390 Hz (pas de grave lourd), enveloppe attaque ~0,6 s/relâche ~1,1 s + arpège feutré ;
+     polish ffmpeg lowpass 2600 + aecho reverb douce + loudnorm I=-20. Contrôle : RMS par fenêtres varie
+     ~3-4 dB (preuve que ça respire). data-volume≈0.30, fondu d'entrée court, fondu de sortie en toute fin.
    - SFX = palette VARIÉE PAR TYPE d'élément (skill 05), jamais juste des whoosh : clic de souris
      (apparition UI/carte/split), frappe clavier (texte qui s'écrit), obturateur photo (apparition
      d'image si dispo), tick (chaque coche de checklist), pop discret (picto), chime/ping léger

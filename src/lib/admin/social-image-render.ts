@@ -161,7 +161,12 @@ export async function renderSocialPostCanvas(
     const scale = Math.max(EXPORT_WIDTH / sw, EXPORT_HEIGHT / sh);
     const w = sw * scale;
     const h = sh * scale;
-    ctx.drawImage(img, sx, sy, sw, sh, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
+    const dx = (EXPORT_WIDTH - w) / 2;
+    const dy =
+      post.format === 'carousel' && slideIndex === 0
+        ? 0
+        : (EXPORT_HEIGHT - h) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, w, h);
   }
 
   const overlayText = resolveSlideOverlayText(post, slideIndex);

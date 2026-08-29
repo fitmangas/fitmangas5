@@ -37,6 +37,7 @@ import {
   titleFailsQualityGate,
   polishOverlayText,
   withCarouselSlideCount,
+  countCaptionWords,
   mergeCaptionWithCta,
   normalizeCarouselSlideTitles,
   overlaysNeedReviewFromTitles,
@@ -140,6 +141,47 @@ function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax
     c = lastStop > targetMax * 0.5 ? sliced.slice(0, lastStop + 1).trim() : sliced.trim();
   }
   return c.slice(0, hardMax);
+}
+
+/** Si la légende carousel est trop courte, relance l'IA une fois pour atteindre 150–300 mots. */
+async function ensureCarouselCaptionLength(params: {
+  caption: string;
+  slideTitles: string[];
+  locale: SocialLocale;
+  cta: string;
+  title: string;
+}): Promise<string> {
+  const band = CAPTION_BY_FORMAT.carousel;
+  const currentWords = countCaptionWords(params.caption);
+  if (currentWords >= band.idealMin) return params.caption;
+
+  const langName = params.locale === 'es' ? 'español' : 'français';
+  const ai = await runSocialTextCascade({
+    system: `Community manager FitMangas. JSON strict {"caption":"..."} uniquement. Langue ${langName}.`,
+    user: `Développe cette légende carousel Instagram (actuellement ${currentWords} mots — TROP COURTE).
+
+Titres slides (ordre): ${JSON.stringify(params.slideTitles)}
+Titre post: ${params.title}
+Légende actuelle: ${params.caption}
+CTA fin obligatoire: ${params.cta}
+
+OBLIGATOIRE: 150–300 mots total. 1 paragraphe développé (2–3 phrases) par slide 1–5, même ordre. Hook dans les 125 premiers caractères. CTA essai 7 jours une seule fois en dernière ligne.
+
+JSON: {"caption":"..."}`,
+    temperature: 0.35,
+    maxOutputTokens: 2048,
+  });
+  if (!ai.ok) return params.caption;
+
+  try {
+    const parsed = extractJsonObject(ai.text) as { caption?: string };
+    const expanded = typeof parsed.caption === 'string' ? parsed.caption.trim() : '';
+    if (!expanded || countCaptionWords(expanded) < band.idealMin) return params.caption;
+    const sanitized = sanitizeCaptionForFormat(expanded, 'carousel', captionBandCharCeiling(band));
+    return mergeCaptionWithCta(sanitized, params.cta);
+  } catch {
+    return params.caption;
+  }
 }
 
 /** Répare les JSON IA les plus fréquents (virgules, newlines dans strings, truncation). */
@@ -330,6 +372,7 @@ Règles STRICTES (langue = ${locale}):
 - reelScript = UNE string avec \\n. Format IDÉES + BRIEF parlable face cam
 - shotList: UNIQUEMENT face cam téléphone. INTERDIT plans d'exercice filmés
 - FEED caption: 150–220 MOTS (~800–1200 car.). Mini-histoire / valeur. Hook dans les 125 PREMIERS caractères. CTA « essai gratuit 7 jours » UNE seule fois, dernière ligne. overlayText = texte sur image (court, complet).
+- CAROUSEL caption: 150–300 MOTS STRICT (compter les mots avant de répondre). 1 paragraphe développé (2–3 phrases, ~25–40 mots) par slide 1–5, MÊME ORDRE que slideTitles. Hook dans les 125 premiers caractères. CTA essai 7 jours UNE seule fois en dernière ligne. INTERDIT légende < 150 mots.
 - CAROUSEL — RÈGLE VERROUILLÉE (ne jamais dériver) :
 ${CAROUSEL_LIST_FORMAT_RULES}
   slideTitles = array de EXACTEMENT 6 strings.
@@ -636,6 +679,33 @@ export async function updateSocialPostImageFeedbackAction(postId: string, feedba
   });
   revalidateCommunity();
   return { ok: true as const };
+}
+
+/** Aperçu slide (overlay + cadrage identique à la publication Meta). */
+export async function previewSocialPostSlideAction(postId: string, slideIndex = 0) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+
+  const idx = Math.max(0, slideIndex);
+  const imagePath =
+    post.format === 'carousel' ? post.carouselPaths?.[idx]?.trim() : post.imagePath?.trim();
+  if (!imagePath) return { ok: false as const, error: 'Aucune image pour cette slide.' };
+
+  try {
+    const { composeSocialPublishImageBuffer } = await import('@/lib/admin/social-publish-image');
+    const buffer = await composeSocialPublishImageBuffer(post, imagePath, idx);
+    return {
+      ok: true as const,
+      dataUrl: `data:image/jpeg;base64,${buffer.toString('base64')}`,
+    };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : 'Aperçu impossible.',
+    };
+  }
 }
 
 export async function generateSocialImageAction(postId: string, feedbackOverride?: string, slideIndex = 0) {
@@ -980,13 +1050,26 @@ export async function generateSpanishVariantAction(postId: string) {
   if (!batch.ok) return { ok: false as const, error: batch.error };
   const row = (batch.posts.find((p) => Boolean(p && typeof p === 'object')) as Record<string, unknown> | undefined) ?? {};
   const articleSlugFallback = context.articlesByLocale.es?.[0]?.slug ?? null;
-  const normalized = normalizeGeneratedRowForPost({
+  const normalizedBase = normalizeGeneratedRowForPost({
     row,
     slot: slot as unknown as ReturnType<typeof buildWeeklySlots>[number],
     slotSpec,
     locale: 'es',
     articleSlugFallback,
   });
+  const normalized =
+    source.format === 'carousel'
+      ? {
+          ...normalizedBase,
+          caption: await ensureCarouselCaptionLength({
+            caption: normalizedBase.caption,
+            slideTitles: normalizedBase.carouselSlideTitles ?? [],
+            locale: 'es',
+            cta: normalizedBase.cta,
+            title: normalizedBase.title,
+          }),
+        }
+      : normalizedBase;
   const now = new Date().toISOString();
   const esPost: SocialPost = {
     ...source,
@@ -2186,13 +2269,26 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
     if (!batch.ok) throw new Error(batch.error);
     const row = (batch.posts.find((p) => Boolean(p && typeof p === 'object')) as Record<string, unknown> | undefined) ?? {};
     const articleSlugFallback = context.articlesByLocale[target.locale]?.[0]?.slug ?? null;
-    const normalized = normalizeGeneratedRowForPost({
+    const normalizedBase = normalizeGeneratedRowForPost({
       row,
       slot: slot as unknown as ReturnType<typeof buildWeeklySlots>[number],
       slotSpec,
       locale: target.locale,
       articleSlugFallback,
     });
+    const normalized =
+      slot.format === 'carousel'
+        ? {
+            ...normalizedBase,
+            caption: await ensureCarouselCaptionLength({
+              caption: normalizedBase.caption,
+              slideTitles: normalizedBase.carouselSlideTitles ?? [],
+              locale: target.locale,
+              cta: normalizedBase.cta,
+              title: normalizedBase.title,
+            }),
+          }
+        : normalizedBase;
 
     if (slot.mediaKind === 'video_brief' && !normalized.reelScript.trim()) {
       throw new Error('Brief Reel vide — génération texte échouée (pas de template de secours).');
