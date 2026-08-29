@@ -70,7 +70,7 @@ describe('composeSocialPublishImageBuffer', () => {
       prev = r;
     }
     expect(lightPixels).toBeGreaterThan(20);
-    expect(edgeTransitions).toBeGreaterThan(40);
+    expect(edgeTransitions).toBeGreaterThan(30);
   });
 
   it('casse les titres longs avec marge latérale (pas de débordement)', async () => {

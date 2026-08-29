@@ -1,8 +1,8 @@
 /** Partagé client + serveur — pas de node:fs. */
 
 export const OVERLAY_FONT_FAMILY = 'FitMangasSocialOverlay';
-export const OVERLAY_FONT_PUBLIC_PATH = '/fonts/PlayfairDisplay-Bold.ttf';
-export const OVERLAY_FONT_CSS_STACK = `${OVERLAY_FONT_FAMILY}, Georgia, 'Times New Roman', serif`;
+export const OVERLAY_FONT_PUBLIC_PATH = '/fonts/LibreBaskerville-Bold.ttf';
+export const OVERLAY_FONT_CSS_STACK = `${OVERLAY_FONT_FAMILY}, 'Libre Baskerville', Georgia, serif`;
 export const OVERLAY_FONT_SIZE = 52;
 export const OVERLAY_LINE_HEIGHT = 58;
 export const OVERLAY_FONT_WEIGHT = 700;

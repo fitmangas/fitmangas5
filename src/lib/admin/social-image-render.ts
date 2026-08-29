@@ -242,8 +242,8 @@ export async function renderSocialPostCanvas(
     const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * OVERLAY_LINE_HEIGHT;
     lines.forEach((item, index) => {
       const y = startY + index * OVERLAY_LINE_HEIGHT;
-      ctx.lineWidth = 2.4;
-      ctx.strokeStyle = 'rgba(18,14,12,0.48)';
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = 'rgba(18,14,12,0.32)';
       ctx.strokeText(item, EXPORT_WIDTH / 2, y);
       ctx.fillStyle = '#fffaf5';
       ctx.fillText(item, EXPORT_WIDTH / 2, y);
