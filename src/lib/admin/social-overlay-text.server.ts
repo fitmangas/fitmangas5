@@ -11,11 +11,20 @@ import {
   normalizeOverlayForRender,
 } from '@/lib/admin/social-overlay-text-shared';
 
-/** Serif éditorial FitMangas — SemiBold statique (meilleur rendu que Variable sur librsvg). */
+/** Serif éditorial FitMangas — variable wght (gras synthétique côté serveur). */
 const OVERLAY_FONT_FILES = [
+  'PlayfairDisplay-Bold.ttf',
   'PlayfairDisplay-Variable.ttf',
-  'PlayfairDisplay-SemiBold.ttf',
   'Roboto-Bold.ttf',
+];
+
+/** Décalages pour simuler SemiBold/Bold (opentype ignore l’axe wght). */
+const SYNTHETIC_BOLD_OFFSETS: ReadonlyArray<[number, number]> = [
+  [0, 0],
+  [1.05, 0],
+  [-1.05, 0],
+  [0.55, 0.12],
+  [-0.55, 0.12],
 ];
 
 function resolvePublicFile(publicPath: string): string {
@@ -123,8 +132,15 @@ function buildTextPathLayers(
       const y = startY + index * lineHeight;
       const advance = lineWidth(font, line, fontSize);
       const x = (width - advance) / 2;
-      const d = font.getPath(line, x, y, fontSize).toPathData(2);
-      return `<path d="${d}" fill="#FFFAF5"/>`;
+      const base = font.getPath(line, x, y, fontSize).toPathData(2);
+      const fills = SYNTHETIC_BOLD_OFFSETS.map(([ox, oy]) => {
+        const d = font.getPath(line, x + ox, y + oy, fontSize).toPathData(2);
+        return `<path d="${d}" fill="#FFFAF5"/>`;
+      }).join('\n');
+      return `
+        <path d="${base}" fill="none" stroke="rgba(18,14,12,0.48)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+        ${fills}
+      `;
     })
     .join('\n');
 }

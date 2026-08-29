@@ -8,6 +8,7 @@ import {
   OVERLAY_FONT_SIZE,
   OVERLAY_LINE_HEIGHT,
   OVERLAY_MAX_WIDTH_RATIO,
+  OVERLAY_FONT_WEIGHT,
 } from '@/lib/admin/social-overlay-text-shared';
 import {
   CAROUSEL_SLIDE_COUNT,
@@ -233,7 +234,7 @@ export async function renderSocialPostCanvas(
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
-    ctx.font = `600 ${OVERLAY_FONT_SIZE}px ${OVERLAY_FONT_CSS_STACK}`;
+    ctx.font = `${OVERLAY_FONT_WEIGHT} ${OVERLAY_FONT_SIZE}px ${OVERLAY_FONT_CSS_STACK}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * OVERLAY_MAX_WIDTH_RATIO);
@@ -241,6 +242,9 @@ export async function renderSocialPostCanvas(
     const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * OVERLAY_LINE_HEIGHT;
     lines.forEach((item, index) => {
       const y = startY + index * OVERLAY_LINE_HEIGHT;
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = 'rgba(18,14,12,0.48)';
+      ctx.strokeText(item, EXPORT_WIDTH / 2, y);
       ctx.fillStyle = '#fffaf5';
       ctx.fillText(item, EXPORT_WIDTH / 2, y);
     });
