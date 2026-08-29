@@ -7,59 +7,23 @@ import { uploadSocialGeneratedImage } from '@/lib/admin/social-ai-image';
 import { absolutePublicUrl, type SocialPost } from '@/lib/admin/social-comms';
 import { creamTopCropRows } from '@/lib/admin/social-image-letterbox';
 import { isCarouselCtaSlide, resolveSlideOverlayText } from '@/lib/admin/social-image-render';
+import {
+  buildOverlaySvg,
+  isLibraryImagePath,
+  normalizeOverlayForRender,
+  wrapOverlayLines,
+} from '@/lib/admin/social-overlay-text.server';
+
+export { wrapOverlayLines } from '@/lib/admin/social-overlay-text-shared';
 
 export const PUBLISH_EXPORT_WIDTH = 1080;
 export const PUBLISH_EXPORT_HEIGHT = 1350;
 
-const OVERLAY_FONT_FILES = [
-  'PlayfairDisplay-SemiBold.ttf',
-  'PlayfairDisplay-Variable.ttf',
-];
+const EXPORT_BG = { r: 42, g: 36, b: 32 } as const;
 
 function resolvePublicFile(publicPath: string): string {
   const rel = publicPath.replace(/^\//, '');
   return path.join(process.cwd(), 'public', rel);
-}
-
-function escapeXml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-let cachedFontBase64: string | null = null;
-
-/** Police embarquée — Vercel n’a pas Georgia, d’où les carrés blancs sur IG. */
-function getOverlayFontBase64(): string {
-  if (cachedFontBase64) return cachedFontBase64;
-  for (const file of OVERLAY_FONT_FILES) {
-    const fontPath = resolvePublicFile(`/fonts/${file}`);
-    if (fs.existsSync(fontPath)) {
-      cachedFontBase64 = fs.readFileSync(fontPath).toString('base64');
-      return cachedFontBase64;
-    }
-  }
-  throw new Error('Police overlay introuvable (public/fonts/PlayfairDisplay-*.ttf).');
-}
-
-export function wrapOverlayLines(text: string, maxChars = 36): string[] {
-  const numbered = text.match(/^(\d+[.)]\s+)(.+)$/);
-  const prefix = numbered ? numbered[1]! : '';
-  const words = (numbered ? numbered[2]! : text).split(/\s+/).filter(Boolean);
-  const firstBudget = Math.max(12, maxChars - prefix.length);
-  const lines: string[] = [];
-  let line = '';
-  let budget = firstBudget;
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (test.length > budget) {
-      if (line) lines.push(lines.length === 0 && prefix ? `${prefix}${line}` : line);
-      line = word;
-      budget = maxChars;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(lines.length === 0 && prefix ? `${prefix}${line}` : line);
-  return lines.slice(0, 4);
 }
 
 async function loadSourceBuffer(imagePath: string): Promise<Buffer> {
@@ -81,42 +45,42 @@ function shouldBurnOverlay(post: SocialPost, slideIndex: number): boolean {
   return Boolean(resolveSlideOverlayText(post, slideIndex));
 }
 
-export function buildOverlaySvg(
-  width: number,
-  height: number,
-  lines: string[],
-  options?: { anchorBottom?: number },
-): Buffer {
-  const fontBase64 = getOverlayFontBase64();
-  const anchorBottom = options?.anchorBottom ?? 140;
-  const startY = height - anchorBottom - (lines.length - 1) * 58;
-  const textSvg = lines
-    .map(
-      (line, index) =>
-        `<text x="${width / 2}" y="${startY + index * 58}" text-anchor="middle" font-family="FitMangasOverlay, serif" font-size="52" font-weight="600" fill="#FFFAF5">${escapeXml(line)}</text>`,
-    )
-    .join('\n');
+async function buildPhotoBase(
+  post: SocialPost,
+  source: Buffer,
+  imagePath: string,
+  slideIndex: number,
+  w: number,
+  h: number,
+): Promise<Buffer> {
+  const isCoverLibrary = post.format === 'carousel' && slideIndex === 0 && isLibraryImagePath(imagePath);
 
-  return Buffer.from(`
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <style type="text/css"><![CDATA[
-          @font-face {
-            font-family: 'FitMangasOverlay';
-            src: url('data:font/truetype;charset=utf-8;base64,${fontBase64}') format('truetype');
-            font-weight: 600;
-            font-style: normal;
-          }
-        ]]></style>
-        <linearGradient id="g" x1="0" y1="${Math.round(height * 0.55)}" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="rgba(30,24,20,0)"/>
-          <stop offset="100%" stop-color="rgba(30,24,20,0.82)"/>
-        </linearGradient>
-      </defs>
-      <rect width="${width}" height="${height}" fill="url(#g)"/>
-      ${textSvg}
-    </svg>
-  `);
+  if (isCoverLibrary) {
+    return sharp(source)
+      .resize(w, h, { fit: 'inside', background: EXPORT_BG })
+      .jpeg({ quality: 92, mozjpeg: true })
+      .toBuffer();
+  }
+
+  const raw = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const cropTop = creamTopCropRows(raw.data, raw.info.width, raw.info.height, raw.info.channels);
+  const cropped =
+    cropTop > 0
+      ? await sharp(source)
+          .extract({
+            left: 0,
+            top: cropTop,
+            width: raw.info.width,
+            height: raw.info.height - cropTop,
+          })
+          .toBuffer()
+      : source;
+
+  const cropPosition = post.format === 'carousel' && slideIndex === 0 ? 'north' : 'center';
+  return sharp(cropped)
+    .resize(w, h, { fit: 'cover', position: cropPosition })
+    .jpeg({ quality: 92, mozjpeg: true })
+    .toBuffer();
 }
 
 /** Compose 4:5 + dégradé + texte + logo (aligné preview admin). */
@@ -132,28 +96,10 @@ export async function composeSocialPublishImageBuffer(
   const ctaSlide = isCarouselCtaSlide(post, imagePath, slideIndex);
   let base: Buffer;
   if (ctaSlide) {
-    // Base CTA toujours régénérée (sans texte gravé) — évite les carrés / double overlay sur anciennes images.
     const { composeCarouselCtaSlideBuffer } = await import('@/lib/admin/compose-carousel-cta');
     base = await composeCarouselCtaSlideBuffer();
   } else {
-    const raw = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const cropTop = creamTopCropRows(raw.data, raw.info.width, raw.info.height, raw.info.channels);
-    const cropped =
-      cropTop > 0
-        ? await sharp(source)
-            .extract({
-              left: 0,
-              top: cropTop,
-              width: raw.info.width,
-              height: raw.info.height - cropTop,
-            })
-            .toBuffer()
-        : source;
-    const cropPosition = post.format === 'carousel' && slideIndex === 0 ? 'top' : 'center';
-    base = await sharp(cropped)
-      .resize(w, h, { fit: 'cover', position: cropPosition })
-      .jpeg({ quality: 92, mozjpeg: true })
-      .toBuffer();
+    base = await buildPhotoBase(post, source, imagePath, slideIndex, w, h);
   }
 
   const overlayText = resolveSlideOverlayText(post, slideIndex);
@@ -161,7 +107,7 @@ export async function composeSocialPublishImageBuffer(
     return ctaSlide ? base : composeWithLogo(base);
   }
 
-  const lines = wrapOverlayLines(overlayText);
+  const lines = wrapOverlayLines(normalizeOverlayForRender(overlayText));
   const gradientSvg = buildOverlaySvg(w, h, lines, ctaSlide ? { anchorBottom: 210 } : undefined);
   const withText = await sharp(base)
     .composite([{ input: gradientSvg, top: 0, left: 0 }])

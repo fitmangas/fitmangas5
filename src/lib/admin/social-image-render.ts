@@ -1,10 +1,40 @@
 import type { SocialPost } from '@/lib/admin/social-comms';
 import { creamTopCropRows } from '@/lib/admin/social-image-letterbox';
+import {
+  isLibraryImagePath,
+  normalizeOverlayForRender,
+  OVERLAY_FONT_CSS_STACK,
+  OVERLAY_FONT_PUBLIC_PATH,
+} from '@/lib/admin/social-overlay-text-shared';
 
 export const SOCIAL_LOGO_PATH = '/logo.png';
 /** Instagram feed / carousel portrait (4:5). */
 export const EXPORT_WIDTH = 1080;
 export const EXPORT_HEIGHT = 1350;
+
+const EXPORT_BG = '#2a2420';
+
+let overlayFontLoaded: Promise<void> | null = null;
+
+async function ensureOverlayFont(): Promise<void> {
+  if (typeof document === 'undefined') return;
+  if (overlayFontLoaded) return overlayFontLoaded;
+  if (!('FontFace' in window)) {
+    overlayFontLoaded = Promise.resolve();
+    return overlayFontLoaded;
+  }
+  const href = OVERLAY_FONT_PUBLIC_PATH;
+  overlayFontLoaded = (async () => {
+    try {
+      const face = new FontFace('FitMangasSocialOverlay', `url(${href})`, { weight: '700', style: 'normal' });
+      const loaded = await face.load();
+      document.fonts.add(loaded);
+    } catch {
+      // Helvetica / Arial fallback côté canvas
+    }
+  })();
+  return overlayFontLoaded;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -69,7 +99,6 @@ function drawLogoTransparent(ctx: CanvasRenderingContext2D, logo: HTMLImageEleme
 async function drawLogo(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number) {
   try {
     const logo = await loadImage(SOCIAL_LOGO_PATH);
-    // ~12% de la largeur, marge 4% — logo entier, jamais coupé
     const maxW = canvasW * 0.12;
     const maxH = canvasH * 0.08;
     const scale = Math.min(maxW / logo.width, maxH / logo.height);
@@ -100,13 +129,13 @@ export function resolveSlideOverlayText(
 ): string {
   const titles = post.carouselSlideTitles ?? [];
   if (post.format === 'carousel' && titles[slideIndex]?.trim()) {
-    return titles[slideIndex]!.trim().toLocaleUpperCase('fr-FR');
+    return normalizeOverlayForRender(titles[slideIndex]!.trim());
   }
   const overlay = (post.overlayText || '').trim();
-  if (overlay) return overlay.toLocaleUpperCase('fr-FR');
+  if (overlay) return normalizeOverlayForRender(overlay);
   if (slideIndex === 0) {
     const hook = (post.hookTitle || post.title || '').trim();
-    if (hook) return hook.toLocaleUpperCase('fr-FR');
+    if (hook) return normalizeOverlayForRender(hook);
   }
   return '';
 }
@@ -128,13 +157,21 @@ export async function renderSocialPostCanvas(
   if (!ctx) throw new Error('Canvas indisponible');
 
   const isPrecomposedCta = isCarouselCtaSlide(post, imagePath, slideIndex);
+  const isCoverLibrary = post.format === 'carousel' && slideIndex === 0 && isLibraryImagePath(imagePath);
 
   if (isPrecomposedCta) {
+    ctx.fillStyle = EXPORT_BG;
+    ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
     const scale = Math.min(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
-    ctx.fillStyle = '#2a2420';
+    ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
+  } else if (isCoverLibrary) {
+    ctx.fillStyle = EXPORT_BG;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
+    const scale = Math.min(EXPORT_WIDTH / img.width, EXPORT_HEIGHT / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
     ctx.drawImage(img, (EXPORT_WIDTH - w) / 2, (EXPORT_HEIGHT - h) / 2, w, h);
   } else {
     let sx = 0;
@@ -156,16 +193,13 @@ export async function renderSocialPostCanvas(
         }
       }
     } catch {
-      // Recadrage optionnel — on garde l’image entière
+      // Recadrage optionnel
     }
     const scale = Math.max(EXPORT_WIDTH / sw, EXPORT_HEIGHT / sh);
     const w = sw * scale;
     const h = sh * scale;
     const dx = (EXPORT_WIDTH - w) / 2;
-    const dy =
-      post.format === 'carousel' && slideIndex === 0
-        ? 0
-        : (EXPORT_HEIGHT - h) / 2;
+    const dy = post.format === 'carousel' && slideIndex === 0 ? 0 : (EXPORT_HEIGHT - h) / 2;
     ctx.drawImage(img, sx, sy, sw, sh, dx, dy, w, h);
   }
 
@@ -173,20 +207,27 @@ export async function renderSocialPostCanvas(
   const burnOverlay = post.useOverlay || post.format === 'carousel';
 
   if (burnOverlay && overlayText) {
+    await ensureOverlayFont();
+
     const gradient = ctx.createLinearGradient(0, EXPORT_HEIGHT * 0.55, 0, EXPORT_HEIGHT);
     gradient.addColorStop(0, 'rgba(30,24,20,0)');
     gradient.addColorStop(1, 'rgba(30,24,20,0.82)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
-    ctx.fillStyle = '#fffaf5';
-    ctx.font = '600 52px Georgia, serif';
+    ctx.font = `700 48px ${OVERLAY_FONT_CSS_STACK}`;
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
     const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
     const anchorBottom = isPrecomposedCta ? 210 : 140;
     const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * 58;
     lines.forEach((item, index) => {
-      ctx.fillText(item, EXPORT_WIDTH / 2, startY + index * 58);
+      const y = startY + index * 58;
+      ctx.strokeStyle = 'rgba(20,16,14,0.55)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(item, EXPORT_WIDTH / 2, y);
+      ctx.fillStyle = '#fffaf5';
+      ctx.fillText(item, EXPORT_WIDTH / 2, y);
     });
   }
 

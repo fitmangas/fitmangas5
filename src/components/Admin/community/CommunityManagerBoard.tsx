@@ -1465,7 +1465,25 @@ function PostCard({
         ? [post.imagePath]
         : [];
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [composedSlideUrl, setComposedSlideUrl] = useState<string | null>(null);
   const activeCarouselSrc = carouselSlides[Math.min(carouselIndex, Math.max(carouselSlides.length - 1, 0))] || null;
+
+  useEffect(() => {
+    if (!isCarousel || !carouselSlides.length) {
+      setComposedSlideUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setComposedSlideUrl(null);
+    void import('@/app/admin/community/actions').then(({ previewSocialPostSlideAction }) =>
+      previewSocialPostSlideAction(post.id, carouselIndex).then((res) => {
+        if (!cancelled && res.ok && res.dataUrl) setComposedSlideUrl(res.dataUrl);
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [post.id, carouselIndex, isCarousel, carouselSlides.length]);
   const videoStatusLabel: Record<string, string> = {
     brief: 'Vidéo à créer',
     raw_uploaded: 'Brute uploadée',
@@ -1507,13 +1525,11 @@ function PostCard({
             <div className="absolute inset-0 flex flex-col">
               <div className="relative min-h-0 flex-1">
                 {activeCarouselSrc ? (
-                  <Image
-                    src={activeCarouselSrc}
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={composedSlideUrl || activeCarouselSrc}
                     alt=""
-                    fill
-                    className="object-cover"
-                    sizes="220px"
-                    unoptimized={activeCarouselSrc.startsWith('http')}
+                    className="h-full w-full object-cover"
                   />
                 ) : null}
                 <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center justify-between gap-1 bg-black/45 px-2 py-1.5">
