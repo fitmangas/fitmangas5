@@ -57,16 +57,20 @@ describe('composeSocialPublishImageBuffer', () => {
     const w = info.width;
     const h = info.height;
     let lightPixels = 0;
-    for (let y = Math.floor(h * 0.72); y < h; y += 1) {
-      for (let x = 0; x < w; x += 4) {
-        const i = (y * w + x) * info.channels;
-        const r = data[i]!;
-        const g = data[i + 1]!;
-        const b = data[i + 2]!;
-        if (r > 230 && g > 225 && b > 220) lightPixels += 1;
-      }
+    let edgeTransitions = 0;
+    const y = Math.floor(h * 0.88);
+    let prev = data[(y * w + 100) * info.channels]!;
+    for (let x = 100; x < w - 100; x += 1) {
+      const i = (y * w + x) * info.channels;
+      const r = data[i]!;
+      const g = data[i + 1]!;
+      const b = data[i + 2]!;
+      if (r > 230 && g > 225 && b > 220) lightPixels += 1;
+      if (Math.abs(r - prev) > 35) edgeTransitions += 1;
+      prev = r;
     }
     expect(lightPixels).toBeGreaterThan(20);
+    expect(edgeTransitions).toBeGreaterThan(40);
   });
 
   it('garde le titre numéroté du slide 3 sur une ou deux lignes sans orphelin', async () => {
