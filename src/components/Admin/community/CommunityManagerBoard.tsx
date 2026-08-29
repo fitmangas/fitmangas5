@@ -1529,7 +1529,7 @@ function PostCard({
                   <img
                     src={composedSlideUrl || activeCarouselSrc}
                     alt=""
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain bg-[#2a2420]"
                   />
                 ) : null}
                 <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center justify-between gap-1 bg-black/45 px-2 py-1.5">

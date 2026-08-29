@@ -4,20 +4,18 @@ import path from 'node:path';
 import opentype from 'opentype.js';
 
 import {
+  OVERLAY_FONT_SIZE,
+  OVERLAY_LINE_HEIGHT,
   normalizeOverlayForRender,
   wrapOverlayLines,
 } from '@/lib/admin/social-overlay-text-shared';
 
-/** Sans-serif statique — fiable sur Vercel (librsvg) et proche IG/FB. */
+/** Serif éditorial FitMangas — même rendu qu'avant (Playfair, pas Roboto IG). */
 const OVERLAY_FONT_FILES = [
-  'Roboto-Bold.ttf',
-  'Inter-Bold.ttf',
-  'PlayfairDisplay-SemiBold.ttf',
   'PlayfairDisplay-Variable.ttf',
+  'PlayfairDisplay-SemiBold.ttf',
+  'Roboto-Bold.ttf',
 ];
-
-const OVERLAY_FONT_SIZE = 48;
-const OVERLAY_LINE_HEIGHT = 58;
 
 function resolvePublicFile(publicPath: string): string {
   const rel = publicPath.replace(/^\//, '');
@@ -35,7 +33,7 @@ function getOverlayFont(): opentype.Font {
       return cachedFont;
     }
   }
-  throw new Error('Police overlay introuvable (public/fonts/Roboto-Bold.ttf ou équivalent).');
+  throw new Error('Police overlay introuvable (public/fonts/PlayfairDisplay-Variable.ttf).');
 }
 
 function buildTextPathLayers(
@@ -50,10 +48,7 @@ function buildTextPathLayers(
       const advance = font.getAdvanceWidth(line, OVERLAY_FONT_SIZE);
       const x = (width - advance) / 2;
       const d = font.getPath(line, x, y, OVERLAY_FONT_SIZE).toPathData(2);
-      return `
-        <path d="${d}" fill="none" stroke="rgba(20,16,14,0.55)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
-        <path d="${d}" fill="#FFFAF5"/>
-      `;
+      return `<path d="${d}" fill="#FFFAF5"/>`;
     })
     .join('\n');
 }

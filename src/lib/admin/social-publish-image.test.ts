@@ -73,6 +73,34 @@ describe('composeSocialPublishImageBuffer', () => {
     expect(edgeTransitions).toBeGreaterThan(40);
   });
 
+  it('n’affiche pas le marqueur admin OVERLAY À REVOIR sur l’image', async () => {
+    const buffer = await composeSocialPublishImageBuffer(
+      fixturePost({
+        carouselSlideTitles: [
+          '5 RAISONS',
+          '1. OVERLAY À REVOIR',
+          '2. TU NE VOIS PAS TES ERREURS',
+          '3. POINT',
+          '4. POINT',
+          'OVERLAY À REVOIR — CTA',
+        ],
+      }),
+      '/logo.png',
+      1,
+    );
+    const { data, info } = await (await import('sharp')).default(buffer).raw().toBuffer({ resolveWithObject: true });
+    let edgeTransitions = 0;
+    const y = Math.floor(info.height * 0.88);
+    let prev = data[(y * info.width + 100) * info.channels]!;
+    for (let x = 100; x < info.width - 100; x += 1) {
+      const i = (y * info.width + x) * info.channels;
+      const r = data[i]!;
+      if (Math.abs(r - prev) > 35) edgeTransitions += 1;
+      prev = r;
+    }
+    expect(edgeTransitions).toBeLessThan(15);
+  });
+
   it('garde le titre numéroté du slide 3 sur une ou deux lignes sans orphelin', async () => {
     const lines = wrapOverlayLines('2. TU NE VOIS PAS TES ERREURS');
     expect(lines.join(' ')).toContain('ERREURS');

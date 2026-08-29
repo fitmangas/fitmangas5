@@ -605,7 +605,12 @@ const OVERLAY_REVIEW_MARKERS = {
 } as const;
 
 export function overlaysNeedReviewFromTitles(titles: string[]): boolean {
-  return titles.some((t) => /overlay\s*à\s*revoir|overlay\s*a\s*revisar/i.test(t || ''));
+  return titles.some((t) => isOverlayReviewMarker(t || ''));
+}
+
+/** Marqueur admin — ne doit jamais être gravé sur une image publiée. */
+export function isOverlayReviewMarker(text: string): boolean {
+  return /overlay\s*à\s*revoir|overlay\s*a\s*revisar/i.test((text || '').trim());
 }
 
 /**
@@ -785,6 +790,34 @@ export function buildCarouselMappedCaption(params: {
   const ceiling = captionBandCharCeiling(CAPTION_BY_FORMAT.carousel);
   if (caption.length > ceiling) caption = caption.slice(0, ceiling - 1).trimEnd() + '…';
   return caption;
+}
+
+/** Légende carousel mappée aux slides (1 paragraphe par point, pas un bloc narratif unique). */
+export function carouselCaptionHasSlideStructure(caption: string, slideTitles: string[]): boolean {
+  const paras = caption
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (paras.length < 5) return false;
+
+  for (let i = 1; i <= 4; i += 1) {
+    const title = (slideTitles[i] || '').trim();
+    if (!title || isOverlayReviewMarker(title)) continue;
+    const numbered = title.match(/^(\d+[.)])\s*/);
+    const needle = numbered
+      ? numbered[1]!
+      : title
+          .split(/\s+/)
+          .slice(0, 4)
+          .join(' ')
+          .toLocaleUpperCase('fr-FR');
+    const hit = paras.some((p) => {
+      const up = p.toLocaleUpperCase('fr-FR');
+      return up.includes(needle) || (numbered && p.includes(numbered[1]!));
+    });
+    if (!hit) return false;
+  }
+  return true;
 }
 
 /** Ouverture « X n’est pas Y » sans scène concrète = rejet. */

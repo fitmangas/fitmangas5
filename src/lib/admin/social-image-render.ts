@@ -5,7 +5,13 @@ import {
   normalizeOverlayForRender,
   OVERLAY_FONT_CSS_STACK,
   OVERLAY_FONT_PUBLIC_PATH,
+  OVERLAY_FONT_SIZE,
+  OVERLAY_LINE_HEIGHT,
 } from '@/lib/admin/social-overlay-text-shared';
+import {
+  CAROUSEL_SLIDE_COUNT,
+  isOverlayReviewMarker,
+} from '@/lib/admin/social-cm-playbook';
 
 export const SOCIAL_LOGO_PATH = '/logo.png';
 /** Instagram feed / carousel portrait (4:5). */
@@ -124,12 +130,23 @@ export function isCarouselCtaSlide(
 }
 
 export function resolveSlideOverlayText(
-  post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format' | 'hookTitle' | 'title'>,
+  post: Pick<SocialPost, 'overlayText' | 'carouselSlideTitles' | 'useOverlay' | 'format' | 'hookTitle' | 'title' | 'locale'>,
   slideIndex = 0,
 ): string {
   const titles = post.carouselSlideTitles ?? [];
   if (post.format === 'carousel' && titles[slideIndex]?.trim()) {
-    return normalizeOverlayForRender(titles[slideIndex]!.trim());
+    const raw = titles[slideIndex]!.trim();
+    if (isOverlayReviewMarker(raw)) {
+      if (slideIndex === CAROUSEL_SLIDE_COUNT - 1) {
+        const fallback =
+          post.locale === 'es'
+            ? 'PRUEBA 7 DÍAS — TE ESPERAMOS EN VISIO'
+            : "ESSAI 7 JOURS — ON T'ATTEND EN VISIO";
+        return normalizeOverlayForRender(fallback);
+      }
+      return '';
+    }
+    return normalizeOverlayForRender(raw);
   }
   const overlay = (post.overlayText || '').trim();
   if (overlay) return normalizeOverlayForRender(overlay);
@@ -215,17 +232,14 @@ export async function renderSocialPostCanvas(
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
 
-    ctx.font = `700 48px ${OVERLAY_FONT_CSS_STACK}`;
+    ctx.font = `600 ${OVERLAY_FONT_SIZE}px ${OVERLAY_FONT_CSS_STACK}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     const lines = wrapText(ctx, overlayText, EXPORT_WIDTH * 0.86);
     const anchorBottom = isPrecomposedCta ? 210 : 140;
-    const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * 58;
+    const startY = EXPORT_HEIGHT - anchorBottom - (lines.length - 1) * OVERLAY_LINE_HEIGHT;
     lines.forEach((item, index) => {
-      const y = startY + index * 58;
-      ctx.strokeStyle = 'rgba(20,16,14,0.55)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(item, EXPORT_WIDTH / 2, y);
+      const y = startY + index * OVERLAY_LINE_HEIGHT;
       ctx.fillStyle = '#fffaf5';
       ctx.fillText(item, EXPORT_WIDTH / 2, y);
     });

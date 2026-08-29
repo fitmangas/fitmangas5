@@ -41,6 +41,7 @@ import {
   mergeCaptionWithCta,
   normalizeCarouselSlideTitles,
   overlaysNeedReviewFromTitles,
+  carouselCaptionHasSlideStructure,
   sanitizeTrashTalkCopy,
 } from '@/lib/admin/social-cm-playbook';
 import {
@@ -143,7 +144,7 @@ function sanitizeCaptionForFormat(raw: string, format: SocialPostFormat, hardMax
   return c.slice(0, hardMax);
 }
 
-/** Si la légende carousel est trop courte, relance l'IA une fois pour atteindre 150–300 mots. */
+/** Si la légende carousel est trop courte ou non mappée aux slides, relance l'IA une fois. */
 async function ensureCarouselCaptionLength(params: {
   caption: string;
   slideTitles: string[];
@@ -153,19 +154,38 @@ async function ensureCarouselCaptionLength(params: {
 }): Promise<string> {
   const band = CAPTION_BY_FORMAT.carousel;
   const currentWords = countCaptionWords(params.caption);
-  if (currentWords >= band.idealMin) return params.caption;
+  const hasStructure = carouselCaptionHasSlideStructure(params.caption, params.slideTitles);
+  if (currentWords >= band.idealMin && hasStructure) return params.caption;
 
   const langName = params.locale === 'es' ? 'español' : 'français';
+  const slidePlan = params.slideTitles
+    .map((t, i) => {
+      if (i === 0) return `Paragraphe 1 (hook + promesse couverture) : « ${t} »`;
+      if (i === params.slideTitles.length - 1) return `Paragraphe 6 (CTA seul) : « ${t} »`;
+      return `Paragraphe ${i + 1} (développe le point slide ${i}) : « ${t} » — 2 à 3 phrases`;
+    })
+    .join('\n');
+
   const ai = await runSocialTextCascade({
     system: `Community manager FitMangas. JSON strict {"caption":"..."} uniquement. Langue ${langName}.`,
-    user: `Développe cette légende carousel Instagram (actuellement ${currentWords} mots — TROP COURTE).
+    user: `Réécris cette légende carousel Instagram.
 
-Titres slides (ordre): ${JSON.stringify(params.slideTitles)}
-Titre post: ${params.title}
-Légende actuelle: ${params.caption}
-CTA fin obligatoire: ${params.cta}
+Problème actuel : ${!hasStructure ? 'structure NON mappée aux slides (bloc narratif unique interdit)' : ''}${!hasStructure && currentWords < band.idealMin ? ' + ' : ''}${currentWords < band.idealMin ? `trop courte (${currentWords} mots)` : ''}.
 
-OBLIGATOIRE: 150–300 mots total. 1 paragraphe développé (2–3 phrases) par slide 1–5, même ordre. Hook dans les 125 premiers caractères. CTA essai 7 jours une seule fois en dernière ligne.
+Titres slides (ordre strict) :
+${slidePlan}
+
+Titre post : ${params.title}
+Légende actuelle (à corriger) : ${params.caption}
+CTA fin obligatoire : ${params.cta}
+
+FORMAT OBLIGATOIRE :
+- EXACTEMENT 6 paragraphes séparés par une ligne vide (\\n\\n)
+- Paragraphe 1 = hook + slide couverture
+- Paragraphes 2 à 5 = un point chacun, dans le MÊME ORDRE que les slides 2–5 ; reprendre le numéro ou les mots-clés du titre slide en ouverture
+- Paragraphe 6 = CTA essai 7 jours (une seule fois)
+- 150–300 mots total. Hook dans les 125 premiers caractères
+- INTERDIT un seul bloc sans repères par slide
 
 JSON: {"caption":"..."}`,
     temperature: 0.35,
@@ -177,6 +197,7 @@ JSON: {"caption":"..."}`,
     const parsed = extractJsonObject(ai.text) as { caption?: string };
     const expanded = typeof parsed.caption === 'string' ? parsed.caption.trim() : '';
     if (!expanded || countCaptionWords(expanded) < band.idealMin) return params.caption;
+    if (!carouselCaptionHasSlideStructure(expanded, params.slideTitles)) return params.caption;
     const sanitized = sanitizeCaptionForFormat(expanded, 'carousel', captionBandCharCeiling(band));
     return mergeCaptionWithCta(sanitized, params.cta);
   } catch {
