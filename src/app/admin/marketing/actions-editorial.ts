@@ -73,5 +73,6 @@ Sans markdown ni texte hors JSON.`;
   });
 
   revalidatePath('/admin/marketing');
+  revalidatePath('/admin/croissance');
   return { ok: true as const, suggestion_fr, suggestion_es, topics_hint };
 }

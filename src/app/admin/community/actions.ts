@@ -90,6 +90,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 function revalidateCommunity() {
   revalidatePath('/admin/community');
+  revalidatePath('/admin/croissance');
   revalidatePath('/admin');
 }
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Film, Inbox, Megaphone, Rocket, ShoppingBag, TicketPercent, Users, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users, Video } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -15,8 +15,7 @@ const links = [
   { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
-  { href: '/admin/marketing', label: 'Marketing', icon: Rocket },
-  { href: '/admin/community', label: 'Com’ réseaux', icon: Megaphone },
+  { href: '/admin/croissance', label: 'Croissance', icon: Target },
 ];
 
 export function AdminSidebar() {
@@ -70,6 +69,19 @@ export function AdminSidebar() {
     });
   }
 
+  function isCroissanceActive(path: string) {
+    return (
+      path === '/admin/croissance' ||
+      path.startsWith('/admin/croissance/') ||
+      path === '/admin/marketing' ||
+      path.startsWith('/admin/marketing/') ||
+      path === '/admin/community' ||
+      path.startsWith('/admin/community/') ||
+      path === '/admin/acquisition' ||
+      path.startsWith('/admin/acquisition/')
+    );
+  }
+
   return (
     <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
       <Link
@@ -96,7 +108,11 @@ export function AdminSidebar() {
       </Link>
       {links.map(({ href, label, icon: Icon }) => {
         const isActive =
-          href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);
+          href === '/admin/croissance'
+            ? isCroissanceActive(pathname)
+            : href === '/admin'
+              ? pathname === '/admin'
+              : pathname === href || pathname.startsWith(`${href}/`);
 
         const pendingCount =
           href === '/admin/vimeo'

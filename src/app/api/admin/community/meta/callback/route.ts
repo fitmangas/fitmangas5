@@ -14,15 +14,15 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
   if (error) {
-    return NextResponse.redirect(new URL('/admin/community?meta=error', request.url));
+    return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=error', request.url));
   }
   if (!code) {
-    return NextResponse.redirect(new URL('/admin/community?meta=missing_code', request.url));
+    return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=missing_code', request.url));
   }
 
   const result = await completeMetaOAuthAction(code);
   if (!result.ok) {
-    return NextResponse.redirect(new URL('/admin/community?meta=failed', request.url));
+    return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=failed', request.url));
   }
-  return NextResponse.redirect(new URL('/admin/community?meta=connected', request.url));
+  return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=connected', request.url));
 }

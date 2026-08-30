@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Inbox, Megaphone, Rocket, ShoppingBag, TicketPercent, Users, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Inbox, ShoppingBag, Target, TicketPercent, Users, Video } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -14,8 +14,7 @@ const links = [
   { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
-  { href: '/admin/marketing', label: 'Marketing', icon: Rocket },
-  { href: '/admin/community', label: 'Com’ réseaux', icon: Megaphone },
+  { href: '/admin/croissance', label: 'Croissance', icon: Target },
 ] as const;
 
 export function AdminMobileBottomNav() {
@@ -36,9 +35,22 @@ export function AdminMobileBottomNav() {
     });
   }
 
+  function isCroissanceActive(path: string) {
+    return (
+      path === '/admin/croissance' ||
+      path.startsWith('/admin/croissance/') ||
+      path === '/admin/marketing' ||
+      path.startsWith('/admin/marketing/') ||
+      path === '/admin/community' ||
+      path.startsWith('/admin/community/') ||
+      path === '/admin/acquisition' ||
+      path.startsWith('/admin/acquisition/')
+    );
+  }
+
   return (
     <nav className="fixed inset-x-0 top-0 z-[230] bg-[#fbf7ef]/95 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:hidden" aria-label="Navigation admin mobile">
-      <div className="grid grid-cols-10 gap-0.5 rounded-[1.45rem] border border-white/75 bg-white/88 px-1.5 py-2">
+      <div className="grid grid-cols-9 gap-0.5 rounded-[1.45rem] border border-white/75 bg-white/88 px-1.5 py-2">
         <Link
           href="/admin"
           aria-label="Dashboard"
@@ -63,7 +75,10 @@ export function AdminMobileBottomNav() {
           />
         </Link>
         {links.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
+          const active =
+            href === '/admin/croissance'
+              ? isCroissanceActive(pathname)
+              : pathname === href || pathname.startsWith(`${href}/`);
           const showPending = isPending && pendingHref === href;
           return (
             <Link

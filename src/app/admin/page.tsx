@@ -513,7 +513,7 @@ export default async function AdminPage() {
             ) : null}
           </div>
           <Link
-            href="/admin/community"
+            href="/admin/croissance?tab=publications"
             className="btn-luxury-primary mt-5 inline-flex w-full justify-center px-5 py-2.5 text-[11px] tracking-[0.14em]"
           >
             Ouvrir Community Manager

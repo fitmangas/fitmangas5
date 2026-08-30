@@ -217,6 +217,7 @@ Sans markdown ni texte hors JSON.`;
   }
 
   revalidatePath('/admin/marketing');
+  revalidatePath('/admin/croissance');
   revalidatePath('/admin/blog/calendar');
   revalidatePath('/admin/blog/validation');
   return { ok: true as const, articleId: inserted.id };

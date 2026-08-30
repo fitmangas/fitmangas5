@@ -21,6 +21,7 @@ export async function saveMarketingSettings(formData: FormData) {
 
   await admin.from('admin_settings').upsert(rows, { onConflict: 'key' });
   revalidatePath('/admin/marketing');
+  revalidatePath('/admin/croissance');
   revalidatePath('/');
 }
 
@@ -40,4 +41,5 @@ export async function toggleMarketingChecklist(formData: FormData) {
     .eq('key', key);
 
   revalidatePath('/admin/marketing');
+  revalidatePath('/admin/croissance');
 }

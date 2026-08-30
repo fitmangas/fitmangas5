@@ -101,6 +101,7 @@ export async function enrichPublishedArticleAction(articleId: string): Promise<E
   revalidatePath('/admin/blog/refresh');
   revalidatePath(`/admin/blog/articles/${id}/edit`);
   revalidatePath('/admin/marketing');
+  revalidatePath('/admin/croissance');
 
   return {
     ok: true,
