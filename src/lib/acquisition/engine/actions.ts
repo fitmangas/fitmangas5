@@ -10,6 +10,7 @@ import type {
 
 import {
   createBookingIntent,
+  escalateConversation,
   insertOutboundMessage,
   scheduleFollowup,
   tagContact,
@@ -156,10 +157,16 @@ async function actionBroadcastOptin(ctx: ActionContext): Promise<ActionResult> {
       detail: 'Contact sans opt-in — broadcast refusé (conformité).',
     };
   }
+  await insertOutboundMessage({
+    conversationId: ctx.conversation.id,
+    body: '[SANDBOX] Broadcast opt-in simulé — aucun envoi groupé réel.',
+    provider: 'system',
+    sandbox: true,
+  });
   return {
     type: 'broadcast_optin',
-    ok: false,
-    detail: 'Broadcast opt-in : file d’attente non migrée — implémenté après migration §9.',
+    ok: true,
+    detail: 'Broadcast sandbox enregistré (opt-in OK, aucun envoi Meta).',
   };
 }
 
@@ -172,11 +179,22 @@ async function actionEscalateHuman(ctx: ActionContext): Promise<ActionResult> {
       detail: `Escalade refusée — étape « ${stage} » trop froide (garde-fou).`,
     };
   }
+  const assignedTo = 'alejandra@fitmangas.com';
+  const r = await escalateConversation(ctx.conversation.id, assignedTo);
+  if (!r.ok) {
+    return { type: 'escalate_human', ok: false, detail: r.error ?? 'Escalade impossible.' };
+  }
+  await insertOutboundMessage({
+    conversationId: ctx.conversation.id,
+    body: '[SYSTÈME] Fil escaladé à Alejandra pour réponse humaine.',
+    provider: 'system',
+    sandbox: true,
+  });
   return {
     type: 'escalate_human',
     ok: true,
     detail: 'Fil assigné à Alejandra (escalade humaine).',
-    data: { assignedTo: 'alejandra@fitmangas.com' },
+    data: { assignedTo },
   };
 }
 

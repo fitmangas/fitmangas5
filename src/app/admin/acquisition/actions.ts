@@ -3,21 +3,34 @@
 import { revalidatePath } from 'next/cache';
 
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
+import { runWorkflowAction } from '@/lib/acquisition/engine/actions';
 import { runWorkflow } from '@/lib/acquisition/engine/orchestrator';
 import {
+  createSandboxConversation,
+  deleteWorkflow,
+  getContact,
   getConversationWithMessages,
   insertOutboundMessage,
   listWorkflows,
+  saveWorkflow,
   seedSandboxDemoData,
-  createSandboxConversation,
+  setContactOptIn,
+  setWorkflowEnabled,
+  updateContactLifecycle,
 } from '@/lib/acquisition/engine/repository';
 import { getMessagingProvider, getSandboxLog } from '@/lib/acquisition/providers';
 import { isAcquisitionModuleEnabled } from '@/lib/acquisition/feature-flag';
+import type { AcqWorkflow, WorkflowActionSpec, WorkflowActionType } from '@/lib/acquisition/types';
 
 function guardModule() {
   if (!isAcquisitionModuleEnabled()) {
     throw new Error('Module Acquisition désactivé (ACQUISITION_MODULE_ENABLED).');
   }
+}
+
+function revalidateAcquisition() {
+  revalidatePath('/admin/acquisition');
+  revalidatePath('/admin/croissance');
 }
 
 export async function acquisitionSendReply(conversationId: string, body: string) {
@@ -48,35 +61,120 @@ export async function acquisitionSendReply(conversationId: string, body: string)
   });
   if (!saved.ok) return { ok: false, error: saved.error };
 
-  revalidatePath('/admin/acquisition');
-  revalidatePath('/admin/croissance');
+  revalidateAcquisition();
   return { ok: true, sandbox: send.sandbox, log: send.logLine };
 }
 
 export async function acquisitionCreateThread() {
   guardModule();
   const r = await createSandboxConversation();
-  revalidatePath('/admin/acquisition');
-  revalidatePath('/admin/croissance');
+  revalidateAcquisition();
   return r;
 }
 
 export async function acquisitionSeedDemo() {
   guardModule();
   const r = await seedSandboxDemoData();
-  revalidatePath('/admin/acquisition');
-  revalidatePath('/admin/croissance');
+  revalidateAcquisition();
   return r;
+}
+
+export async function acquisitionSaveWorkflow(payload: {
+  id?: string;
+  name: string;
+  enabled: boolean;
+  triggerType: AcqWorkflow['triggerType'];
+  triggerKeyword?: string;
+  lifecycleIn?: string;
+  actions: WorkflowActionSpec[];
+}) {
+  guardModule();
+  const triggerConfig =
+    payload.triggerType === 'ig_comment_keyword' && payload.triggerKeyword?.trim()
+      ? { keyword: payload.triggerKeyword.trim().toLowerCase() }
+      : {};
+  const conditions = payload.lifecycleIn?.trim()
+    ? { lifecycle_in: payload.lifecycleIn.split(',').map((s) => s.trim()).filter(Boolean) }
+    : {};
+
+  const r = await saveWorkflow({
+    id: payload.id,
+    name: payload.name,
+    enabled: payload.enabled,
+    triggerType: payload.triggerType,
+    triggerConfig,
+    conditions,
+    actions: payload.actions,
+  });
+  revalidateAcquisition();
+  return r;
+}
+
+export async function acquisitionDeleteWorkflow(workflowId: string) {
+  guardModule();
+  const r = await deleteWorkflow(workflowId);
+  revalidateAcquisition();
+  return r;
+}
+
+export async function acquisitionToggleWorkflow(workflowId: string, enabled: boolean) {
+  guardModule();
+  const r = await setWorkflowEnabled(workflowId, enabled);
+  revalidateAcquisition();
+  return r;
+}
+
+export async function acquisitionTestAction(conversationId: string, actionType: WorkflowActionType) {
+  guardModule();
+  const detail = await getConversationWithMessages(conversationId);
+  if (!detail.ok) return { ok: false, type: actionType, detail: detail.error };
+
+  let contact = await getContact(detail.conversation.contactId);
+  if (!contact) return { ok: false, type: actionType, detail: 'Contact introuvable.' };
+
+  if (actionType === 'escalate_human' && contact.lifecycleStage === 'new') {
+    await updateContactLifecycle(contact.id, 'qualified');
+    contact = (await getContact(contact.id)) ?? contact;
+  }
+  if (actionType === 'broadcast_optin' && !contact.optIn) {
+    await setContactOptIn(contact.id, true);
+    contact = (await getContact(contact.id)) ?? contact;
+  }
+
+  const inboundText =
+    detail.messages.filter((m) => m.direction === 'inbound').pop()?.body ??
+    'Bonjour, je veux essayer FitMangas en visio.';
+
+  const defaultConfig: Partial<Record<WorkflowActionType, Record<string, unknown>>> = {
+    send_message: { body: 'Test sandbox FitMangas — rendez-vous visio avec correction en direct.' },
+    tag_contact: { tag: 'test_sandbox' },
+    set_lifecycle_stage: { stage: 'qualified' },
+    book_session_intent: { courseType: 'visio_collectif' },
+    schedule_followup: { delayHours: 24 },
+  };
+
+  const result = await runWorkflowAction(
+    { type: actionType, config: defaultConfig[actionType] },
+    {
+      conversation: detail.conversation,
+      contact,
+      inboundText,
+      market: 'fr',
+    },
+  );
+
+  revalidateAcquisition();
+  return { ok: result.ok, type: result.type, detail: result.detail };
 }
 
 export async function acquisitionRunWorkflowDemo(workflowId: string, conversationId: string) {
   guardModule();
   const detail = await getConversationWithMessages(conversationId);
-  if (!detail.ok) return { ok: false, detail: detail.error };
+  if (!detail.ok) return { ok: false, detail: detail.error, steps: [] as Array<{ type: string; ok: boolean; detail: string }> };
 
   const wfs = await listWorkflows();
   const wf = wfs.ok ? wfs.items.find((w) => w.id === workflowId) : null;
-  if (!wf) return { ok: false, detail: 'Workflow introuvable.' };
+  if (!wf) return { ok: false, detail: 'Workflow introuvable.', steps: [] };
 
   const result = await runWorkflow(wf, {
     conversation: detail.conversation,
@@ -84,11 +182,11 @@ export async function acquisitionRunWorkflowDemo(workflowId: string, conversatio
     inboundText: detail.messages.filter((m) => m.direction === 'inbound').pop()?.body,
   });
 
-  revalidatePath('/admin/acquisition');
-  revalidatePath('/admin/croissance');
+  revalidateAcquisition();
   return {
     ok: result.ok,
-    detail: result.steps.map((s) => `${s.type}: ${s.detail}`).join(' · '),
+    detail: result.steps.map((s) => `${s.ok ? '✓' : '✗'} ${s.type}: ${s.detail}`).join(' · '),
+    steps: result.steps,
   };
 }
 

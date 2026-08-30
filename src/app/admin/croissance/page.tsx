@@ -8,6 +8,10 @@ import {
   acquisitionSeedDemo,
   acquisitionCreateThread,
   acquisitionSendReply,
+  acquisitionSaveWorkflow,
+  acquisitionDeleteWorkflow,
+  acquisitionToggleWorkflow,
+  acquisitionTestAction,
 } from '@/app/admin/acquisition/actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
@@ -108,6 +112,10 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         onSeedDemo={acquisitionSeedDemo}
         onCreateThread={acquisitionCreateThread}
         onRunWorkflowDemo={acquisitionRunWorkflowDemo}
+        onSaveWorkflow={acquisitionSaveWorkflow}
+        onDeleteWorkflow={acquisitionDeleteWorkflow}
+        onToggleWorkflow={acquisitionToggleWorkflow}
+        onTestAction={acquisitionTestAction}
       />
     );
   }

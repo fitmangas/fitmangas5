@@ -182,17 +182,7 @@ export async function listWorkflows(): Promise<
     if (error) {
       return { ok: true, items: defaultWorkflows(), schemaReady: true };
     }
-    const items = (data ?? []).map(
-      (row): AcqWorkflow => ({
-        id: String(row.id),
-        name: String(row.name),
-        enabled: Boolean(row.enabled),
-        triggerType: row.trigger_type,
-        triggerConfig: (row.trigger_config as Record<string, unknown>) ?? {},
-        conditions: (row.conditions as Record<string, unknown>) ?? {},
-        actions: Array.isArray(row.actions) ? row.actions : [],
-      }),
-    );
+    const items = (data ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>));
     return { ok: true, items: items.length ? items : defaultWorkflows(), schemaReady: true };
   } catch (e) {
     return {
@@ -238,6 +228,111 @@ export function defaultWorkflows(): AcqWorkflow[] {
       actions: [{ type: 'escalate_human' }],
     },
   ];
+}
+
+function mapWorkflowRow(row: Record<string, unknown>): AcqWorkflow {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    enabled: Boolean(row.enabled),
+    triggerType: row.trigger_type as AcqWorkflow['triggerType'],
+    triggerConfig: (row.trigger_config as Record<string, unknown>) ?? {},
+    conditions: (row.conditions as Record<string, unknown>) ?? {},
+    actions: (Array.isArray(row.actions) ? row.actions : []).map((a) => {
+      const action = a as { type?: string; config?: Record<string, unknown> };
+      return {
+        type: (action.type ?? 'send_message') as AcqWorkflow['actions'][number]['type'],
+        config: action.config,
+      };
+    }),
+  };
+}
+
+export async function saveWorkflow(input: {
+  id?: string;
+  name: string;
+  enabled: boolean;
+  triggerType: AcqWorkflow['triggerType'];
+  triggerConfig: Record<string, unknown>;
+  conditions: Record<string, unknown>;
+  actions: AcqWorkflow['actions'];
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables Acquisition absentes.' };
+
+  const admin = createAdminClient();
+  const payload = {
+    name: input.name.trim(),
+    enabled: input.enabled,
+    trigger_type: input.triggerType,
+    trigger_config: input.triggerConfig,
+    conditions: input.conditions,
+    actions: input.actions,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.id) {
+    const { data, error } = await admin
+      .from('acq_workflows')
+      .update(payload)
+      .eq('id', input.id)
+      .select('id')
+      .single();
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, id: String(data.id) };
+  }
+
+  const { data, error } = await admin.from('acq_workflows').insert(payload).select('id').single();
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, id: String(data.id) };
+}
+
+export async function deleteWorkflow(workflowId: string): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables Acquisition absentes.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('acq_workflows').delete().eq('id', workflowId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function setWorkflowEnabled(
+  workflowId: string,
+  enabled: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables Acquisition absentes.' };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('acq_workflows')
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq('id', workflowId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function setContactOptIn(contactId: string, optIn: boolean): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('acq_contacts').update({ opt_in: optIn }).eq('id', contactId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function escalateConversation(
+  conversationId: string,
+  assignedTo: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('acq_conversations')
+    .update({ status: 'escalated', assigned_to: assignedTo, updated_at: new Date().toISOString() })
+    .eq('id', conversationId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 export async function updateContactLifecycle(

@@ -11,6 +11,7 @@ import type {
   AcqWorkflow,
   AcquisitionChannel,
   AcquisitionOverview,
+  WorkflowActionType,
 } from '@/lib/acquisition/types';
 
 import { AlejandraAvatar, AvatarBadge } from './AvatarBadge';
@@ -25,7 +26,7 @@ import { PerformanceHooksTable } from './PerformanceHooksTable';
 import { acq } from './tokens';
 import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
-import { WorkflowJourney } from './WorkflowJourney';
+import { WorkflowManager } from './WorkflowManager';
 
 type TabId = 'overview' | 'conversations' | 'workflows';
 
@@ -43,6 +44,21 @@ type Props = {
   onSeedDemo: () => Promise<{ ok: boolean; error?: string; seeded?: boolean }>;
   onCreateThread: () => Promise<{ ok: boolean; conversationId?: string; error?: string }>;
   onRunWorkflowDemo: (workflowId: string, conversationId: string) => Promise<{ ok: boolean; detail: string }>;
+  onSaveWorkflow: (payload: {
+    id?: string;
+    name: string;
+    enabled: boolean;
+    triggerType: AcqWorkflow['triggerType'];
+    triggerKeyword?: string;
+    lifecycleIn?: string;
+    actions: AcqWorkflow['actions'];
+  }) => Promise<{ ok: boolean; id?: string; error?: string }>;
+  onDeleteWorkflow: (workflowId: string) => Promise<{ ok: boolean; error?: string }>;
+  onToggleWorkflow: (workflowId: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
+  onTestAction: (
+    conversationId: string,
+    actionType: WorkflowActionType,
+  ) => Promise<{ ok: boolean; type: string; detail: string }>;
   /** Intégré dans /admin/croissance — masque en-tête et barre d’onglets internes. */
   embedded?: boolean;
   forcedTab?: TabId;
@@ -63,6 +79,10 @@ export function AcquisitionBoard({
   onSeedDemo,
   onCreateThread,
   onRunWorkflowDemo,
+  onSaveWorkflow,
+  onDeleteWorkflow,
+  onToggleWorkflow,
+  onTestAction,
   embedded = false,
   forcedTab = 'overview',
   routeBase = '/admin/acquisition',
@@ -482,15 +502,38 @@ export function AcquisitionBoard({
 
         {activeTab === 'workflows' ? (
           <div className="space-y-8">
-            <WorkflowJourney
+            <WorkflowManager
               workflows={workflows}
+              schemaReady={schemaReady}
               selectedConversationId={selectedConversationId}
               pending={pending}
-              onRunDemo={(id) =>
-                startTransition(async () => {
-                  if (!selectedConversationId) return;
-                  const r = await onRunWorkflowDemo(id, selectedConversationId);
-                  setStatus(r.detail);
+              onStatus={setStatus}
+              onSaveWorkflow={onSaveWorkflow}
+              onDeleteWorkflow={onDeleteWorkflow}
+              onToggleWorkflow={onToggleWorkflow}
+              onRunWorkflow={(id) =>
+                new Promise((resolve) => {
+                  if (!selectedConversationId) {
+                    resolve({ ok: false, detail: 'Sélectionne un fil.' });
+                    return;
+                  }
+                  startTransition(async () => {
+                    const r = await onRunWorkflowDemo(id, selectedConversationId);
+                    setStatus(r.detail);
+                    resolve(r);
+                  });
+                })
+              }
+              onTestAction={(actionType) =>
+                new Promise((resolve) => {
+                  if (!selectedConversationId) {
+                    resolve({ ok: false, type: actionType, detail: 'Sélectionne un fil.' });
+                    return;
+                  }
+                  startTransition(async () => {
+                    const r = await onTestAction(selectedConversationId, actionType);
+                    resolve(r);
+                  });
                 })
               }
             />

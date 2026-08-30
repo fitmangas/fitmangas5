@@ -1,4 +1,4 @@
-import type { AcquisitionChannel } from '@/lib/acquisition/types';
+import type { AcquisitionChannel, WorkflowActionType, WorkflowTriggerType } from '@/lib/acquisition/types';
 
 export const ACQUISITION_CHANNELS: Array<{ id: AcquisitionChannel | 'all'; label: string }> = [
   { id: 'all', label: 'Tous les canaux' },
@@ -17,6 +17,28 @@ export const LIFECYCLE_LABELS: Record<string, string> = {
   paid: 'Payant',
   member: 'Membre',
 };
+
+export const WORKFLOW_TRIGGER_OPTIONS: Array<{ id: WorkflowTriggerType; label: string }> = [
+  { id: 'ig_comment_keyword', label: 'Commentaire IG (mot-clé)' },
+  { id: 'ig_dm_inbound', label: 'DM Instagram entrant' },
+  { id: 'ig_story_reply', label: 'Réponse story IG' },
+  { id: 'messenger_inbound', label: 'Messenger entrant' },
+  { id: 'whatsapp_inbound', label: 'WhatsApp entrant' },
+  { id: 'email_inbound', label: 'E-mail entrant' },
+];
+
+export const WORKFLOW_ACTION_OPTIONS: Array<{ id: WorkflowActionType; label: string }> = [
+  { id: 'send_message', label: 'Envoyer un message' },
+  { id: 'qualify_intent', label: 'Qualifier (IA concierge)' },
+  { id: 'tag_contact', label: 'Taguer le contact' },
+  { id: 'set_lifecycle_stage', label: 'Changer l’étape parcours' },
+  { id: 'send_trial_link', label: 'Envoyer lien essai 7j' },
+  { id: 'book_session_intent', label: 'Intention réservation cours' },
+  { id: 'capture_email_optin', label: 'Demander e-mail (opt-in)' },
+  { id: 'schedule_followup', label: 'Programmer une relance' },
+  { id: 'broadcast_optin', label: 'Broadcast opt-in' },
+  { id: 'escalate_human', label: 'Escalade Alejandra' },
+];
 
 /** Mention IA — OFF par défaut (conformité FR/UE, MX). */
 export function isAiDisclosureEnabled(market: 'fr' | 'mx'): boolean {
