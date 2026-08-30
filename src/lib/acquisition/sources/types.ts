@@ -20,6 +20,10 @@ export type StripeAcquisitionMetrics = {
   trialToPaidRate: number | null;
   mrrEur: number | null;
   referralConversions30d: number | null;
+  arpuEur: number | null;
+  monthlyChurnRate: number | null;
+  ltvEur: number | null;
+  newPaid30d: number | null;
 };
 
 export type SupabaseAcquisitionMetrics = {

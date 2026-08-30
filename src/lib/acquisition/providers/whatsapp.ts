@@ -1,5 +1,6 @@
 import { isMessagingSandbox } from '@/lib/acquisition/feature-flag';
 
+import { sendWhatsAppLiveMessage } from './meta-live';
 import { logSandboxSend } from './sandbox-log';
 import type {
   MessagingProvider,
@@ -22,15 +23,6 @@ async function sandboxResult(action: string, detail: string): Promise<ProviderSe
   };
 }
 
-async function liveNotReady(action: string): Promise<ProviderSendResult> {
-  return {
-    ok: false,
-    provider: PROVIDER,
-    sandbox: false,
-    error: `WhatsApp LIVE : ${action} non activé — WABA + templates requis (voir ACQUISITION-SETUP.md).`,
-  };
-}
-
 export const whatsappProvider: MessagingProvider = {
   id: 'whatsapp',
   label: 'WhatsApp',
@@ -39,21 +31,43 @@ export const whatsappProvider: MessagingProvider = {
     if (isMessagingSandbox()) {
       return sandboxResult('sendMessage', `→ ${input.recipientId} : ${input.body.slice(0, 120)}`);
     }
-    return liveNotReady('sendMessage');
+    const live = await sendWhatsAppLiveMessage({
+      recipientId: input.recipientId,
+      body: input.body,
+    });
+    if (!live.ok) {
+      return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec WhatsApp LIVE.' };
+    }
+    return {
+      ok: true,
+      provider: PROVIDER,
+      sandbox: false,
+      messageId: live.messageId ?? `wa_${Date.now()}`,
+    };
   },
 
   async sendPrivateReply(input: SendPrivateReplyInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendPrivateReply', `N/A WA : ${input.body.slice(0, 80)}`);
     }
-    return liveNotReady('sendPrivateReply');
+    return {
+      ok: false,
+      provider: PROVIDER,
+      sandbox: false,
+      error: 'WhatsApp LIVE : pas de private reply — utiliser sendMessage dans fenêtre 24h.',
+    };
   },
 
   async sendTemplate(input: SendTemplateInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendTemplate', `${input.templateName} → ${input.recipientId}`);
     }
-    return liveNotReady('sendTemplate');
+    return {
+      ok: false,
+      provider: PROVIDER,
+      sandbox: false,
+      error: 'WhatsApp LIVE : templates approuvés requis hors fenêtre 24h.',
+    };
   },
 
   async getConversation(externalId: string) {

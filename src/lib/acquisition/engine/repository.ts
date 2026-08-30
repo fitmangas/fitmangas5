@@ -347,6 +347,24 @@ export async function updateContactLifecycle(
   return { ok: true };
 }
 
+export async function updateContactEmail(
+  contactId: string,
+  email: string,
+  optIn = false,
+): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  const admin = createAdminClient();
+  const patch: { email: string; opt_in?: boolean; updated_at: string } = {
+    email: email.trim().toLowerCase(),
+    updated_at: new Date().toISOString(),
+  };
+  if (optIn) patch.opt_in = true;
+  const { error } = await admin.from('acq_contacts').update(patch).eq('id', contactId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function tagContact(contactId: string, tag: string): Promise<{ ok: boolean; error?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return { ok: false, error: 'Tables absentes.' };

@@ -31,7 +31,8 @@ export function CroissanceShell({ activeTab, showAcquisition, children }: Props)
   function navigateTab(tabId: CroissanceTabId) {
     const q = new URLSearchParams(searchParams.toString());
     q.set('tab', tabId);
-    if (tabId !== 'conversations') q.delete('conversation');
+    // Garder le fil sélectionné pour Workflows (lab + test workflow).
+    if (tabId !== 'conversations' && tabId !== 'workflows') q.delete('conversation');
     if (tabId !== 'overview') q.delete('channel');
     router.push(`/admin/croissance?${q.toString()}`);
   }

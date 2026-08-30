@@ -1,5 +1,6 @@
 import { isMessagingSandbox } from '@/lib/acquisition/feature-flag';
 
+import { sendMessengerLiveMessage } from './meta-live';
 import { logSandboxSend } from './sandbox-log';
 import type {
   MessagingProvider,
@@ -22,15 +23,6 @@ async function sandboxResult(action: string, detail: string): Promise<ProviderSe
   };
 }
 
-async function liveNotReady(action: string): Promise<ProviderSendResult> {
-  return {
-    ok: false,
-    provider: PROVIDER,
-    sandbox: false,
-    error: `Messenger LIVE : ${action} non activé — permissions Meta requises (voir ACQUISITION-SETUP.md).`,
-  };
-}
-
 export const messengerProvider: MessagingProvider = {
   id: 'facebook',
   label: 'Messenger',
@@ -39,21 +31,43 @@ export const messengerProvider: MessagingProvider = {
     if (isMessagingSandbox()) {
       return sandboxResult('sendMessage', `→ ${input.recipientId} : ${input.body.slice(0, 120)}`);
     }
-    return liveNotReady('sendMessage');
+    const live = await sendMessengerLiveMessage({
+      recipientId: input.recipientId,
+      body: input.body,
+    });
+    if (!live.ok) {
+      return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec Messenger LIVE.' };
+    }
+    return {
+      ok: true,
+      provider: PROVIDER,
+      sandbox: false,
+      messageId: live.messageId ?? `fb_${Date.now()}`,
+    };
   },
 
   async sendPrivateReply(input: SendPrivateReplyInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendPrivateReply', `comment ${input.commentId} : ${input.body.slice(0, 120)}`);
     }
-    return liveNotReady('sendPrivateReply');
+    return {
+      ok: false,
+      provider: PROVIDER,
+      sandbox: false,
+      error: 'Messenger LIVE : private reply commentaire — utiliser sendPrivateReply IG ou API Page feed.',
+    };
   },
 
   async sendTemplate(input: SendTemplateInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendTemplate', `${input.templateName} → ${input.recipientId}`);
     }
-    return liveNotReady('sendTemplate');
+    return {
+      ok: false,
+      provider: PROVIDER,
+      sandbox: false,
+      error: 'Messenger LIVE : templates — à brancher via sendTemplate Meta.',
+    };
   },
 
   async getConversation(externalId: string) {

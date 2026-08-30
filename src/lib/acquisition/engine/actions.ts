@@ -68,14 +68,16 @@ async function actionQualifyIntent(ctx: ActionContext): Promise<ActionResult> {
   if (!ai.ok) {
     return { type: 'qualify_intent', ok: false, detail: ai.error };
   }
-  if (ai.reply) {
-    await actionSendMessage(ctx, { body: ai.reply });
-  }
+
+  const { applyConciergeResult } = await import('@/lib/acquisition/ai/concierge-actions');
+  const summary = await applyConciergeResult(ai, ctx);
+  const actionLines = summary.actions.map((a) => `${a.ok ? '✓' : '✗'} ${a.detail}`).join(' · ');
+
   return {
     type: 'qualify_intent',
     ok: true,
-    detail: `Intent : ${ai.intent}`,
-    data: ai,
+    detail: `Intent ${ai.intent} (${ai.provider})${actionLines ? ` — ${actionLines}` : ''}`,
+    data: summary,
   };
 }
 

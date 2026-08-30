@@ -1,5 +1,11 @@
 import { isMessagingSandbox } from '@/lib/acquisition/feature-flag';
 
+import {
+  sendInstagramLiveMessage,
+  sendInstagramPrivateReplyLive,
+  sendMessengerLiveMessage,
+  sendWhatsAppLiveMessage,
+} from './meta-live';
 import { logSandboxSend } from './sandbox-log';
 import type {
   MessagingProvider,
@@ -22,15 +28,6 @@ async function sandboxResult(action: string, detail: string): Promise<ProviderSe
   };
 }
 
-async function liveNotReady(action: string): Promise<ProviderSendResult> {
-  return {
-    ok: false,
-    provider: PROVIDER,
-    sandbox: false,
-    error: `Instagram LIVE : ${action} non activé — permissions Meta requises (voir ACQUISITION-SETUP.md).`,
-  };
-}
-
 export const instagramProvider: MessagingProvider = {
   id: 'instagram',
   label: 'Instagram DM',
@@ -39,21 +36,50 @@ export const instagramProvider: MessagingProvider = {
     if (isMessagingSandbox()) {
       return sandboxResult('sendMessage', `→ ${input.recipientId} : ${input.body.slice(0, 120)}`);
     }
-    return liveNotReady('sendMessage');
+    const live = await sendInstagramLiveMessage({
+      recipientId: input.recipientId,
+      body: input.body,
+    });
+    if (!live.ok) {
+      return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec Instagram LIVE.' };
+    }
+    return {
+      ok: true,
+      provider: PROVIDER,
+      sandbox: false,
+      messageId: live.messageId ?? `ig_${Date.now()}`,
+    };
   },
 
   async sendPrivateReply(input: SendPrivateReplyInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendPrivateReply', `comment ${input.commentId} : ${input.body.slice(0, 120)}`);
     }
-    return liveNotReady('sendPrivateReply');
+    const live = await sendInstagramPrivateReplyLive({
+      commentId: input.commentId,
+      body: input.body,
+    });
+    if (!live.ok) {
+      return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec private reply LIVE.' };
+    }
+    return {
+      ok: true,
+      provider: PROVIDER,
+      sandbox: false,
+      messageId: live.messageId ?? `ig_pr_${Date.now()}`,
+    };
   },
 
   async sendTemplate(input: SendTemplateInput): Promise<ProviderSendResult> {
     if (isMessagingSandbox()) {
       return sandboxResult('sendTemplate', `${input.templateName} → ${input.recipientId}`);
     }
-    return liveNotReady('sendTemplate');
+    return {
+      ok: false,
+      provider: PROVIDER,
+      sandbox: false,
+      error: 'Instagram LIVE : templates hors fenêtre 24h — à brancher via sendTemplate Meta.',
+    };
   },
 
   async getConversation(externalId: string) {
@@ -66,6 +92,6 @@ export const instagramProvider: MessagingProvider = {
         },
       };
     }
-    return { ok: false, error: 'Instagram LIVE : getConversation non implémenté (attente permissions Meta).' };
+    return { ok: false, error: 'Instagram LIVE : getConversation non implémenté (Graph API conversations).' };
   },
 };

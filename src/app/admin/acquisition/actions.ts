@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { applyConciergeResult } from '@/lib/acquisition/ai/concierge-actions';
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import { runWorkflowAction } from '@/lib/acquisition/engine/actions';
 import { runWorkflow } from '@/lib/acquisition/engine/orchestrator';
@@ -187,6 +188,40 @@ export async function acquisitionRunWorkflowDemo(workflowId: string, conversatio
     ok: result.ok,
     detail: result.steps.map((s) => `${s.ok ? '✓' : '✗'} ${s.type}: ${s.detail}`).join(' · '),
     steps: result.steps,
+  };
+}
+
+export async function acquisitionConciergeReply(conversationId: string, market: 'fr' | 'mx' = 'fr') {
+  guardModule();
+  const detail = await getConversationWithMessages(conversationId);
+  if (!detail.ok) return { ok: false, error: detail.error };
+
+  const contact = await getContact(detail.conversation.contactId);
+  if (!contact) return { ok: false, error: 'Contact introuvable.' };
+
+  const inboundText =
+    detail.messages.filter((m) => m.direction === 'inbound').pop()?.body ??
+    'Bonjour, je veux en savoir plus sur FitMangas.';
+
+  const ai = await runConcierge({ inboundText, market });
+  if (!ai.ok) return { ok: false, error: ai.error };
+
+  const summary = await applyConciergeResult(ai, {
+    conversation: detail.conversation,
+    contact,
+    inboundText,
+    market,
+  });
+
+  revalidateAcquisition();
+  return {
+    ok: true,
+    provider: ai.provider,
+    intent: ai.intent,
+    reply: ai.reply,
+    actions: summary.actions.map((a) => ({ ok: a.ok, type: a.type, detail: a.detail })),
+    emailCaptured: summary.emailCaptured,
+    messagesSent: summary.actions.some((a) => a.type === 'send_message' && a.ok),
   };
 }
 

@@ -12,6 +12,7 @@ import {
   acquisitionDeleteWorkflow,
   acquisitionToggleWorkflow,
   acquisitionTestAction,
+  acquisitionConciergeReply,
 } from '@/app/admin/acquisition/actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
@@ -116,6 +117,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         onDeleteWorkflow={acquisitionDeleteWorkflow}
         onToggleWorkflow={acquisitionToggleWorkflow}
         onTestAction={acquisitionTestAction}
+        onConciergeReply={acquisitionConciergeReply}
       />
     );
   }

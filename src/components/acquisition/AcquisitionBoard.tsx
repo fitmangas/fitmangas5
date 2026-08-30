@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BarChart3, MessageCircle, Workflow } from 'lucide-react';
+import { BarChart3, MessageCircle, Sparkles, Workflow } from 'lucide-react';
 
 import { ACQUISITION_CHANNELS, LIFECYCLE_LABELS } from '@/lib/acquisition/config';
 import type {
@@ -26,6 +26,7 @@ import { PerformanceHooksTable } from './PerformanceHooksTable';
 import { acq } from './tokens';
 import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
+import { MetaLiveReadinessPanel } from './MetaLiveReadinessPanel';
 import { WorkflowManager } from './WorkflowManager';
 
 type TabId = 'overview' | 'conversations' | 'workflows';
@@ -59,6 +60,18 @@ type Props = {
     conversationId: string,
     actionType: WorkflowActionType,
   ) => Promise<{ ok: boolean; type: string; detail: string }>;
+  onConciergeReply: (
+    conversationId: string,
+    market?: 'fr' | 'mx',
+  ) => Promise<{
+    ok: boolean;
+    error?: string;
+    provider?: string;
+    intent?: string;
+    reply?: string;
+    messagesSent?: boolean;
+    actions?: Array<{ ok: boolean; type?: string; detail: string }>;
+  }>;
   /** Intégré dans /admin/croissance — masque en-tête et barre d’onglets internes. */
   embedded?: boolean;
   forcedTab?: TabId;
@@ -83,6 +96,7 @@ export function AcquisitionBoard({
   onDeleteWorkflow,
   onToggleWorkflow,
   onTestAction,
+  onConciergeReply,
   embedded = false,
   forcedTab = 'overview',
   routeBase = '/admin/acquisition',
@@ -93,6 +107,7 @@ export function AcquisitionBoard({
   const activeTab = embedded ? forcedTab : tab;
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState<string | null>(null);
+  const [conciergeBadge, setConciergeBadge] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const tabs = useMemo(
@@ -156,6 +171,24 @@ export function AcquisitionBoard({
         setStatus('Nouveau fil sandbox créé.');
       } else {
         setStatus(r.error ?? 'Impossible de créer le fil.');
+      }
+    });
+  }
+
+  function handleConcierge() {
+    if (!selectedConversationId) return;
+    startTransition(async () => {
+      const r = await onConciergeReply(selectedConversationId, 'fr');
+      if (r.ok) {
+        setConciergeBadge(r.provider === 'anthropic' ? 'Claude' : 'Fallback');
+        const actionLine = r.actions?.map((a) => `${a.ok ? '✓' : '✗'} ${a.detail}`).join(' · ');
+        setStatus(
+          `Concierge ${r.provider} — intent ${r.intent}${actionLine ? ` · ${actionLine}` : ''}`,
+        );
+        if (r.reply && !r.messagesSent) setReply(r.reply);
+        router.refresh();
+      } else {
+        setStatus(r.error ?? 'Concierge indisponible.');
       }
     });
   }
@@ -273,6 +306,9 @@ export function AcquisitionBoard({
             </div>
             <FunnelChart steps={overview.funnel} conversations={conversations} />
             <KpiGrid kpis={overview.kpis} />
+            {overview.metaLiveReadiness ? (
+              <MetaLiveReadinessPanel status={overview.metaLiveReadiness} />
+            ) : null}
             <PerformanceHooksTable rows={overview.performanceHooks} />
           </div>
         ) : null}
@@ -419,6 +455,9 @@ export function AcquisitionBoard({
                               '—'
                             }
                           />
+                          {conciergeBadge ? (
+                            <Chip label={`IA ${conciergeBadge}`} tone="neutral" />
+                          ) : null}
                         </ChipRow>
                       </div>
                       <div className="ml-auto flex items-center gap-2">
@@ -483,15 +522,27 @@ export function AcquisitionBoard({
                         className="flex-1 rounded-[18px] border px-4 py-3 text-sm"
                         style={{ borderColor: acq.warmBeigeDeep, backgroundColor: acq.cream }}
                       />
-                      <button
-                        type="button"
-                        disabled={pending || !reply.trim()}
-                        onClick={handleSend}
-                        className="rounded-full px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                        style={{ backgroundColor: acq.active }}
-                      >
-                        Envoyer
-                      </button>
+                      <div className="flex flex-col gap-2 sm:shrink-0">
+                        <button
+                          type="button"
+                          disabled={pending || !selectedConversationId}
+                          onClick={handleConcierge}
+                          className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold disabled:opacity-50"
+                          style={{ backgroundColor: acq.warmBeigeDeep, color: acq.ink }}
+                        >
+                          <Sparkles size={16} />
+                          Réponse IA
+                        </button>
+                        <button
+                          type="button"
+                          disabled={pending || !reply.trim()}
+                          onClick={handleSend}
+                          className="rounded-full px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                          style={{ backgroundColor: acq.active }}
+                        >
+                          Envoyer
+                        </button>
+                      </div>
                     </div>
                   </Card>
                 </div>

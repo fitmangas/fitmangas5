@@ -123,4 +123,5 @@ export type AcquisitionOverview = {
   sourceErrors: SourceError[];
   schemaReady: boolean;
   messagingMode: 'sandbox' | 'live';
+  metaLiveReadiness?: import('@/lib/acquisition/providers/meta-live').MetaLiveReadiness;
 };

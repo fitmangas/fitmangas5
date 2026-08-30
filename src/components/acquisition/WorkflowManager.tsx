@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Pencil, Play, Plus, Trash2 } from 'lucide-react';
 
 import {
@@ -105,6 +105,10 @@ export function WorkflowManager({
   );
 
   const workflowList = useMemo(() => workflows, [workflows]);
+
+  useEffect(() => {
+    setDrafts(Object.fromEntries(workflows.map((wf) => [wf.id, draftFromWorkflow(wf)])));
+  }, [workflows]);
 
   function updateDraft(id: string, patch: Partial<Draft>) {
     setDrafts((prev) => ({

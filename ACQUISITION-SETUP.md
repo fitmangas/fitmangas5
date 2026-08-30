@@ -60,10 +60,10 @@ Le messaging Acquisition est **séparé** de la publication CM (`meta-social.ts`
 | Instagram | `messages`, `messaging_postbacks`, `message_reactions` |
 | Page | `messages`, `messaging_postbacks`, `feed` (commentaires → private reply) |
 
-URL callback suggérée : `{NEXT_PUBLIC_APP_URL}/api/acquisition/webhooks/meta`  
-*(route à brancher après GO migration + validation Meta)*
+URL callback : `{NEXT_PUBLIC_APP_URL}/api/acquisition/webhooks/meta`  
+*(route implémentée — brancher dans Meta Developers une fois le verify token défini)*
 
-Verify token : variable `ACQUISITION_META_VERIFY_TOKEN` (à créer lors du branchement live).
+Verify token : variable `ACQUISITION_META_VERIFY_TOKEN` (Vercel + `.env.local`).
 
 ### WhatsApp Business API
 
@@ -112,7 +112,9 @@ Verify token : variable `ACQUISITION_META_VERIFY_TOKEN` (à créer lors du branc
 | Inbox UI | Après migration §9 + seed démo |
 | Envoi messages | SANDBOX loggé |
 | Workflows + 10 actions | Exécutable en test sur fil sélectionné |
-| Concierge Claude | Si `ANTHROPIC_API_KEY`, sinon fallback mots-clés |
+| Concierge Claude | Si `ANTHROPIC_API_KEY`, sinon fallback mots-clés + bouton « Réponse IA » |
+| KPIs ARPU / LTV / churn | Stripe price_cents + business_stats_daily |
+| Meta LIVE (code) | Providers Graph API + webhook + checklist admin |
 | Lien essai | URL `/connexion` existante, zéro Stripe write |
 
 ---
