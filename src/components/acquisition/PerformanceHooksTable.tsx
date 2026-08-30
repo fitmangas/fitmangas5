@@ -5,7 +5,6 @@ import { Star } from 'lucide-react';
 import type { PerformanceHookRow } from '@/lib/acquisition/types';
 
 import { Chip } from './Chip';
-import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
 import { acq } from './tokens';
 
@@ -20,7 +19,7 @@ function hasPilierOrFormat(rows: PerformanceHookRow[]): boolean {
 export function PerformanceHooksTable({ rows }: { rows: PerformanceHookRow[] }) {
   if (!rows.length) {
     return (
-      <JourneyBoard title="Boucle de performance" subtitle="Hooks gagnants — few-shot CM" action={<JourneyActionCluster />}>
+      <JourneyBoard title="Boucle de performance" subtitle="Hooks gagnants — few-shot CM">
         <p className="text-sm leading-relaxed" style={{ color: acq.muted }}>
           Aucun hook scoré pour l’instant. Publie des posts CM et active la sync Insights Meta, ou alimente la banque
           hooks dans Com’ réseaux.
@@ -36,7 +35,6 @@ export function PerformanceHooksTable({ rows }: { rows: PerformanceHookRow[] }) 
     <JourneyBoard
       title="Boucle de performance"
       subtitle="Hooks prêts à réinjecter"
-      action={<JourneyActionCluster />}
     >
       {!showMetrics ? (
         <p

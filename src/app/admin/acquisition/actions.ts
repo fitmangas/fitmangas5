@@ -9,6 +9,7 @@ import {
   insertOutboundMessage,
   listWorkflows,
   seedSandboxDemoData,
+  createSandboxConversation,
 } from '@/lib/acquisition/engine/repository';
 import { getMessagingProvider, getSandboxLog } from '@/lib/acquisition/providers';
 import { isAcquisitionModuleEnabled } from '@/lib/acquisition/feature-flag';
@@ -50,6 +51,14 @@ export async function acquisitionSendReply(conversationId: string, body: string)
   revalidatePath('/admin/acquisition');
   revalidatePath('/admin/croissance');
   return { ok: true, sandbox: send.sandbox, log: send.logLine };
+}
+
+export async function acquisitionCreateThread() {
+  guardModule();
+  const r = await createSandboxConversation();
+  revalidatePath('/admin/acquisition');
+  revalidatePath('/admin/croissance');
+  return r;
 }
 
 export async function acquisitionSeedDemo() {

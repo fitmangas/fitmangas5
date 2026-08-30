@@ -6,6 +6,7 @@ import { MarketingPageContent } from '@/app/admin/marketing/MarketingPageContent
 import {
   acquisitionRunWorkflowDemo,
   acquisitionSeedDemo,
+  acquisitionCreateThread,
   acquisitionSendReply,
 } from '@/app/admin/acquisition/actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
@@ -105,6 +106,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         sandboxLog={sandboxLog}
         onSendReply={acquisitionSendReply}
         onSeedDemo={acquisitionSeedDemo}
+        onCreateThread={acquisitionCreateThread}
         onRunWorkflowDemo={acquisitionRunWorkflowDemo}
       />
     );

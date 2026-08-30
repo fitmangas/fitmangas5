@@ -400,3 +400,59 @@ export async function seedSandboxDemoData(): Promise<{ ok: boolean; error?: stri
 
   return { ok: true, seeded: true };
 }
+
+/** Nouveau fil sandbox — toujours créé (bouton + inbox). */
+export async function createSandboxConversation(): Promise<{
+  ok: boolean;
+  conversationId?: string;
+  error?: string;
+}> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) {
+    return { ok: false, error: 'Migration §9 non appliquée — impossible de créer un fil.' };
+  }
+
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const suffix = Date.now().toString(36).slice(-6);
+  const handle = `@sandbox_${suffix}`;
+
+  const { data: contact, error: cErr } = await admin
+    .from('acq_contacts')
+    .insert({
+      channel: 'instagram',
+      handle,
+      lifecycle_stage: 'new',
+      tags: ['sandbox'],
+      source_attribution: 'sandbox_manual',
+      opt_in: false,
+    })
+    .select('id')
+    .single();
+  if (cErr || !contact) return { ok: false, error: cErr?.message ?? 'Création contact impossible' };
+
+  const { data: conv, error: vErr } = await admin
+    .from('acq_conversations')
+    .insert({
+      contact_id: contact.id,
+      channel: 'instagram',
+      status: 'open',
+      lifecycle_stage: 'new',
+      subject: `Nouveau fil sandbox ${suffix}`,
+      last_message_at: now,
+      last_message_preview: 'Fil créé — écris un premier message.',
+    })
+    .select('id')
+    .single();
+  if (vErr || !conv) return { ok: false, error: vErr?.message ?? 'Création fil impossible' };
+
+  await admin.from('acq_messages').insert({
+    conversation_id: conv.id,
+    direction: 'system',
+    body: '[SANDBOX] Fil créé depuis l’inbox — aucun message Meta envoyé.',
+    provider: 'system',
+    sandbox: true,
+  });
+
+  return { ok: true, conversationId: String(conv.id) };
+}

@@ -2,7 +2,6 @@
 
 import type { AcqWorkflow } from '@/lib/acquisition/types';
 
-import { JourneyActionCluster } from './JourneyActionCluster';
 import { ColumnConnector, JourneyConnectorsOverlay } from './JourneyConnectors';
 import { JourneyBoard, JourneyColumn, TaskCard } from './JourneyParts';
 import { acq } from './tokens';
@@ -41,7 +40,6 @@ export function WorkflowJourney({ workflows, selectedConversationId, pending, on
     <JourneyBoard
       title="Moteur de workflows"
       subtitle="Déclencheur → conditions → actions"
-      action={<JourneyActionCluster />}
       connectors={<JourneyConnectorsOverlay columnCount={columns.length} className="top-14 h-[58%]" />}
     >
       <div className="relative z-[2] flex min-w-[920px] items-stretch overflow-x-auto pb-2 pt-2">

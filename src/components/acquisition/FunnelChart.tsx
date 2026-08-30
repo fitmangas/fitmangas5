@@ -4,7 +4,6 @@ import type { AcqConversation, FunnelStep } from '@/lib/acquisition/types';
 
 import { AvatarStack, type AvatarPerson } from './AvatarStack';
 import { contactDisplayName, contactsWithRealHandles } from './avatar-guards';
-import { JourneyActionCluster } from './JourneyActionCluster';
 import { ColumnConnector, JourneyConnectorsOverlay } from './JourneyConnectors';
 import { JourneyBoard, JourneyColumn, TaskCard } from './JourneyParts';
 
@@ -62,7 +61,7 @@ export function FunnelChart({ steps, activeStepId = 'trial', conversations = [] 
     <JourneyBoard
       title="Parcours de conversion"
       subtitle="Portée → Clics → Essais 7j → Payant → Rétention"
-      action={<JourneyActionCluster />}
+      action={undefined}
       headerExtra={headerPeople.length ? <AvatarStack people={headerPeople} max={9} size="md" /> : null}
       connectors={<JourneyConnectorsOverlay columnCount={steps.length} className="top-12 h-[62%]" />}
     >

@@ -41,6 +41,7 @@ type Props = {
   sandboxLog: Array<{ at: string; provider: string; action: string; detail: string }>;
   onSendReply: (conversationId: string, body: string) => Promise<{ ok: boolean; error?: string }>;
   onSeedDemo: () => Promise<{ ok: boolean; error?: string; seeded?: boolean }>;
+  onCreateThread: () => Promise<{ ok: boolean; conversationId?: string; error?: string }>;
   onRunWorkflowDemo: (workflowId: string, conversationId: string) => Promise<{ ok: boolean; detail: string }>;
   /** Intégré dans /admin/croissance — masque en-tête et barre d’onglets internes. */
   embedded?: boolean;
@@ -60,6 +61,7 @@ export function AcquisitionBoard({
   sandboxLog,
   onSendReply,
   onSeedDemo,
+  onCreateThread,
   onRunWorkflowDemo,
   embedded = false,
   forcedTab = 'overview',
@@ -116,6 +118,26 @@ export function AcquisitionBoard({
     }
     pushQuery({ conversation: id });
     setTab('conversations');
+  }
+
+  function handleCreateThread() {
+    startTransition(async () => {
+      const r = await onCreateThread();
+      if (r.ok && r.conversationId) {
+        if (embedded) {
+          const q = new URLSearchParams(searchParams.toString());
+          q.set('tab', 'conversations');
+          q.set('conversation', r.conversationId);
+          router.push(`${routeBase}?${q.toString()}`);
+        } else {
+          pushQuery({ conversation: r.conversationId });
+          setTab('conversations');
+        }
+        setStatus('Nouveau fil sandbox créé.');
+      } else {
+        setStatus(r.error ?? 'Impossible de créer le fil.');
+      }
+    });
   }
 
   function handleSend() {
@@ -240,7 +262,14 @@ export function AcquisitionBoard({
             <JourneyBoard
               title="Inbox unifiée"
               subtitle="Instagram · Messenger · WhatsApp · Email"
-              action={<JourneyActionCluster />}
+              action={
+                <JourneyActionCluster
+                  variant="create-thread"
+                  onPrimary={handleCreateThread}
+                  busy={pending}
+                  disabled={!schemaReady}
+                />
+              }
               headerExtra={inboxPeople.length > 0 ? <AvatarStack people={inboxPeople} max={7} size="md" /> : null}
               className="lg:max-h-[820px] lg:overflow-y-auto"
             >
@@ -329,7 +358,18 @@ export function AcquisitionBoard({
               </div>
             </JourneyBoard>
 
-            <JourneyBoard title="Détail du fil" subtitle="Historique + réponse humaine" action={<JourneyActionCluster />}>
+            <JourneyBoard
+              title="Détail du fil"
+              subtitle="Historique + réponse humaine"
+              action={
+                <JourneyActionCluster
+                  variant="send-message"
+                  onPrimary={handleSend}
+                  busy={pending}
+                  disabled={!selectedConversationId || !reply.trim()}
+                />
+              }
+            >
               {detailError ? <p className="mb-4 text-sm font-medium text-red-700">{detailError}</p> : null}
               {!selectedConversationId ? (
                 <Card>
@@ -456,7 +496,7 @@ export function AcquisitionBoard({
             />
 
             {sandboxLog.length ? (
-              <JourneyBoard title="Journal sandbox" subtitle="Envois simulés — jamais silencieux" action={<JourneyActionCluster />}>
+              <JourneyBoard title="Journal sandbox" subtitle="Envois simulés — jamais silencieux">
                 <div
                   className="space-y-2 rounded-[20px] p-3"
                   style={{ backgroundColor: acq.zoneInner }}

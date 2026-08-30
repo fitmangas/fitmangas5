@@ -5,7 +5,6 @@ import type { AcquisitionKpi } from '@/lib/acquisition/types';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { DonutStat } from './DonutStat';
-import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
 import { acq } from './tokens';
 
@@ -31,7 +30,7 @@ export function KpiGrid({ kpis }: { kpis: AcquisitionKpi[] }) {
   const paidPct = total > 0 && paidNum != null ? Math.round((paidNum / total) * 100) : 55;
 
   return (
-    <JourneyBoard title="Indicateurs clés" subtitle="Lecture seule — GA4, GSC, Stripe, Supabase" action={<JourneyActionCluster />}>
+    <JourneyBoard title="Indicateurs clés" subtitle="Lecture seule — GA4, GSC, Stripe, Supabase">
       <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
         <div className="grid gap-3 sm:grid-cols-2">
           {kpis.map((kpi, i) => (
