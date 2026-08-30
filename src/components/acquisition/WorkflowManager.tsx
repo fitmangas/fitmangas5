@@ -78,6 +78,10 @@ function defaultConfigForAction(type: WorkflowActionType): Record<string, unknow
       return { courseType: 'visio_collectif' };
     case 'schedule_followup':
       return { delayHours: 24 };
+    case 'broadcast_optin':
+      return { body: 'Actu FitMangas — essai 7 jours en visio avec correction en direct : fitmangas.com' };
+    case 'mini_poll':
+      return { question: 'Sur une échelle de 1 à 5, te sens-tu accompagnée cette semaine ?' };
     default:
       return undefined;
   }

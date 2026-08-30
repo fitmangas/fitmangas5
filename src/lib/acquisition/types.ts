@@ -31,7 +31,8 @@ export type WorkflowActionType =
   | 'capture_email_optin'
   | 'schedule_followup'
   | 'broadcast_optin'
-  | 'escalate_human';
+  | 'escalate_human'
+  | 'mini_poll';
 
 export type AcqContact = {
   id: string;
@@ -124,4 +125,5 @@ export type AcquisitionOverview = {
   schemaReady: boolean;
   messagingMode: 'sandbox' | 'live';
   metaLiveReadiness?: import('@/lib/acquisition/providers/meta-live').MetaLiveReadiness;
+  performanceLoop?: import('@/lib/acquisition/performance-loop').PerformanceLoopStatus;
 };

@@ -309,7 +309,7 @@ export function AcquisitionBoard({
             {overview.metaLiveReadiness ? (
               <MetaLiveReadinessPanel status={overview.metaLiveReadiness} />
             ) : null}
-            <PerformanceHooksTable rows={overview.performanceHooks} />
+            <PerformanceHooksTable rows={overview.performanceHooks} performanceLoop={overview.performanceLoop} />
           </div>
         ) : null}
 

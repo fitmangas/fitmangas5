@@ -216,7 +216,7 @@ export function defaultWorkflows(): AcqWorkflow[] {
       triggerType: 'ig_dm_inbound',
       triggerConfig: {},
       conditions: {},
-      actions: [{ type: 'qualify_intent' }, { type: 'send_message' }],
+      actions: [{ type: 'qualify_intent' }],
     },
     {
       id: 'wf-hot-escalate',
@@ -351,7 +351,7 @@ export async function updateContactEmail(
   contactId: string,
   email: string,
   optIn = false,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; newsletterDetail?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
   const admin = createAdminClient();
@@ -362,7 +362,50 @@ export async function updateContactEmail(
   if (optIn) patch.opt_in = true;
   const { error } = await admin.from('acq_contacts').update(patch).eq('id', contactId);
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+
+  let newsletterDetail: string | undefined;
+  if (optIn) {
+    const { subscribeAcquisitionEmailToNewsletter } = await import('@/lib/acquisition/newsletter-bridge');
+    const sub = await subscribeAcquisitionEmailToNewsletter(patch.email, 'acquisition_dm');
+    newsletterDetail = sub.detail;
+    if (!sub.ok) {
+      return { ok: true, error: sub.detail, newsletterDetail: sub.detail };
+    }
+  }
+
+  return { ok: true, newsletterDetail };
+}
+
+export async function listOptInContacts(limit = 200): Promise<AcqContact[]> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('acq_contacts')
+    .select('*')
+    .eq('opt_in', true)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapContact(row));
+}
+
+export async function getLatestConversationForContact(contactId: string): Promise<AcqConversation | null> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('acq_conversations')
+    .select('*')
+    .eq('contact_id', contactId)
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const { data: contact } = await admin.from('acq_contacts').select('handle').eq('id', contactId).maybeSingle();
+  return mapConversation({
+    ...data,
+    contact_handle: contact?.handle ?? null,
+  });
 }
 
 export async function tagContact(contactId: string, tag: string): Promise<{ ok: boolean; error?: string }> {

@@ -16,14 +16,25 @@ function hasPilierOrFormat(rows: PerformanceHookRow[]): boolean {
   return rows.some((r) => Boolean(r.pilier?.trim()) || Boolean(r.format?.trim()));
 }
 
-export function PerformanceHooksTable({ rows }: { rows: PerformanceHookRow[] }) {
+export function PerformanceHooksTable({
+  rows,
+  performanceLoop,
+}: {
+  rows: PerformanceHookRow[];
+  performanceLoop?: import('@/lib/acquisition/performance-loop').PerformanceLoopStatus;
+}) {
   if (!rows.length) {
     return (
-      <JourneyBoard title="Boucle de performance" subtitle="Hooks gagnants — few-shot CM">
+      <JourneyBoard title="Boucle de performance" subtitle="Hooks gagnants → few-shot CM">
         <p className="text-sm leading-relaxed" style={{ color: acq.muted }}>
-          Aucun hook scoré pour l’instant. Publie des posts CM et active la sync Insights Meta, ou alimente la banque
-          hooks dans Com’ réseaux.
+          Aucun hook en banque pour l’instant. Publie des posts CM — ils alimentent automatiquement la banque hooks
+          réinjectée à la génération.
         </p>
+        {performanceLoop ? (
+          <p className="mt-3 text-xs leading-relaxed" style={{ color: acq.mutedLight }}>
+            {performanceLoop.metaInsightsNote} · Réinjection : {performanceLoop.reinjectionPath}
+          </p>
+        ) : null}
       </JourneyBoard>
     );
   }
@@ -41,7 +52,11 @@ export function PerformanceHooksTable({ rows }: { rows: PerformanceHookRow[] }) 
           className="mb-4 rounded-[14px] px-4 py-3 text-xs leading-relaxed"
           style={{ backgroundColor: acq.cream, color: acq.muted }}
         >
-          Métriques Saves / Reach disponibles après connexion Insights Meta (sync CM).
+          {performanceLoop?.metaInsightsNote ??
+            'Métriques Saves / Reach disponibles après sync Insights Meta (Publications → Sync).'}
+          {performanceLoop?.cmFewShotConnected
+            ? ` · ${performanceLoop.hooksInBank} hook(s) en banque CM — réinjection active à la génération.`
+            : ' · Banque hooks vide — génère une semaine CM pour alimenter les few-shot.'}
         </p>
       ) : null}
 

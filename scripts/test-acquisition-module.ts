@@ -171,13 +171,15 @@ async function main() {
     }
   }
 
-  // 4. Laboratoire — 10 actions
+  // 4. Laboratoire — 11 actions
   const defaultConfig: Partial<Record<WorkflowActionType, Record<string, unknown>>> = {
     send_message: { body: 'Lab sandbox message.' },
     tag_contact: { tag: 'lab_test' },
     set_lifecycle_stage: { stage: 'qualified' },
     book_session_intent: { courseType: 'visio_collectif' },
     schedule_followup: { delayHours: 24 },
+    broadcast_optin: { body: 'Test broadcast lab FitMangas.' },
+    mini_poll: { question: 'Sur 1 à 5, te sens-tu accompagnée ?' },
   };
 
   if (detail.ok && contact) {

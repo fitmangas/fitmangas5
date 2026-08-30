@@ -152,6 +152,8 @@ export async function acquisitionTestAction(conversationId: string, actionType: 
     set_lifecycle_stage: { stage: 'qualified' },
     book_session_intent: { courseType: 'visio_collectif' },
     schedule_followup: { delayHours: 24 },
+    broadcast_optin: { body: 'Test broadcast sandbox — essai 7 jours FitMangas.' },
+    mini_poll: { question: 'Sur 1 à 5, te sens-tu accompagnée cette semaine ?' },
   };
 
   const result = await runWorkflowAction(
@@ -221,6 +223,7 @@ export async function acquisitionConciergeReply(conversationId: string, market: 
     reply: ai.reply,
     actions: summary.actions.map((a) => ({ ok: a.ok, type: a.type, detail: a.detail })),
     emailCaptured: summary.emailCaptured,
+    newsletterDetail: summary.newsletterDetail,
     messagesSent: summary.actions.some((a) => a.type === 'send_message' && a.ok),
   };
 }

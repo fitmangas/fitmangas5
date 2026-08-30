@@ -1,6 +1,7 @@
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
+import { canEscalateToHuman } from '@/lib/acquisition/engine/lifecycle';
 import { getMessagingProvider } from '@/lib/acquisition/providers';
-import { getPublicTrialSignupUrl, getTrialOfferLabel } from '@/lib/acquisition/trial-url';
+import { getTrialDmMessage } from '@/lib/acquisition/trial-url';
 import type {
   AcqContact,
   AcqConversation,
@@ -11,7 +12,9 @@ import type {
 import {
   createBookingIntent,
   escalateConversation,
+  getLatestConversationForContact,
   insertOutboundMessage,
+  listOptInContacts,
   scheduleFollowup,
   tagContact,
   updateContactLifecycle,
@@ -100,28 +103,52 @@ async function actionSetLifecycle(ctx: ActionContext, config?: Record<string, un
 }
 
 async function actionSendTrialLink(ctx: ActionContext): Promise<ActionResult> {
-  const url = getPublicTrialSignupUrl({
+  const locale = ctx.market === 'mx' ? 'es' : 'fr';
+  const body = getTrialDmMessage({
+    locale,
     utmSource: ctx.conversation.channel,
     utmCampaign: 'acquisition_dm',
   });
-  const label = getTrialOfferLabel('fr');
-  const body = `${label}\n${url}`;
   return actionSendMessage(ctx, { body });
+}
+
+function resolveCourseType(ctx: ActionContext, config?: Record<string, unknown>): 'visio_collectif' | 'nantes_presentiel' {
+  if (config?.courseType === 'nantes_presentiel') return 'nantes_presentiel';
+  if (config?.courseType === 'visio_collectif') return 'visio_collectif';
+  const text = (ctx.inboundText ?? '').toLowerCase();
+  if (/nantes|presentiel|présentiel|sur place/.test(text)) return 'nantes_presentiel';
+  return 'visio_collectif';
 }
 
 async function actionBookSession(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   if (!ctx.contact) return { type: 'book_session_intent', ok: false, detail: 'Contact absent.' };
-  const courseType =
-    config?.courseType === 'nantes_presentiel' ? 'nantes_presentiel' : 'visio_collectif';
+  const courseType = resolveCourseType(ctx, config);
   const r = await createBookingIntent({
     contactId: ctx.contact.id,
     courseType,
     note: typeof config?.note === 'string' ? config.note : undefined,
   });
+  if (!r.ok) {
+    return { type: 'book_session_intent', ok: false, detail: r.error ?? 'Erreur booking' };
+  }
+
+  const locale = ctx.market === 'mx' ? 'es' : 'fr';
+  const confirmBody =
+    courseType === 'nantes_presentiel'
+      ? locale === 'es'
+        ? 'Perfecto — anoto tu interés por un curso presencial en Nantes. Alejandra te contactará con los horarios.'
+        : 'Parfait — je note ton intérêt pour un cours présentiel à Nantes. Alejandra te recontacte avec les créneaux.'
+      : locale === 'es'
+        ? 'Perfecto — anoto tu interés por el visio colectivo. Alejandra te enviará los horarios disponibles.'
+        : 'Parfait — je note ton intérêt pour le visio collectif. Alejandra te envoie les créneaux disponibles.';
+
+  await actionSendMessage(ctx, { body: confirmBody });
+  await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
+
   return {
     type: 'book_session_intent',
-    ok: r.ok,
-    detail: r.ok ? `Intention réservation créée (${courseType}).` : (r.error ?? 'Erreur booking'),
+    ok: true,
+    detail: `Réservation notée (${courseType}) + confirmation envoyée.`,
     data: r,
   };
 }
@@ -151,34 +178,88 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
   };
 }
 
-async function actionBroadcastOptin(ctx: ActionContext): Promise<ActionResult> {
-  if (!ctx.contact?.optIn) {
-    return {
-      type: 'broadcast_optin',
-      ok: false,
-      detail: 'Contact sans opt-in — broadcast refusé (conformité).',
-    };
+async function actionBroadcastOptin(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
+  const body =
+    typeof config?.body === 'string' && config.body.trim()
+      ? config.body.trim()
+      : 'Actu FitMangas — essai 7 jours en visio avec correction en direct : fitmangas.com';
+
+  const contacts = await listOptInContacts(500);
+  if (!contacts.length) {
+    return { type: 'broadcast_optin', ok: false, detail: 'Aucun contact opt-in dans le CRM.' };
   }
-  await insertOutboundMessage({
-    conversationId: ctx.conversation.id,
-    body: '[SANDBOX] Broadcast opt-in simulé — aucun envoi groupé réel.',
-    provider: 'system',
-    sandbox: true,
-  });
+
+  let sent = 0;
+  let failed = 0;
+  const lines: string[] = [];
+
+  for (const contact of contacts) {
+    const conv = await getLatestConversationForContact(contact.id);
+    if (!conv || !contact.handle) {
+      failed += 1;
+      continue;
+    }
+    const provider = getMessagingProvider(contact.channel);
+    if (!provider) {
+      failed += 1;
+      continue;
+    }
+    const send = await provider.sendMessage({
+      conversationExternalId: conv.id,
+      recipientId: contact.handle,
+      body,
+    });
+    if (send.ok) {
+      await insertOutboundMessage({
+        conversationId: conv.id,
+        body: `[BROADCAST] ${body}`,
+        provider: provider.id,
+        sandbox: send.sandbox,
+      });
+      sent += 1;
+      if (send.logLine) lines.push(send.logLine);
+    } else {
+      failed += 1;
+    }
+  }
+
   return {
     type: 'broadcast_optin',
-    ok: true,
-    detail: 'Broadcast sandbox enregistré (opt-in OK, aucun envoi Meta).',
+    ok: sent > 0,
+    detail: `Broadcast : ${sent} envoyé(s), ${failed} échec(s) sur ${contacts.length} opt-in.${lines[0] ? ` ${lines[0]}` : ''}`,
+    data: { sent, failed, total: contacts.length },
+  };
+}
+
+async function actionMiniPoll(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
+  if (!ctx.contact) return { type: 'mini_poll', ok: false, detail: 'Contact absent.' };
+
+  const locale = ctx.market === 'mx' ? 'es' : 'fr';
+  const question =
+    typeof config?.question === 'string' && config.question.trim()
+      ? config.question.trim()
+      : locale === 'es'
+        ? 'Del 1 al 5, ¿cuánto te sientes acompañada en tu práctica esta semana?'
+        : 'Sur une échelle de 1 à 5, à quel point te sens-tu accompagnée dans ta pratique cette semaine ?';
+
+  const body = `${question}\n1 — Pas du tout\n2 — Un peu\n3 — Moyennement\n4 — Bien\n5 — Vraiment accompagnée\n\n(Réponds avec un chiffre.)`;
+
+  await tagContact(ctx.contact.id, 'poll_sent');
+  const send = await actionSendMessage(ctx, { body });
+  return {
+    type: 'mini_poll',
+    ok: send.ok,
+    detail: send.ok ? 'Mini-sondage envoyé — en attente de réponse 1-5.' : send.detail,
   };
 }
 
 async function actionEscalateHuman(ctx: ActionContext): Promise<ActionResult> {
   const stage = ctx.contact?.lifecycleStage ?? ctx.conversation.lifecycleStage;
-  if (stage !== 'qualified' && stage !== 'trial' && stage !== 'paid') {
+  if (!canEscalateToHuman(stage)) {
     return {
       type: 'escalate_human',
       ok: false,
-      detail: `Escalade refusée — étape « ${stage} » trop froide (garde-fou).`,
+      detail: `Escalade refusée — étape « ${stage} » trop froide (qualified/trial/paid requis).`,
     };
   }
   const assignedTo = 'alejandra@fitmangas.com';
@@ -222,9 +303,11 @@ export async function runWorkflowAction(
     case 'schedule_followup':
       return actionScheduleFollowup(ctx, spec.config);
     case 'broadcast_optin':
-      return actionBroadcastOptin(ctx);
+      return actionBroadcastOptin(ctx, spec.config);
     case 'escalate_human':
       return actionEscalateHuman(ctx);
+    case 'mini_poll':
+      return actionMiniPoll(ctx, spec.config);
     default:
       return { type: spec.type, ok: false, detail: `Action inconnue : ${spec.type}` };
   }

@@ -8,8 +8,8 @@ export function nextLifecycleStage(current: LifecycleStage): LifecycleStage | nu
   return LIFECYCLE_ORDER[idx + 1]!;
 }
 
-export function canEscalateToHuman(stage: LifecycleStage): boolean {
-  return stage === 'qualified' || stage === 'trial' || stage === 'paid';
+export function canEscalateToHuman(stage: LifecycleStage | string | undefined): boolean {
+  return stage === 'qualified' || stage === 'trial' || stage === 'paid' || stage === 'member';
 }
 
 export function lifecycleLabel(stage: LifecycleStage): string {

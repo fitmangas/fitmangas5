@@ -8,6 +8,7 @@ import { fetchMetaPixelStatus } from '@/lib/acquisition/sources/metaPixel';
 import { fetchGscAcquisitionMetrics } from '@/lib/acquisition/sources/searchConsole';
 import { fetchStripeAcquisitionMetrics } from '@/lib/acquisition/sources/stripe';
 import { fetchSupabaseAcquisitionMetrics } from '@/lib/acquisition/sources/supabase';
+import { getPerformanceLoopStatus } from '@/lib/acquisition/performance-loop';
 import { fetchAcqCrmFunnel } from '@/lib/acquisition/sources/acq-crm';
 import { getMetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
 import type {
@@ -100,7 +101,7 @@ export async function buildAcquisitionOverview(
   channel: AcquisitionChannel | 'all' = 'all',
 ): Promise<AcquisitionOverview> {
   const sourceErrors: SourceError[] = [];
-  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive] = await Promise.all([
+  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive, performanceLoop] = await Promise.all([
     fetchGa4AcquisitionMetrics(),
     fetchGscAcquisitionMetrics(),
     fetchStripeAcquisitionMetrics(),
@@ -109,6 +110,7 @@ export async function buildAcquisitionOverview(
     isAcquisitionSchemaReady(),
     fetchAcqCrmFunnel(channel),
     getMetaLiveReadiness(),
+    getPerformanceLoopStatus(),
   ]);
 
   if (!ga4.ok) sourceErrors.push({ provider: ga4.provider, error: ga4.error });
@@ -261,5 +263,6 @@ export async function buildAcquisitionOverview(
     schemaReady,
     messagingMode: getMessagingMode(),
     metaLiveReadiness: metaLive,
+    performanceLoop,
   };
 }

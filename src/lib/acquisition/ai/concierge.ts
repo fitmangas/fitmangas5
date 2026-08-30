@@ -1,4 +1,4 @@
-import { CONCIERGE_SYSTEM_PROMPT, isAiDisclosureEnabled } from '@/lib/acquisition/config';
+import { CONCIERGE_OPENING_ES, CONCIERGE_OPENING_FR, CONCIERGE_SYSTEM_PROMPT, isAiDisclosureEnabled } from '@/lib/acquisition/config';
 
 export type ConciergeIntent = 'info' | 'trial' | 'booking' | 'human' | 'optout';
 
@@ -22,20 +22,20 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
   const replies: Record<ConciergeIntent, string> = {
     info:
       market === 'mx'
-        ? 'FitMangas no es un vídeo más: es una cita fija en visio, con corrección en directo. ¿Te interesa probar 7 días gratis?'
-        : 'FitMangas, ce n’est pas une vidéo de plus : c’est un rendez-vous fixe en visio, avec correction en direct. Tu veux tester l’essai 7 jours ?',
+        ? `${CONCIERGE_OPENING_ES} ¿Te interesa probar 7 días gratis?`
+        : `${CONCIERGE_OPENING_FR} Tu veux tester l’essai 7 jours ?`,
     trial:
       market === 'mx'
-        ? 'Te envío el enlace de prueba 7 días — sin compromiso, con tarjeta solo al final del periodo de prueba.'
-        : 'Je t’envoie le lien d’essai 7 jours — sans engagement, carte demandée seulement à la fin de l’essai.',
+        ? `${CONCIERGE_OPENING_ES} Te envío el enlace de prueba 7 días — tarjeta solo al final si sigues.`
+        : `${CONCIERGE_OPENING_FR} Je t’envoie le lien d’essai 7 jours — carte demandée seulement à la fin si tu continues.`,
     booking:
       market === 'mx'
-        ? '¿Prefieres visio colectivo o presencial en Nantes? Te ayudo a reservar.'
-        : 'Tu préfères le visio collectif ou le présentiel à Nantes ? Je t’aide à réserver.',
+        ? '¿Prefieres visio colectivo o presencial en Nantes? Te ayudo a reservar un hueco.'
+        : 'Tu préfères le visio collectif ou le présentiel à Nantes ? Je note ta demande de créneau.',
     human:
       market === 'mx'
-        ? 'Te pongo en contacto con Alejandra — ella te responderá personalmente.'
-        : 'Je te mets en relation avec Alejandra — elle te répondra en direct.',
+        ? 'Alejandra responde personalmente a las clientas en prueba o suscritas. ¿Quieres empezar con la prueba 7 días?'
+        : 'Alejandra répond en direct aux clientes en essai ou abonnées. Tu veux commencer par l’essai 7 jours ?',
     optout: market === 'mx' ? 'Entendido, no te escribo más.' : 'Compris, je ne t’écris plus.',
   };
 
@@ -43,7 +43,7 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
     info: ['send_trial_link'],
     trial: ['send_trial_link', 'capture_email_optin'],
     booking: ['book_session_intent'],
-    human: ['escalate_human'],
+    human: ['send_trial_link'],
     optout: [],
   };
 
