@@ -17,6 +17,8 @@ export async function POST() {
       scanned: result.scanned,
       written: result.written,
       skippedRejected: result.skippedRejected,
+      skippedJibriReplays: result.skippedJibriReplays,
+      skippedCourseRecordings: result.skippedCourseRecordings,
       errors: result.errors,
       folderColumnSkipped: result.folderColumnSkipped,
       since: result.since,

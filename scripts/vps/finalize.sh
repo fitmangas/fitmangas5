@@ -105,6 +105,19 @@ fi
 
 FILENAME="$(basename "${MP4_PATH}")"
 RECORDINGS_DIR="${RECORDINGS_DIR:-$(dirname "${MP4_PATH}")}"
+if [[ -d "${RECORDING_INPUT}" ]]; then
+  SESSION_DIR="${RECORDING_INPUT}"
+else
+  SESSION_DIR="$(dirname "${MP4_PATH}")"
+fi
+UPLOAD_MARKER="${SESSION_DIR}/.fitmangas-vimeo-upload"
+FINALIZED_MARKER="${SESSION_DIR}/.fitmangas-finalized"
+
+if [[ -f "${FINALIZED_MARKER}" ]]; then
+  log "skip session déjà finalisée vimeoId=$(tr -d '[:space:]' < "${FINALIZED_MARKER}") dir=${SESSION_DIR}"
+  exit 0
+fi
+
 APP_URL="${FITMANGAS_APP_URL:-https://fitmangas.com}"
 TOKEN="${VIMEO_ACCESS_TOKEN:?VIMEO_ACCESS_TOKEN requis — vérifie finalize.env}"
 SECRET="${RECORDING_INGEST_SECRET:?RECORDING_INGEST_SECRET requis — vérifie finalize.env}"
@@ -116,7 +129,12 @@ VIMEO_API="https://api.vimeo.com"
 FILE_SIZE="$(stat -c%s "${MP4_PATH}" 2>/dev/null || stat -f%z "${MP4_PATH}")"
 log "start input=${RECORDING_INPUT} file=${FILENAME} size=${FILE_SIZE} session=${SESSION_ID:-none}"
 
-# --- 1) Créer l’upload TUS ---
+# --- 1) Créer l’upload TUS (ou reprendre sans re-upload) ---
+if [[ -f "${UPLOAD_MARKER}" ]]; then
+  VIMEO_ID="$(tr -d '[:space:]' < "${UPLOAD_MARKER}")"
+  VIMEO_URI="/videos/${VIMEO_ID}"
+  log "reprise sans re-upload vimeoId=${VIMEO_ID} (marker ${UPLOAD_MARKER})"
+else
 CREATE_RESP="$(curl -fsS -X POST "${VIMEO_API}/me/videos" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
@@ -132,6 +150,7 @@ if [[ -z "${UPLOAD_LINK}" || -z "${VIMEO_ID}" ]]; then
   err "création upload TUS échouée: ${CREATE_RESP}"
   exit 1
 fi
+echo "${VIMEO_ID}" > "${UPLOAD_MARKER}"
 log "tus created vimeoId=${VIMEO_ID}"
 
 # --- 2) Upload TUS (streaming disque → réseau, pas de chargement RAM complet) ---
@@ -146,6 +165,7 @@ if ! curl -fS --max-time "${TUS_TIMEOUT_S}" \
   exit 1
 fi
 log "tus upload OK (stream) vimeoId=${VIMEO_ID} size=${FILE_SIZE}"
+fi
 
 # --- 3) Probe playable (boucle) — delete INTERDIT tant que false ---
 wait_until_playable() {
@@ -213,6 +233,8 @@ log "ingest OK"
 
 # --- 5) Delete MP4 UNIQUEMENT ici (playable + ingest OK) ---
 rm -f "${MP4_PATH}"
+echo "${VIMEO_ID}" > "${FINALIZED_MARKER}"
+rm -f "${UPLOAD_MARKER}"
 log "MP4 deleted after playable confirm: ${FILENAME}"
 
 # --- 6) Filet disque 80 % (secondaire) ---

@@ -38,6 +38,13 @@ export function parseJibriParisStartAt(dateBlock: string): Date | null {
   return fromZonedTime(wall, COACH_PUBLISH_TIMEZONE);
 }
 
+/** Titre ou nom de fichier Jibri (replay live) — à exclure de la bibliothèque standalone Vimeo. */
+export function isJibriRecordingFileNameOrTitle(name: string | null | undefined): boolean {
+  const base = name?.trim().split(/[/\\]/).pop() ?? '';
+  if (!base) return false;
+  return JIBRI_FILENAME_RE.test(base);
+}
+
 export function parseJibriRecordingFileName(fileName: string): ParsedJibriRecordingFileName | null {
   const base = fileName.trim().split(/[/\\]/).pop() ?? '';
   const match = base.match(JIBRI_FILENAME_RE);

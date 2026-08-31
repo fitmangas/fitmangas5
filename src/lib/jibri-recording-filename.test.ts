@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isJibriRecordingFileNameOrTitle,
   parseJibriParisStartAt,
   parseJibriRecordingFileName,
   pickClosestJibriCourseMatch,
@@ -62,5 +63,16 @@ describe('pickClosestJibriCourseMatch', () => {
       parsed!,
     );
     expect(hit?.id).toBe('1835');
+  });
+});
+
+describe('isJibriRecordingFileNameOrTitle', () => {
+  it('detecte un nom de replay Jibri', () => {
+    const name = 'fitmangas-renfo-core-202605312000_2026-05-31-20-02-08.mp4';
+    expect(isJibriRecordingFileNameOrTitle(name)).toBe(true);
+  });
+
+  it('ignore une vraie vidéo bibliothèque', () => {
+    expect(isJibriRecordingFileNameOrTitle('Barre flow — séance 12')).toBe(false);
   });
 });

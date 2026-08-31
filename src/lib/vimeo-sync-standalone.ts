@@ -1,3 +1,4 @@
+import { isJibriRecordingFileNameOrTitle } from '@/lib/jibri-recording-filename';
 import { isMissingVimeoFolderColumnError, resolveVimeoFolderDisplayName } from '@/lib/vimeo-folder';
 import { listAllMeVideos, type VimeoVideoMetadata } from '@/lib/vimeo';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -15,6 +16,9 @@ export type VimeoSyncAllResult = {
   scanned: number;
   written: number;
   skippedRejected: number;
+  skippedJibriReplays: number;
+  skippedCourseRecordings: number;
+  prunedFromDb: number;
   errors: string[];
   folderColumnSkipped: boolean;
   mode: 'all' | 'new';
@@ -42,6 +46,12 @@ function buildWebhookPayload(
   return { source: 'vimeo-sync', synced_at: nowIso };
 }
 
+type ExistingStandaloneRow = {
+  validation_status?: string;
+  webhook_payload?: unknown;
+  published_at?: string | null;
+};
+
 /** Payload upsert : uniquement des clés présentes dans le schéma SQL (010 + 011 + coach_id). */
 function buildUpsertRow(
   meta: VimeoVideoMetadata,
@@ -49,7 +59,20 @@ function buildUpsertRow(
   nowIso: string,
   webhookPayload: Record<string, unknown>,
   coachId: string,
+  existing: ExistingStandaloneRow | null,
 ): Record<string, unknown> {
+  const existingStatus = existing?.validation_status;
+  const validation_status =
+    existingStatus === 'published' ||
+    existingStatus === 'rejected' ||
+    existingStatus === 'scheduled' ||
+    existingStatus === 'pending'
+      ? existingStatus
+      : 'pending';
+
+  const published_at =
+    validation_status === 'published' ? (existing?.published_at ?? nowIso) : existing?.published_at ?? null;
+
   return {
     vimeo_video_id: String(meta.vimeoId),
     vimeo_uri: meta.vimeoUri ?? null,
@@ -58,8 +81,8 @@ function buildUpsertRow(
     thumbnail_url: meta.thumbnailUrl ?? null,
     duration_seconds: clampDurationSeconds(meta.durationSeconds),
     embed_url: meta.embedUrl ?? meta.link ?? null,
-    validation_status: 'published',
-    published_at: nowIso,
+    validation_status,
+    published_at,
     webhook_payload: webhookPayload,
     vimeo_folder_name: displayFolder,
     coach_id: coachId,
@@ -87,17 +110,69 @@ function omitFolderName(row: Record<string, unknown>): Record<string, unknown> {
   return rest;
 }
 
+function shouldSkipStandaloneImport(
+  meta: VimeoVideoMetadata,
+  jitsiIds: Set<string>,
+): 'jibri' | 'course_recording' | null {
+  if (jitsiIds.has(String(meta.vimeoId))) return 'course_recording';
+  if (isJibriRecordingFileNameOrTitle(meta.title) || isJibriRecordingFileNameOrTitle(meta.description)) {
+    return 'jibri';
+  }
+  return null;
+}
+
+/** Supprime les entrées standalone créées par erreur (replays Jibri / cours). */
+async function pruneErroneousStandaloneRows(
+  admin: ReturnType<typeof createAdminClient>,
+  vimeoIdsOnAccount: Set<string>,
+): Promise<number> {
+  const { data: rows, error } = await admin
+    .from('standalone_vimeo_videos')
+    .select('id, vimeo_video_id, title, validation_status, webhook_payload');
+  if (error) throw new Error(`Lecture standalone pour purge: ${error.message}`);
+
+  const toDelete: string[] = [];
+  for (const row of rows ?? []) {
+    const id = String(row.id);
+    const vimeoId = String(row.vimeo_video_id ?? '');
+    const title = typeof row.title === 'string' ? row.title : null;
+    const payload = row.webhook_payload;
+    const syncedViaAdmin =
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      (payload as Record<string, unknown>).published_via === 'vimeo-sync';
+
+    if (isJibriRecordingFileNameOrTitle(title)) {
+      toDelete.push(id);
+      continue;
+    }
+    if (syncedViaAdmin && vimeoId && !vimeoIdsOnAccount.has(vimeoId)) {
+      toDelete.push(id);
+    }
+  }
+
+  if (toDelete.length === 0) return 0;
+
+  const chunkSize = 200;
+  let deleted = 0;
+  for (let i = 0; i < toDelete.length; i += chunkSize) {
+    const chunk = toDelete.slice(i, i + chunkSize);
+    const { error: delErr, count } = await admin.from('standalone_vimeo_videos').delete({ count: 'exact' }).in('id', chunk);
+    if (delErr) throw new Error(`Purge standalone: ${delErr.message}`);
+    deleted += count ?? chunk.length;
+  }
+  return deleted;
+}
+
 /**
- * Importe / met à jour toutes les vidéos du compte Vimeo dans `standalone_vimeo_videos`.
- * `coachId` : identifiant profil / admin déclenchant la sync (souvent `auth.uid()` côté API).
- * Chaque passage force **published** (+ published_at) pour que la bibliothèque admin / client voient les entrées.
- * Les lignes **rejected** ne sont pas réécrites (respect du rejet admin).
- *
- * Si la migration **011** (`vimeo_folder_name`) n’est pas appliquée, un second upsert sans cette colonne est tenté.
+ * Importe / met à jour les vidéos du compte Vimeo dans `standalone_vimeo_videos`.
+ * Les replays Jibri (noms fitmangas-…mp4) et les IDs déjà dans video_recordings sont ignorés.
+ * Les nouvelles entrées arrivent en **pending** (validation admin) — jamais publiées automatiquement.
  */
 export async function syncAllStandaloneVimeoFromAccount(
   coachId: string,
-  options: { onlyNew?: boolean } = {},
+  options: { onlyNew?: boolean; prune?: boolean } = {},
 ): Promise<VimeoSyncAllResult> {
   const admin = createAdminClient();
   const since = options.onlyNew ? await readLastSyncAt(admin) : null;
@@ -110,6 +185,7 @@ export async function syncAllStandaloneVimeoFromAccount(
   );
 
   const allVideos = await listAllMeVideos();
+  const vimeoIdsOnAccount = new Set(allVideos.map((v) => String(v.vimeoId)));
   const videos =
     options.onlyNew && since
       ? allVideos.filter((video) => {
@@ -119,17 +195,29 @@ export async function syncAllStandaloneVimeoFromAccount(
       : allVideos;
   let written = 0;
   let skippedRejected = 0;
+  let skippedJibriReplays = 0;
+  let skippedCourseRecordings = 0;
   const errors: string[] = [];
   let folderColumnSkipped = false;
 
   for (const meta of videos) {
+    const skipReason = shouldSkipStandaloneImport(meta, jitsiIds);
+    if (skipReason === 'jibri') {
+      skippedJibriReplays += 1;
+      continue;
+    }
+    if (skipReason === 'course_recording') {
+      skippedCourseRecordings += 1;
+      continue;
+    }
+
     try {
       const displayFolder = resolveVimeoFolderDisplayName(meta.folderName, meta.vimeoId, jitsiIds);
       const nowIso = new Date().toISOString();
 
       const { data: existing } = await admin
         .from('standalone_vimeo_videos')
-        .select('validation_status, webhook_payload')
+        .select('validation_status, webhook_payload, published_at')
         .eq('vimeo_video_id', String(meta.vimeoId))
         .maybeSingle();
 
@@ -144,7 +232,7 @@ export async function syncAllStandaloneVimeoFromAccount(
       }
 
       const webhookPayload = buildWebhookPayload(existing?.webhook_payload, nowIso);
-      const row = buildUpsertRow(meta, displayFolder, nowIso, webhookPayload, coachId);
+      const row = buildUpsertRow(meta, displayFolder, nowIso, webhookPayload, coachId, existing);
 
       let { error } = await admin.from('standalone_vimeo_videos').upsert(row, {
         onConflict: 'vimeo_video_id',
@@ -164,11 +252,23 @@ export async function syncAllStandaloneVimeoFromAccount(
     }
   }
 
+  let prunedFromDb = 0;
+  if (options.prune !== false && !options.onlyNew) {
+    try {
+      prunedFromDb = await pruneErroneousStandaloneRows(admin, vimeoIdsOnAccount);
+    } catch (e) {
+      errors.push(`purge: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   const mode: VimeoSyncAllResult['mode'] = options.onlyNew ? 'new' : 'all';
   const result: VimeoSyncAllResult = {
     scanned: videos.length,
     written,
     skippedRejected,
+    skippedJibriReplays,
+    skippedCourseRecordings,
+    prunedFromDb,
     errors,
     folderColumnSkipped,
     mode,
@@ -181,5 +281,5 @@ export async function syncAllStandaloneVimeoFromAccount(
 }
 
 export async function syncNewStandaloneVimeoFromAccount(coachId: string): Promise<VimeoSyncAllResult> {
-  return syncAllStandaloneVimeoFromAccount(coachId, { onlyNew: true });
+  return syncAllStandaloneVimeoFromAccount(coachId, { onlyNew: true, prune: false });
 }

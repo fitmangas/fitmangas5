@@ -17,6 +17,9 @@ async function runSync() {
       scanned: result.scanned,
       written: result.written,
       skippedRejected: result.skippedRejected,
+      skippedJibriReplays: result.skippedJibriReplays,
+      skippedCourseRecordings: result.skippedCourseRecordings,
+      prunedFromDb: result.prunedFromDb,
       errors: result.errors,
       folderColumnSkipped: result.folderColumnSkipped,
     });

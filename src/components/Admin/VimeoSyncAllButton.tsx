@@ -22,6 +22,9 @@ export function VimeoSyncAllButton() {
         scanned?: number;
         written?: number;
         skippedRejected?: number;
+        skippedJibriReplays?: number;
+        skippedCourseRecordings?: number;
+        prunedFromDb?: number;
         since?: string | null;
         errors?: string[];
         error?: string;
@@ -49,8 +52,14 @@ export function VimeoSyncAllButton() {
             ? ` depuis ${new Date(json.since).toLocaleString('fr-FR')}`
             : ' depuis la première synchronisation'
           : '';
+      const skipHint =
+        (json.skippedJibriReplays ?? 0) > 0 || (json.skippedCourseRecordings ?? 0) > 0
+          ? ` — ${json.skippedJibriReplays ?? 0} replay(s) live ignoré(s), ${json.skippedCourseRecordings ?? 0} replay(s) cours ignoré(s).`
+          : '';
+      const pruneHint =
+        mode === 'all' && (json.prunedFromDb ?? 0) > 0 ? ` — ${json.prunedFromDb} entrée(s) fantôme(s) supprimée(s).` : '';
       setLastMsg(
-        `OK : ${json.scanned ?? 0} ${mode === 'new' ? 'nouvelle(s) vidéo(s)' : 'vidéo(s)'} scannée(s)${sinceHint}, ${json.written ?? 0} ligne(s) écrite(s), ${json.skippedRejected ?? 0} rejetée(s) ignorée(s).${errHint}${migrationHint}`,
+        `OK : ${json.scanned ?? 0} ${mode === 'new' ? 'nouvelle(s) vidéo(s)' : 'vidéo(s)'} scannée(s)${sinceHint}, ${json.written ?? 0} ligne(s) écrite(s), ${json.skippedRejected ?? 0} rejetée(s) ignorée(s).${skipHint}${pruneHint}${errHint}${migrationHint}`,
       );
       router.refresh();
     } catch {
@@ -81,7 +90,8 @@ export function VimeoSyncAllButton() {
         </button>
       </div>
       <p className="text-[11px] leading-relaxed text-luxury-muted">
-        La synchronisation complète réimporte toutes les vidéos du compte Vimeo. Utilise-la seulement pour reconstruire la bibliothèque.
+        « Nouvelles vidéos » importe en <strong>en attente</strong> (validation admin). La sync complète reconstruit
+        la bibliothèque et supprime les entrées fantômes — les replays live Jibri sont exclus.
       </p>
       {lastMsg ? <p className="text-xs leading-relaxed text-luxury-muted">{lastMsg}</p> : null}
     </div>

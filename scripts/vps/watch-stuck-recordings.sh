@@ -73,6 +73,11 @@ while IFS= read -r -d '' session_dir; do
     continue
   fi
 
+  if [[ -f "${session_dir}/.fitmangas-finalized" ]]; then
+    log "skip déjà finalisé: $(basename "${session_dir}")"
+    continue
+  fi
+
   FOUND=$((FOUND + 1))
   log "finalize → $(basename "${session_dir}") / $(basename "${mp4}") (${size}o, age=${age}s)"
 
