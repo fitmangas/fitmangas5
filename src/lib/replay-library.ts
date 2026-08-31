@@ -46,6 +46,7 @@ type RecordingRow = {
   duration_seconds: number | null;
   vimeo_video_id: string | null;
   embed_url: string | null;
+  created_at?: string;
   courses: CourseEmbed | CourseEmbed[] | null;
 };
 
@@ -58,10 +59,11 @@ function resolveCourse(row: RecordingRow): CourseEmbed | null {
 function mapAndFilter(
   rows: RecordingRow[] | null,
   options?: { hiddenVimeoIds?: Set<string> },
-): ReplayLibraryItem[] {
+): { items: ReplayLibraryItem[]; createdAtByRecordingId: Map<string, string> } {
   const now = Date.now();
   const hidden = options?.hiddenVimeoIds ?? new Set<string>();
   const list: ReplayLibraryItem[] = [];
+  const createdAtByRecordingId = new Map<string, string>();
   for (const row of rows ?? []) {
     const c = resolveCourse(row);
     if (!c?.is_published) continue;
@@ -71,6 +73,7 @@ function mapAndFilter(
     if (vimeoId && hidden.has(vimeoId)) continue;
     const embed = row.embed_url?.trim() ?? '';
     if (!vimeoId && !embed) continue;
+    if (row.created_at) createdAtByRecordingId.set(row.id, row.created_at);
     list.push({
       recordingId: row.id,
       courseId: c.id,
@@ -89,7 +92,28 @@ function mapAndFilter(
     });
   }
   list.sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
-  return list;
+  return {
+    items: dedupeByCourseId(list, createdAtByRecordingId),
+    createdAtByRecordingId,
+  };
+}
+
+/** Un seul replay visible par séance — garde l’enregistrement le plus ancien. */
+function dedupeByCourseId(list: ReplayLibraryItem[], createdAtByRecordingId: Map<string, string>): ReplayLibraryItem[] {
+  const seen = new Map<string, ReplayLibraryItem>();
+  for (const item of list) {
+    const prev = seen.get(item.courseId);
+    if (!prev) {
+      seen.set(item.courseId, item);
+      continue;
+    }
+    const prevAt = createdAtByRecordingId.get(prev.recordingId) ?? '';
+    const curAt = createdAtByRecordingId.get(item.recordingId) ?? '';
+    if (curAt && prevAt && curAt < prevAt) {
+      seen.set(item.courseId, item);
+    }
+  }
+  return [...seen.values()].sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
 }
 
 async function loadHiddenStandaloneVimeoIds(): Promise<Set<string>> {
@@ -169,7 +193,7 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
   ]);
 
   const selectCols =
-    'id, title, duration_seconds, vimeo_video_id, embed_url, courses ( id, title, slug, description, starts_at, ends_at, is_published, course_language )';
+    'id, title, duration_seconds, vimeo_video_id, embed_url, created_at, courses ( id, title, slug, description, starts_at, ends_at, is_published, course_language )';
 
   let rows: RecordingRow[] | null = null;
 
@@ -193,7 +217,8 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
     rows = data as unknown as RecordingRow[] | null;
   }
 
-  let list = mapAndFilter(rows, { hiddenVimeoIds });
+  const mapped = mapAndFilter(rows, { hiddenVimeoIds });
+  let list = mapped.items;
   list = await enrichAndFilterPlayable(list);
   return attachReplayExtras(userId, list);
 }

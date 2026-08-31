@@ -1,46 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { dispatchReplayReady } from '@/lib/notifications/phase2';
+import { rejectSiblingCourseRecordings, upsertCourseRecordingForCourse } from '@/lib/course-recording-upsert';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseVimeoVideoId } from '@/lib/vimeo-parse-id';
 import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 import { getVideoMetadata, normalizeDurationSeconds, type VimeoVideoMetadata } from '@/lib/vimeo';
 
 export type CourseRecordingValidationStatus = 'pending' | 'approved' | 'rejected';
-
-type ExistingRecording = {
-  validation_status: string;
-  is_ready: boolean;
-  available_at: string | null;
-};
-
-function buildMetadataFields(metadata: VimeoVideoMetadata) {
-  return {
-    vimeo_video_id: metadata.vimeoId,
-    vimeo_uri: metadata.vimeoUri,
-    title: metadata.title,
-    description: metadata.description,
-    embed_url: metadata.embedUrl ?? metadata.link,
-    thumbnail_url: metadata.thumbnailUrl,
-    duration_seconds: normalizeDurationSeconds(metadata.durationSeconds),
-    privacy_view: metadata.privacyView ?? 'unlisted',
-    upload_status: metadata.isReady ? ('ready' as const) : ('transcoding' as const),
-    metadata: {
-      link: metadata.link,
-      transcode_status: metadata.transcodeStatus,
-    },
-  };
-}
-
-function resolvePublishState(existing: ExistingRecording | null | undefined) {
-  const approved = existing?.validation_status === 'approved' && existing.is_ready === true;
-  return {
-    validation_status: (existing?.validation_status as CourseRecordingValidationStatus | undefined) ?? 'pending',
-    is_ready: approved,
-    available_at: approved ? (existing?.available_at ?? new Date().toISOString()) : null,
-  };
-}
-
 /**
  * Lie un replay Vimeo à un cours (statut pending, pas de publication client).
  */
@@ -68,26 +35,11 @@ export async function linkCourseReplay(params: {
 
   const metadata = await getVideoMetadata(vimeoId);
 
-  const { data: existing } = await admin
-    .from('video_recordings')
-    .select('validation_status, is_ready, available_at')
-    .eq('vimeo_video_id', metadata.vimeoId)
-    .maybeSingle();
-
-  const publish = resolvePublishState(existing as ExistingRecording | null);
-  const forcePending = !existing;
-
-  const payload = {
-    course_id: params.courseId,
-    ...buildMetadataFields(metadata),
-    validation_status: forcePending ? ('pending' as const) : publish.validation_status,
-    is_ready: forcePending ? false : publish.is_ready,
-    available_at: forcePending ? null : publish.available_at,
-    created_by: params.createdBy ?? null,
-  };
-
-  const { error } = await admin.from('video_recordings').upsert(payload, { onConflict: 'vimeo_video_id' });
-  if (error) throw new Error(`Liaison replay impossible : ${error.message}`);
+  await upsertCourseRecordingForCourse(admin, {
+    courseId: params.courseId,
+    metadata,
+    createdBy: params.createdBy ?? null,
+  });
 
   return metadata;
 }
@@ -135,6 +87,7 @@ export async function approveCourseReplay(
     .eq('id', recordingId);
   if (error) throw error;
 
+  await rejectSiblingCourseRecordings(admin, String(rec.course_id), recordingId);
   await dispatchReplayReady(admin, String(rec.course_id));
   return { ok: true };
 }
