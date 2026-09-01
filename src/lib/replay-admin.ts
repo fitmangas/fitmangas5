@@ -92,6 +92,49 @@ export async function approveCourseReplay(
   return { ok: true };
 }
 
+/** Réintègre des replays côté client sans notifier les adhérentes (restauration bulk). */
+export async function approveCourseReplaysSilentBulk(
+  admin: SupabaseClient,
+  recordingIds: string[],
+): Promise<{ updated: number; skipped: number }> {
+  const ids = [...new Set(recordingIds.map((id) => id.trim()).filter(Boolean))];
+  if (ids.length === 0) return { updated: 0, skipped: 0 };
+
+  const { data: rows, error: fetchError } = await admin
+    .from('video_recordings')
+    .select('id, validation_status, is_ready, available_at, created_at, course_id')
+    .in('id', ids);
+  if (fetchError) throw fetchError;
+
+  let updated = 0;
+  let skipped = 0;
+  const now = new Date().toISOString();
+
+  for (const row of rows ?? []) {
+    if (row.validation_status === 'approved' && row.is_ready === true) {
+      skipped += 1;
+      continue;
+    }
+    const availableAt = row.available_at ?? row.created_at ?? now;
+    const { error } = await admin
+      .from('video_recordings')
+      .update({
+        validation_status: 'approved',
+        is_ready: true,
+        available_at: availableAt,
+        upload_status: 'ready',
+      })
+      .eq('id', row.id);
+    if (error) throw error;
+    if (row.course_id) {
+      await rejectSiblingCourseRecordings(admin, String(row.course_id), String(row.id));
+    }
+    updated += 1;
+  }
+
+  return { updated, skipped };
+}
+
 export async function rejectCourseReplay(
   admin: SupabaseClient,
   recordingId: string,

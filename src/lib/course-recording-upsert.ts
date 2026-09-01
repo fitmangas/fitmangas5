@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { VimeoVideoMetadata } from '@/lib/vimeo';
 import { normalizeDurationSeconds } from '@/lib/vimeo';
+import { probeVimeoPlayback } from '@/lib/vimeo-playback';
 
 type CourseRecordingRow = {
   id: string;
@@ -86,13 +87,33 @@ export async function upsertCourseRecordingForCourse(
   const active = (siblings ?? []) as CourseRecordingRow[];
   const approvedSibling = active.find((r) => r.validation_status === 'approved' && r.is_ready === true);
   if (approvedSibling && approvedSibling.vimeo_video_id !== metadata.vimeoId) {
-    console.warn('[course-recording-upsert] doublon ignoré — cours déjà validé', {
-      courseId,
-      existingId: approvedSibling.id,
-      existingVimeo: approvedSibling.vimeo_video_id,
-      incomingVimeo: metadata.vimeoId,
-    });
-    return { action: 'skipped_duplicate', vimeoId: metadata.vimeoId, existingRecordingId: approvedSibling.id };
+    const existingVimeo = approvedSibling.vimeo_video_id?.trim() ?? '';
+    let existingStillOnVimeo = true;
+    if (existingVimeo) {
+      const probe = await probeVimeoPlayback(existingVimeo);
+      existingStillOnVimeo = probe.confidence !== 'unavailable';
+    }
+    if (existingStillOnVimeo) {
+      console.warn('[course-recording-upsert] doublon ignoré — cours déjà validé', {
+        courseId,
+        existingId: approvedSibling.id,
+        existingVimeo: approvedSibling.vimeo_video_id,
+        incomingVimeo: metadata.vimeoId,
+      });
+      return {
+        action: 'skipped_duplicate',
+        vimeoId: metadata.vimeoId,
+        existingRecordingId: approvedSibling.id,
+      };
+    }
+    await admin
+      .from('video_recordings')
+      .update({
+        validation_status: 'pending',
+        is_ready: false,
+        available_at: null,
+      })
+      .eq('id', approvedSibling.id);
   }
 
   const pendingSibling = active.find((r) => r.validation_status === 'pending');

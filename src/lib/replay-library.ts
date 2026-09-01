@@ -176,9 +176,14 @@ async function enrichAndFilterPlayable(list: ReplayLibraryItem[]): Promise<Repla
     }
 
     // Sonde en échec / token manquant : garder la vignette avec statut « unknown »
-    // (pas de lecteur cassé). Confirmé non playable : ne pas afficher.
+    // (pas de lecteur cassé). Confirmé non playable : afficher quand même (badge « bientôt »).
     if (probe.confidence === 'unknown') {
       next.push({ ...item, durationSeconds, isPlayable: false, playbackStatus: 'unknown' });
+      continue;
+    }
+
+    if (probe.confidence === 'unavailable') {
+      next.push({ ...item, durationSeconds, isPlayable: false, playbackStatus: 'unavailable' });
     }
   }
 
