@@ -22,6 +22,12 @@ import {
   toCourseDatetimeLocalValue,
 } from '@/lib/course-datetime';
 import { isCourseLanguage } from '@/lib/course-language';
+import {
+  COURSE_SKILL_LEVELS,
+  courseSkillLevelLabel,
+  normalizeCourseSkillLevel,
+  type CourseSkillLevel,
+} from '@/lib/course-skill-level';
 import { LIVE_FROM_ADMIN_COURSES, liveCourseHref } from '@/lib/live/live-back-url';
 
 export type AdminCourseRow = {
@@ -43,6 +49,7 @@ export type AdminCourseRow = {
   is_published: boolean;
   created_at: string;
   course_language?: 'fr' | 'es' | null;
+  course_skill_level?: CourseSkillLevel | null;
 };
 
 export type CourseRecordingSummary = {
@@ -77,6 +84,7 @@ type FormState = {
   replayUrl: string;
   spotifyPlaylistUrl: string;
   courseLanguage: '' | 'fr' | 'es';
+  courseSkillLevel: CourseSkillLevel;
 };
 
 type CourseTypeOption = { value: string; label: string; custom?: boolean };
@@ -335,6 +343,7 @@ function emptyCreateForm(): FormState {
     replayUrl: '',
     spotifyPlaylistUrl: '',
     courseLanguage: 'fr',
+    courseSkillLevel: 'all_levels',
   };
 }
 
@@ -358,6 +367,7 @@ function courseToFormState(c: AdminCourseRow, courseTypeOptions: CourseTypeOptio
     replayUrl: c.replay_url ?? '',
     spotifyPlaylistUrl: c.spotify_playlist_url ?? '',
     courseLanguage: isCourseLanguage(c.course_language) ? c.course_language : '',
+    courseSkillLevel: normalizeCourseSkillLevel(c.course_skill_level),
   };
 }
 
@@ -392,6 +402,7 @@ function formToPayload(f: FormState, courseTypeOptions: CourseTypeOption[]) {
     spotifyPlaylistUrl: null,
     timezone: f.timeZone,
     courseLanguage: f.courseLanguage || null,
+    courseSkillLevel: f.courseSkillLevel,
   };
 }
 
@@ -747,6 +758,25 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
               value={createForm.courseLanguage}
               onChange={(courseLanguage) => setCreateForm((s) => ({ ...s, courseLanguage }))}
             />
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+              Niveau
+              <select
+                value={createForm.courseSkillLevel}
+                onChange={(e) =>
+                  setCreateForm((s) => ({
+                    ...s,
+                    courseSkillLevel: normalizeCourseSkillLevel(e.target.value),
+                  }))
+                }
+                className={`${REFINED_SELECT_COMPACT} mt-2 w-full sm:w-[14rem]`}
+              >
+                {COURSE_SKILL_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {courseSkillLevelLabel(level)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <CourseDatetimeFields
             timeZone={createForm.timeZone}
@@ -1141,6 +1171,24 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
                 value={editForm.courseLanguage}
                 onChange={(courseLanguage) => setEditForm((s) => (s ? { ...s, courseLanguage } : s))}
               />
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
+                Niveau
+                <select
+                  value={editForm.courseSkillLevel}
+                  onChange={(e) =>
+                    setEditForm((s) =>
+                      s ? { ...s, courseSkillLevel: normalizeCourseSkillLevel(e.target.value) } : s,
+                    )
+                  }
+                  className="mt-2 w-full rounded-2xl border border-[#D9C9B4] bg-white px-4 py-3 text-sm text-luxury-ink shadow-[inset_0_1px_3px_rgba(31,27,22,0.08)] outline-none focus:border-[#C45D3E]/60 focus:ring-2 focus:ring-[#C45D3E]/25"
+                >
+                  {COURSE_SKILL_LEVELS.map((level) => (
+                    <option key={level} value={level}>
+                      {courseSkillLevelLabel(level)}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {editForm.courseFormat === 'onsite' ? (
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">
                   Ville

@@ -119,6 +119,10 @@ export function AdminCourseReplaysManaged({ items }: Props) {
                     <span className="rounded-full bg-slate-800/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                       Masqué
                     </span>
+                  ) : v.vimeoStatus === '404' ? (
+                    <span className="rounded-full bg-amber-600/90 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                      Vimeo 404
+                    </span>
                   ) : (
                     <span className="rounded-full bg-emerald-600/90 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                       Visible cliente

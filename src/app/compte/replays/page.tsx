@@ -12,9 +12,31 @@ import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library
 import { getClientLang } from '@/lib/compte/i18n';
 import { hasVisioClientAccess } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
+import {
+  FILTERABLE_SKILL_LEVELS,
+  courseSkillLevelLabel,
+  isCourseSkillLevel,
+} from '@/lib/course-skill-level';
+import {
+  REPLAY_COURSE_TYPE_OPTIONS,
+  isReplayCourseTypeKey,
+} from '@/lib/replay-course-type';
 
-type SearchParams = Promise<{ q?: string; section?: string; tab?: string; sort?: string; page?: string }>;
+type SearchParams = Promise<{
+  q?: string;
+  section?: string;
+  tab?: string;
+  sort?: string;
+  page?: string;
+  lang?: string;
+  type?: string;
+  level?: string;
+}>;
 const PAGE_SIZE = 9;
+const CHIP_ACTIVE =
+  'rounded-full border border-orange-400 bg-orange-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-orange-900';
+const CHIP_IDLE =
+  'rounded-full border border-white/40 bg-white/35 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-luxury-muted transition hover:bg-white/55';
 const LIVE_FROM_REPLAYS = '/compte/replays';
 
 function normalize(s?: string) {
@@ -156,8 +178,14 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   const q = (sp.q ?? '').trim().slice(0, 80);
   const section = sp.section === 'library' ? 'library' : 'replays';
   const tab = sp.tab === 'favorites' ? 'favorites' : 'all';
-  const sort = sp.sort === 'duration' || sp.sort === 'oldest' ? sp.sort : 'recent';
+  const sort =
+    sp.sort === 'duration' || sp.sort === 'oldest' || sp.sort === 'az' ? sp.sort : 'recent';
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
+
+  const langFilter = sp.lang === 'fr' || sp.lang === 'es' ? sp.lang : null;
+  const typeFilter = isReplayCourseTypeKey(sp.type ?? '') ? sp.type : null;
+  const levelFilter =
+    typeof sp.level === 'string' && isCourseSkillLevel(sp.level) && sp.level !== 'all_levels' ? sp.level : null;
 
   await supabase
     .from('user_notifications')
@@ -170,7 +198,16 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   const standalone = await getStandaloneVimeoLibraryForUser();
 
   const makeHref = (
-    overrides: Partial<{ q: string; section: string; tab: string; sort: string; page: string }> = {},
+    overrides: Partial<{
+      q: string;
+      section: string;
+      tab: string;
+      sort: string;
+      page: string;
+      lang: string;
+      type: string;
+      level: string;
+    }> = {},
   ) => {
     const p = new URLSearchParams();
     const nextQ = overrides.q ?? q;
@@ -178,11 +215,17 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
     const nextTab = overrides.tab ?? tab;
     const nextSort = overrides.sort ?? sort;
     const nextPage = overrides.page ?? String(page);
+    const nextLang = overrides.lang !== undefined ? overrides.lang : langFilter ?? '';
+    const nextType = overrides.type !== undefined ? overrides.type : typeFilter ?? '';
+    const nextLevel = overrides.level !== undefined ? overrides.level : levelFilter ?? '';
     if (nextSection !== 'replays') p.set('section', nextSection);
     if (nextQ) p.set('q', nextQ);
     if (nextTab !== 'all') p.set('tab', nextTab);
     if (nextSort !== 'recent') p.set('sort', nextSort);
     if (nextPage !== '1') p.set('page', nextPage);
+    if (nextLang) p.set('lang', nextLang);
+    if (nextType) p.set('type', nextType);
+    if (nextLevel) p.set('level', nextLevel);
     const qs = p.toString();
     return qs ? `/compte/replays?${qs}` : '/compte/replays';
   };
@@ -213,8 +256,25 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   );
 
   if (section === 'library') {
-    const filteredStandalone =
-      tab === 'favorites' ? standalone.filter((v) => v.isFavorite) : standalone;
+    const libQ = q;
+    const libSort = sort === 'oldest' || sort === 'duration' || sort === 'az' ? sort : 'recent';
+    let filteredStandalone = tab === 'favorites' ? standalone.filter((v) => v.isFavorite) : standalone;
+    if (libQ) {
+      filteredStandalone = filteredStandalone.filter((v) => {
+        const hay = `${v.displayTitle ?? ''} ${v.title ?? ''} ${v.description ?? ''}`.toLowerCase();
+        return hay.includes(normalize(libQ));
+      });
+    }
+    filteredStandalone = [...filteredStandalone].sort((a, b) => {
+      if (libSort === 'az') {
+        return (a.displayTitle ?? a.title ?? '').localeCompare(b.displayTitle ?? b.title ?? '', lang === 'es' ? 'es' : 'fr');
+      }
+      if (libSort === 'duration') return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0);
+      if (libSort === 'oldest') {
+        return new Date(a.publishedAt ?? 0).getTime() - new Date(b.publishedAt ?? 0).getTime();
+      }
+      return new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime();
+    });
     const libraryFavoriteCount = standalone.filter((v) => v.isFavorite).length;
 
     return (
@@ -227,25 +287,40 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         {sectionToggle}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href={makeHref({ tab: 'all', page: '1' })}
-            className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
-              tab === 'all' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-white/40 bg-white/35 text-luxury-muted'
-            }`}
-          >
+          <Link href={makeHref({ tab: 'all', page: '1', section: 'library' })} className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}>
             {t.sectionLibrary}
           </Link>
           <Link
-            href={makeHref({ tab: 'favorites', page: '1' })}
-            className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
-              tab === 'favorites'
-                ? 'border-orange-400 bg-orange-50 text-orange-900'
-                : 'border-white/40 bg-white/35 text-luxury-muted'
-            }`}
+            href={makeHref({ tab: 'favorites', page: '1', section: 'library' })}
+            className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}
           >
             {t.fav} ({libraryFavoriteCount})
           </Link>
         </div>
+
+        <form method="get" className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+          <input type="hidden" name="section" value="library" />
+          <input type="hidden" name="tab" value={tab} />
+          <input
+            name="q"
+            defaultValue={libQ}
+            placeholder={t.searchLibrary}
+            className="min-w-0 flex-1 rounded-full border border-white/45 bg-white/55 px-5 py-3 text-sm text-luxury-ink outline-none ring-orange-400/25 focus:ring-2"
+          />
+          <select
+            name="sort"
+            defaultValue={libSort}
+            className="rounded-full border border-white/45 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none"
+          >
+            <option value="recent">{t.recent}</option>
+            <option value="oldest">{t.oldest}</option>
+            <option value="duration">{t.longest}</option>
+            <option value="az">A → Z</option>
+          </select>
+          <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
+            {t.filter}
+          </button>
+        </form>
 
         {filteredStandalone.length > 0 ? (
           <section className="mt-8">
@@ -265,7 +340,13 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           normalize(i.replayTitle ?? '').includes(normalize(q)),
       )
     : all;
-  const base = tab === 'favorites' ? searched.filter((i) => i.isFavorite) : searched;
+  const tabbed = tab === 'favorites' ? searched.filter((i) => i.isFavorite) : searched;
+  const base = tabbed.filter((i) => {
+    if (langFilter && i.courseLanguage !== langFilter) return false;
+    if (typeFilter && i.courseTypeKey !== typeFilter) return false;
+    if (levelFilter && i.courseSkillLevel !== levelFilter) return false;
+    return true;
+  });
   const sorted = [...base].sort((a, b) => {
     if (sort === 'duration') return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0);
     if (sort === 'oldest') return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
@@ -282,6 +363,12 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   const safePage = Math.min(page, totalPages);
   const paginated = rest.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const favorites = all.filter((i) => i.isFavorite);
+
+  const typeCounts = new Map<string, number>();
+  for (const item of tabbed) {
+    typeCounts.set(item.courseTypeKey, (typeCounts.get(item.courseTypeKey) ?? 0) + 1);
+  }
+  const visibleTypes = REPLAY_COURSE_TYPE_OPTIONS.filter((opt) => (typeCounts.get(opt.value) ?? 0) > 0);
 
   const heroDescription =
     hero?.courseDescription?.trim() ||
@@ -300,29 +387,57 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
       {sectionToggle}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href={makeHref({ tab: 'all', page: '1' })}
-          className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
-            tab === 'all' ? 'border-orange-400 bg-orange-50 text-orange-900' : 'border-white/40 bg-white/35 text-luxury-muted'
-          }`}
-        >
+        <Link href={makeHref({ tab: 'all', page: '1', lang: '', type: '', level: '' })} className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}>
           {t.all}
         </Link>
-        <Link
-          href={makeHref({ tab: 'favorites', page: '1' })}
-          className={`rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${
-            tab === 'favorites'
-              ? 'border-orange-400 bg-orange-50 text-orange-900'
-              : 'border-white/40 bg-white/35 text-luxury-muted'
-          }`}
-        >
+        <Link href={makeHref({ tab: 'favorites', page: '1' })} className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}>
           {t.fav} ({favorites.length})
         </Link>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          href={makeHref({ lang: langFilter === 'fr' ? '' : 'fr', page: '1' })}
+          className={langFilter === 'fr' ? CHIP_ACTIVE : CHIP_IDLE}
+        >
+          FR
+        </Link>
+        <Link
+          href={makeHref({ lang: langFilter === 'es' ? '' : 'es', page: '1' })}
+          className={langFilter === 'es' ? CHIP_ACTIVE : CHIP_IDLE}
+        >
+          ES
+        </Link>
+        {visibleTypes.map((opt) => (
+          <Link
+            key={opt.value}
+            href={makeHref({ type: typeFilter === opt.value ? '' : opt.value, page: '1' })}
+            className={typeFilter === opt.value ? CHIP_ACTIVE : CHIP_IDLE}
+          >
+            {opt.label} ({typeCounts.get(opt.value) ?? 0})
+          </Link>
+        ))}
+        {FILTERABLE_SKILL_LEVELS.map((level) => {
+          const count = tabbed.filter((i) => i.courseSkillLevel === level).length;
+          if (count === 0) return null;
+          return (
+            <Link
+              key={level}
+              href={makeHref({ level: levelFilter === level ? '' : level, page: '1' })}
+              className={levelFilter === level ? CHIP_ACTIVE : CHIP_IDLE}
+            >
+              {courseSkillLevelLabel(level, lang === 'es' ? 'es' : lang === 'en' ? 'en' : 'fr')} ({count})
+            </Link>
+          );
+        })}
       </div>
 
       <form method="get" className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
         <input type="hidden" name="section" value="replays" />
         <input type="hidden" name="tab" value={tab} />
+        {langFilter ? <input type="hidden" name="lang" value={langFilter} /> : null}
+        {typeFilter ? <input type="hidden" name="type" value={typeFilter} /> : null}
+        {levelFilter ? <input type="hidden" name="level" value={levelFilter} /> : null}
         <input
           name="q"
           defaultValue={q}

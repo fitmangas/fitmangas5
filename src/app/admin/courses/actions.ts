@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { normalizeCourseSkillLevel, type CourseSkillLevel } from '@/lib/course-skill-level';
 import { dispatchCourseCancelledByCoach } from '@/lib/notifications/phase2';
 
 function slugFromTitle(title: string) {
@@ -37,6 +38,7 @@ const courseUpsertSchema = z
     spotifyPlaylistUrl: z.string().nullable().optional(),
     timezone: z.string().max(64).default('Europe/Paris'),
     courseLanguage: z.union([z.enum(['fr', 'es']), z.literal(''), z.null()]).optional(),
+    courseSkillLevel: z.enum(['all_levels', 'beginner', 'intermediate', 'advanced']).optional(),
   })
   .superRefine((data, ctx) => {
     const start = new Date(data.startsAt);
@@ -102,6 +104,7 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
       spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
       is_published: d.isPublished,
       course_language: normalizeCourseLanguage(d.courseLanguage ?? null),
+      course_skill_level: normalizeCourseSkillLevel(d.courseSkillLevel ?? 'all_levels') as CourseSkillLevel,
       created_by: user.id,
       auto_add_for_monthly: d.courseFormat === 'online',
     });
@@ -159,6 +162,7 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
         spotify_playlist_url: normalizeOptionalUrl(d.spotifyPlaylistUrl),
         is_published: d.isPublished,
         course_language: normalizeCourseLanguage(d.courseLanguage ?? null),
+        course_skill_level: normalizeCourseSkillLevel(d.courseSkillLevel ?? 'all_levels') as CourseSkillLevel,
         auto_add_for_monthly: d.courseFormat === 'online',
       })
       .eq('id', idParse.data);

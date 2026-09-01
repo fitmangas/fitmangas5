@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { approveCourseReplay, linkCourseReplay, rejectCourseReplay } from '@/lib/replay-admin';
 import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
+import { listDeadApprovedReplays, probeDeadReplaysForRestore } from '@/lib/replay-recovery';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type ReplayActionResult = { ok: true } | { ok: false; message: string };
@@ -33,7 +34,7 @@ export async function linkCourseReplayAction(raw: unknown): Promise<ReplayAction
     });
 
     revalidatePath('/admin/courses');
-    revalidatePath('/admin/replays');
+    revalidatePath('/admin/videos');
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Impossible de lier le replay.';
@@ -51,7 +52,7 @@ export async function approveCourseReplayAction(recordingId: string): Promise<Re
     const res = await approveCourseReplay(admin, idParsed.data);
     if (!res.ok) return { ok: false, message: res.error };
 
-    revalidatePath('/admin/replays');
+    revalidatePath('/admin/videos');
     revalidatePath('/admin/courses');
     revalidatePath('/compte/replays');
     return { ok: true };
@@ -71,7 +72,7 @@ export async function rejectCourseReplayAction(recordingId: string): Promise<Rep
     const res = await rejectCourseReplay(admin, idParsed.data);
     if (!res.ok) return { ok: false, message: res.error };
 
-    revalidatePath('/admin/replays');
+    revalidatePath('/admin/videos');
     revalidatePath('/admin/courses');
     return { ok: true };
   } catch (e) {
@@ -84,6 +85,29 @@ export async function rejectCourseReplayAction(recordingId: string): Promise<Rep
  * Masquer / réafficher un replay validé sans migration :
  * is_ready=false conserve validation_status='approved' mais retire l’accès client.
  */
+/** Compte les replays validés dont Vimeo répond 404 (corbeille ou re-upload nécessaire). */
+export async function probeDeadReplaysVimeoAction(): Promise<
+  | { ok: true; dead: number; restored: number; message: string }
+  | { ok: false; message: string }
+> {
+  try {
+    await requireAdmin();
+    const dead = await listDeadApprovedReplays();
+    const { restored } = await probeDeadReplaysForRestore();
+    const message =
+      restored.length > 0
+        ? `${restored.length} replay(s) de nouveau lisibles sur Vimeo.`
+        : dead.length > 0
+          ? `${dead.length} replay(s) encore introuvables sur Vimeo — restaurer la corbeille Vimeo ou lancer le pull VPS.`
+          : 'Tous les replays validés sont lisibles sur Vimeo.';
+    revalidatePath('/admin/videos');
+    revalidatePath('/compte/replays');
+    return { ok: true, dead: dead.length, restored: restored.length, message };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'Sonde impossible.' };
+  }
+}
+
 /** Scan Vimeo → crée les pending manquants (fichiers déjà uploadés mais jamais liés). */
 export async function recoverOrphanReplaysAction(): Promise<
   | { ok: true; message: string; linked: number; stillMissing: number }
@@ -92,7 +116,7 @@ export async function recoverOrphanReplaysAction(): Promise<
   try {
     await requireAdmin();
     const result = await recoverOrphanCourseReplays({ lookbackDays: 90 });
-    revalidatePath('/admin/replays');
+    revalidatePath('/admin/videos');
     revalidatePath('/admin/courses');
     revalidatePath('/compte/replays');
     const parts = [
@@ -148,7 +172,7 @@ export async function setCourseReplayClientVisibilityAction(
 
     if (error) return { ok: false, message: error.message };
 
-    revalidatePath('/admin/replays');
+    revalidatePath('/admin/videos');
     revalidatePath('/admin/courses');
     revalidatePath('/compte/replays');
     revalidatePath('/compte');

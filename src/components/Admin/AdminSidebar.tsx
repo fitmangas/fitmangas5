@@ -4,15 +4,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
-  { href: '/admin/replays', label: 'Replays', icon: Film },
+  { href: '/admin/videos', label: 'Vidéos', icon: Film },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
-  { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
   { href: '/admin/croissance', label: 'Croissance', icon: Target },
@@ -115,13 +114,11 @@ export function AdminSidebar() {
               : pathname === href || pathname.startsWith(`${href}/`);
 
         const pendingCount =
-          href === '/admin/vimeo'
-            ? vimeoPending
-            : href === '/admin/replays'
-              ? replaysPending
-              : href === '/admin/inbox'
-                ? inboxPending
-                : null;
+          href === '/admin/videos'
+            ? (replaysPending ?? 0) + (vimeoPending ?? 0)
+            : href === '/admin/inbox'
+              ? inboxPending
+              : null;
         const badge =
           pendingCount != null && pendingCount > 0 ? (
             <span
@@ -134,10 +131,10 @@ export function AdminSidebar() {
           ) : null;
 
         const targetHref =
-          href === '/admin/vimeo' && vimeoPending != null && vimeoPending > 0
-            ? '/admin/vimeo#vimeo-pending-section'
-            : href === '/admin/replays' && replaysPending != null && replaysPending > 0
-              ? '/admin/replays#course-replays-pending'
+          href === '/admin/videos' && replaysPending != null && replaysPending > 0
+            ? '/admin/videos?section=replays#course-replays-pending'
+            : href === '/admin/videos' && vimeoPending != null && vimeoPending > 0
+              ? '/admin/videos?section=library#vimeo-pending-section'
               : href;
 
         const showPending = isPending && pendingHref === href;

@@ -4,14 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Inbox, ShoppingBag, Target, TicketPercent, Users, Video } from 'lucide-react';
+import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
+  { href: '/admin/videos', label: 'Vidéos', icon: Film },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
-  { href: '/admin/vimeo', label: 'Vimeo', icon: Video },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
   { href: '/admin/croissance', label: 'Croissance', icon: Target },

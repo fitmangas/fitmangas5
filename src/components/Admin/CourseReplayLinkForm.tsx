@@ -27,7 +27,7 @@ export function CourseReplayLinkForm({ courseId, courseTitle, existingStatus }: 
     return (
       <p className="rounded-2xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-xs text-amber-950">
         Replay lié — en attente de validation dans{' '}
-        <a href="/admin/replays" className="font-semibold underline">
+        <a href="/admin/videos?section=replays" className="font-semibold underline">
           Replays séances
         </a>
         .

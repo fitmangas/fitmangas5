@@ -1,6 +1,8 @@
 import { canBypassClientRestrictionsForAdmin } from '@/lib/access-control';
 import type { CourseLanguage } from '@/lib/course-language';
 import { isCourseLanguage } from '@/lib/course-language';
+import { normalizeCourseSkillLevel, type CourseSkillLevel } from '@/lib/course-skill-level';
+import { inferReplayCourseType, type ReplayCourseTypeKey } from '@/lib/replay-course-type';
 import { getReplayBrandCoverSrc } from '@/lib/replay-brand-cover';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -16,6 +18,10 @@ export type ReplayLibraryItem = {
   courseDescription: string | null;
   /** Langue du cours (drapeau vignette) — même champ que /live. */
   courseLanguage: CourseLanguage | null;
+  /** Type déduit (Pilates Mat, Barre, etc.) — filtres replays. */
+  courseTypeKey: ReplayCourseTypeKey;
+  /** Niveau séance — champ admin courses. */
+  courseSkillLevel: CourseSkillLevel;
   replayTitle: string | null;
   coverImageUrl: string;
   durationSeconds: number | null;
@@ -38,6 +44,7 @@ type CourseEmbed = {
   ends_at: string;
   is_published: boolean;
   course_language?: string | null;
+  course_skill_level?: string | null;
 };
 
 type RecordingRow = {
@@ -81,6 +88,8 @@ function mapAndFilter(
       courseSlug: c.slug,
       courseDescription: c.description ?? null,
       courseLanguage: isCourseLanguage(c.course_language) ? c.course_language : null,
+      courseTypeKey: inferReplayCourseType(c.title, c.slug),
+      courseSkillLevel: normalizeCourseSkillLevel(c.course_skill_level),
       replayTitle: row.title,
       coverImageUrl: getReplayBrandCoverSrc(vimeoId || row.id),
       durationSeconds: row.duration_seconds,
@@ -198,7 +207,7 @@ export async function getReplayLibraryForUser(userId: string): Promise<ReplayLib
   ]);
 
   const selectCols =
-    'id, title, duration_seconds, vimeo_video_id, embed_url, created_at, courses ( id, title, slug, description, starts_at, ends_at, is_published, course_language )';
+    'id, title, duration_seconds, vimeo_video_id, embed_url, created_at, courses ( id, title, slug, description, starts_at, ends_at, is_published, course_language, course_skill_level )';
 
   let rows: RecordingRow[] | null = null;
 

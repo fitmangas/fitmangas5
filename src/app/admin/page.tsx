@@ -408,7 +408,7 @@ export default async function AdminPage() {
             </span>
           </div>
           <DismissOnClickLink
-            href="/admin/vimeo"
+            href="/admin/videos?section=library"
             storageKey="admin_badge_vimeo_pending"
             dismissCount={pendingStandaloneCount ?? 0}
             className="btn-luxury-gold relative z-20 mt-6 w-full justify-center text-center text-[10px] tracking-[0.16em]"

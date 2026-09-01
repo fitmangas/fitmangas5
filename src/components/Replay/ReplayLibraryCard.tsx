@@ -10,6 +10,7 @@ import { toggleReplayFavoriteAction } from '@/app/compte/actions';
 import { CourseLanguageFlag } from '@/components/Calendar/CourseLanguageFlag';
 import { liveCourseHref } from '@/lib/live/live-back-url';
 import type { ReplayLibraryItem } from '@/lib/replay-library';
+import { courseSkillLevelLabel } from '@/lib/course-skill-level';
 
 function formatFrenchSessionDate(iso: string): string {
   try {
@@ -146,6 +147,12 @@ export function ReplayLibraryCard({
       {item.courseLanguage ? (
         <span className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg shadow-md backdrop-blur-md md:h-10 md:w-10 md:text-xl">
           <CourseLanguageFlag language={item.courseLanguage} uiLang={lang} className="text-lg md:text-xl" />
+        </span>
+      ) : null}
+
+      {item.courseSkillLevel !== 'all_levels' ? (
+        <span className="absolute left-3 bottom-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white backdrop-blur-md">
+          {courseSkillLevelLabel(item.courseSkillLevel, lang === 'es' ? 'es' : lang === 'en' ? 'en' : 'fr')}
         </span>
       ) : null}
 

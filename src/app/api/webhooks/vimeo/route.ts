@@ -8,6 +8,7 @@ import { extractVimeoNumericIdFromWebhookPayload } from '@/lib/vimeo-webhook-par
 import { verifyVimeoWebhookSignature } from '@/lib/vimeo-webhook-verify';
 import { updateCourseRecordingFromWebhook } from '@/lib/replay-admin';
 import { getVideoMetadata } from '@/lib/vimeo';
+import { shouldSkipStandaloneImport } from '@/lib/vimeo-standalone-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,8 +77,21 @@ export async function POST(request: Request) {
 
   const defaultCoachId = parseDefaultCoachIdFromEnv();
 
-  const { data: jitsiRow } = await admin.from('video_recordings').select('id').eq('vimeo_video_id', vimeoId).maybeSingle();
-  const jitsiIds = new Set(jitsiRow ? [vimeoId] : []);
+  const { data: jitsiRows } = await admin.from('video_recordings').select('vimeo_video_id');
+  const jitsiIds = new Set(
+    (jitsiRows ?? [])
+      .map((r) => (typeof r.vimeo_video_id === 'string' ? r.vimeo_video_id.trim() : ''))
+      .filter(Boolean),
+  );
+
+  const skipReason = shouldSkipStandaloneImport(
+    { title: meta?.title, description: meta?.description, vimeoId },
+    jitsiIds,
+  );
+  if (skipReason) {
+    console.info('[vimeo webhook] standalone ignoré (%s) vimeoId=%s', skipReason, vimeoId);
+    return NextResponse.json({ ok: true, skipped: true, reason: skipReason });
+  }
 
   const folderDisplay = resolveVimeoFolderDisplayName(meta?.folderName ?? null, vimeoId, jitsiIds);
 

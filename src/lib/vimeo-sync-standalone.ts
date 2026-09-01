@@ -1,4 +1,5 @@
 import { isJibriRecordingFileNameOrTitle } from '@/lib/jibri-recording-filename';
+import { shouldSkipStandaloneImport } from '@/lib/vimeo-standalone-guard';
 import { isMissingVimeoFolderColumnError, resolveVimeoFolderDisplayName } from '@/lib/vimeo-folder';
 import { listAllMeVideos, type VimeoVideoMetadata } from '@/lib/vimeo';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -108,17 +109,6 @@ async function writeLastSyncAt(admin: ReturnType<typeof createAdminClient>, sync
 function omitFolderName(row: Record<string, unknown>): Record<string, unknown> {
   const { vimeo_folder_name: _, ...rest } = row;
   return rest;
-}
-
-function shouldSkipStandaloneImport(
-  meta: VimeoVideoMetadata,
-  jitsiIds: Set<string>,
-): 'jibri' | 'course_recording' | null {
-  if (jitsiIds.has(String(meta.vimeoId))) return 'course_recording';
-  if (isJibriRecordingFileNameOrTitle(meta.title) || isJibriRecordingFileNameOrTitle(meta.description)) {
-    return 'jibri';
-  }
-  return null;
 }
 
 /** Supprime les entrées standalone créées par erreur (replays Jibri / cours). */

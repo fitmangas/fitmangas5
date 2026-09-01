@@ -31,7 +31,8 @@ export function AdminVimeoLibraryClient({
   publishedFolderKeys,
   rejected,
   fetchError,
-}: AdminVimeoLibraryPayload) {
+  embedded = false,
+}: AdminVimeoLibraryPayload & { embedded?: boolean }) {
   const router = useRouter();
   const [preview, setPreview] = useState<AdminVimeoVideoCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -105,7 +106,7 @@ export function AdminVimeoLibraryClient({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:py-14">
+    <div className={embedded ? '' : 'mx-auto max-w-6xl px-6 py-10 md:py-14'}>
       {toast ? (
         <div className="fixed bottom-6 left-1/2 z-[600] max-w-sm -translate-x-1/2 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-medium text-orange-950 shadow-lg">
           {toast}
@@ -114,25 +115,36 @@ export function AdminVimeoLibraryClient({
 
       <VideoModal video={preview} onClose={() => setPreview(null)} />
 
-      <div className="flex flex-wrap items-start justify-between gap-6 border-b border-white/25 pb-8">
+      <div className={`flex flex-wrap items-start justify-between gap-6 ${embedded ? 'pb-6' : 'border-b border-white/25 pb-8'}`}>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Vimeo</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-luxury-ink md:text-4xl">Bibliothèque vidéo</h1>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-luxury-muted">
-            Webhook → <strong>en attente</strong> ; validation ou publication programmée ; clients abonnés online uniquement.
-          </p>
+          {!embedded ? (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">Vimeo</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-luxury-ink md:text-4xl">Bibliothèque vidéo</h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-luxury-muted">
+                Webhook → <strong>en attente</strong> ; validation ou publication programmée ; clients abonnés online
+                uniquement.
+              </p>
+            </>
+          ) : (
+            <p className="max-w-xl text-sm leading-relaxed text-luxury-muted">
+              Upload Vimeo → webhook ou sync → <strong>valider</strong> avant publication cliente.
+            </p>
+          )}
           {fetchError ? (
             <p className="mt-3 text-sm text-red-700">
               Impossible de lire la bibliothèque : {fetchError}. Vérifie les migrations Supabase (010–012).
             </p>
           ) : null}
-          <div className="mt-6">
+          <div className="mt-4">
             <VimeoSyncAllButton />
           </div>
         </div>
-        <Link href="/admin" className="btn-luxury-ghost shrink-0 px-5 py-2.5 text-[10px] tracking-[0.14em]">
-          ← Dashboard
-        </Link>
+        {!embedded ? (
+          <Link href="/admin" className="btn-luxury-ghost shrink-0 px-5 py-2.5 text-[10px] tracking-[0.14em]">
+            ← Dashboard
+          </Link>
+        ) : null}
       </div>
 
       <VideoValidationSection videos={awaiting} />
