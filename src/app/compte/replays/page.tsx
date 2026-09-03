@@ -371,8 +371,8 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
 
   const filterBlock = (
     <div className="mt-10 space-y-3">
-      {/* Ligne 1 — Tous / Favoris */}
-      <div className="flex flex-wrap gap-2">
+      {/* Ligne 1 — Tous / Favoris + FR / ES à droite */}
+      <div className="flex flex-wrap items-center gap-2">
         <Link
           href={makeHref({ tab: 'all', page: '1', lang: '', type: '', level: '' })}
           className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}
@@ -382,10 +382,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         <Link href={makeHref({ tab: 'favorites', page: '1' })} className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}>
           {t.fav} ({favorites.length})
         </Link>
-      </div>
-
-      {/* Ligne 2 — Langue */}
-      <div className="flex flex-wrap gap-2">
+        <span className="mx-1 hidden h-5 w-px bg-brand-ink/15 sm:inline-block" aria-hidden />
         <Link
           href={makeHref({ lang: langFilter === 'fr' ? '' : 'fr', page: '1' })}
           className={langFilter === 'fr' ? CHIP_ACTIVE : CHIP_IDLE}
@@ -400,7 +397,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         </Link>
       </div>
 
-      {/* Ligne 3 — Type de cours */}
+      {/* Ligne 2 — Type de cours */}
       <div className="flex flex-wrap gap-2">
         {REPLAY_COURSE_TYPE_OPTIONS.map((opt) => (
           <Link
@@ -414,7 +411,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         ))}
       </div>
 
-      {/* Ligne 4 — Niveau */}
+      {/* Ligne 3 — Niveau */}
       <div className="flex flex-wrap gap-2">
         <Link
           href={makeHref({ level: '', page: '1' })}
