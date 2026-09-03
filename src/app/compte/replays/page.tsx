@@ -13,7 +13,7 @@ import { getClientLang } from '@/lib/compte/i18n';
 import { hasVisioClientAccess } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
 import {
-  FILTERABLE_SKILL_LEVELS,
+  COURSE_SKILL_LEVELS,
   courseSkillLevelLabel,
   isCourseSkillLevel,
 } from '@/lib/course-skill-level';
@@ -21,27 +21,24 @@ import {
   REPLAY_COURSE_TYPE_OPTIONS,
   isReplayCourseTypeKey,
 } from '@/lib/replay-course-type';
+import { VIMEO_FOLDER_UNCATEGORIZED } from '@/lib/vimeo-folder';
 
 type SearchParams = Promise<{
-  q?: string;
   section?: string;
   tab?: string;
-  sort?: string;
   page?: string;
   lang?: string;
   type?: string;
   level?: string;
+  folder?: string;
 }>;
+
 const PAGE_SIZE = 9;
 const CHIP_ACTIVE =
   'rounded-full border border-orange-400 bg-orange-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-orange-900';
 const CHIP_IDLE =
   'rounded-full border border-white/40 bg-white/35 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-luxury-muted transition hover:bg-white/55';
 const LIVE_FROM_REPLAYS = '/compte/replays';
-
-function normalize(s?: string) {
-  return (s ?? '').trim().toLowerCase();
-}
 
 function formatFrenchSessionDate(iso: string): string {
   try {
@@ -58,6 +55,14 @@ function formatFrenchSessionDate(iso: string): string {
   }
 }
 
+function normalizeFolder(name: string | null | undefined): string | null {
+  const key = name?.trim() || '';
+  if (!key || key === VIMEO_FOLDER_UNCATEGORIZED || key === 'Sans dossier' || key.toLowerCase() === 'non classé') {
+    return null;
+  }
+  return key;
+}
+
 export default async function CompteReplaysPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
   const {
@@ -65,6 +70,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   } = await supabase.auth.getUser();
   if (!user) redirect('/?compte=connexion-requise');
   const [lang, hasVisioAccess] = await Promise.all([getClientLang(supabase, user.id), hasVisioClientAccess(user.id)]);
+  const uiLang = lang === 'es' ? 'es' : lang === 'en' ? 'en' : 'fr';
   const t =
     lang === 'en'
       ? {
@@ -72,20 +78,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
           emptyFav: 'No favorite replay yet.',
           emptyAll: 'No replay available right now.',
           emptyLibrary: 'No library video available right now.',
+          emptyFiltered: 'No video matches these filters.',
           dashboard: 'Dashboard',
           sectionReplays: 'Replays',
           sectionLibrary: 'Library',
           all: 'All replays',
+          allLibrary: 'All videos',
           fav: 'My favorites',
-          search: 'Search a replay...',
-          searchLibrary: 'Search a video...',
-          recent: 'Most recent',
-          oldest: 'Oldest first',
-          longest: 'Longest',
-          filter: 'Filter',
           latest: 'Latest replay',
-          noLive: 'No live replay yet.',
-          favFolder: 'Favorite replay folder',
+          latestLibrary: 'Latest video',
           history: 'Replay history',
           prev: 'Previous',
           next: 'Load more',
@@ -100,20 +101,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             emptyFav: 'Aún no hay replays favoritos.',
             emptyAll: 'No hay replays disponibles por ahora.',
             emptyLibrary: 'No hay videos de biblioteca por ahora.',
+            emptyFiltered: 'Ningún video coincide con estos filtros.',
             dashboard: 'Dashboard',
             sectionReplays: 'Replays',
             sectionLibrary: 'Biblioteca',
             all: 'Todos los replays',
+            allLibrary: 'Todos los videos',
             fav: 'Mis favoritos',
-            search: 'Buscar un replay...',
-            searchLibrary: 'Buscar un video...',
-            recent: 'Más recientes',
-            oldest: 'Más antiguos',
-            longest: 'Más largos',
-            filter: 'Filtrar',
             latest: 'Último replay',
-            noLive: 'Aún no hay replay live.',
-            favFolder: 'Carpeta favoritos replay',
+            latestLibrary: 'Último video',
             history: 'Historial de replays',
             prev: 'Anterior',
             next: 'Cargar más',
@@ -127,20 +123,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             emptyFav: 'Aucun replay favori pour le moment.',
             emptyAll: 'Aucun replay disponible pour le moment.',
             emptyLibrary: 'Aucune vidéo de bibliothèque pour le moment.',
+            emptyFiltered: 'Aucune vidéo ne correspond à ces filtres.',
             dashboard: 'Dashboard',
             sectionReplays: 'Replays',
             sectionLibrary: 'Bibliothèque',
             all: 'Tous les replays',
+            allLibrary: 'Toutes les vidéos',
             fav: 'Mes favoris',
-            search: 'Rechercher un replay...',
-            searchLibrary: 'Rechercher une vidéo...',
-            recent: 'Plus récents',
-            oldest: 'Plus anciens',
-            longest: 'Plus longs',
-            filter: 'Filtrer',
             latest: 'Dernier replay',
-            noLive: 'Aucun replay live pour le moment.',
-            favFolder: 'Dossier favoris replay',
+            latestLibrary: 'Dernière vidéo',
             history: 'Historique des replays',
             prev: 'Précédent',
             next: 'Charger plus',
@@ -175,17 +166,15 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   }
 
   const sp = await searchParams;
-  const q = (sp.q ?? '').trim().slice(0, 80);
   const section = sp.section === 'library' ? 'library' : 'replays';
   const tab = sp.tab === 'favorites' ? 'favorites' : 'all';
-  const sort =
-    sp.sort === 'duration' || sp.sort === 'oldest' || sp.sort === 'az' ? sp.sort : 'recent';
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
   const langFilter = sp.lang === 'fr' || sp.lang === 'es' ? sp.lang : null;
   const typeFilter = isReplayCourseTypeKey(sp.type ?? '') ? sp.type : null;
   const levelFilter =
     typeof sp.level === 'string' && isCourseSkillLevel(sp.level) && sp.level !== 'all_levels' ? sp.level : null;
+  const folderFilter = (sp.folder ?? '').trim() || null;
 
   await supabase
     .from('user_notifications')
@@ -199,33 +188,30 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
 
   const makeHref = (
     overrides: Partial<{
-      q: string;
       section: string;
       tab: string;
-      sort: string;
       page: string;
       lang: string;
       type: string;
       level: string;
+      folder: string;
     }> = {},
   ) => {
     const p = new URLSearchParams();
-    const nextQ = overrides.q ?? q;
     const nextSection = overrides.section ?? section;
     const nextTab = overrides.tab ?? tab;
-    const nextSort = overrides.sort ?? sort;
     const nextPage = overrides.page ?? String(page);
     const nextLang = overrides.lang !== undefined ? overrides.lang : langFilter ?? '';
     const nextType = overrides.type !== undefined ? overrides.type : typeFilter ?? '';
     const nextLevel = overrides.level !== undefined ? overrides.level : levelFilter ?? '';
+    const nextFolder = overrides.folder !== undefined ? overrides.folder : folderFilter ?? '';
     if (nextSection !== 'replays') p.set('section', nextSection);
-    if (nextQ) p.set('q', nextQ);
     if (nextTab !== 'all') p.set('tab', nextTab);
-    if (nextSort !== 'recent') p.set('sort', nextSort);
     if (nextPage !== '1') p.set('page', nextPage);
     if (nextLang) p.set('lang', nextLang);
     if (nextType) p.set('type', nextType);
     if (nextLevel) p.set('level', nextLevel);
+    if (nextFolder) p.set('folder', nextFolder);
     const qs = p.toString();
     return qs ? `/compte/replays?${qs}` : '/compte/replays';
   };
@@ -233,7 +219,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   const sectionToggle = (
     <div className="mt-8 flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
       <Link
-        href={makeHref({ section: 'replays', page: '1' })}
+        href={makeHref({ section: 'replays', page: '1', folder: '', type: '', level: '', lang: '' })}
         className={`flex-1 rounded-full py-3 text-center text-[11px] font-semibold uppercase tracking-[0.18em] transition-all ${
           section === 'replays'
             ? 'bg-[#C45D3E] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
@@ -243,7 +229,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         {t.sectionReplays}
       </Link>
       <Link
-        href={makeHref({ section: 'library', page: '1' })}
+        href={makeHref({ section: 'library', page: '1', type: '', level: '', lang: '', folder: '' })}
         className={`flex-1 rounded-full py-3 text-center text-[11px] font-semibold uppercase tracking-[0.18em] transition-all ${
           section === 'library'
             ? 'bg-[#C45D3E] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
@@ -256,26 +242,26 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   );
 
   if (section === 'library') {
-    const libQ = q;
-    const libSort = sort === 'oldest' || sort === 'duration' || sort === 'az' ? sort : 'recent';
-    let filteredStandalone = tab === 'favorites' ? standalone.filter((v) => v.isFavorite) : standalone;
-    if (libQ) {
-      filteredStandalone = filteredStandalone.filter((v) => {
-        const hay = `${v.displayTitle ?? ''} ${v.title ?? ''} ${v.description ?? ''}`.toLowerCase();
-        return hay.includes(normalize(libQ));
-      });
-    }
-    filteredStandalone = [...filteredStandalone].sort((a, b) => {
-      if (libSort === 'az') {
-        return (a.displayTitle ?? a.title ?? '').localeCompare(b.displayTitle ?? b.title ?? '', lang === 'es' ? 'es' : 'fr');
-      }
-      if (libSort === 'duration') return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0);
-      if (libSort === 'oldest') {
-        return new Date(a.publishedAt ?? 0).getTime() - new Date(b.publishedAt ?? 0).getTime();
-      }
-      return new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime();
-    });
+    const sortedStandalone = [...standalone].sort(
+      (a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime(),
+    );
+    const featured = sortedStandalone[0] ?? null;
     const libraryFavoriteCount = standalone.filter((v) => v.isFavorite).length;
+
+    const folderSet = new Set<string>();
+    for (const v of standalone) {
+      const f = normalizeFolder(v.folderName);
+      if (f) folderSet.add(f);
+    }
+    const folders = [...folderSet].sort((a, b) => a.localeCompare(b, uiLang === 'es' ? 'es' : 'fr'));
+
+    let filteredStandalone = tab === 'favorites' ? standalone.filter((v) => v.isFavorite) : standalone;
+    if (folderFilter) {
+      filteredStandalone = filteredStandalone.filter((v) => normalizeFolder(v.folderName) === folderFilter);
+    }
+    filteredStandalone = [...filteredStandalone].sort(
+      (a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime(),
+    );
 
     return (
       <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
@@ -286,89 +272,95 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
 
         {sectionToggle}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href={makeHref({ tab: 'all', page: '1', section: 'library' })} className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}>
-            {t.sectionLibrary}
-          </Link>
-          <Link
-            href={makeHref({ tab: 'favorites', page: '1', section: 'library' })}
-            className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}
-          >
-            {t.fav} ({libraryFavoriteCount})
-          </Link>
-        </div>
+        {featured || filteredStandalone.length > 0 ? (
+          <section className="mt-10">
+            <StandaloneVimeoGrid
+              videos={filteredStandalone}
+              lang={lang}
+              showFeatured={Boolean(featured)}
+              hideCategoryFilters
+              featuredVideo={featured}
+              filtersSlot={
+                <div className="mt-10 space-y-3">
+                  {/* Ligne 1 — Toutes / Favoris */}
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={makeHref({ tab: 'all', page: '1', section: 'library', folder: '' })}
+                      className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}
+                    >
+                      {t.allLibrary}
+                    </Link>
+                    <Link
+                      href={makeHref({ tab: 'favorites', page: '1', section: 'library' })}
+                      className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}
+                    >
+                      {t.fav} ({libraryFavoriteCount})
+                    </Link>
+                  </div>
 
-        <form method="get" className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-          <input type="hidden" name="section" value="library" />
-          <input type="hidden" name="tab" value={tab} />
-          <input
-            name="q"
-            defaultValue={libQ}
-            placeholder={t.searchLibrary}
-            className="min-w-0 flex-1 rounded-full border border-white/45 bg-white/55 px-5 py-3 text-sm text-luxury-ink outline-none ring-orange-400/25 focus:ring-2"
-          />
-          <select
-            name="sort"
-            defaultValue={libSort}
-            className="rounded-full border border-white/45 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none"
-          >
-            <option value="recent">{t.recent}</option>
-            <option value="oldest">{t.oldest}</option>
-            <option value="duration">{t.longest}</option>
-            <option value="az">A → Z</option>
-          </select>
-          <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
-            {t.filter}
-          </button>
-        </form>
-
-        {filteredStandalone.length > 0 ? (
-          <section className="mt-8">
-            <StandaloneVimeoGrid videos={filteredStandalone} lang={lang} showFeatured />
+                  {/* Ligne 2 — Catégories (dossiers Vimeo) */}
+                  {folders.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={makeHref({ folder: '', page: '1', section: 'library' })}
+                        className={!folderFilter ? CHIP_ACTIVE : CHIP_IDLE}
+                      >
+                        {t.allLibrary}
+                      </Link>
+                      {folders.map((folder) => (
+                        <Link
+                          key={folder}
+                          href={makeHref({
+                            folder: folderFilter === folder ? '' : folder,
+                            page: '1',
+                            section: 'library',
+                          })}
+                          className={folderFilter === folder ? CHIP_ACTIVE : CHIP_IDLE}
+                        >
+                          {folder}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              }
+            />
           </section>
         ) : (
-          <p className="mt-10 text-sm text-luxury-muted">{tab === 'favorites' ? t.emptyFav : t.emptyLibrary}</p>
+          <p className="mt-10 text-sm text-luxury-muted">
+            {tab === 'favorites' ? t.emptyFav : t.emptyLibrary}
+          </p>
         )}
       </main>
     );
   }
 
-  const searched = q
-    ? all.filter(
-        (i) =>
-          normalize(i.courseTitle).includes(normalize(q)) ||
-          normalize(i.replayTitle ?? '').includes(normalize(q)),
-      )
-    : all;
-  const tabbed = tab === 'favorites' ? searched.filter((i) => i.isFavorite) : searched;
-  const base = tabbed.filter((i) => {
+  // ——— REPLAYS ———
+  // Hero = dernier replay global (indépendant des filtres)
+  const hero =
+    all.find((i) => i.isPlayable && i.playbackStatus === 'ready') ??
+    all.find((i) => i.playbackStatus === 'unknown') ??
+    all[0] ??
+    null;
+
+  const favorites = all.filter((i) => i.isFavorite);
+  const tabbed = tab === 'favorites' ? all.filter((i) => i.isFavorite) : all;
+  const filtered = tabbed.filter((i) => {
     if (langFilter && i.courseLanguage !== langFilter) return false;
     if (typeFilter && i.courseTypeKey !== typeFilter) return false;
     if (levelFilter && i.courseSkillLevel !== levelFilter) return false;
     return true;
   });
-  const sorted = [...base].sort((a, b) => {
-    if (sort === 'duration') return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0);
-    if (sort === 'oldest') return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
-    return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
-  });
 
-  const hero =
-    sorted.find((i) => i.isPlayable && i.playbackStatus === 'ready') ??
-    sorted.find((i) => i.playbackStatus === 'unknown') ??
-    sorted[0] ??
-    null;
-  const rest = hero ? sorted.filter((i) => i.recordingId !== hero.recordingId) : sorted;
+  const rest = hero ? filtered.filter((i) => i.recordingId !== hero.recordingId) : filtered;
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginated = rest.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const favorites = all.filter((i) => i.isFavorite);
 
   const typeCounts = new Map<string, number>();
   for (const item of tabbed) {
     typeCounts.set(item.courseTypeKey, (typeCounts.get(item.courseTypeKey) ?? 0) + 1);
   }
-  const visibleTypes = REPLAY_COURSE_TYPE_OPTIONS.filter((opt) => (typeCounts.get(opt.value) ?? 0) > 0);
 
   const heroDescription =
     hero?.courseDescription?.trim() ||
@@ -377,17 +369,14 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
   const heroPlayable = hero?.isPlayable === true && hero.playbackStatus === 'ready';
   const heroUnknown = hero?.playbackStatus === 'unknown';
 
-  return (
-    <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-      <header>
-        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-      </header>
-
-      {sectionToggle}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link href={makeHref({ tab: 'all', page: '1', lang: '', type: '', level: '' })} className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}>
+  const filterBlock = (
+    <div className="mt-10 space-y-3">
+      {/* Ligne 1 — Tous / Favoris */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={makeHref({ tab: 'all', page: '1', lang: '', type: '', level: '' })}
+          className={tab === 'all' ? CHIP_ACTIVE : CHIP_IDLE}
+        >
           {t.all}
         </Link>
         <Link href={makeHref({ tab: 'favorites', page: '1' })} className={tab === 'favorites' ? CHIP_ACTIVE : CHIP_IDLE}>
@@ -395,7 +384,8 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         </Link>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Ligne 2 — Langue */}
+      <div className="flex flex-wrap gap-2">
         <Link
           href={makeHref({ lang: langFilter === 'fr' ? '' : 'fr', page: '1' })}
           className={langFilter === 'fr' ? CHIP_ACTIVE : CHIP_IDLE}
@@ -408,58 +398,54 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
         >
           ES
         </Link>
-        {visibleTypes.map((opt) => (
+      </div>
+
+      {/* Ligne 3 — Type de cours */}
+      <div className="flex flex-wrap gap-2">
+        {REPLAY_COURSE_TYPE_OPTIONS.map((opt) => (
           <Link
             key={opt.value}
             href={makeHref({ type: typeFilter === opt.value ? '' : opt.value, page: '1' })}
             className={typeFilter === opt.value ? CHIP_ACTIVE : CHIP_IDLE}
           >
-            {opt.label} ({typeCounts.get(opt.value) ?? 0})
+            {opt.label}
+            {(typeCounts.get(opt.value) ?? 0) > 0 ? ` (${typeCounts.get(opt.value)})` : ''}
           </Link>
         ))}
-        {FILTERABLE_SKILL_LEVELS.map((level) => {
-          const count = tabbed.filter((i) => i.courseSkillLevel === level).length;
-          if (count === 0) return null;
-          return (
-            <Link
-              key={level}
-              href={makeHref({ level: levelFilter === level ? '' : level, page: '1' })}
-              className={levelFilter === level ? CHIP_ACTIVE : CHIP_IDLE}
-            >
-              {courseSkillLevelLabel(level, lang === 'es' ? 'es' : lang === 'en' ? 'en' : 'fr')} ({count})
-            </Link>
-          );
-        })}
       </div>
 
-      <form method="get" className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-        <input type="hidden" name="section" value="replays" />
-        <input type="hidden" name="tab" value={tab} />
-        {langFilter ? <input type="hidden" name="lang" value={langFilter} /> : null}
-        {typeFilter ? <input type="hidden" name="type" value={typeFilter} /> : null}
-        {levelFilter ? <input type="hidden" name="level" value={levelFilter} /> : null}
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder={t.search}
-          className="min-w-0 flex-1 rounded-full border border-white/45 bg-white/55 px-5 py-3 text-sm text-luxury-ink outline-none ring-orange-400/25 focus:ring-2"
-        />
-        <select
-          name="sort"
-          defaultValue={sort}
-          className="rounded-full border border-white/45 bg-white/55 px-4 py-3 text-sm text-luxury-ink outline-none"
+      {/* Ligne 4 — Niveau */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={makeHref({ level: '', page: '1' })}
+          className={!levelFilter ? CHIP_ACTIVE : CHIP_IDLE}
         >
-          <option value="recent">{t.recent}</option>
-          <option value="oldest">{t.oldest}</option>
-          <option value="duration">{t.longest}</option>
-        </select>
-        <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
-          {t.filter}
-        </button>
-      </form>
+          {courseSkillLevelLabel('all_levels', uiLang)}
+        </Link>
+        {COURSE_SKILL_LEVELS.filter((l) => l !== 'all_levels').map((level) => (
+          <Link
+            key={level}
+            href={makeHref({ level: levelFilter === level ? '' : level, page: '1' })}
+            className={levelFilter === level ? CHIP_ACTIVE : CHIP_IDLE}
+          >
+            {courseSkillLevelLabel(level, uiLang)}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="mx-auto max-w-6xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
+      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
+      <header>
+        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
+      </header>
+
+      {sectionToggle}
 
       {!hero ? (
-        <p className="mt-10 text-sm text-luxury-muted">{tab === 'favorites' ? t.emptyFav : t.emptyAll}</p>
+        <p className="mt-10 text-sm text-luxury-muted">{t.emptyAll}</p>
       ) : (
         <>
           <section className="glass-card mt-10 grid gap-6 overflow-hidden p-6 md:grid-cols-2 md:p-8">
@@ -498,34 +484,10 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
             </div>
           </section>
 
-          {favorites.length > 0 ? (
-            <section className="mt-8">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.favFolder}</h2>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {favorites.map((f) =>
-                  f.isPlayable !== true || f.playbackStatus !== 'ready' ? (
-                    <span
-                      key={f.recordingId}
-                      className="rounded-full border border-white/45 bg-white/40 px-4 py-2 text-xs font-semibold text-luxury-muted"
-                    >
-                      ♥ {f.courseTitle} · {f.playbackStatus === 'unknown' ? t.unknown : t.soon}
-                    </span>
-                  ) : (
-                    <Link
-                      key={f.recordingId}
-                      href={liveCourseHref(f.courseId, { from: LIVE_FROM_REPLAYS })}
-                      className="rounded-full border border-orange-300 bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-700"
-                    >
-                      ♥ {f.courseTitle}
-                    </Link>
-                  ),
-                )}
-              </div>
-            </section>
-          ) : null}
+          {filterBlock}
 
           {paginated.length > 0 ? (
-            <section className="mt-12">
+            <section className="mt-10">
               <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.history}</h2>
               <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {paginated.map((item) => (
@@ -558,7 +520,11 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
                 </div>
               ) : null}
             </section>
-          ) : null}
+          ) : (
+            <p className="mt-10 text-sm text-luxury-muted">
+              {tab === 'favorites' && favorites.length === 0 ? t.emptyFav : t.emptyFiltered}
+            </p>
+          )}
         </>
       )}
     </main>

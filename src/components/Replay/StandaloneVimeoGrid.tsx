@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Heart, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -41,10 +41,17 @@ export function StandaloneVimeoGrid({
   videos,
   lang = 'fr',
   showFeatured = false,
+  hideCategoryFilters = false,
+  featuredVideo = null,
+  /** Rendu entre le hero et la grille (filtres page). */
+  filtersSlot = null,
 }: {
   videos: StandaloneVimeoLibraryItem[];
   lang?: 'fr' | 'en' | 'es';
   showFeatured?: boolean;
+  hideCategoryFilters?: boolean;
+  featuredVideo?: StandaloneVimeoLibraryItem | null;
+  filtersSlot?: ReactNode;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<StandaloneVimeoLibraryItem | null>(null);
@@ -114,13 +121,12 @@ export function StandaloneVimeoGrid({
     return videos.filter((v) => normalizeFolder(v.folderName) === category);
   }, [videos, category]);
 
-  /** Hero figé sur la dernière vidéo globale — indépendant du filtre. */
-  const featured = showFeatured ? videos[0] ?? null : null;
+  const featured = showFeatured ? featuredVideo ?? videos[0] ?? null : null;
   const gridVideos = useMemo(() => {
-    const list = filtered;
+    const list = hideCategoryFilters ? videos : filtered;
     if (!featured) return list;
     return list.filter((v) => v.id !== featured.id);
-  }, [filtered, featured]);
+  }, [filtered, featured, hideCategoryFilters, videos]);
 
   async function toggleFavorite(videoId: string) {
     const next = !(favorites[videoId] === true);
@@ -186,7 +192,7 @@ export function StandaloneVimeoGrid({
   return (
     <>
       {featured ? (
-        <section className="glass-card mb-8 grid gap-6 overflow-hidden p-6 md:grid-cols-2 md:p-8">
+        <section className="glass-card grid gap-6 overflow-hidden p-6 md:grid-cols-2 md:p-8">
           <button
             type="button"
             onClick={() => setSelected(featured)}
@@ -232,12 +238,14 @@ export function StandaloneVimeoGrid({
         </section>
       ) : null}
 
-      {categoryFilters}
+      {filtersSlot}
+
+      {!hideCategoryFilters ? categoryFilters : null}
 
       {gridVideos.length === 0 ? (
-        <p className="text-sm text-luxury-muted">{t.empty}</p>
+        <p className={`text-sm text-luxury-muted ${filtersSlot || featured ? 'mt-8' : ''}`}>{t.empty}</p>
       ) : (
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${filtersSlot || featured ? 'mt-10' : ''}`}>
           {gridVideos.map((video) => (
             <li key={video.id}>
               <div className="group relative block w-full overflow-hidden rounded-2xl border border-white/50 bg-white/35 text-left shadow-sm backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:border-[#C45D3E]/40 hover:shadow-md">

@@ -11,7 +11,7 @@ export function normalizeCourseSkillLevel(value: unknown): CourseSkillLevel {
 }
 
 const LABELS_FR: Record<CourseSkillLevel, string> = {
-  all_levels: 'Tous niveaux',
+  all_levels: 'Tous niveaux confondus',
   beginner: 'Débutant',
   intermediate: 'Confirmé',
   advanced: 'Expert',
