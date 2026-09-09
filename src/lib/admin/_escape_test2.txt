@@ -1,0 +1,2 @@
+line1 /^\u005c// end
+line2 /^\u005c// end
