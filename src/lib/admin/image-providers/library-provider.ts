@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { ImageGenerateResult, ImageProvider, ImageSize } from '@/lib/admin/image-providers/types';
+import { libraryPathIsBlocked } from '@/lib/admin/library-path-utils';
 
 export type LibraryFolderId =
   | 'portraits'
@@ -107,9 +108,9 @@ export function listLibraryPublicPaths(opts?: {
         const canUseCrop = typeof entry === 'object' && entry?.ratios?.['4x5'] === true;
         const chosen = canUseCrop ? crop : publicPath;
         // Vérifie le fichier sur disque pour éviter les 404 (ex. dashboard-desktop-4x5 fantôme).
-        const abs = path.join(process.cwd(), 'public', chosen.replace(/^\//, ''));
+        const abs = path.join(process.cwd(), 'public', chosen.replace(/^\/, ''));
         if (fs.existsSync(abs)) paths.push(chosen);
-        else if (fs.existsSync(path.join(process.cwd(), 'public', publicPath.replace(/^\//, '')))) {
+        else if (fs.existsSync(path.join(process.cwd(), 'public', publicPath.replace(/^\/, '')))) {
           paths.push(publicPath);
         }
       } else {
@@ -134,13 +135,13 @@ export function resolveExistingLibraryPath(publicPath: string | null | undefined
     const cta = '/library/produit-captures/produit-dashboard-02-4x5.webp';
     if (fs.existsSync(path.join(process.cwd(), 'public', cta.slice(1)))) return cta;
   }
-  const rel = publicPath.replace(/^\//, '');
+  const rel = publicPath.replace(/^\/, '');
   const abs = path.join(process.cwd(), 'public', rel);
   if (fs.existsSync(abs)) return publicPath.startsWith('/') ? publicPath : `/${publicPath}`;
   // Crop 4x5 fantôme → base webp si présent
   const baseCandidate = publicPath.replace(/-4x5\.(webp|jpe?g|png)$/i, '.$1');
   if (baseCandidate !== publicPath) {
-    const baseAbs = path.join(process.cwd(), 'public', baseCandidate.replace(/^\//, ''));
+    const baseAbs = path.join(process.cwd(), 'public', baseCandidate.replace(/^\/, ''));
     if (fs.existsSync(baseAbs)) return baseCandidate.startsWith('/') ? baseCandidate : `/${baseCandidate}`;
   }
   return null;
@@ -214,6 +215,8 @@ function rememberPick(publicPath: string, n: number) {
 
 export function pickLibraryPath(opts?: {
   usedPaths?: Set<string>;
+  /** Chemins à éviter en priorité (ex. image actuelle lors d’une régénération). */
+  excludePaths?: Iterable<string>;
   seed?: number;
   folder?: LibraryFolderId;
   themeHint?: string;
@@ -227,15 +230,25 @@ export function pickLibraryPath(opts?: {
   if (!list.length) return null;
 
   const blocked = new Set<string>([...(opts?.usedPaths ?? []), ...recentPicks.slice(-antiN)]);
+  const hardExclude = new Set<string>(opts?.excludePaths ?? []);
   const start = Math.abs(opts?.seed ?? Date.now()) % list.length;
 
-  for (let i = 0; i < list.length; i += 1) {
-    const candidate = list[(start + i) % list.length]!;
-    if (!blocked.has(candidate)) {
+  const tryPick = (allowHardExcluded: boolean): string | null => {
+    for (let i = 0; i < list.length; i += 1) {
+      const candidate = list[(start + i) % list.length]!;
+      if (libraryPathIsBlocked(candidate, blocked)) continue;
+      if (!allowHardExcluded && libraryPathIsBlocked(candidate, hardExclude)) continue;
       rememberPick(candidate, antiN);
       return candidate;
     }
-  }
+    return null;
+  };
+
+  const fresh = tryPick(false);
+  if (fresh) return fresh;
+
+  const soft = tryPick(true);
+  if (soft) return soft;
 
   const any = list[start] ?? list[0] ?? null;
   if (any) rememberPick(any, antiN);
