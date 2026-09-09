@@ -1,1 +1,272 @@
-LOADING_FROM_DISK_VIA_PYTHON_HELPER
+/**
+ * Prompt Claude Code figé — standard Reel validé (dolor-espalda + trop-tard + liberte).
+ * Source : FitMangas-Reels/PROMPT-REFERENCE.md — B-roll exercices + sans punch-in.
+ */
+
+export const TEMPLATE_REFERENCE = `Monte un nouveau Reel FitMangas au STANDARD VALIDÉ (réf. dolor-espalda + trop-tard + liberte).
+Ne me redemande pas le style : il est figé dans mes fichiers.
+
+AVANT TOUT — lis et applique STRICTEMENT, dans l'ordre :
+1. FitMangas-Reels/STRATEGY.md
+2. TOUS les FitMangas-Reels/skills/ (01-derush → 08-audio) — surtout 03 (motion LMDM)
+3. FitMangas-Reels/EXERCICES-INDEX.md (+ assets/exercices/exercices-index.json) — bibliothèque B-roll
+4. Ta mémoire « Standard de production FitMangas » + « B-roll exercices FitMangas »
+
+════════ ENTRÉES (les SEULS éléments variables) ════════
+- Vidéo brute .................. {{CHEMIN_MP4}}
+- Langue parlée ................ {{LANGUE}}
+- Hook (gros titre 0–2,8 s) .... {{HOOK}}   (toujours affiché même si non prononcé)
+- 3 idées / sujet du brief ..... {{IDEE_1}} | {{IDEE_2}} | {{IDEE_3}}   (intention, PAS la source des sous-titres)
+- Légende Instagram ............ {{LEGENDE}}   (ou « génère-la » : 70–150 car. + 3–5 hashtags, sur ce qui est VRAIMENT dit)
+- Overlay / exception .......... {{OVERLAY_OU_EXCEPTION}}   (sinon : standard)
+
+════════ PIPELINE (FIXE) ════════
+1. Projet HyperFrames « reel-{{SLUG}} », portrait 1080×1920.
+2. COULEURS : si HDR/HLG ou Log → VRAI tonemap SDR Rec.709 via LUT assets/hlg2709.cube + lut3d
+   (jamais un retag ; jamais un grade « curves »). Si la prise est sombre, RELEVER l'expo :
+   curves shadow-lift + eq après le LUT (visage bien éclairé, noirs conservés). cara.mp4 taggé bt709.
+3. DÉRUSH : Whisper LOCAL ({{LANGUE}}) → voix RÉELLE ; couper dans les silences MESURÉS ; garder ~60–90 s
+   cohérents (problème → solution → accompagnement → CTA), couper répétitions/hésitations. C'est TOI qui
+   décides quoi garder, sans me demander. Concat des blocs gardés.
+4. SOUS-TITRES = ce qu'elle DIT (verbatim, accent authentique assumé). Retouche « légère » UNIQUEMENT si
+   une phrase n'a vraiment aucun sens. Style INTANGIBLE : Inter 800, 74 px, blanc + contour noir 6 px,
+   mot-clé terracotta #e8894f, 2–3 mots, fins fortes. Conteneur unique + autoAlpha (seek-safe).
+5. HOOK : gros titre blanc+contour noir tiers sup. + logo flamme PNG TRANSPARENT dessous (pas de pastille).
+6. MOTION LMDM — LE CŒUR (skill 03). Passe la transcription PHRASE PAR PHRASE : à CHAQUE phrase un beat
+   visuel, aucune phrase sans rien.
+   - Grosses animations (2–4) en SPLIT SCREEN plein largeur : zone haute = fond DÉDIÉ bord à bord
+     (#1a1a1a sombre ou cream selon l'animation, jamais une petite carte flottante), animation GRANDE
+     et lisible ; visage recadré moitié basse (clip-path inset 48% + translateY, seek-safe) ; sous-titres
+     déplacés à la JONCTION des deux zones pendant le split, remis en bas après. Entrée/sortie = CUT SEC
+     (tl.set instantané, jamais de fondu de zone). Occasionnellement l'animation peut prendre l'écran
+     ENTIER quelques secondes (la personne disparaît), puis retour cut sec au face cam.
+   - Majorité de MICRO-animations qui VIVENT (une par phrase, entre les splits) : soulignement terracotta
+     qui se dessine sous un mot-clé du sous-titre au moment où il est dit, cercle/pictogramme qui pop à
+     côté d'elle, checklist qui se coche item par item, éléments qui glissent/s'alignent.
+   - B-ROLL EXERCICES (EN PLUS des images d'explication, jamais à la place) : bibliothèque locale
+     assets/exercices/ (34 clips de démo SANS voix, déjà tonemappés SDR + son coupé + 720p, manifest
+     exercices-index.json). Passe la transcription : exercice CITÉ NOMMÉMENT (nom EN/ES) → clip EXACT ;
+     propos GÉNÉRAL sur une zone → n'importe quel clip de la CATÉGORIE (abdominales / espalda-postura /
+     fuerza-planchas / gluteo-piernas) ; aucun exercice évoqué → pas de clip (pas de remplissage).
+     Intégration = vignette coins ARRONDIS (~28 px) + ombre + scale-in léger, dans la zone haute (split
+     ou carte au-dessus du visage), APRÈS les images/effets, calée sur la phrase, MUET (data-volume 0),
+     boucle/trim sur la durée de la phrase, SFX d'apparition (clic/pop). Copier le clip dans assets/ du reel.
+   - INTERDIT : gros texte qui répète/résume la voix (hors hook+sous-titres — c'est l'erreur n°1 LMDM,
+     la même info 3 fois) ; wipes/volets/sweeps colorés (CUT SEC uniquement, jamais de transition
+     diagonale ou colorée) ; ZOOM punch-in sur la personne (la coach n'aime pas cette action — jamais
+     de scale sur le visage). Templates catalog HyperFrames en priorité, rebrand cream/terracotta ;
+     from scratch sinon, toujours en décrivant le mouvement (quoi bouge, ordre, timing, accent) avant de coder.
+7. BLOCK INSTAGRAM FOLLOW (standard, ~4,5 s avant le CTA) : avatar crop CARRÉ centré visage hero.jpg,
+   FitMangas + badge vérifié BLEU, @fit.mangas, bouton « Seguir » FIXE, « Pilates · Barre en vivo ».
+8. CTA = PILE 3 CARTES desktop en zone sombre haute (dashboard centre / blog gauche / replays droite),
+   lockup pastille+logo + pill fitmangas.com, visage recadré bas. Jamais de screenshot mobile plein cadre.
+9. AUDIO :
+   - Voix STABLE ~−16 dB de bout en bout. Débruitage MINIMAL (highpass + loudnorm) — JAMAIS arnndn/RNNoise,
+     JAMAIS anlmdn (effet « tunnel/caverneux »). Vérifier RMS par fenêtres.
+   - Musique = bed LOUNGE/hôtel très léger (~−15 dB sous la voix, presque subliminal) qui RESPIRE — JAMAIS
+     un accord tenu unique (= « bruit de basse constant », rejeté). Recette figée (script
+     scripts/gen-lounge-bed.py, Python pur car numpy absent) : progression Dm7→G7→Cmaj7→Am7 4 s/accord,
+     notes medium 130–390 Hz (pas de grave lourd), enveloppe attaque ~0,6 s/relâche ~1,1 s + arpège feutré ;
+     polish ffmpeg lowpass 2600 + aecho reverb douce + loudnorm I=-20. Contrôle : RMS par fenêtres varie
+     ~3-4 dB (preuve que ça respire). data-volume≈0.30, fondu d'entrée court, fondu de sortie en toute fin.
+   - SFX = palette VARIÉE PAR TYPE d'élément (skill 05), jamais juste des whoosh : clic de souris
+     (apparition UI/carte/split/vignette B-roll), frappe clavier (texte qui s'écrit), obturateur photo
+     (apparition d'image si dispo), tick (chaque coche de checklist), pop discret (picto), chime/ping léger
+     (soulignement), whoosh (Follow/CTA uniquement). Chaque animation a son micro-son ~−20 dB sous
+     la voix (sons fins un peu plus haut si besoin). Pas d'animation muette.
+   - Exception « son d'origine seul » si {{OVERLAY_OU_EXCEPTION}} le demande (voix brute -16, aucun musique/SFX).
+10. npm run check = 0 erreur. Snapshots de PREUVE à chaque étape (couleurs, hook, chaque animation, B-roll, Follow, CTA).
+11. Studio localhost (npm run dev), ATTENDS mon OK visuel. Sur mon OK : npm run render LOCAL (jamais cloud) →
+    copie H.264 SDR Rec.709 (bt709, faststart, audio inchangé) dans le VRAI dossier local
+    FitMangas-Reels/exports/ : « reel-{{SLUG}}_1080x1920_30fps.mp4 ». Donne le chemin.
+12. Propose la légende. Zones mortes IG respectées (150/400/100 px). Face cam dominant.`;
+
+export type ReelPromptTokenMap = {
+  CHEMIN_MP4: string;
+  SLUG: string;
+  LANGUE: string;
+  HOOK: string;
+  IDEE_1: string;
+  IDEE_2: string;
+  IDEE_3: string;
+  LEGENDE: string;
+  OVERLAY_OU_EXCEPTION: string;
+};
+
+export type ReelPromptPostFields = {
+  hookTitle?: string | null;
+  overlayText?: string | null;
+  title?: string | null;
+  reelScript?: string | null;
+  caption?: string | null;
+  locale?: string | null;
+  rawVideoPath?: string | null;
+  /** Exception audio / overlay (ex. « son d'origine seul »). Vide → standard. */
+  overlayOrException?: string | null;
+};
+
+/** dolor-espalda-oficina-es.MOV → dolor-espalda */
+export function slugFromMp4Filename(pathOrName: string | null | undefined): string {
+  if (!pathOrName?.trim()) return '';
+  const base = pathOrName.trim().split(/[/\\]/).pop() || '';
+  const withoutExt = base.replace(/\.(mp4|mov|webm|m4v)$/i, '');
+  const noLocale = withoutExt.replace(/[-_](fr|es|en|fr-FR|es-ES|es-MX)$/i, '');
+  const parts = noLocale
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .split('-')
+    .filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return parts.slice(0, 2).join('-');
+}
+
+/** Extrait jusqu’à 3 idées du brief tournage (numérotées ou puces). */
+export function extractReelIdeas(reelScript: string | null | undefined): [string, string, string] {
+  const empty: [string, string, string] = ['', '', ''];
+  const text = asText(reelScript).trim();
+  if (!text) return empty;
+
+  // Section avant BRIEF si présente
+  const beforeBrief = text.split(/\n\s*BRIEF\b/i)[0] ?? text;
+
+  const numbered: string[] = [];
+  for (const line of beforeBrief.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:\*{0,2})?(\d+)\s*[).:\-–—]\s*(.+?)\s*$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (n < 1 || n > 3) continue;
+    const idea = m[2].replace(/\*+/g, '').trim();
+    if (idea) numbered[n - 1] = idea;
+  }
+  if (numbered.filter(Boolean).length > 0) {
+    return [numbered[0] || '', numbered[1] || '', numbered[2] || ''];
+  }
+
+  const bullets: string[] = [];
+  for (const line of beforeBrief.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^ID[EÉ]ES?\b/i.test(trimmed)) continue; // en-tête « IDÉES : » / « IDÉES CLÉS : »
+    if (/^BRIEF\b/i.test(trimmed)) break;
+    const bullet = trimmed.match(/^(?:[-–—•*]+|\d+[).])\s*(.+)$/);
+    if (bullet?.[1]?.trim()) {
+      bullets.push(bullet[1].trim());
+      if (bullets.length >= 3) break;
+    }
+  }
+  if (bullets.length > 0) {
+    return [bullets[0] || '', bullets[1] || '', bullets[2] || ''];
+  }
+
+  return empty;
+}
+
+function asText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return '';
+}
+
+function tokenOrKeep(key: keyof ReelPromptTokenMap, value: string): string {
+  const v = value.trim();
+  return v || `{{${key}}}`;
+}
+
+export function buildReelPromptTokenMap(post: ReelPromptPostFields): ReelPromptTokenMap {
+  const [i1, i2, i3] = extractReelIdeas(asText(post.reelScript));
+  const hook = (asText(post.overlayText) || asText(post.hookTitle) || asText(post.title)).trim();
+  const caption = asText(post.caption).trim();
+  const locale = asText(post.locale || 'fr').toLowerCase();
+  const langue = locale === 'es' ? 'espagnol' : 'français';
+  const chemin = asText(post.rawVideoPath).trim();
+  const slug = slugFromMp4Filename(chemin);
+  const exception = asText(post.overlayOrException).trim() || 'standard';
+
+  return {
+    CHEMIN_MP4: tokenOrKeep('CHEMIN_MP4', chemin),
+    SLUG: tokenOrKeep('SLUG', slug),
+    LANGUE: langue,
+    HOOK: tokenOrKeep('HOOK', hook),
+    IDEE_1: tokenOrKeep('IDEE_1', i1),
+    IDEE_2: tokenOrKeep('IDEE_2', i2),
+    IDEE_3: tokenOrKeep('IDEE_3', i3),
+    // Légende vide → consignes « génère-la » (pas le token brut)
+    LEGENDE: caption || 'génère-la',
+    OVERLAY_OU_EXCEPTION: exception,
+  };
+}
+
+export function fillReelPromptReference(tokens: ReelPromptTokenMap): string {
+  return TEMPLATE_REFERENCE.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
+    const k = key as keyof ReelPromptTokenMap;
+    const value = tokens[k];
+    // Remplacement via fonction : les `$` éventuels dans le contenu ne cassent pas le prompt.
+    return value != null && value !== '' ? value : `{{${key}}}`;
+  });
+}
+
+/** Prompt prêt à coller dans Claude Code pour un post CM. */
+export function buildClaudeCodeReelPrompt(post: ReelPromptPostFields): string {
+  return fillReelPromptReference(buildReelPromptTokenMap(post));
+}
+
+/**
+ * Fallback execCommand. Safari peut renvoyer true sans rien mettre
+ * dans le presse-papiers — ne pas s’y fier seul pour le feedback UI.
+ */
+export function copyTextToClipboardSync(text: string): boolean {
+  const value = typeof text === 'string' ? text : String(text ?? '');
+  if (!value || typeof document === 'undefined') return false;
+
+  const ta = document.createElement('textarea');
+  ta.value = value;
+  // Pas de readonly : Safari ignore parfois la sélection sinon.
+  ta.style.cssText =
+    'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;margin:0;border:0;outline:none;opacity:0.01;z-index:2147483647;';
+  document.body.appendChild(ta);
+
+  ta.focus({ preventScroll: true });
+  ta.select();
+  ta.setSelectionRange(0, value.length);
+
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+
+  // Laisser le temps à Safari d’écrire avant de retirer le nœud.
+  window.setTimeout(() => {
+    ta.remove();
+  }, 120);
+
+  return ok;
+}
+
+/**
+ * Copie depuis un geste utilisateur (pointerdown / click).
+ * writeText d’abord (synchrone dans le geste) ; execCommand en secours silencieux
+ * uniquement si l’API Clipboard est absente — jamais de faux « Copié ! » via execCommand seul.
+ */
+export async function copyTextFromUserGesture(text: string): Promise<void> {
+  const value = typeof text === 'string' ? text : String(text ?? '');
+  if (!value) throw new Error('Prompt vide — rien à copier.');
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (copyTextToClipboardSync(value)) return;
+
+  throw new Error('Impossible de copier dans le presse-papiers (autorise le site dans Safari).');
+}
+
+/** Alias historique — même chaîne que copyTextFromUserGesture. */
+export async function copyTextToClipboard(text: string): Promise<void> {
+  return copyTextFromUserGesture(text);
+}
