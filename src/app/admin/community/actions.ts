@@ -1,1 +1,1 @@
-@file:///tmp/cm-push-file-2.content
+PLACEHOLDER_LOAD_FROM_/tmp/mcp-push-contents/0.raw
