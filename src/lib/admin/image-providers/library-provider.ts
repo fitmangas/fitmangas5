@@ -78,7 +78,7 @@ function entryToPublicPath(folderId: LibraryFolderId, entry: ManifestFileEntry):
   if (!raw) return null;
   if (raw.startsWith('/')) return raw;
   if (raw.startsWith('library/')) return `/${raw}`;
-  return `/library/${folderId}/${raw.replace(/^\/?library\/[^/]+\/, '')}`;
+  return `/library/${folderId}/${raw.replace(/^\u005c/?library\u005c/[^/]+\u005c//, '')}`;
 }
 
 /** Chemins publics depuis le manifest (+ fallback). */
@@ -100,17 +100,15 @@ export function listLibraryPublicPaths(opts?: {
     for (const entry of folder.files) {
       const publicPath = entryToPublicPath(folderId, entry);
       if (!publicPath) continue;
-      if (/-4x5\./i.test(publicPath) || /-1x1\./i.test(publicPath)) continue;
+      if (/-4x5\u005c./i.test(publicPath) || /-1x1\u005c./i.test(publicPath)) continue;
       if (opts?.prefer4x5) {
-        const base = publicPath.replace(/\.(webp|jpe?g|png)$/i, '');
+        const base = publicPath.replace(/\u005c.(webp|jpe?g|png)$/i, '');
         const crop = `${base}-4x5.webp`;
-        // Uniquement si le manifeste marque explicitement le crop 4:5 (pas « web »).
         const canUseCrop = typeof entry === 'object' && entry?.ratios?.['4x5'] === true;
         const chosen = canUseCrop ? crop : publicPath;
-        // Vérifie le fichier sur disque pour éviter les 404 (ex. dashboard-desktop-4x5 fantôme).
-        const abs = path.join(process.cwd(), 'public', chosen.replace(/^\/, ''));
+        const abs = path.join(process.cwd(), 'public', chosen.replace(/^\u005c//, ''));
         if (fs.existsSync(abs)) paths.push(chosen);
-        else if (fs.existsSync(path.join(process.cwd(), 'public', publicPath.replace(/^\/, '')))) {
+        else if (fs.existsSync(path.join(process.cwd(), 'public', publicPath.replace(/^\u005c//, '')))) {
           paths.push(publicPath);
         }
       } else {
@@ -126,56 +124,40 @@ export function listProductCapturePaths(): string[] {
   return listLibraryPublicPaths({ folder: 'produit-captures', prefer4x5: true });
 }
 
-/** Remplace un chemin bibliothèque fantôme (ex. dashboard-desktop-4x5.webp) par un fichier réel. */
 export function resolveExistingLibraryPath(publicPath: string | null | undefined): string | null {
   if (!publicPath) return null;
   if (publicPath.startsWith('http://') || publicPath.startsWith('https://')) return publicPath;
-  // Ancien CTA landscape / crop fantôme → capture dashboard 4:5 réelle
   if (/dashboard-desktop/i.test(publicPath)) {
     const cta = '/library/produit-captures/produit-dashboard-02-4x5.webp';
     if (fs.existsSync(path.join(process.cwd(), 'public', cta.slice(1)))) return cta;
   }
-  const rel = publicPath.replace(/^\/, '');
+  const rel = publicPath.replace(/^\u005c//, '');
   const abs = path.join(process.cwd(), 'public', rel);
   if (fs.existsSync(abs)) return publicPath.startsWith('/') ? publicPath : `/${publicPath}`;
-  // Crop 4x5 fantôme → base webp si présent
-  const baseCandidate = publicPath.replace(/-4x5\.(webp|jpe?g|png)$/i, '.$1');
+  const baseCandidate = publicPath.replace(/-4x5\u005c.(webp|jpe?g|png)$/i, '.$1');
   if (baseCandidate !== publicPath) {
-    const baseAbs = path.join(process.cwd(), 'public', baseCandidate.replace(/^\/, ''));
+    const baseAbs = path.join(process.cwd(), 'public', baseCandidate.replace(/^\u005c//, ''));
     if (fs.existsSync(baseAbs)) return baseCandidate.startsWith('/') ? baseCandidate : `/${baseCandidate}`;
   }
   return null;
 }
 
-/**
- * Résout les chemins carousel existants — NE remplit / NE duplique JAMAIS une slide manquante.
- * Les trous restent des chaînes vides ; l’appelant doit échouer si count < 6.
- */
 export function sanitizeCarouselPaths(paths: string[] | null | undefined): string[] {
   const source = Array.isArray(paths) ? paths.slice(0, 6) : [];
   const out: string[] = [];
   for (let i = 0; i < 6; i += 1) {
     const raw = (source[i] || '').trim();
-    if (!raw) {
-      out.push('');
-      continue;
-    }
+    if (!raw) { out.push(''); continue; }
     const resolved = resolveExistingLibraryPath(raw);
-    if (resolved) {
-      out.push(resolved);
-      continue;
-    }
+    if (resolved) { out.push(resolved); continue; }
     if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/library/social/')) {
-      out.push(raw);
-      continue;
+      out.push(raw); continue;
     }
-    // Chemin local mort → trou explicite (pas de duplicata)
     out.push('');
   }
   return out;
 }
 
-/** Nombre de slides non vides (après sanitize). */
 export function countValidCarouselSlides(paths: string[] | null | undefined): number {
   return (paths ?? []).filter((p) => Boolean(p?.trim())).length;
 }
@@ -215,7 +197,6 @@ function rememberPick(publicPath: string, n: number) {
 
 export function pickLibraryPath(opts?: {
   usedPaths?: Set<string>;
-  /** Chemins à éviter en priorité (ex. image actuelle lors d’une régénération). */
   excludePaths?: Iterable<string>;
   seed?: number;
   folder?: LibraryFolderId;
@@ -225,14 +206,11 @@ export function pickLibraryPath(opts?: {
   const antiN = getAntiRepeatN(manifest);
   let folder = opts?.folder;
   if (!folder && opts?.themeHint) folder = folderForTheme(opts.themeHint);
-
   const list = listLibraryPublicPaths({ folder, prefer4x5: true });
   if (!list.length) return null;
-
   const blocked = new Set<string>([...(opts?.usedPaths ?? []), ...recentPicks.slice(-antiN)]);
   const hardExclude = new Set<string>(opts?.excludePaths ?? []);
   const start = Math.abs(opts?.seed ?? Date.now()) % list.length;
-
   const tryPick = (allowHardExcluded: boolean): string | null => {
     for (let i = 0; i < list.length; i += 1) {
       const candidate = list[(start + i) % list.length]!;
@@ -243,13 +221,10 @@ export function pickLibraryPath(opts?: {
     }
     return null;
   };
-
   const fresh = tryPick(false);
   if (fresh) return fresh;
-
   const soft = tryPick(true);
   if (soft) return soft;
-
   const any = list[start] ?? list[0] ?? null;
   if (any) rememberPick(any, antiN);
   return any;
@@ -257,28 +232,19 @@ export function pickLibraryPath(opts?: {
 
 export class LibraryImageProvider implements ImageProvider {
   readonly name = 'library';
-
   private usedPaths: Set<string>;
   private folder?: LibraryFolderId;
   private themeHint?: string;
   private seed: number;
-
-  constructor(opts?: {
-    usedPaths?: Set<string>;
-    folder?: LibraryFolderId;
-    themeHint?: string;
-    seed?: number;
-  }) {
+  constructor(opts?: { usedPaths?: Set<string>; folder?: LibraryFolderId; themeHint?: string; seed?: number; }) {
     this.usedPaths = opts?.usedPaths ?? new Set();
     this.folder = opts?.folder;
     this.themeHint = opts?.themeHint;
     this.seed = opts?.seed ?? 0;
   }
-
   isAvailable(): boolean {
     return listLibraryPublicPaths({ folder: this.folder }).length > 0;
   }
-
   async generate(_prompt: string, _size: ImageSize): Promise<ImageGenerateResult> {
     const publicPath = pickLibraryPath({
       usedPaths: this.usedPaths,
@@ -289,8 +255,6 @@ export class LibraryImageProvider implements ImageProvider {
     if (!publicPath) {
       return { error: 'Bibliothèque vide — aucun fichier dans public/library/ (manifest).' };
     }
-
-    // Runtime only returns known public path from manifest; no direct file reads.
     this.usedPaths.add(publicPath);
     return {
       buffer: Buffer.alloc(0),
