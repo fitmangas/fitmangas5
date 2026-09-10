@@ -1,11 +1,17 @@
 import { getAlejandraDoubleProfile, isAlejandraDoubleEnabled } from '@/lib/admin/alejandra-double';
 import { metaAppConfigured } from '@/lib/admin/meta-social';
 import {
+  getMetaAppLiveAck,
   getMetaSocialConnection,
   getSocialCommsBoard,
   SocialCommsBoardLoadError,
   emptySocialCommsBoard,
 } from '@/lib/admin/social-comms';
+import {
+  getTikTokSocialConnection,
+  tiktokAppConfigured,
+  tiktokConnectorStatusMessage,
+} from '@/lib/admin/tiktok-social';
 import { loadPillarHistory, recentThemeLabels } from '@/lib/admin/social-pillars';
 
 export async function loadCommunityBoardProps() {
@@ -22,8 +28,10 @@ export async function loadCommunityBoardProps() {
           : 'Board CM indisponible.';
   }
 
-  const [meta, alejandraDouble, pillarHistory] = await Promise.all([
+  const [meta, tiktok, metaLiveAck, alejandraDouble, pillarHistory] = await Promise.all([
     getMetaSocialConnection(),
+    getTikTokSocialConnection(),
+    getMetaAppLiveAck(),
     getAlejandraDoubleProfile(),
     loadPillarHistory(),
   ]);
@@ -35,6 +43,10 @@ export async function loadCommunityBoardProps() {
     boardLoadError,
     meta,
     metaAppReady: metaAppConfigured(),
+    metaLiveAck,
+    tiktok,
+    tiktokAppReady: tiktokAppConfigured(),
+    tiktokStatusMessage: tiktokConnectorStatusMessage(tiktok),
     alejandraDouble,
     doubleUiEnabled: isAlejandraDoubleEnabled(),
     pillarHistoryLabels: recentThemeLabels(pillarHistory, 8),

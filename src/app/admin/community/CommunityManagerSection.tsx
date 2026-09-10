@@ -16,6 +16,10 @@ export async function CommunityManagerSection() {
         board={props.board}
         meta={props.meta}
         metaAppReady={props.metaAppReady}
+        metaLiveAck={props.metaLiveAck}
+        tiktok={props.tiktok}
+        tiktokAppReady={props.tiktokAppReady}
+        tiktokStatusMessage={props.tiktokStatusMessage}
         alejandraDouble={props.alejandraDouble}
         doubleUiEnabled={props.doubleUiEnabled}
         pillarHistoryLabels={props.pillarHistoryLabels}
