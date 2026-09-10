@@ -23,9 +23,12 @@ import {
 
 import {
   attachSocialEditedVideoAction,
+  confirmMetaAppLiveAction,
   createManualSocialPostAction,
   deleteSocialPostAction,
+  diagnoseMetaFacebookVisibilityAction,
   disconnectMetaAction,
+  disconnectTikTokAction,
   finalizeWeekPlanAction,
   generateConseilSeriesPostAction,
   generateNextPostAction,
@@ -33,6 +36,7 @@ import {
   generateSpanishVariantAction,
   initWeekPlanAction,
   getMetaConnectUrlAction,
+  getTikTokConnectUrlAction,
   markAllSocialPostsReadyAction,
   polishExistingSocialPostsAction,
   publishFacebookMirrorNowAction,
@@ -50,6 +54,7 @@ import {
   refreshAlejandraPhotaStatusAction,
   updateSocialPostCaptionAction,
   updateSocialPostFacebookMirrorAction,
+  updateSocialPostTikTokMirrorAction,
   updateSocialPostImageAction,
   updateSocialPostImageFeedbackAction,
   updateSocialPostOverlayAction,
@@ -91,6 +96,8 @@ import {
   type SocialNetwork,
   type SocialPost,
 } from '@/lib/admin/social-comms';
+import type { TikTokSocialConnection } from '@/lib/admin/tiktok-social';
+import { META_APP_LIVE_WARNING } from '@/lib/admin/social-comms';
 import {
   ACTIVE_CONTENT_THEMES,
   CONTENT_FAMILY_LABELS,
@@ -108,13 +115,25 @@ function postMatchesNetworkFilter(post: SocialPost, filter: SocialNetwork): bool
       (post.network === 'instagram' && post.alsoPublishFacebook && post.status !== 'skipped')
     );
   }
+  if (filter === 'tiktok') {
+    return post.network === 'instagram' && post.alsoPublishTikTok && post.status !== 'skipped';
+  }
   return post.network === filter;
 }
 
 function calendarChipStyle(post: SocialPost): { bg: string; text: string; border: string; label: string } {
-  if (post.network === 'instagram' && post.alsoPublishFacebook) {
+  if (post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok)) {
     const ig = SOCIAL_NETWORK_COLORS.instagram;
-    return { bg: ig.bg, text: ig.text, border: SOCIAL_NETWORK_COLORS.facebook.border, label: 'IG+FB' };
+    const label =
+      post.alsoPublishFacebook && post.alsoPublishTikTok
+        ? 'IG+FB+TT'
+        : post.alsoPublishFacebook
+          ? 'IG+FB'
+          : 'IG+TT';
+    const border = post.alsoPublishFacebook
+      ? SOCIAL_NETWORK_COLORS.facebook.border
+      : SOCIAL_NETWORK_COLORS.tiktok.border;
+    return { bg: ig.bg, text: ig.text, border, label };
   }
   const c = SOCIAL_NETWORK_COLORS[post.network];
   return { bg: c.bg, text: c.text, border: c.border, label: c.short };
@@ -178,6 +197,10 @@ type Props = {
   board: SocialCommsBoard;
   meta: MetaSocialConnection;
   metaAppReady: boolean;
+  metaLiveAck?: boolean;
+  tiktok: TikTokSocialConnection;
+  tiktokAppReady: boolean;
+  tiktokStatusMessage: string;
   alejandraDouble: AlejandraDoubleProfile;
   /** Flag serveur ALEJANDRA_DOUBLE_ENABLED — masque le panneau si false. */
   doubleUiEnabled?: boolean;
@@ -189,6 +212,10 @@ export function CommunityManagerBoard({
   board,
   meta,
   metaAppReady,
+  metaLiveAck = false,
+  tiktok,
+  tiktokAppReady,
+  tiktokStatusMessage,
   alejandraDouble,
   doubleUiEnabled = false,
   pillarHistoryLabels = [],
@@ -460,6 +487,55 @@ export function CommunityManagerBoard({
 
   return (
     <div className="space-y-6">
+      {meta.connected && !metaLiveAck ? (
+        <div className="rounded-2xl border border-[#fcd34d] bg-[#fffbeb] px-4 py-3 text-sm text-[#92400e]" role="alert">
+          <p className="font-semibold">Facebook : le public ne voit pas tes posts API</p>
+          <p className="mt-1 text-[13px] leading-snug">{META_APP_LIVE_WARNING}</p>
+          <p className="mt-2 text-[12px] leading-snug">
+            1) Va sur{' '}
+            <a className="underline" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">
+              developers.facebook.com/apps
+            </a>{' '}
+            → <strong>FitMangas Community 2</strong> → bascule <strong>Live</strong>. 2) Si Meta demande App Review pour{' '}
+            <code>pages_manage_posts</code>, valide-le. 3) Republie les Reels après Live (les anciens restent souvent invisibles).
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              className="btn-luxury-ghost px-3 py-2 text-[11px]"
+              onClick={() =>
+                run(async () => {
+                  const res = await diagnoseMetaFacebookVisibilityAction();
+                  if (!res.ok) return res;
+                  const apps = res.recentPosts
+                    ?.map((p) => p.appName)
+                    .filter(Boolean)
+                    .slice(0, 3)
+                    .join(', ');
+                  return {
+                    ok: true as const,
+                    message: `Diag FB : Page ${res.pageName || res.pageId} · app ${res.appName || res.appId || '?'} · ${res.recentPosts?.length || 0} posts récents${apps ? ` (${apps})` : ''}.`,
+                  };
+                }, 'Diagnostic Facebook OK.')
+              }
+            >
+              Diagnostiquer Facebook
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              className="btn-luxury-primary px-3 py-2 text-[11px]"
+              onClick={() =>
+                run(() => confirmMetaAppLiveAction(true), 'Mode Live Meta confirmé.')
+              }
+            >
+              J’ai passé l’app en Live
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <section className="rounded-[2rem] border border-white/65 bg-white/70 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -488,13 +564,17 @@ export function CommunityManagerBoard({
             </button>
             <button
               type="button"
-              disabled={pending || generationFlow.active || networkFilter === 'facebook'}
+              disabled={
+                pending || generationFlow.active || networkFilter === 'facebook' || networkFilter === 'tiktok'
+              }
               onClick={() => void runProgressiveGeneration('fresh')}
               className="btn-luxury-primary inline-flex min-h-[44px] items-center gap-2 px-5 text-xs disabled:opacity-60"
               title={
                 networkFilter === 'facebook'
                   ? 'Passe sur Instagram pour générer (FB = miroir auto).'
-                  : undefined
+                  : networkFilter === 'tiktok'
+                    ? 'Passe sur Instagram pour générer (TikTok = miroir Reels).'
+                    : undefined
               }
             >
               {pending || generationFlow.active ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -502,9 +582,11 @@ export function CommunityManagerBoard({
                 ? 'Génération…'
                 : networkFilter === 'facebook'
                   ? 'Voir Instagram pour générer'
-                  : networkFilter === 'instagram'
-                    ? 'Générer Instagram (FR)'
-                    : `Générer ${SOCIAL_NETWORK_LABELS[networkFilter]}`}
+                  : networkFilter === 'tiktok'
+                    ? 'Voir Instagram pour générer'
+                    : networkFilter === 'instagram'
+                      ? 'Générer Instagram (FR)'
+                      : `Générer ${SOCIAL_NETWORK_LABELS[networkFilter]}`}
             </button>
             <button
               type="button"
@@ -517,7 +599,11 @@ export function CommunityManagerBoard({
             </button>
             {pending || generationFlow.active ? (
               <p className="w-full text-xs text-luxury-soft">
-                Génération {SOCIAL_NETWORK_LABELS[networkFilter === 'facebook' ? 'instagram' : networkFilter]} · FR
+                Génération{' '}
+                {SOCIAL_NETWORK_LABELS[
+                  networkFilter === 'facebook' || networkFilter === 'tiktok' ? 'instagram' : networkFilter
+                ]}{' '}
+                · FR
                 ({generationSummary}) — progression: {generationFlow.done}/{generationFlow.total || '…'} ·
                 échecs {generationFlow.failed}.
               </p>
@@ -798,6 +884,48 @@ export function CommunityManagerBoard({
                     Déconnecter
                   </button>
                 ) : null}
+              </div>
+              {!metaLiveAck ? (
+                <p className="text-[10px] text-[#92400e]">
+                  App « FitMangas Community 2 » doit être en mode Live sinon le public ne voit pas les posts.
+                </p>
+              ) : (
+                <p className="text-[10px] text-[#065f46]">Mode Live Meta confirmé dans FitMangas.</p>
+              )}
+              <div className="mt-3 border-t border-[#E8D9C8]/80 pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">TikTok (miroir Reels)</p>
+                <p className="mt-1 text-[11px] text-luxury-muted">{tiktokStatusMessage}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tiktokAppReady ? (
+                    <button
+                      type="button"
+                      className="btn-luxury-primary px-3 py-2 text-[10px]"
+                      onClick={() =>
+                        void getTikTokConnectUrlAction().then((res) => {
+                          if (res.ok && res.url) window.location.href = res.url;
+                          else setMessage(res.error || 'OAuth TikTok indisponible.');
+                        })
+                      }
+                    >
+                      {tiktok.connected ? 'Reconnecter TikTok' : 'OAuth TikTok'}
+                    </button>
+                  ) : (
+                    <p className="text-[10px] text-luxury-muted">
+                      Ajoute <code>TIKTOK_CLIENT_KEY</code> + <code>TIKTOK_CLIENT_SECRET</code> (Vercel + .env.local),
+                      crée une app sur developers.tiktok.com avec Content Posting API, redirect{' '}
+                      <code>/api/admin/community/tiktok/callback</code>.
+                    </p>
+                  )}
+                  {tiktok.connected ? (
+                    <button
+                      type="button"
+                      className="btn-luxury-ghost px-3 py-2 text-[10px] text-red-800"
+                      onClick={() => run(() => disconnectTikTokAction(), 'TikTok déconnecté.')}
+                    >
+                      Déconnecter TikTok
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -1426,7 +1554,6 @@ function PostCard({
 }) {
   const captionAnalysis = analyzeCaptionForPost(caption, post.network, post.format, post.hashtags.length);
   const canPublishMeta = post.network === 'instagram' || post.network === 'facebook';
-  const isTikTok = post.network === 'tiktok';
   const isManualNetwork = post.network === 'whatsapp' || post.network === 'linkedin';
   const parisSchedule = parseParisSchedule(post.plannedAt);
   const parisHours = allowedParisHours(post.network);
@@ -1700,6 +1827,17 @@ function PostCard({
                 + Facebook
               </span>
             ) : null}
+            {post.network === 'instagram' && post.alsoPublishTikTok ? (
+              <span
+                className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                style={{
+                  backgroundColor: SOCIAL_NETWORK_COLORS.tiktok.bg,
+                  color: SOCIAL_NETWORK_COLORS.tiktok.text,
+                }}
+              >
+                + TikTok
+              </span>
+            ) : null}
             <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
               {post.format}
             </span>
@@ -1824,6 +1962,22 @@ function PostCard({
                     }
                   />
                   Aussi Facebook (même contenu)
+                </label>
+              ) : null}
+              {post.network === 'instagram' && post.format === 'reel' ? (
+                <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">
+                  <input
+                    type="checkbox"
+                    checked={post.alsoPublishTikTok}
+                    disabled={pending}
+                    onChange={(e) =>
+                      run(
+                        () => updateSocialPostTikTokMirrorAction(post.id, e.target.checked),
+                        e.target.checked ? 'Miroir TikTok activé.' : 'Miroir TikTok désactivé.',
+                      )
+                    }
+                  />
+                  Aussi TikTok (même Reel)
                 </label>
               ) : null}
               <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">
@@ -2390,8 +2544,8 @@ function PostCard({
                       }, 150);
                     }
                     return result;
-                  }, post.network === 'instagram' && post.alsoPublishFacebook
-                    ? 'Publié sur Instagram (+ Facebook si OK).'
+                  }, post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok)
+                    ? `Publié sur Instagram${post.alsoPublishFacebook ? ' (+ FB)' : ''}${post.alsoPublishTikTok ? ' (+ TT)' : ''}.`
                     : 'Publié sur Meta.')
                 }
                 className={`inline-flex min-h-[40px] items-center gap-2 px-4 text-[11px] disabled:opacity-60 ${
@@ -2403,9 +2557,13 @@ function PostCard({
                   ? 'Publié ✓'
                   : post.status === 'published'
                     ? 'Publié'
-                    : post.network === 'instagram' && post.alsoPublishFacebook
-                      ? 'Publier IG + FB'
-                      : 'Publier'}
+                    : post.network === 'instagram' && post.alsoPublishFacebook && post.alsoPublishTikTok
+                      ? 'Publier IG + FB + TT'
+                      : post.network === 'instagram' && post.alsoPublishFacebook
+                        ? 'Publier IG + FB'
+                        : post.network === 'instagram' && post.alsoPublishTikTok
+                          ? 'Publier IG + TT'
+                          : 'Publier'}
               </button>
             ) : null}
             {canPublishMeta && post.status === 'published' && post.alsoPublishFacebook ? (
@@ -2443,15 +2601,10 @@ function PostCard({
                 </button>
               )
             ) : null}
-            {isTikTok ? (
-              <button
-                type="button"
-                disabled
-                title="Publication TikTok bientôt disponible"
-                className="btn-luxury-ghost inline-flex min-h-[40px] items-center gap-2 px-4 text-[11px] opacity-60"
-              >
-                Bientôt
-              </button>
+            {post.tiktokExternalId ? (
+              <span className="inline-flex min-h-[40px] items-center rounded-full border border-black/20 bg-zinc-100 px-4 text-[11px] font-semibold text-zinc-800">
+                TikTok OK · {post.tiktokExternalId.slice(0, 18)}…
+              </span>
             ) : null}
             {isManualNetwork ? (
               <button

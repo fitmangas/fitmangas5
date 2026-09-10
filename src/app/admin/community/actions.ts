@@ -5,13 +5,25 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   buildMetaOAuthUrl,
+  diagnoseMetaFacebookVisibility,
   exchangeMetaCodeForConnection,
   facebookMirrorMediaReady,
+  META_APP_LIVE_WARNING,
   metaAppConfigured,
   publishFacebookPost,
   publishInstagramNow,
   verifyFacebookPublishId,
 } from '@/lib/admin/meta-social';
+import {
+  buildTikTokOAuthUrl,
+  exchangeTikTokCodeForConnection,
+  getTikTokSocialConnection,
+  publishTikTokReel,
+  saveTikTokSocialConnection,
+  tiktokAppConfigured,
+  tiktokConnectorStatusMessage,
+  EMPTY_TIKTOK_CONNECTION,
+} from '@/lib/admin/tiktok-social';
 import {
   emptyAlejandraDouble,
   getAlejandraDoubleProfile,
@@ -55,9 +67,11 @@ import {
   collectUsedLibraryPaths,
   createSocialPostId,
   emptyMetaConnection,
+  getMetaAppLiveAck,
   getMetaSocialConnection,
   getSocialCommsBoard,
   pickLibraryImage,
+  saveMetaAppLiveAck,
   saveMetaSocialConnection,
   saveSocialCommsBoard,
   SOCIAL_LIBRARY_IMAGES,
@@ -1170,6 +1184,7 @@ export async function generateSpanishVariantAction(postId: string) {
     updatedAt: now,
     metaExternalId: null,
     facebookExternalId: null,
+    tiktokExternalId: null,
     status: 'idea',
   };
   const esPostFresh: SocialPost = { ...esPost, esStale: false };
@@ -1295,6 +1310,29 @@ export async function updateSocialPostFacebookMirrorAction(postId: string, alsoP
   return { ok: true as const };
 }
 
+export async function updateSocialPostTikTokMirrorAction(postId: string, alsoPublishTikTok: boolean) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.network !== 'instagram') {
+    return { ok: false as const, error: 'Le miroir TikTok ne s’applique qu’aux posts Instagram.' };
+  }
+  if (alsoPublishTikTok && post.format !== 'reel') {
+    return { ok: false as const, error: 'TikTok auto : uniquement les Reels (MP4).' };
+  }
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? { ...item, alsoPublishTikTok, updatedAt: new Date().toISOString() }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
 /** Crée ou retire une adaptation LinkedIn à partir d’un post (souvent Instagram). */
 export async function toggleLinkedInAdaptationAction(postId: string, enabled: boolean) {
   await requireAdmin();
@@ -1362,8 +1400,10 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     whyItWorksNeedsReview: adapted.needsManual,
     metaExternalId: null,
     alsoPublishFacebook: false,
+    alsoPublishTikTok: false,
     adaptedFromId: source.id,
     facebookExternalId: null,
+    tiktokExternalId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -1536,6 +1576,64 @@ export async function getMetaConnectUrlAction() {
   return { ok: true as const, url: buildMetaOAuthUrl(state) };
 }
 
+export async function diagnoseMetaFacebookVisibilityAction() {
+  await requireAdmin();
+  const connection = await getMetaSocialConnection();
+  if (!connection.connected) {
+    return { ok: false as const, error: 'Meta non connectée.' };
+  }
+  try {
+    const liveAck = await getMetaAppLiveAck();
+    const report = await diagnoseMetaFacebookVisibility(connection);
+    return { ok: true as const, liveAck, ...report };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : 'Diagnostic Facebook échoué.' };
+  }
+}
+
+export async function confirmMetaAppLiveAction(confirmed: boolean) {
+  await requireAdmin();
+  await saveMetaAppLiveAck(confirmed);
+  revalidateCommunity();
+  return {
+    ok: true as const,
+    message: confirmed
+      ? 'Mode Live Meta confirmé — les prochains posts API devraient être visibles au public.'
+      : 'Confirmation Live retirée — l’alerte Facebook réapparaît.',
+  };
+}
+
+export async function getTikTokConnectUrlAction() {
+  await requireAdmin();
+  if (!tiktokAppConfigured()) {
+    return {
+      ok: false as const,
+      error: tiktokConnectorStatusMessage(EMPTY_TIKTOK_CONNECTION),
+    };
+  }
+  const state = `tt_${Date.now().toString(36)}`;
+  return { ok: true as const, url: buildTikTokOAuthUrl(state) };
+}
+
+export async function disconnectTikTokAction() {
+  await requireAdmin();
+  await saveTikTokSocialConnection(EMPTY_TIKTOK_CONNECTION);
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function completeTikTokOAuthAction(code: string) {
+  await requireAdmin();
+  try {
+    const connection = await exchangeTikTokCodeForConnection(code);
+    await saveTikTokSocialConnection(connection);
+    revalidateCommunity();
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : 'Connexion TikTok échouée.' };
+  }
+}
+
 export async function completeMetaOAuthAction(code: string) {
   await requireAdmin();
   try {
@@ -1592,7 +1690,11 @@ export async function publishSocialPostNowAction(postId: string) {
     };
   }
   if (post.network === 'tiktok') {
-    return { ok: false as const, error: 'TikTok arrive plus tard.' };
+    return {
+      ok: false as const,
+      error:
+        'TikTok n’a plus de posts séparés : publie depuis Instagram (coche « Aussi TikTok ») avec le MP4 du Reel.',
+    };
   }
 
   const connection = await getMetaSocialConnection();
@@ -1600,40 +1702,66 @@ export async function publishSocialPostNowAction(postId: string) {
     return { ok: false as const, error: 'Connecte d’abord Meta (Instagram/Facebook).' };
   }
 
+  const liveAck = await getMetaAppLiveAck();
+  const liveHint = liveAck ? '' : ` ${META_APP_LIVE_WARNING}`;
+
   try {
     let externalId: string;
     let facebookExternalId: string | null = post.facebookExternalId;
+    let tiktokExternalId: string | null = post.tiktokExternalId;
+    const notes: string[] = [];
 
     if (post.network === 'instagram') {
       externalId = await publishInstagramNow(connection, post);
+      notes.push('Instagram');
+
       if (post.alsoPublishFacebook) {
         try {
           facebookExternalId = await publishFacebookPost(connection, post, { schedule: false });
+          const fbVerified =
+            facebookExternalId &&
+            (await verifyFacebookPublishId(connection, facebookExternalId, post.format));
+          if (!fbVerified) {
+            notes.push('Facebook (ID reçu, vérif partielle)');
+          } else {
+            notes.push('Facebook');
+          }
         } catch (fbError) {
           console.error('[publishSocialPostNowAction] FB mirror', post.id, fbError);
-          await saveSocialCommsBoard({
-            ...board,
-            posts: board.posts.map((item) =>
-              item.id === postId
-                ? {
-                    ...item,
-                    status: 'published',
-                    metaExternalId: externalId,
-                    updatedAt: new Date().toISOString(),
-                  }
-                : item,
-            ),
-          });
-          revalidateCommunity();
-          return {
-            ok: true as const,
-            externalId,
-            message: `Publié sur Instagram. Miroir Facebook échoué : ${fbError instanceof Error ? fbError.message : 'erreur'}.`,
-          };
+          notes.push(`Facebook échoué: ${fbError instanceof Error ? fbError.message : 'erreur'}`);
+        }
+      }
+
+      if (post.alsoPublishTikTok) {
+        if (post.format !== 'reel' || !post.editedVideoPath) {
+          notes.push('TikTok ignoré (Reel MP4 requis)');
+        } else {
+          try {
+            let ttConn = await getTikTokSocialConnection();
+            if (!ttConn.connected || !ttConn.accessToken) {
+              notes.push(`TikTok non connecté — ${tiktokConnectorStatusMessage(ttConn)}`);
+            } else {
+              const published = await publishTikTokReel(ttConn, post, {
+                onTokenRefreshed: async (next) => {
+                  await saveTikTokSocialConnection(next);
+                  ttConn = next;
+                },
+              });
+              tiktokExternalId = published.publishId;
+              if (published.connection.accessToken !== ttConn.accessToken) {
+                await saveTikTokSocialConnection(published.connection);
+              }
+              notes.push('TikTok');
+            }
+          } catch (ttError) {
+            console.error('[publishSocialPostNowAction] TT mirror', post.id, ttError);
+            notes.push(`TikTok échoué: ${ttError instanceof Error ? ttError.message : 'erreur'}`);
+          }
         }
       }
     } else {
       externalId = await publishFacebookPost(connection, post, { schedule: false });
+      notes.push('Facebook');
     }
 
     await saveSocialCommsBoard({
@@ -1645,6 +1773,7 @@ export async function publishSocialPostNowAction(postId: string) {
               status: 'published',
               metaExternalId: externalId,
               facebookExternalId,
+              tiktokExternalId,
               updatedAt: new Date().toISOString(),
             }
           : item,
@@ -1652,16 +1781,16 @@ export async function publishSocialPostNowAction(postId: string) {
     });
     revalidateCommunity();
     const fbOk = Boolean(facebookExternalId);
+    const baseMessage = `Publié : ${notes.join(' · ')}.`;
     return {
       ok: true as const,
       externalId,
       facebookExternalId,
+      tiktokExternalId,
       message:
-        post.network === 'instagram' && post.alsoPublishFacebook
-          ? fbOk
-            ? 'Publié sur Instagram + Facebook.'
-            : 'Publié sur Instagram. Miroir Facebook non confirmé — utilise « Publier miroir FB ».'
-          : 'Publié sur Meta.',
+        post.network === 'instagram' && post.alsoPublishFacebook && !fbOk
+          ? `${baseMessage} Miroir Facebook manquant — utilise « Publier miroir FB ».${liveHint}`
+          : `${baseMessage}${post.alsoPublishFacebook ? liveHint : ''}`,
     };
   } catch (e) {
     return { ok: false as const, error: e instanceof Error ? e.message : 'Publication échouée.' };
@@ -1727,8 +1856,10 @@ export async function scheduleSocialPostAction(postId: string) {
       ok: true as const,
       mode: 'instagram_queue' as const,
       message: post.alsoPublishFacebook
-        ? 'Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook (même visuel que la preview).'
-        : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
+        ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook${post.alsoPublishTikTok ? ' + TikTok' : ''} (même visuel que la preview).`
+        : post.alsoPublishTikTok
+          ? 'Instagram en file FitMangas. À l’heure prévue : publication IG + miroir TikTok.'
+          : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
     };
   }
 
@@ -1782,6 +1913,7 @@ export async function processDueSocialPostsAction() {
     try {
       const externalId = await publishInstagramNow(connection, post);
       let facebookExternalId = post.facebookExternalId;
+      let tiktokExternalId = post.tiktokExternalId;
       if (post.alsoPublishFacebook) {
         if (!facebookMirrorMediaReady(post)) {
           console.error('[processDueSocialPostsAction] FB mirror skipped — média manquant', post.id);
@@ -1797,6 +1929,23 @@ export async function processDueSocialPostsAction() {
           }
         }
       }
+      if (post.alsoPublishTikTok && post.format === 'reel' && post.editedVideoPath) {
+        try {
+          let ttConn = await getTikTokSocialConnection();
+          if (ttConn.connected && ttConn.accessToken) {
+            const published = await publishTikTokReel(ttConn, post, {
+              onTokenRefreshed: async (next) => {
+                await saveTikTokSocialConnection(next);
+                ttConn = next;
+              },
+            });
+            tiktokExternalId = published.publishId;
+            await saveTikTokSocialConnection(published.connection);
+          }
+        } catch (ttError) {
+          console.error('[processDueSocialPostsAction] TT mirror', post.id, ttError);
+        }
+      }
       nextPosts = nextPosts.map((item) =>
         item.id === post.id
           ? {
@@ -1804,6 +1953,7 @@ export async function processDueSocialPostsAction() {
               status: 'published',
               metaExternalId: externalId,
               facebookExternalId,
+              tiktokExternalId,
               updatedAt: new Date().toISOString(),
             }
           : item,
@@ -1877,7 +2027,7 @@ export async function publishFacebookMirrorNowAction(postId: string, opts?: { fo
     return {
       ok: true as const,
       facebookExternalId,
-      message: 'Miroir Facebook publié.',
+      message: `Miroir Facebook publié.${(await getMetaAppLiveAck()) ? '' : ` ${META_APP_LIVE_WARNING}`}`,
       previewCaption: captionForPublish(post).slice(0, 280),
     };
   } catch (e) {
@@ -1931,8 +2081,10 @@ export async function createManualSocialPostAction(input: {
     whyItWorks: 'Post manuel — à compléter.',
     metaExternalId: null,
     alsoPublishFacebook: true,
+    alsoPublishTikTok: isReel,
     adaptedFromId: null,
     facebookExternalId: null,
+    tiktokExternalId: null,
     generationStatus: 'done',
     createdAt: now,
     updatedAt: now,
@@ -2242,8 +2394,10 @@ export async function initWeekPlanAction(
         pillarId: spec.assignPillar ?? null,
         contentFamily: spec.contentFamily,
         alsoPublishFacebook: slot.network === 'instagram',
+        alsoPublishTikTok: slot.network === 'instagram' && slot.format === 'reel',
         adaptedFromId: null,
         facebookExternalId: null,
+        tiktokExternalId: null,
         generationStatus: 'pending',
         generationError: null,
         generationRunId: runId,
@@ -2700,8 +2854,10 @@ Pas de gabarit figé. Une idée concrète, langage plat, CTA essai 7 jours fitma
     pillarId: 'energie_crash',
     contentFamily: 'portee',
     alsoPublishFacebook: true,
+    alsoPublishTikTok: true,
     adaptedFromId: null,
     facebookExternalId: null,
+    tiktokExternalId: null,
     generationStatus: 'done',
     generationError: null,
     createdAt: now,
@@ -2720,3 +2876,4 @@ Pas de gabarit figé. Une idée concrète, langage plat, CTA essai 7 jours fitma
     postId: post.id,
   };
 }
+
