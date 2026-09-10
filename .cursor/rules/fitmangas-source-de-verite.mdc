@@ -165,7 +165,7 @@ Même média + même légende que le post IG, publié au créneau FB le plus pro
 ### Autres réseaux
 - **WhatsApp** : 2–3/sem., teaser article blog + lien, membres uniquement. Créneaux 08h/12h/17h/19h.
 - **LinkedIn** : 2–3/sem., posts dédiés (posture pro, bien-être au travail).
-- **TikTok** : génération OK, publication marquée **« Bientôt »** — pas de bouton mort.
+- **TikTok** : miroir des Reels Instagram (`alsoPublishTikTok`) — même format IG. Connecteurs : `TIKTOK_CLIENT_KEY` + `TIKTOK_CLIENT_SECRET` + OAuth Content Posting API (audit TikTok pour le public).
 
 ---
 
@@ -306,7 +306,7 @@ Sans ça, le système génère à l'aveugle et la semaine 12 est identique à la
 - Fallbacks titres « **Un geste doux…** » / « **Un gesto suave…** » → supprimer.
 - `whyItWorks` en anglais → forcer la langue du post.
 - Notes playbook `CM_STRATEGY_NOTES` : disent encore « Gemini → Pollinations » → réécrire selon le CHEMIN C.
-- Onglet TikTok : publish marqué « Bientôt ».
+- Onglet TikTok : miroir Reels IG (plus de « Bientôt ») — connecteurs API à brancher.
 
 ---
 
