@@ -68,10 +68,14 @@ export type SocialPost = {
   manualSentAt?: string | null;
   /** Instagram → aussi publier sur la Page Facebook (même contenu). */
   alsoPublishFacebook: boolean;
+  /** Instagram → aussi publier sur TikTok (Reels MP4 uniquement). */
+  alsoPublishTikTok: boolean;
   /** Post LinkedIn créé depuis un autre post (id source). */
   adaptedFromId: string | null;
   /** Id Meta Facebook si miroir IG→FB publié. */
   facebookExternalId: string | null;
+  /** Id TikTok (publish_id) si miroir IG→TT publié. */
+  tiktokExternalId: string | null;
   /** Suivi génération CM progressive (post par post). */
   generationStatus?: 'pending' | 'done' | 'failed' | 'retrying' | null;
   generationError?: string | null;
@@ -103,6 +107,12 @@ export type MetaSocialConnection = {
 
 export const SOCIAL_COMMS_SETTING_KEY = 'social_comms_board';
 export const META_SOCIAL_SETTING_KEY = 'meta_social_connection';
+/** Kevin a confirmé que l’app Meta est passée en mode Live (posts API visibles au public). */
+export const META_APP_LIVE_ACK_KEY = 'meta_app_live_ack';
+
+/** Message fixe : posts API invisibles au public si l’app Meta est encore en Development. */
+export const META_APP_LIVE_WARNING =
+  '⚠️ Si le public ne voit pas le post Facebook (alors qu’Alejandra le voit) : l’app Meta « FitMangas Community 2 » est très probablement encore en mode Development. Passe-la en Live sur developers.facebook.com → App → bascule Live. Les posts créés en Development restent souvent invisibles — republie après Live.';
 
 export const SOCIAL_NETWORK_LABELS: Record<SocialNetwork, string> = {
   instagram: 'Instagram',
@@ -347,8 +357,13 @@ function normalizePost(raw: unknown, _index = 0): SocialPost | null {
       row.alsoPublishFacebook === undefined
         ? row.network === 'instagram'
         : Boolean(row.alsoPublishFacebook),
+    alsoPublishTikTok:
+      row.alsoPublishTikTok === undefined
+        ? row.network === 'instagram' && row.format === 'reel'
+        : Boolean(row.alsoPublishTikTok),
     adaptedFromId: typeof row.adaptedFromId === 'string' ? row.adaptedFromId : null,
     facebookExternalId: typeof row.facebookExternalId === 'string' ? row.facebookExternalId : null,
+    tiktokExternalId: typeof row.tiktokExternalId === 'string' ? row.tiktokExternalId : null,
     generationStatus:
       row.generationStatus === 'pending' ||
       row.generationStatus === 'done' ||
@@ -486,6 +501,30 @@ export async function saveMetaSocialConnection(connection: MetaSocialConnection)
     {
       key: META_SOCIAL_SETTING_KEY,
       value: JSON.stringify({ ...connection, connected: Boolean(connection.accessToken && connection.pageId) }),
+    },
+    { onConflict: 'key' },
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function getMetaAppLiveAck(): Promise<boolean> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from('admin_settings').select('value').eq('key', META_APP_LIVE_ACK_KEY).maybeSingle();
+    if (!data?.value) return false;
+    const parsed = JSON.parse(String(data.value)) as { confirmed?: boolean };
+    return Boolean(parsed.confirmed);
+  } catch {
+    return false;
+  }
+}
+
+export async function saveMetaAppLiveAck(confirmed: boolean): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin.from('admin_settings').upsert(
+    {
+      key: META_APP_LIVE_ACK_KEY,
+      value: JSON.stringify({ confirmed, updatedAt: new Date().toISOString() }),
     },
     { onConflict: 'key' },
   );
