@@ -10,7 +10,6 @@ import {
   ChevronUp,
   Info,
   Mail,
-  Star,
   LockKeyhole,
   UserCircle2,
 } from 'lucide-react';
@@ -18,10 +17,12 @@ import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { OfferCardFeatures } from './landing/OfferCardFeatures';
+import { VideoTestimonialsCarousel } from './landing/VideoTestimonialsCarousel';
 import type { Course } from '@/types';
 import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
 import { SHOW_MEXICO } from '@/lib/landing/feature-flags';
 import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
+import { VIDEO_TESTIMONIALS } from '@/lib/landing/video-testimonials';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { trackBeginTrialClick } from '@/lib/analytics/ga4-client';
 
@@ -454,18 +455,17 @@ export function LandingPage({
                     180
                   </span>
                   <div className="flex items-center -space-x-2" aria-hidden>
-                    {t.testimonials.slice(0, 3).map((testimonial, i) => (
+                    {VIDEO_TESTIMONIALS.slice(0, 3).map((testimonial, i) => (
                       <span
-                        key={`m-av-${i}`}
+                        key={`m-av-${testimonial.id}`}
                         className="relative inline-block h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
                         style={{ zIndex: 3 - i }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={testimonial.avatar}
+                          src={testimonial.posterSrc}
                           alt=""
                           className="h-full w-full object-cover object-center"
-                          referrerPolicy="no-referrer"
                         />
                       </span>
                     ))}
@@ -544,18 +544,17 @@ export function LandingPage({
                     180
                   </span>
                   <div className="flex items-center -space-x-3" aria-hidden>
-                    {t.testimonials.slice(0, 3).map((testimonial, i) => (
+                    {VIDEO_TESTIMONIALS.slice(0, 3).map((testimonial, i) => (
                       <span
-                        key={`d-av-${i}`}
+                        key={`d-av-${testimonial.id}`}
                         className="relative inline-block h-12 w-12 shrink-0 overflow-hidden rounded-full ring-[3px] ring-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                         style={{ zIndex: 3 - i }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={testimonial.avatar}
+                          src={testimonial.posterSrc}
                           alt=""
                           className="h-full w-full object-cover object-center"
-                          referrerPolicy="no-referrer"
                         />
                       </span>
                     ))}
@@ -861,74 +860,12 @@ export function LandingPage({
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section className="mb-32">
-          <div className="text-center mb-12">
-            <span className="text-[10px] tracking-[0.4em] uppercase text-brand-accent mb-3 block font-bold">{l.testimonialsLabel}</span>
-            <h2 className="text-4xl font-serif font-normal italic tracking-tight mb-10">{l.reviews}</h2>
-            
-            {/* Grouped Avatars Row - Structural inspiration from Canva */}
-            <div className="flex justify-center -space-x-5 mb-6 overflow-x-clip px-2">
-              {t.testimonials.map((testimonial, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="w-20 h-20 rounded-full border-4 border-brand-sand overflow-hidden shadow-md relative"
-                  style={{ zIndex: 30 - i }}
-                >
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.author} 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </motion.div>
-              ))}
-            </div>
-            <div className="flex flex-col items-center gap-1 mb-16">
-              <div className="flex gap-0.5 text-brand-accent">
-                {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="currentColor" strokeWidth={0} />)}
-              </div>
-              <span className="text-[8px] tracking-[0.2em] uppercase text-brand-ink/30 font-bold">{l.positiveReviews}</span>
-            </div>
-          </div>
-
-          {/* Testimonial Cards Grid - Structural inspiration from Canva */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {t.testimonials.map((testimonial, i) => {
-              const [name, city] = testimonial.author.split(' — ');
-              return (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white p-8 rounded-[32px] border border-brand-ink/[0.03] shadow-sm flex flex-col h-full hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold tracking-tight text-brand-ink">{name}</span>
-                      <span className="text-[9px] tracking-widest uppercase text-brand-ink/30 font-medium">{city}</span>
-                    </div>
-                    <div className="flex gap-0.5 text-brand-accent">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={10} fill="currentColor" strokeWidth={0} />
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <p className="text-base md:text-lg font-serif italic leading-relaxed text-brand-ink/80 tracking-tight">
-                    {testimonial.text}
-                  </p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </section>
+        <VideoTestimonialsCarousel
+          lang={lang}
+          label={l.testimonialsLabel}
+          title={l.reviews}
+          positiveReviews={l.positiveReviews}
+        />
 
         {visibleBlogPreviews.length > 0 ? (
           <section className="py-16 md:py-24">
