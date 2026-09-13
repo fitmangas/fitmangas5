@@ -274,6 +274,23 @@ export async function persistSpanishTranslation(
       });
   const seo_keywords = withEsSyncHash(frSource?.seo_keywords, hash);
 
+  let slug_es = translation.slug_es;
+  const baseSlug = slug_es || slugifyBlog(translation.title_es);
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${articleId.slice(0, 8)}`;
+    const { data: clash } = await admin
+      .from('blog_articles')
+      .select('id')
+      .eq('slug_es', candidate)
+      .neq('id', articleId)
+      .maybeSingle();
+    if (!clash?.id) {
+      slug_es = candidate;
+      break;
+    }
+    if (attempt === 5) slug_es = `${baseSlug}-${Date.now().toString(36)}`;
+  }
+
   const { error } = await admin
     .from('blog_articles')
     .update({
@@ -281,7 +298,7 @@ export async function persistSpanishTranslation(
       description_es: translation.description_es,
       content_es: translation.content_es,
       meta_description_es: translation.meta_description_es,
-      slug_es: translation.slug_es,
+      slug_es,
       seo_keywords,
       updated_at: new Date().toISOString(),
     })
@@ -297,7 +314,7 @@ export async function persistSpanishTranslation(
       description: translation.description_es,
       content: translation.content_es,
       meta_description: translation.meta_description_es,
-      slug: translation.slug_es,
+      slug: slug_es,
       auto_translated: true,
       updated_at: new Date().toISOString(),
     },
