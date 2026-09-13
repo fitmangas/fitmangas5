@@ -27,6 +27,10 @@ import { GeminiRateLimiter } from '@/lib/blog/gemini-rate-limit';
 import { formatMonthYear } from '@/lib/blog/month';
 import { enforceBlogSeoMeta, enforceBlogSeoTitle } from '@/lib/blog/blog-seo-limits';
 import { slugifyBlog } from '@/lib/blog/slugify';
+import {
+  persistSpanishTranslation,
+  translateArticleBodyToSpanish,
+} from '@/lib/blog/translate-article-es';
 
 /** Titres réécrits par jour (hors génération d’article hebdomadaire). */
 export const MAX_TITLE_REWRITES_PER_RUN = 4;
@@ -537,6 +541,36 @@ export async function generateDraftArticlesBatch(
     if (insertError || !inserted?.id) {
       result.errors.push(insertError?.message ?? 'Insertion article échouée.');
       continue;
+    }
+
+    // Traduction ES complète dès la création (sinon badge « ES manquante » à chaque batch).
+    const descriptionFr = enforceBlogSeoMeta(generated.description || topic.briefFr);
+    const metaFr = enforceBlogSeoMeta(generated.metaDescription);
+    try {
+      const translation = await translateArticleBodyToSpanish({
+        title_fr: enforceBlogSeoTitle(titles.title_fr),
+        description_fr: descriptionFr,
+        meta_description_fr: metaFr,
+        content_fr: generated.contentHtml,
+      });
+      if (translation.ok) {
+        const persisted = await persistSpanishTranslation(admin, inserted.id, translation, {
+          title_fr: enforceBlogSeoTitle(titles.title_fr),
+          description_fr: descriptionFr,
+          content_fr: generated.contentHtml,
+          meta_description_fr: metaFr,
+          seo_keywords: seoKeywords,
+        });
+        if (!persisted.ok) {
+          result.errors.push(`ES persist échoué « ${titles.title_fr.slice(0, 40)}… » : ${persisted.error}`);
+        }
+      } else {
+        result.errors.push(`ES manquante « ${titles.title_fr.slice(0, 40)}… » : ${translation.error}`);
+      }
+    } catch (esError) {
+      result.errors.push(
+        `ES exception « ${titles.title_fr.slice(0, 40)}… » : ${esError instanceof Error ? esError.message : 'erreur'}`,
+      );
     }
 
     const monthYear = formatMonthYear(scheduledAt);

@@ -114,16 +114,55 @@ export function withSpanishInvalidationIfContentFrChanged(params: {
   };
 }
 
-async function chunkTranslateHtml(html: string): Promise<string | null> {
-  const blocks = html.split(/\n\n+/);
-  const parts: string[] = [];
+/** Regroupe les paragraphes pour limiter les appels Gemini (évite timeout Vercel). */
+const TRANSLATE_CHUNK_MAX_CHARS = 3800;
+
+function packHtmlChunks(html: string): string[] {
+  const blocks = html
+    .split(/\n\n+/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+  if (!blocks.length) return [];
+
+  const chunks: string[] = [];
+  let buffer = '';
   for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
-    const translated = await translateText(trimmed, 'es');
+    if (block.length > TRANSLATE_CHUNK_MAX_CHARS) {
+      if (buffer) {
+        chunks.push(buffer);
+        buffer = '';
+      }
+      for (let i = 0; i < block.length; i += TRANSLATE_CHUNK_MAX_CHARS) {
+        chunks.push(block.slice(i, i + TRANSLATE_CHUNK_MAX_CHARS));
+      }
+      continue;
+    }
+    if (!buffer) {
+      buffer = block;
+      continue;
+    }
+    if (buffer.length + 2 + block.length <= TRANSLATE_CHUNK_MAX_CHARS) {
+      buffer = `${buffer}\n\n${block}`;
+    } else {
+      chunks.push(buffer);
+      buffer = block;
+    }
+  }
+  if (buffer) chunks.push(buffer);
+  return chunks;
+}
+
+async function chunkTranslateHtml(html: string): Promise<string | null> {
+  const chunks = packHtmlChunks(html);
+  if (!chunks.length) return null;
+  const parts: string[] = [];
+  for (let i = 0; i < chunks.length; i += 1) {
+    const translated = await translateText(chunks[i]!, 'es');
     if (!translated) return null;
     parts.push(translated);
-    await new Promise((r) => setTimeout(r, 150));
+    if (i < chunks.length - 1) {
+      await new Promise((r) => setTimeout(r, 120));
+    }
   }
   return parts.join('\n\n');
 }

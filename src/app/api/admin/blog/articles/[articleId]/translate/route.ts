@@ -6,6 +6,9 @@ import {
 } from '@/lib/blog/translate-article-es';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+/** Corps longs = plusieurs appels Gemini ; 60s default Vercel = timeout silencieux. */
+export const maxDuration = 300;
+
 export async function POST(_request: Request, context: { params: Promise<{ articleId: string }> }) {
   const gate = await requireAdminApi();
   if (!gate.ok) return gate.response;

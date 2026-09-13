@@ -4,6 +4,9 @@ import { generateDraftArticlesBatch } from '@/lib/blog/blog-automation';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+/** Génération FR + traduction ES complète peut dépasser 60s. */
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   return handleGenerateArticles(request);
 }

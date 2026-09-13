@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BulkValidationActions } from '@/components/Admin/blog/BulkValidationActions';
 import { TranslateArticleButton } from '@/components/Admin/blog/TranslateArticleButton';
+import { TranslatePendingMonthButton } from '@/components/Admin/blog/TranslatePendingMonthButton';
 import { ValidationActions } from '@/components/Admin/blog/ValidationActions';
 import { ValidationPreviewModal } from '@/components/Admin/blog/ValidationPreviewModal';
 import { formatMonthYear } from '@/lib/blog/month';
@@ -131,7 +132,10 @@ export default async function AdminBlogValidationPage() {
       <p className="mt-2 text-sm text-luxury-muted">
         {month_year} · {pending.length} en attente sur {rows.length} ligne(s) de batch.
       </p>
-      <BulkValidationActions pendingValidationIds={pending.map((r) => r.id)} />
+      <div className="mt-4 flex flex-wrap items-start gap-3">
+        <BulkValidationActions pendingValidationIds={pending.map((r) => r.id)} />
+        <TranslatePendingMonthButton monthYear={month_year} />
+      </div>
 
       <div className="mt-10 space-y-6">
         {rows.map((row) => {
@@ -198,6 +202,10 @@ export default async function AdminBlogValidationPage() {
             meta_description_fr: article.meta_description_fr,
             seo_keywords: article.seo_keywords,
           });
+          const esPartial =
+            !translationReady &&
+            Boolean(article.title_es?.trim()) &&
+            !Boolean(article.content_es?.trim());
           const imageFallback =
             typeof article.seo_keywords === 'string' && /imageSource:fallback/i.test(article.seo_keywords);
 
@@ -228,7 +236,7 @@ export default async function AdminBlogValidationPage() {
                         translationReady ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {translationReady ? 'ES prête' : 'ES manquante'}
+                      {translationReady ? 'ES prête' : esPartial ? 'ES corps manquant' : 'ES manquante'}
                     </span>
                     {imageFallback ? (
                       <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-800">

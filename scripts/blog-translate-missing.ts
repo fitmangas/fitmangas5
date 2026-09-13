@@ -1,10 +1,11 @@
 /**
- * Traduit en ES tous les articles published/validated incomplets
- * (title/content/description/meta), via translateArticleBodyToSpanish.
+ * Traduit en ES tous les articles incomplets (draft inclus + pending validation),
+ * via translateArticleBodyToSpanish.
  *
  * Usage:
  *   npm run blog:translate:missing
  *   npm run blog:translate:missing -- --limit=5
+ *   npm run blog:translate:missing -- --pending-only
  *   npm run blog:translate:missing -- --dry-run
  */
 import './load-env-local';
@@ -34,16 +35,36 @@ async function main() {
 
   const limit = Math.max(1, Number(arg('--limit') ?? '100') || 100);
   const dryRun = hasFlag('--dry-run');
+  const pendingOnly = hasFlag('--pending-only');
   const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
-  const { data: rows, error } = await admin
+  let articleIdsFilter: string[] | null = null;
+  if (pendingOnly) {
+    const { data: validations, error: vErr } = await admin
+      .from('admin_article_validations')
+      .select('article_id')
+      .eq('status', 'pending');
+    if (vErr) throw new Error(vErr.message);
+    articleIdsFilter = [...new Set((validations ?? []).map((v) => String(v.article_id)))];
+    if (!articleIdsFilter.length) {
+      console.log('Aucun article en validation pending.');
+      return;
+    }
+  }
+
+  let query = admin
     .from('blog_articles')
     .select(
       'id,status,title_fr,description_fr,meta_description_fr,content_fr,title_es,description_es,meta_description_es,content_es,seo_keywords,published_at,scheduled_publication_at',
     )
-    .in('status', ['published', 'validated'])
-    .order('published_at', { ascending: false });
+    .in('status', ['published', 'validated', 'draft'])
+    .order('scheduled_publication_at', { ascending: false });
 
+  if (articleIdsFilter) {
+    query = query.in('id', articleIdsFilter);
+  }
+
+  const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
 
   const targets = (rows ?? [])
@@ -63,7 +84,9 @@ async function main() {
     )
     .slice(0, limit);
 
-  console.log(`Articles ES incomplets: ${targets.length} (dryRun=${dryRun}, limit=${limit}).`);
+  console.log(
+    `Articles ES incomplets: ${targets.length} (dryRun=${dryRun}, pendingOnly=${pendingOnly}, limit=${limit}).`,
+  );
 
   let ok = 0;
   let fail = 0;
