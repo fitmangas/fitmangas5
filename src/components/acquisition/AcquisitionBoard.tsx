@@ -169,6 +169,7 @@ export function AcquisitionBoard({
           setTab('conversations');
         }
         setStatus('Nouveau fil sandbox créé.');
+        router.refresh();
       } else {
         setStatus(r.error ?? 'Impossible de créer le fil.');
       }
@@ -197,8 +198,31 @@ export function AcquisitionBoard({
     if (!selectedConversationId || !reply.trim()) return;
     startTransition(async () => {
       const r = await onSendReply(selectedConversationId, reply.trim());
-      setStatus(r.ok ? 'Message enregistré (sandbox si actif).' : (r.error ?? 'Échec envoi'));
-      if (r.ok) setReply('');
+      if (r.ok) {
+        setReply('');
+        setStatus(
+          overview.messagingMode === 'sandbox'
+            ? 'Message enregistré (simulation — pas d’envoi Instagram/WhatsApp).'
+            : 'Message envoyé.',
+        );
+        router.refresh();
+      } else {
+        setStatus(r.error ?? 'Échec envoi');
+      }
+    });
+  }
+
+  function handleSeedDemo() {
+    startTransition(async () => {
+      const r = await onSeedDemo();
+      if (r.ok && r.seeded) {
+        setStatus('Fil démo créé — ouvre-le dans la liste.');
+        router.refresh();
+      } else if (r.ok) {
+        setStatus('Des fils existent déjà — sélectionne-en un ou crée un nouveau fil.');
+      } else {
+        setStatus(r.error ?? 'Seed impossible');
+      }
     });
   }
 
@@ -304,7 +328,20 @@ export function AcquisitionBoard({
                 ))}
               </ChipRow>
             </div>
-            <FunnelChart steps={overview.funnel} conversations={conversations} />
+            <FunnelChart
+              title="Parcours site"
+              subtitle="GA4 / Search Console / Stripe — trafic et conversions produit"
+              steps={overview.siteFunnel}
+              showAvatars={false}
+              activeStepId="trial"
+            />
+            <FunnelChart
+              title="Pipeline CRM"
+              subtitle="Contacts inbox Acquisition — Portée → Intérêt → Essais → Payant → Membres"
+              steps={overview.crmFunnel}
+              conversations={conversations}
+              activeStepId="trial"
+            />
             <KpiGrid kpis={overview.kpis} />
             {overview.metaLiveReadiness ? (
               <MetaLiveReadinessPanel status={overview.metaLiveReadiness} />
@@ -340,23 +377,43 @@ export function AcquisitionBoard({
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        const r = await onSeedDemo();
-                        setStatus(
-                          r.ok
-                            ? r.seeded
-                              ? 'Fil démo créé.'
-                              : 'Données déjà présentes.'
-                            : (r.error ?? 'Seed impossible'),
-                        );
-                      })
-                    }
+                    onClick={handleSeedDemo}
                     className="mt-4 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
                     style={{ backgroundColor: acq.terracotta }}
                   >
                     Créer fil sandbox démo
                   </button>
+                </Card>
+              ) : null}
+
+              {schemaReady && !conversations.length ? (
+                <Card className="mb-4" padding="md">
+                  <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+                    Inbox vide
+                  </p>
+                  <p className="mt-2 text-sm" style={{ color: acq.muted }}>
+                    Charge un fil démo pour tester réponses + concierge, ou crée un fil vide.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={handleSeedDemo}
+                      className="rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                      style={{ backgroundColor: acq.terracotta }}
+                    >
+                      Charger données démo
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={handleCreateThread}
+                      className="rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+                      style={{ backgroundColor: acq.warmBeigeDeep, color: acq.ink }}
+                    >
+                      Nouveau fil vide
+                    </button>
+                  </div>
                 </Card>
               ) : null}
 
@@ -408,7 +465,7 @@ export function AcquisitionBoard({
                 })}
                 {!conversations.length && schemaReady ? (
                   <p className="px-2 py-4 text-sm" style={{ color: acq.muted }}>
-                    Aucun fil — crée un fil démo ou branche les webhooks Meta.
+                    Aucun fil dans la liste pour l’instant.
                   </p>
                 ) : null}
               </div>
@@ -553,6 +610,47 @@ export function AcquisitionBoard({
 
         {activeTab === 'workflows' ? (
           <div className="space-y-8">
+            {(overview.upcomingFollowups?.length ?? 0) > 0 ? (
+              <JourneyBoard
+                title="Relances programmées"
+                subtitle="Exécutées automatiquement toutes les 15 min (cron Vercel)"
+              >
+                <div
+                  className="space-y-2 rounded-[20px] p-3"
+                  style={{ backgroundColor: acq.zoneInner }}
+                >
+                  {overview.upcomingFollowups!.map((f, i) => (
+                    <Card key={f.id} overlap={i > 0} padding="md">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+                          {f.contactHandle ?? 'Contact'} · {f.actionType}
+                        </p>
+                        <p className="text-xs font-medium" style={{ color: acq.muted }}>
+                          {new Date(f.runAt).toLocaleString('fr-FR', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-xs" style={{ color: acq.muted }}>
+                        Statut {f.status}
+                        {overview.messagingMode === 'sandbox'
+                          ? ' · envoi en simulation (sandbox)'
+                          : ''}
+                      </p>
+                    </Card>
+                  ))}
+                </div>
+              </JourneyBoard>
+            ) : (
+              <Card padding="md">
+                <p className="text-sm" style={{ color: acq.muted }}>
+                  Aucune relance planifiée. Teste l’action « Programmer une relance » sur un fil
+                  (onglet Conversations + lab workflow).
+                </p>
+              </Card>
+            )}
+
             <WorkflowManager
               workflows={workflows}
               schemaReady={schemaReady}
@@ -571,6 +669,7 @@ export function AcquisitionBoard({
                   startTransition(async () => {
                     const r = await onRunWorkflowDemo(id, selectedConversationId);
                     setStatus(r.detail);
+                    router.refresh();
                     resolve(r);
                   });
                 })
@@ -583,6 +682,7 @@ export function AcquisitionBoard({
                   }
                   startTransition(async () => {
                     const r = await onTestAction(selectedConversationId, actionType);
+                    if (r.ok) router.refresh();
                     resolve(r);
                   });
                 })

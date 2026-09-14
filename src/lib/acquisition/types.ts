@@ -116,14 +116,30 @@ export type SourceError = {
   error: string;
 };
 
+export type AcqFollowupRow = {
+  id: string;
+  contactId: string;
+  conversationId: string | null;
+  actionType: string;
+  runAt: string;
+  status: 'scheduled' | 'sent' | 'cancelled' | 'error';
+  contactHandle?: string | null;
+};
+
 export type AcquisitionOverview = {
   channel: AcquisitionChannel | 'all';
+  /** @deprecated préférer siteFunnel + crmFunnel — conservé = crmFunnel pour compat */
   funnel: FunnelStep[];
+  /** Parcours site (GA4 / GSC / Stripe selon filtre canal) */
+  siteFunnel: FunnelStep[];
+  /** Pipeline CRM Acquisition (contacts → payantes) */
+  crmFunnel: FunnelStep[];
   kpis: AcquisitionKpi[];
   performanceHooks: PerformanceHookRow[];
   sourceErrors: SourceError[];
   schemaReady: boolean;
   messagingMode: 'sandbox' | 'live';
+  upcomingFollowups?: AcqFollowupRow[];
   metaLiveReadiness?: import('@/lib/acquisition/providers/meta-live').MetaLiveReadiness;
   performanceLoop?: import('@/lib/acquisition/performance-loop').PerformanceLoopStatus;
 };

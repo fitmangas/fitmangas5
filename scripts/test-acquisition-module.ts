@@ -41,9 +41,12 @@ async function main() {
   // 1. Vue d'ensemble
   const overview = await buildAcquisitionOverview('all');
   record(
-    'Overview funnel',
-    overview.funnel.length === 5 && overview.funnel.every((s) => typeof s.value === 'number'),
-    `${overview.funnel.length} étapes, KPIs ${overview.kpis.length}`,
+    'Overview dual funnels',
+    overview.siteFunnel.length === 5 &&
+      overview.crmFunnel.length === 5 &&
+      overview.funnel.length === 5 &&
+      overview.funnel.every((s) => typeof s.value === 'number'),
+    `site ${overview.siteFunnel.length} + crm ${overview.crmFunnel.length}, KPIs ${overview.kpis.length}`,
   );
   record('Overview KPIs', overview.kpis.length >= 6, overview.kpis.map((k) => k.label).join(', '));
   record('Meta LIVE readiness', Boolean(overview.metaLiveReadiness), overview.metaLiveReadiness?.webhookUrl ?? '—');

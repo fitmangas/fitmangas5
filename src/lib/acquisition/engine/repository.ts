@@ -4,10 +4,12 @@ import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
 import type {
   AcqContact,
   AcqConversation,
+  AcqFollowupRow,
   AcqMessage,
   AcqWorkflow,
   AcquisitionChannel,
   LifecycleStage,
+  WorkflowActionType,
 } from '@/lib/acquisition/types';
 
 type DbError = { ok: false; error: string; schemaReady: boolean };
@@ -504,8 +506,10 @@ export async function seedSandboxDemoData(): Promise<{ ok: boolean; error?: stri
     return { ok: false, error: 'Migration §9 non appliquée — impossible de seed.' };
   }
   const admin = createAdminClient();
-  const { count } = await admin.from('acq_contacts').select('id', { count: 'exact', head: true });
-  if (count && count > 0) return { ok: true, seeded: false };
+  const { count: convCount } = await admin
+    .from('acq_conversations')
+    .select('id', { count: 'exact', head: true });
+  if (convCount && convCount > 0) return { ok: true, seeded: false };
 
   const now = new Date().toISOString();
   const { data: contact, error: cErr } = await admin
@@ -612,3 +616,145 @@ export async function createSandboxConversation(): Promise<{
 
   return { ok: true, conversationId: String(conv.id) };
 }
+
+export async function listUpcomingFollowups(
+  limit = 20,
+): Promise<{ ok: true; items: AcqFollowupRow[] } | { ok: false; error: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: true, items: [] };
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('acq_followups')
+      .select('id, contact_id, conversation_id, action_type, run_at, status')
+      .eq('status', 'scheduled')
+      .order('run_at', { ascending: true })
+      .limit(limit);
+    if (error) return { ok: false, error: error.message };
+
+    const contactIds = [...new Set((data ?? []).map((r) => String(r.contact_id)))];
+    const handleById = new Map<string, string | null>();
+    if (contactIds.length) {
+      const { data: contacts } = await admin.from('acq_contacts').select('id, handle').in('id', contactIds);
+      for (const c of contacts ?? []) {
+        handleById.set(String(c.id), c.handle ? String(c.handle) : null);
+      }
+    }
+
+    const items: AcqFollowupRow[] = (data ?? []).map((row) => ({
+      id: String(row.id),
+      contactId: String(row.contact_id),
+      conversationId: row.conversation_id ? String(row.conversation_id) : null,
+      actionType: String(row.action_type),
+      runAt: String(row.run_at),
+      status: row.status as AcqFollowupRow['status'],
+      contactHandle: handleById.get(String(row.contact_id)) ?? null,
+    }));
+    return { ok: true, items };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erreur liste relances' };
+  }
+}
+
+const FOLLOWUP_ACTIONS = new Set<WorkflowActionType>([
+  'send_message',
+  'send_trial_link',
+  'qualify_intent',
+  'tag_contact',
+  'set_lifecycle_stage',
+  'book_session_intent',
+  'capture_email_optin',
+  'escalate_human',
+  'mini_poll',
+  'broadcast_optin',
+  'schedule_followup',
+]);
+
+export async function runDueFollowups(limit = 40): Promise<{
+  processed: number;
+  ok: number;
+  failed: number;
+  details: string[];
+}> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) {
+    return { processed: 0, ok: 0, failed: 0, details: ['Tables Acquisition absentes.'] };
+  }
+
+  const admin = createAdminClient();
+  const nowIso = new Date().toISOString();
+  const { data: due, error } = await admin
+    .from('acq_followups')
+    .select('id, contact_id, conversation_id, action_type, run_at')
+    .eq('status', 'scheduled')
+    .lte('run_at', nowIso)
+    .order('run_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    return { processed: 0, ok: 0, failed: 0, details: [error.message] };
+  }
+
+  const { runWorkflowAction } = await import('@/lib/acquisition/engine/actions');
+  const details: string[] = [];
+  let okCount = 0;
+  let failCount = 0;
+
+  for (const row of due ?? []) {
+    const id = String(row.id);
+    const actionType = String(row.action_type) as WorkflowActionType;
+    if (!FOLLOWUP_ACTIONS.has(actionType)) {
+      await admin.from('acq_followups').update({ status: 'error' }).eq('id', id);
+      failCount += 1;
+      details.push(`${id}: action inconnue « ${actionType} »`);
+      continue;
+    }
+
+    let conversationId = row.conversation_id ? String(row.conversation_id) : null;
+    if (!conversationId) {
+      const latest = await getLatestConversationForContact(String(row.contact_id));
+      conversationId = latest?.id ?? null;
+    }
+    if (!conversationId) {
+      await admin.from('acq_followups').update({ status: 'error' }).eq('id', id);
+      failCount += 1;
+      details.push(`${id}: conversation introuvable`);
+      continue;
+    }
+
+    const detail = await getConversationWithMessages(conversationId);
+    if (!detail.ok) {
+      await admin.from('acq_followups').update({ status: 'error' }).eq('id', id);
+      failCount += 1;
+      details.push(`${id}: ${detail.error}`);
+      continue;
+    }
+
+    const contact = await getContact(String(row.contact_id));
+    const result = await runWorkflowAction(
+      { type: actionType },
+      { contact, conversation: detail.conversation, market: 'fr' },
+    );
+
+    await admin
+      .from('acq_followups')
+      .update({ status: result.ok ? 'sent' : 'error' })
+      .eq('id', id);
+
+    if (result.ok) {
+      okCount += 1;
+      details.push(`${id}: OK — ${result.detail}`);
+    } else {
+      failCount += 1;
+      details.push(`${id}: ${result.detail}`);
+    }
+  }
+
+  return {
+    processed: (due ?? []).length,
+    ok: okCount,
+    failed: failCount,
+    details,
+  };
+}
+

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 import { getMessagingMode } from '@/lib/acquisition/feature-flag';
 import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
+import { listUpcomingFollowups } from '@/lib/acquisition/engine/repository';
 import { fetchGa4AcquisitionMetrics } from '@/lib/acquisition/sources/ga4';
 import { fetchMetaPixelStatus } from '@/lib/acquisition/sources/metaPixel';
 import { fetchGscAcquisitionMetrics } from '@/lib/acquisition/sources/searchConsole';
@@ -40,130 +41,16 @@ function formatPct(n: number | null): string {
   return `${n} %`;
 }
 
-async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
-  const rows: PerformanceHookRow[] = [];
-
-  // 1) Table post_metrics si migration appliquée
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from('post_metrics')
-      .select('id, hook, reach, saved, format, pilier, fetched_at')
-      .not('hook', 'is', null)
-      .order('saved', { ascending: false, nullsFirst: false })
-      .limit(20);
-    if (!error && data?.length) {
-      for (const row of data) {
-        const saves = row.saved ?? null;
-        const reach = row.reach ?? null;
-        const score = saves != null && reach != null && reach > 0 ? Math.round((saves / reach) * 10000) / 100 : saves;
-        rows.push({
-          id: String(row.id),
-          hook: String(row.hook ?? ''),
-          channel: 'instagram',
-          saves,
-          reach,
-          conversions: null,
-          score,
-          pilier: row.pilier ? String(row.pilier) : null,
-          format: row.format ? String(row.format) : null,
-        });
-      }
-    }
-  } catch {
-    // table absente — on continue
-  }
-
-  // 2) Banque hooks CM (admin_settings)
-  const bank = await loadHooksBank();
-  const top = topHooksForFewShot(bank, 'fr', 10);
-  for (const entry of top) {
-    if (rows.some((r) => r.hook === entry.text)) continue;
-    rows.push({
-      id: `bank-${entry.date}-${entry.text.slice(0, 20)}`,
-      hook: entry.text,
-      channel: 'instagram',
-      saves: null,
-      reach: null,
-      conversions: null,
-      score: entry.score,
-      pilier: entry.pillarId ? String(entry.pillarId) : null,
-      format: entry.format ? String(entry.format) : null,
-    });
-  }
-
-  return rows
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, 15);
-}
-
-export async function buildAcquisitionOverview(
-  channel: AcquisitionChannel | 'all' = 'all',
-): Promise<AcquisitionOverview> {
-  const sourceErrors: SourceError[] = [];
-  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive, performanceLoop] = await Promise.all([
-    fetchGa4AcquisitionMetrics(),
-    fetchGscAcquisitionMetrics(),
-    fetchStripeAcquisitionMetrics(),
-    fetchSupabaseAcquisitionMetrics(),
-    fetchMetaPixelStatus(),
-    isAcquisitionSchemaReady(),
-    fetchAcqCrmFunnel(channel),
-    getMetaLiveReadiness(),
-    getPerformanceLoopStatus(),
-  ]);
-
-  if (!ga4.ok) sourceErrors.push({ provider: ga4.provider, error: ga4.error });
-  if (!gsc.ok) sourceErrors.push({ provider: gsc.provider, error: gsc.error });
-  if (!stripe.ok) sourceErrors.push({ provider: stripe.provider, error: stripe.error });
-  if (!supa.ok) sourceErrors.push({ provider: supa.provider, error: supa.error });
-  if (!pixel.ok) sourceErrors.push({ provider: pixel.provider, error: pixel.error });
-
-  const reach =
-    acqCrm.ok && acqCrm.data.contacts > 0
-      ? acqCrm.data.contacts
-      : channel === 'blog_seo'
-        ? gsc.ok
-          ? gsc.data.clicks
-          : null
-        : channel === 'referral'
-          ? stripe.ok
-            ? stripe.data.referralConversions30d
-            : null
-          : ga4.ok
-            ? ga4.data.sessions
-            : null;
-
-  const clicks =
-    acqCrm.ok && acqCrm.data.contacts > 0
-      ? acqCrm.data.qualified + acqCrm.data.trial
-      : channel === 'blog_seo'
-        ? gsc.ok
-          ? gsc.data.clicks
-          : null
-        : ga4.ok
-          ? ga4.data.trialClicks
-          : null;
-
-  const trials =
-    acqCrm.ok && acqCrm.data.contacts > 0
-      ? acqCrm.data.trial
-      : stripe.ok
-        ? stripe.data.activeTrials
-        : supa.ok
-          ? supa.data.trialingCount
-          : null;
-  const paid =
-    acqCrm.ok && acqCrm.data.contacts > 0
-      ? acqCrm.data.paid + acqCrm.data.member
-      : stripe.ok
-        ? stripe.data.activePaid
-        : supa.ok
-          ? supa.data.paidCount
-          : null;
-  const retention = supa.ok ? supa.data.retention90d : null;
-
-  const funnel: FunnelStep[] = [
+function buildSteps(params: {
+  reach: number | null;
+  clicks: number | null;
+  trials: number | null;
+  paid: number | null;
+  retentionValue: number | null;
+  retentionRate: number | null;
+}): FunnelStep[] {
+  const { reach, clicks, trials, paid, retentionValue, retentionRate } = params;
+  return [
     { id: 'reach', label: 'Portée', value: reach ?? 0, rateFromPrevious: null },
     {
       id: 'clicks',
@@ -186,10 +73,141 @@ export async function buildAcquisitionOverview(
     {
       id: 'retention',
       label: 'Rétention 90j',
-      value: retention != null ? Math.round(retention) : 0,
-      rateFromPrevious: retention,
+      value: retentionValue != null ? Math.round(retentionValue) : 0,
+      rateFromPrevious: retentionRate,
     },
   ];
+}
+
+async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
+  const rows: PerformanceHookRow[] = [];
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('post_metrics')
+      .select('id, hook, reach, saved, format, pilier, fetched_at')
+      .not('hook', 'is', null)
+      .order('saved', { ascending: false, nullsFirst: false })
+      .limit(20);
+    if (!error && data?.length) {
+      for (const row of data) {
+        const saves = row.saved ?? null;
+        const reach = row.reach ?? null;
+        const score =
+          saves != null && reach != null && reach > 0 ? Math.round((saves / reach) * 10000) / 100 : saves;
+        rows.push({
+          id: String(row.id),
+          hook: String(row.hook ?? ''),
+          channel: 'instagram',
+          saves,
+          reach,
+          conversions: null,
+          score,
+          pilier: row.pilier ? String(row.pilier) : null,
+          format: row.format ? String(row.format) : null,
+        });
+      }
+    }
+  } catch {
+    // table absente — on continue
+  }
+
+  const bank = await loadHooksBank();
+  const top = topHooksForFewShot(bank, 'fr', 10);
+  for (const entry of top) {
+    if (rows.some((r) => r.hook === entry.text)) continue;
+    rows.push({
+      id: `bank-${entry.date}-${entry.text.slice(0, 20)}`,
+      hook: entry.text,
+      channel: 'instagram',
+      saves: null,
+      reach: null,
+      conversions: null,
+      score: entry.score,
+      pilier: entry.pillarId ? String(entry.pillarId) : null,
+      format: entry.format ? String(entry.format) : null,
+    });
+  }
+
+  return rows.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 15);
+}
+
+export async function buildAcquisitionOverview(
+  channel: AcquisitionChannel | 'all' = 'all',
+): Promise<AcquisitionOverview> {
+  const sourceErrors: SourceError[] = [];
+  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive, performanceLoop, followups] =
+    await Promise.all([
+      fetchGa4AcquisitionMetrics(),
+      fetchGscAcquisitionMetrics(),
+      fetchStripeAcquisitionMetrics(),
+      fetchSupabaseAcquisitionMetrics(),
+      fetchMetaPixelStatus(),
+      isAcquisitionSchemaReady(),
+      fetchAcqCrmFunnel(channel),
+      getMetaLiveReadiness(),
+      getPerformanceLoopStatus(),
+      listUpcomingFollowups(12),
+    ]);
+
+  if (!ga4.ok) sourceErrors.push({ provider: ga4.provider, error: ga4.error });
+  if (!gsc.ok) sourceErrors.push({ provider: gsc.provider, error: gsc.error });
+  if (!stripe.ok) sourceErrors.push({ provider: stripe.provider, error: stripe.error });
+  if (!supa.ok) sourceErrors.push({ provider: supa.provider, error: supa.error });
+  if (!pixel.ok) sourceErrors.push({ provider: pixel.provider, error: pixel.error });
+
+  // —— Parcours site (jamais écrasé par le CRM) ——
+  const siteReach =
+    channel === 'blog_seo'
+      ? gsc.ok
+        ? gsc.data.clicks
+        : null
+      : channel === 'referral'
+        ? stripe.ok
+          ? stripe.data.referralConversions30d
+          : null
+        : ga4.ok
+          ? ga4.data.sessions
+          : null;
+
+  const siteClicks =
+    channel === 'blog_seo'
+      ? gsc.ok
+        ? gsc.data.clicks
+        : null
+      : ga4.ok
+        ? ga4.data.trialClicks
+        : null;
+
+  const siteTrials = stripe.ok ? stripe.data.activeTrials : supa.ok ? supa.data.trialingCount : null;
+  const sitePaid = stripe.ok ? stripe.data.activePaid : supa.ok ? supa.data.paidCount : null;
+  const siteRetentionRate = supa.ok ? supa.data.retention90d : null;
+
+  const siteFunnel = buildSteps({
+    reach: siteReach,
+    clicks: siteClicks,
+    trials: siteTrials,
+    paid: sitePaid,
+    retentionValue: siteRetentionRate,
+    retentionRate: siteRetentionRate,
+  });
+
+  // —— Pipeline CRM ——
+  const crmContacts = acqCrm.ok ? acqCrm.data.contacts : 0;
+  const crmInterest = acqCrm.ok ? acqCrm.data.qualified + acqCrm.data.trial : 0;
+  const crmTrial = acqCrm.ok ? acqCrm.data.trial : 0;
+  const crmPaid = acqCrm.ok ? acqCrm.data.paid + acqCrm.data.member : 0;
+  const crmMember = acqCrm.ok ? acqCrm.data.member : 0;
+
+  const crmFunnel = buildSteps({
+    reach: crmContacts,
+    clicks: crmInterest,
+    trials: crmTrial,
+    paid: crmPaid,
+    retentionValue: crmMember,
+    retentionRate: pct(crmMember, crmPaid || crmContacts),
+  });
 
   const trialToPaid = stripe.ok ? stripe.data.trialToPaidRate : null;
   const arpu = stripe.ok ? stripe.data.arpuEur : null;
@@ -241,14 +259,20 @@ export async function buildAcquisitionOverview(
     },
     {
       id: 'trials',
-      label: 'Essais actifs',
-      value: formatNum(trials),
+      label: 'Essais actifs (Stripe)',
+      value: formatNum(siteTrials),
     },
     {
       id: 'paid',
-      label: 'Payantes actives',
-      value: formatNum(paid),
+      label: 'Payantes actives (Stripe)',
+      value: formatNum(sitePaid),
       tone: 'good',
+    },
+    {
+      id: 'crm_contacts',
+      label: 'Contacts CRM',
+      value: formatNum(crmContacts),
+      hint: 'Pipeline Acquisition (DM / inbox).',
     },
   ];
 
@@ -256,12 +280,15 @@ export async function buildAcquisitionOverview(
 
   return {
     channel,
-    funnel,
+    funnel: crmFunnel,
+    siteFunnel,
+    crmFunnel,
     kpis,
     performanceHooks,
     sourceErrors,
     schemaReady,
     messagingMode: getMessagingMode(),
+    upcomingFollowups: followups.ok ? followups.items : [],
     metaLiveReadiness: metaLive,
     performanceLoop,
   };

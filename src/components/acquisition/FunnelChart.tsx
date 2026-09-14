@@ -11,7 +11,10 @@ type Props = {
   steps: FunnelStep[];
   activeStepId?: string;
   conversations?: AcqConversation[];
-};
+  title?: string;
+  subtitle?: string;
+  showAvatars?: boolean;
+}
 
 const STAGE_BY_STEP: Record<string, string[]> = {
   reach: ['new'],
@@ -49,7 +52,14 @@ function formatHint(step: FunnelStep, index: number): string | undefined {
   return `${step.rateFromPrevious} % vs étape précédente`;
 }
 
-export function FunnelChart({ steps, activeStepId = 'trial', conversations = [] }: Props) {
+export function FunnelChart({
+  steps,
+  activeStepId = 'trial',
+  conversations = [],
+  title = 'Parcours de conversion',
+  subtitle = 'Portée → Clics → Essais 7j → Payant → Rétention',
+  showAvatars = true,
+}: Props) {
   const realContacts = contactsWithRealHandles(conversations);
   const headerPeople: AvatarPerson[] = realContacts.slice(0, 9).map((c) => ({
     id: c.id,
@@ -59,16 +69,18 @@ export function FunnelChart({ steps, activeStepId = 'trial', conversations = [] 
 
   return (
     <JourneyBoard
-      title="Parcours de conversion"
-      subtitle="Portée → Clics → Essais 7j → Payant → Rétention"
+      title={title}
+      subtitle={subtitle}
       action={undefined}
-      headerExtra={headerPeople.length ? <AvatarStack people={headerPeople} max={9} size="md" /> : null}
+      headerExtra={
+        showAvatars && headerPeople.length ? <AvatarStack people={headerPeople} max={9} size="md" /> : null
+      }
       connectors={<JourneyConnectorsOverlay columnCount={steps.length} className="top-12 h-[62%]" />}
     >
       <div className="relative z-[2] flex min-w-[920px] items-stretch overflow-x-auto pb-1 pt-2">
         {steps.map((step, i) => {
           const active = step.id === activeStepId;
-          const people = peopleForStep(step.id, conversations);
+          const people = showAvatars ? peopleForStep(step.id, conversations) : [];
           const hint = formatHint(step, i);
 
           return (

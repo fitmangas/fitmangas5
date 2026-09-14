@@ -41,6 +41,10 @@
       "schedule": "10 17 * * *"
     },
     {
+      "path": "/api/admin/acquisition/cron/run-followups",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/admin/blog/cron/generate-articles",
       "schedule": "30 6 * * 1"
     },
