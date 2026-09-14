@@ -42,7 +42,8 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
   const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
   const [detectedLocale, setDetectedLocale] = useState<DetectedLocale>('fr');
   const [detectedTimeZone, setDetectedTimeZone] = useState('Europe/Paris');
-  const effectiveSegment: Segment = course?.id.startsWith('v-') ? 'VISIO' : 'NANTES';
+  const visioOnlyOptions = courseOptions.filter((option) => option.id.startsWith('v-'));
+  const effectiveSegment: Segment = 'VISIO';
 
   useEffect(() => {
     setDetectedLocale(detectBrowserLocale());
@@ -292,7 +293,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                         className="absolute left-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-ink/10 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
                         role="listbox"
                       >
-                        {courseOptions.map((option) => {
+                        {visioOnlyOptions.map((option) => {
                           const isActive = option.id === course.id;
                           return (
                             <button

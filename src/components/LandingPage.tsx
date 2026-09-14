@@ -20,8 +20,7 @@ import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { OfferCardFeatures } from './landing/OfferCardFeatures';
 import { VideoTestimonialsCarousel } from './landing/VideoTestimonialsCarousel';
 import type { Course } from '@/types';
-import { Language, Segment, translations, WHATSAPP_PHONE } from '@/types';
-import { SHOW_MEXICO } from '@/lib/landing/feature-flags';
+import { Language, translations, WHATSAPP_PHONE } from '@/types';
 import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
 import { VIDEO_TESTIMONIALS } from '@/lib/landing/video-testimonials';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
@@ -73,8 +72,6 @@ export function LandingPage({
   initialOfferId?: string;
 }) {
   const [lang, setLang] = useState<Language>(initialLang);
-  const [segment, setSegment] = useState<Segment>('VISIO');
-  const [onsiteCity, setOnsiteCity] = useState<'NANTES' | 'MEXICO'>('NANTES');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [count, setCount] = useState(2496);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -175,8 +172,8 @@ export function LandingPage({
             advanced: 'Avanzado',
           },
         };
-  const goldCtaClass =
-    'inline-flex items-center justify-center rounded-full border-2 border-[#F8C890] bg-white/80 text-brand-ink shadow-[0_8px_20px_rgba(248,200,144,0.14)] transition hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]';
+  const terracottaCtaClass =
+    'inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]';
   const visibleBlogPreviews = blogPreviews.slice(0, 3);
   const currentYear = new Date().getFullYear();
 
@@ -225,10 +222,6 @@ export function LandingPage({
     if (openLoginRequired) setShowLoginModal(true);
   }, [openLoginRequired]);
 
-  useEffect(() => {
-    if (!SHOW_MEXICO && onsiteCity === 'MEXICO') setOnsiteCity('NANTES');
-  }, [onsiteCity]);
-
   const toggleLang = (newLang: Language) => {
     setLang(newLang);
     if (newLang === 'ES' && pathname === '/') {
@@ -268,20 +261,12 @@ export function LandingPage({
     return course.title;
   }
 
-  const activeCourses = withLocalOfferImages(
-    segment === 'VISIO'
-      ? t.courses.visio
-      : onsiteCity === 'NANTES'
-        ? t.courses.nantes
-        : t.courses.mexico,
-  );
-  const onboardingCourses = withLocalOfferImages([...t.courses.visio, ...t.courses.nantes]);
+  const activeCourses = withLocalOfferImages(t.courses.visio);
+  const onboardingCourses = withLocalOfferImages(t.courses.visio);
 
   useEffect(() => {
     if (!initialOfferId) return;
-    const match =
-      onboardingCourses.find((c) => c.id === initialOfferId) ??
-      withLocalOfferImages([...t.courses.visio, ...t.courses.nantes, ...t.courses.mexico]).find((c) => c.id === initialOfferId);
+    const match = onboardingCourses.find((c) => c.id === initialOfferId);
     if (match) openTrialSignup(match, 'deep_link');
   }, [initialOfferId, lang]);
   const fallbackPilatesCards: { title: string; imageUrl: string; level: string }[] = [
@@ -361,14 +346,14 @@ export function LandingPage({
             <button
               type="button"
               onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${goldCtaClass} border-[#c45d3e] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
+              className={`${terracottaCtaClass} px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
             >
               {l.member}
             </button>
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#F8C890] hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]"
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#c45d3e] hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
             >
               <UserCircle2 size={14} />
               {l.login}
@@ -519,7 +504,7 @@ export function LandingPage({
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-8 w-8 items-center justify-center text-[#25D366] transition hover:text-[#20BD5A]"
                     aria-label="WhatsApp"
                   >
                     <WhatsAppIcon size={19} />
@@ -625,7 +610,7 @@ export function LandingPage({
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-9 w-9 items-center justify-center text-[#b35338] drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] transition hover:text-[#c45d3e]"
+                    className="inline-flex h-9 w-9 items-center justify-center text-[#25D366] drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] transition hover:text-[#20BD5A]"
                     aria-label="WhatsApp"
                   >
                     <WhatsAppIcon size={18} />
@@ -654,67 +639,13 @@ export function LandingPage({
         </section>
 
         <section id="offers" className="scroll-mt-24">
-        {/* Segment Toggle — même terracotta que « On démarre » */}
-        <div
-          className={`flex rounded-full border border-brand-ink/10 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)] ${
-            segment === 'NANTES' ? 'mb-4' : 'mb-12'
-          }`}
-        >
-          <button 
-            onClick={() => setSegment('VISIO')}
-            className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
-              segment === 'VISIO'
-                ? 'bg-[#c45d3e] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
-                : 'text-brand-ink/60 hover:text-brand-ink'
-            }`}
-          >
-            {t.segVisio}
-          </button>
-          <button 
-            onClick={() => setSegment('NANTES')}
-            className={`flex-1 rounded-full py-3 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
-              segment === 'NANTES'
-                ? 'bg-[#c45d3e] text-[#FFF8F0] shadow-[0_6px_18px_rgba(196,93,62,0.35)]'
-                : 'text-brand-ink/60 hover:text-brand-ink'
-            }`}
-          >
-            {lang === 'FR' ? 'Présentiel' : 'Presencial'}
-          </button>
-        </div>
-        {segment === 'NANTES' ? (
-          <div className="mb-12 flex justify-center gap-2">
-            <button
-              onClick={() => setOnsiteCity('NANTES')}
-              className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
-                onsiteCity === 'NANTES'
-                  ? 'bg-[#c45d3e] text-white shadow-sm'
-                  : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
-              }`}
-            >
-              Nantes
-            </button>
-            {SHOW_MEXICO ? (
-              <button
-                onClick={() => setOnsiteCity('MEXICO')}
-                className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition ${
-                  onsiteCity === 'MEXICO'
-                    ? 'bg-[#c45d3e] text-white shadow-sm'
-                    : 'border border-brand-ink/10 bg-white text-brand-ink/60 hover:text-brand-ink'
-                }`}
-              >
-                Mexico
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* Offers Grid */}
-        <div className="space-y-12 mb-20">
-          <div className="text-center space-y-3">
-            <span className="text-[12px] tracking-[0.2em] sm:tracking-[0.45em] uppercase text-brand-accent/90 font-semibold drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
+        {/* Offers Grid — visio uniquement */}
+        <div className="mb-20 space-y-12">
+          <div className="space-y-3 text-center">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-brand-accent/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)] sm:tracking-[0.45em]">
               {t.sectionTitle}
             </span>
-            <div className="h-px w-12 bg-brand-accent/20 mx-auto" />
+            <div className="mx-auto h-px w-12 bg-brand-accent/20" />
           </div>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {activeCourses.map((course, i) => (
@@ -732,9 +663,8 @@ export function LandingPage({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
-                className="group cursor-pointer bg-white rounded-[40px] border border-brand-ink/[0.03] hover:border-brand-accent/20 transition-all duration-500 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.02)] flex flex-col"
+                className="group flex cursor-pointer flex-col overflow-hidden rounded-[40px] border border-brand-ink/[0.03] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.02)] transition-all duration-500 hover:border-brand-accent/20"
               >
-                {/* Image Section */}
                 <div className="relative h-56 overflow-hidden sm:h-64">
                   <Image
                     src={course.imageUrl || '/landing/offer-v-coll.jpg'}
@@ -743,9 +673,9 @@ export function LandingPage({
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-brand-ink/5 group-hover:bg-transparent transition-colors duration-500" />
+                  <div className="absolute inset-0 bg-brand-ink/5 transition-colors duration-500 group-hover:bg-transparent" />
                   {course.badge && (
-                    <div className="absolute top-6 left-6">
+                    <div className="absolute left-6 top-6">
                       <span className="rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white shadow-xl">
                         {course.badge}
                       </span>
@@ -753,38 +683,27 @@ export function LandingPage({
                   )}
                 </div>
 
-                {/* Content Section */}
                 <div className="flex flex-col bg-white p-6 md:p-10">
                   <div className="mb-4 md:mb-6">
-                    {segment !== 'VISIO' ? (
-                      <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.3em] text-brand-accent/80">
-                        {`${lang === 'FR' ? 'Studio' : 'Studio'} ${onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}`}
-                      </span>
-                    ) : null}
                     <h3 className="font-serif text-2xl font-normal leading-none tracking-tight text-brand-ink transition-colors duration-300 group-hover:text-brand-accent md:text-4xl">
                       {offerCardTitle(course)}
                     </h3>
-                    {segment === 'VISIO' && course.id === 'v-ind' ? (
+                    {course.id === 'v-ind' ? (
                       <p className="mt-2 text-sm leading-snug text-brand-ink/65 md:text-base">
                         {t.visioIndividuelCollectifExtra}
                       </p>
                     ) : null}
                   </div>
 
-                  <OfferCardFeatures
-                    course={course}
-                    lang={lang}
-                    onsiteCityLabel={onsiteCity === 'NANTES' ? 'Nantes' : 'Mexico'}
-                  />
+                  <OfferCardFeatures course={course} lang={lang} />
 
-                  {/* Price & CTA Section */}
                   <div className="mt-5 flex items-end justify-between border-t border-brand-ink/[0.06] pt-4">
                     <div className="flex flex-col">
                       <span className="mb-1 text-[8px] font-bold uppercase tracking-[0.3em] text-brand-ink/30 md:mb-2 md:text-[9px]">
-                        {segment === 'VISIO' ? l.subscriptionLabel : l.sessionLabel}
+                        {l.subscriptionLabel}
                       </span>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-3xl font-sans font-bold tracking-tighter text-brand-ink md:text-4xl">
+                        <span className="font-sans text-3xl font-bold tracking-tighter text-brand-ink md:text-4xl">
                           {course.price.split(' ')[0]}
                         </span>
                         <span className="text-[9px] font-semibold uppercase tracking-widest text-brand-ink/40 md:text-xs">
@@ -806,6 +725,26 @@ export function LandingPage({
         </div>
         </section>
 
+        {/* WhatsApp — juste après les offres (filet anti-hésitation) */}
+        <motion.a
+          href={getWaLink(t.waMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mb-24 flex flex-col items-center gap-6 rounded-[40px] border border-brand-ink/[0.03] bg-white p-10 text-center transition-all hover:shadow-xl"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition-all group-hover:bg-[#20BD5A]">
+            <WhatsAppIcon size={28} />
+          </div>
+          <div>
+            <h4 className="mb-2 font-serif text-2xl font-normal tracking-tight text-brand-ink md:text-3xl">{t.helpTitle}</h4>
+            <p className="mx-auto max-w-[240px] text-xs tracking-wide leading-relaxed text-brand-ink/40">{t.helpSub}</p>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#25D366]">
+            {lang === 'FR' ? 'Discuter' : 'Chatear'}
+            <ArrowRight size={14} />
+          </div>
+        </motion.a>
+
         <VideoTestimonialsCarousel
           lang={lang}
           label={l.testimonialsLabel}
@@ -814,26 +753,6 @@ export function LandingPage({
           ctaLabel={l.trialCta}
           onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
         />
-
-        {/* WhatsApp Help Card */}
-        <motion.a
-          href={getWaLink(t.waMsg)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white p-10 rounded-[40px] flex flex-col items-center text-center gap-6 mb-24 hover:shadow-xl transition-all border border-brand-ink/[0.03] group"
-        >
-          <div className="w-16 h-16 rounded-full bg-brand-sand/30 text-brand-accent flex items-center justify-center group-hover:bg-brand-accent group-hover:text-white transition-all">
-            <WhatsAppIcon size={28} />
-          </div>
-          <div>
-            <h4 className="text-2xl md:text-3xl font-serif font-normal tracking-tight text-brand-ink mb-2">{t.helpTitle}</h4>
-            <p className="text-xs text-brand-ink/40 tracking-wide leading-relaxed max-w-[240px] mx-auto">{t.helpSub}</p>
-          </div>
-          <div className="flex items-center gap-3 text-[10px] tracking-[0.2em] uppercase font-bold text-brand-accent">
-            {lang === 'FR' ? 'Discuter' : 'Chatear'}
-            <ArrowRight size={14} />
-          </div>
-        </motion.a>
 
         {/* Pilates styles inspiration section */}
         <section className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10">
@@ -876,7 +795,7 @@ export function LandingPage({
             <button
               type="button"
               onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${goldCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
+              className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
             >
               {l.start}
             </button>
@@ -938,7 +857,7 @@ export function LandingPage({
                     'blog_cta',
                   )
                 }
-                className={`${goldCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
+                className={`${terracottaCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
               >
                 {l.blogCta}
               </button>

@@ -363,7 +363,7 @@ export function VideoTestimonialsCarousel({
         <button
           type="button"
           onClick={onCta}
-          className="inline-flex items-center justify-center rounded-full border-2 border-[#F8C890] bg-white/80 px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-brand-ink shadow-[0_8px_20px_rgba(248,200,144,0.14)] transition hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]"
+          className="inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
         >
           {ctaLabel}
         </button>
