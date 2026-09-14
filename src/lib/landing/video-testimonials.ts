@@ -1,3 +1,5 @@
+import type { Language } from '@/types';
+
 export type VideoTestimonial = {
   id: string;
   name: string;
@@ -12,7 +14,22 @@ export type VideoTestimonial = {
   seoBlurbEs: string;
 };
 
+/** Elena en tête (mise en avant FR). Maria / Teresa = seuls drapeaux ES. */
 export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
+  {
+    id: 'elena',
+    name: 'Elena',
+    flag: '🇫🇷',
+    countryCode: 'FR',
+    professionFr: 'Gérante de restaurant',
+    professionEs: 'Gerente de restaurante',
+    videoSrc: '/testimonials/elena.mp4',
+    posterSrc: '/testimonials/elena.jpg',
+    seoBlurbFr:
+      'Elena, gérante de restaurant, raconte pourquoi elle a choisi FitMangas pour ne plus s’entraîner seule et rester régulière malgré un emploi du temps chargé.',
+    seoBlurbEs:
+      'Elena, gerente de restaurante, cuenta por qué eligió FitMangas para no entrenar sola y mantener la constancia con un horario exigente.',
+  },
   {
     id: 'sandrine',
     name: 'Sandrine',
@@ -26,34 +43,6 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
       'Sandrine, marchande de biens, témoigne de son expérience des cours de Pilates & Barre FitMangas en visio — le rendez-vous fixe et la correction en direct.',
     seoBlurbEs:
       'Sandrine, negociadora inmobiliaria, comparte su experiencia con las clases de Pilates y Barre FitMangas online: cita fija y corrección en directo.',
-  },
-  {
-    id: 'elena',
-    name: 'Elena',
-    flag: '🇪🇸',
-    countryCode: 'ES',
-    professionFr: 'Gérante de restaurant',
-    professionEs: 'Gerente de restaurante',
-    videoSrc: '/testimonials/elena.mp4',
-    posterSrc: '/testimonials/elena.jpg',
-    seoBlurbFr:
-      'Elena, gérante de restaurant, raconte pourquoi elle a choisi FitMangas pour ne plus s’entraîner seule et rester régulière malgré un emploi du temps chargé.',
-    seoBlurbEs:
-      'Elena, gerente de restaurante, cuenta por qué eligió FitMangas para no entrenar sola y mantener la constancia con un horario exigente.',
-  },
-  {
-    id: 'maria',
-    name: 'Maria',
-    flag: '🇪🇸',
-    countryCode: 'ES',
-    professionFr: 'Marketing du sport',
-    professionEs: 'Marketing deportivo',
-    videoSrc: '/testimonials/maria.mp4',
-    posterSrc: '/testimonials/maria.jpg',
-    seoBlurbFr:
-      'Maria, professionnelle du marketing du sport, partage son ressenti sur les cours collectifs en visio avec Alejandra et la communauté FitMangas.',
-    seoBlurbEs:
-      'Maria, profesional de marketing deportivo, comparte su experiencia en las clases grupales online con Alejandra y la comunidad FitMangas.',
   },
   {
     id: 'alicia',
@@ -70,20 +59,6 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
       'Alicia, abogada, explica qué le aportan las sesiones de Pilates FitMangas online en un día a día profesional intenso.',
   },
   {
-    id: 'jose-luis',
-    name: 'José Luis',
-    flag: '🇪🇸',
-    countryCode: 'ES',
-    professionFr: 'Consultant hôtelier',
-    professionEs: 'Consultor hotelero',
-    videoSrc: '/testimonials/jose-luis.mp4',
-    posterSrc: '/testimonials/jose-luis.jpg',
-    seoBlurbFr:
-      'José Luis, consultant hôtelier, témoigne en vidéo de son parcours avec FitMangas et de l’accompagnement en direct.',
-    seoBlurbEs:
-      'José Luis, consultor hotelero, comparte en vídeo su experiencia con FitMangas y el acompañamiento en directo.',
-  },
-  {
     id: 'olivia',
     name: 'Olivia',
     flag: '🇫🇷',
@@ -96,6 +71,48 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
       'Olivia, orthophoniste, décrit son ressenti après les cours de Pilates & Barre FitMangas — régularité, présence et correction.',
     seoBlurbEs:
       'Olivia, logopeda, describe su experiencia con las clases de Pilates y Barre FitMangas: constancia, presencia y corrección.',
+  },
+  {
+    id: 'jose-luis',
+    name: 'José Luis',
+    flag: '🇫🇷',
+    countryCode: 'FR',
+    professionFr: 'Consultant hôtelier',
+    professionEs: 'Consultor hotelero',
+    videoSrc: '/testimonials/jose-luis.mp4',
+    posterSrc: '/testimonials/jose-luis.jpg',
+    seoBlurbFr:
+      'José Luis, consultant hôtelier, témoigne en vidéo de son parcours avec FitMangas et de l’accompagnement en direct.',
+    seoBlurbEs:
+      'José Luis, consultor hotelero, comparte en vídeo su experiencia con FitMangas y el acompañamiento en directo.',
+  },
+  {
+    id: 'karla',
+    name: 'Karla',
+    flag: '🇫🇷',
+    countryCode: 'FR',
+    professionFr: 'Business Developer',
+    professionEs: 'Business Developer',
+    videoSrc: '/testimonials/karla.mp4',
+    posterSrc: '/testimonials/karla.jpg',
+    seoBlurbFr:
+      'Karla, business developer, partage en vidéo pourquoi elle recommande les cours Pilates FitMangas en visio.',
+    seoBlurbEs:
+      'Karla, business developer, comparte en vídeo por qué recomienda las clases de Pilates FitMangas online.',
+  },
+  {
+    id: 'maria',
+    name: 'Maria',
+    flag: '🇪🇸',
+    countryCode: 'ES',
+    professionFr: 'Marketing du sport',
+    professionEs: 'Marketing deportivo',
+    videoSrc: '/testimonials/maria.mp4',
+    posterSrc: '/testimonials/maria.jpg',
+    seoBlurbFr:
+      'Maria, professionnelle du marketing du sport, partage son ressenti sur les cours collectifs en visio avec Alejandra et la communauté FitMangas.',
+    seoBlurbEs:
+      'Maria, profesional de marketing deportivo, comparte su experiencia en las clases grupales online con Alejandra y la comunidad FitMangas.',
   },
   {
     id: 'teresa',
@@ -111,18 +128,10 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
     seoBlurbEs:
       'Teresa, asistente administrativa, habla de su experiencia FitMangas y de la importancia de sentirse vista durante la clase.',
   },
-  {
-    id: 'karla',
-    name: 'Karla',
-    flag: '🇪🇸',
-    countryCode: 'ES',
-    professionFr: 'Business Developer',
-    professionEs: 'Business Developer',
-    videoSrc: '/testimonials/karla.mp4',
-    posterSrc: '/testimonials/karla.jpg',
-    seoBlurbFr:
-      'Karla, business developer, partage en vidéo pourquoi elle recommande les cours Pilates FitMangas en visio.',
-    seoBlurbEs:
-      'Karla, business developer, comparte en vídeo por qué recomienda las clases de Pilates FitMangas online.',
-  },
 ];
+
+export function featuredTestimonialIndex(lang: Language): number {
+  const id = lang === 'ES' ? 'maria' : 'elena';
+  const index = VIDEO_TESTIMONIALS.findIndex((item) => item.id === id);
+  return index >= 0 ? index : 0;
+}

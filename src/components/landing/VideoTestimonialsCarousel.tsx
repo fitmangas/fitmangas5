@@ -4,7 +4,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import type { Language } from '@/types';
-import { VIDEO_TESTIMONIALS, type VideoTestimonial } from '@/lib/landing/video-testimonials';
+import {
+  VIDEO_TESTIMONIALS,
+  featuredTestimonialIndex,
+  type VideoTestimonial,
+} from '@/lib/landing/video-testimonials';
 
 type Props = {
   lang: Language;
@@ -28,9 +32,18 @@ function relativeOffset(index: number, active: number, total: number) {
   return diff;
 }
 
+async function tryPlay(video: HTMLVideoElement) {
+  try {
+    video.playsInline = true;
+    await video.play();
+  } catch {
+    /* autoplay peut échouer hors interaction — on réessaie au canplay */
+  }
+}
+
 export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews }: Props) {
   const total = VIDEO_TESTIMONIALS.length;
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(() => featuredTestimonialIndex(lang));
   const [muted, setMuted] = useState(true);
   const [isInView, setIsInView] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -53,6 +66,10 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
   );
 
   useEffect(() => {
+    setActive(featuredTestimonialIndex(lang));
+  }, [lang]);
+
+  useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
     const sync = () => setIsMobile(mq.matches);
     sync();
@@ -64,8 +81,8 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
     const el = sectionRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting && entry.intersectionRatio > 0.2),
-      { threshold: [0, 0.2, 0.45] },
+      ([entry]) => setIsInView(entry.isIntersecting),
+      { threshold: 0.08, rootMargin: '80px 0px' },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -77,23 +94,26 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
       if (!video) return;
       const offset = Math.abs(relativeOffset(index, active, total));
       video.muted = muted;
-
-      if (offset <= 1 && !video.getAttribute('src')) {
-        video.src = item.videoSrc;
-        video.load();
-      }
+      video.defaultMuted = muted;
 
       if (index === active && isInView) {
-        const playPromise = video.play();
-        if (playPromise) playPromise.catch(() => undefined);
+        if (video.readyState >= 2) {
+          void tryPlay(video);
+        } else {
+          const onReady = () => {
+            void tryPlay(video);
+            video.removeEventListener('canplay', onReady);
+          };
+          video.addEventListener('canplay', onReady);
+          video.load();
+        }
       } else {
         video.pause();
-        if (offset === 0) return;
-        if (offset > 1 && video.currentTime > 0.2) {
+        if (offset > 1 && video.currentTime > 0.15) {
           try {
             video.currentTime = 0;
           } catch {
-            /* ignore seek errors on unloaded media */
+            /* ignore */
           }
         }
       }
@@ -197,6 +217,7 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
             const scale = isActive ? 1 : abs === 1 ? 0.82 : 0.68;
             const opacity = isActive ? 1 : abs === 1 ? 0.55 : 0.28;
             const zIndex = 30 - abs;
+            const shouldLoad = abs <= 1;
 
             return (
               <figure
@@ -224,8 +245,9 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
                     playsInline
                     loop
                     muted={muted}
-                    preload={isActive || abs === 1 ? 'metadata' : 'none'}
-                    src={isActive || abs === 1 ? item.videoSrc : undefined}
+                    autoPlay={isActive}
+                    preload={shouldLoad ? 'auto' : 'none'}
+                    src={shouldLoad ? item.videoSrc : undefined}
                   />
 
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/15" />
