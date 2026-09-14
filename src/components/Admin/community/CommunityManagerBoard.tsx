@@ -87,7 +87,6 @@ import {
   SOCIAL_LIBRARY_IMAGES,
   SOCIAL_LOCALE_LABELS,
   SOCIAL_NETWORK_COLORS,
-  SOCIAL_NETWORK_LABELS,
   socialImageProviderLabel,
   startOfWeekMonday,
   type MetaSocialConnection,
@@ -106,20 +105,7 @@ import {
 } from '@/lib/admin/social-pillars';
 import { ADMIN_FIELD_CLASS } from '@/components/Admin/adminSurfaceClasses';
 
-const NETWORKS: SocialNetwork[] = ['instagram', 'facebook', 'whatsapp', 'linkedin', 'tiktok'];
-
-function postMatchesNetworkFilter(post: SocialPost, filter: SocialNetwork): boolean {
-  if (filter === 'facebook') {
-    return (
-      post.network === 'facebook' ||
-      (post.network === 'instagram' && post.alsoPublishFacebook && post.status !== 'skipped')
-    );
-  }
-  if (filter === 'tiktok') {
-    return post.network === 'instagram' && post.alsoPublishTikTok && post.status !== 'skipped';
-  }
-  return post.network === filter;
-}
+const STRATEGY_NETWORKS: SocialNetwork[] = ['instagram', 'facebook', 'whatsapp', 'linkedin', 'tiktok'];
 
 function calendarChipStyle(post: SocialPost): { bg: string; text: string; border: string; label: string } {
   if (post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok)) {
@@ -222,7 +208,6 @@ export function CommunityManagerBoard({
   weekMixLabel = null,
 }: Props) {
   const router = useRouter();
-  const [networkFilter, setNetworkFilter] = useState<SocialNetwork>('instagram');
   const [workflowTab, setWorkflowTab] = useState<WorkflowTab>('en_cours');
   const [manualMenuOpen, setManualMenuOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -281,39 +266,31 @@ export function CommunityManagerBoard({
 
   const monthDays = useMemo(() => monthGridDays(monthAnchor), [monthAnchor]);
 
+  const instagramPosts = useMemo(
+    () => board.posts.filter((post) => post.network === 'instagram' && post.status !== 'skipped'),
+    [board.posts],
+  );
+
   const posts = useMemo(() => {
-    const filtered = board.posts.filter(
-      (post) => postMatchesNetworkFilter(post, networkFilter) && postMatchesWorkflowTab(post, workflowTab),
-    );
+    const filtered = instagramPosts.filter((post) => postMatchesWorkflowTab(post, workflowTab));
     return [...filtered].sort((a, b) => {
       const aTime = a.plannedAt ? new Date(a.plannedAt).getTime() : Number.MAX_SAFE_INTEGER;
       const bTime = b.plannedAt ? new Date(b.plannedAt).getTime() : Number.MAX_SAFE_INTEGER;
       if (workflowTab === 'archives') return bTime - aTime;
       return aTime - bTime;
     });
-  }, [board.posts, networkFilter, workflowTab]);
+  }, [instagramPosts, workflowTab]);
 
-  const workflowCounts = useMemo(() => {
-    const forNetwork = board.posts.filter((post) => postMatchesNetworkFilter(post, networkFilter));
-    return {
-      en_cours: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'en_cours')).length,
-      programmes: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'programmes')).length,
-      archives: forNetwork.filter((p) => postMatchesWorkflowTab(p, 'archives')).length,
-    };
-  }, [board.posts, networkFilter]);
+  const workflowCounts = useMemo(
+    () => ({
+      en_cours: instagramPosts.filter((p) => postMatchesWorkflowTab(p, 'en_cours')).length,
+      programmes: instagramPosts.filter((p) => postMatchesWorkflowTab(p, 'programmes')).length,
+      archives: instagramPosts.filter((p) => postMatchesWorkflowTab(p, 'archives')).length,
+    }),
+    [instagramPosts],
+  );
 
-  const counts = useMemo(() => {
-    return NETWORKS.reduce(
-      (acc, network) => {
-        acc[network] = board.posts.filter((post) => postMatchesNetworkFilter(post, network) && post.status !== 'skipped')
-          .length;
-        return acc;
-      },
-      {} as Record<SocialNetwork, number>,
-    );
-  }, [board.posts]);
-
-  const generationNetworks = useMemo(() => resolveGenerationNetworks(networkFilter), [networkFilter]);
+  const generationNetworks = useMemo(() => resolveGenerationNetworks('instagram'), []);
   const generationSummary = useMemo(() => weekPlanSummary(generationNetworks), [generationNetworks]);
 
   const whatsappDue = useMemo(() => {
@@ -541,6 +518,10 @@ export function CommunityManagerBoard({
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Community Manager</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink md:text-3xl">Programme & publications</h1>
+            <p className="mt-1.5 text-[12px] text-luxury-muted">
+              Source Instagram · miroirs Facebook & TikTok · {instagramPosts.length} post
+              {instagramPosts.length === 1 ? '' : 's'}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -564,29 +545,12 @@ export function CommunityManagerBoard({
             </button>
             <button
               type="button"
-              disabled={
-                pending || generationFlow.active || networkFilter === 'facebook' || networkFilter === 'tiktok'
-              }
+              disabled={pending || generationFlow.active}
               onClick={() => void runProgressiveGeneration('fresh')}
               className="btn-luxury-primary inline-flex min-h-[44px] items-center gap-2 px-5 text-xs disabled:opacity-60"
-              title={
-                networkFilter === 'facebook'
-                  ? 'Passe sur Instagram pour générer (FB = miroir auto).'
-                  : networkFilter === 'tiktok'
-                    ? 'Passe sur Instagram pour générer (TikTok = miroir Reels).'
-                    : undefined
-              }
             >
               {pending || generationFlow.active ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {pending || generationFlow.active
-                ? 'Génération…'
-                : networkFilter === 'facebook'
-                  ? 'Voir Instagram pour générer'
-                  : networkFilter === 'tiktok'
-                    ? 'Voir Instagram pour générer'
-                    : networkFilter === 'instagram'
-                      ? 'Générer Instagram (FR)'
-                      : `Générer ${SOCIAL_NETWORK_LABELS[networkFilter]}`}
+              {pending || generationFlow.active ? 'Génération…' : 'Générer Instagram (FR)'}
             </button>
             <button
               type="button"
@@ -599,13 +563,8 @@ export function CommunityManagerBoard({
             </button>
             {pending || generationFlow.active ? (
               <p className="w-full text-xs text-luxury-soft">
-                Génération{' '}
-                {SOCIAL_NETWORK_LABELS[
-                  networkFilter === 'facebook' || networkFilter === 'tiktok' ? 'instagram' : networkFilter
-                ]}{' '}
-                · FR
-                ({generationSummary}) — progression: {generationFlow.done}/{generationFlow.total || '…'} ·
-                échecs {generationFlow.failed}.
+                Génération Instagram · FR ({generationSummary}) — progression: {generationFlow.done}/
+                {generationFlow.total || '…'} · échecs {generationFlow.failed}.
               </p>
             ) : null}
             {!generationFlow.active && generationFlow.runId && generationFlow.failed > 0 ? (
@@ -622,18 +581,6 @@ export function CommunityManagerBoard({
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          {NETWORKS.map((network) => (
-            <FilterChip
-              key={network}
-              active={networkFilter === network}
-              onClick={() => setNetworkFilter(network)}
-              label={
-                network === 'facebook'
-                  ? `Facebook · via IG (${counts.facebook})`
-                  : `${SOCIAL_NETWORK_LABELS[network]} (${counts[network]})`
-              }
-            />
-          ))}
           <button
             type="button"
             title={
@@ -648,14 +595,15 @@ export function CommunityManagerBoard({
             <CircleHelp size={16} strokeWidth={2} />
           </button>
           <span className="text-[10px] text-luxury-muted">
-            Meta{' '}
+            Canaux{' '}
             {meta.accessToken
               ? meta.tokenExpiresAt && new Date(meta.tokenExpiresAt).getTime() < Date.now()
-                ? `· expiré${meta.tokenExpiresAt ? ` (${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')})` : ''}`
+                ? `· Meta expiré${meta.tokenExpiresAt ? ` (${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')})` : ''}`
                 : meta.tokenExpiresAt
-                  ? `· valide jusqu’au ${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')}`
-                  : '· token présent (date inconnue — vérifier)'
-              : '· non connecté'}
+                  ? `· Meta jusqu’au ${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')}`
+                  : '· Meta OK'
+              : '· Meta non connecté'}
+            {tiktok.connected ? ' · TikTok OK' : ' · TikTok à connecter'}
             <button type="button" className="ml-1 underline decoration-[#C45D3E]/40" onClick={() => setShowMetaPanel((v) => !v)}>
               {showMetaPanel ? 'masquer' : 'régler'}
             </button>
@@ -816,7 +764,11 @@ export function CommunityManagerBoard({
 
         {showMetaPanel ? (
           <div className="mt-3 max-w-xl rounded-2xl border border-[#E8D9C8]/80 bg-white/80 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Canaux de publication</p>
+            <p className="mt-1 text-[11px] text-luxury-muted">
+              Instagram = source. Facebook & TikTok = miroirs automatiques des Reels.
+            </p>
+            <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</p>
             <p className="mt-1 text-[11px] text-luxury-muted">
               {meta.connected
                 ? `${meta.pageName || meta.pageId}${meta.igUsername ? ` · @${meta.igUsername}` : ''}`
@@ -1017,7 +969,11 @@ export function CommunityManagerBoard({
             {weekDays.map((day) => {
               const key = localDayKey(day);
               const dayPosts = board.posts.filter(
-                (post) => post.status !== 'skipped' && post.plannedAt && localDayKey(new Date(post.plannedAt)) === key,
+                (post) =>
+                  post.network === 'instagram' &&
+                  post.status !== 'skipped' &&
+                  post.plannedAt &&
+                  localDayKey(new Date(post.plannedAt)) === key,
               );
               return (
                 <DayCell key={key} day={day} dayPosts={dayPosts} />
@@ -1041,7 +997,11 @@ export function CommunityManagerBoard({
                 const key = localDayKey(day);
                 const inMonth = day.getMonth() === monthAnchor.getMonth();
                 const dayPosts = board.posts.filter(
-                  (post) => post.status !== 'skipped' && post.plannedAt && localDayKey(new Date(post.plannedAt)) === key,
+                  (post) =>
+                    post.network === 'instagram' &&
+                    post.status !== 'skipped' &&
+                    post.plannedAt &&
+                    localDayKey(new Date(post.plannedAt)) === key,
                 );
                 return (
                   <DayCell key={key} day={day} dayPosts={dayPosts} muted={!inMonth} compact />
@@ -1417,7 +1377,7 @@ export function CommunityManagerBoard({
               </button>
             </div>
             <div className="mt-4 space-y-3">
-              {NETWORKS.map((network) => {
+              {STRATEGY_NETWORKS.map((network) => {
                 const g = SOCIAL_CM_GUIDELINES[network];
                 const colors = SOCIAL_NETWORK_COLORS[network];
                 return (
@@ -1565,7 +1525,6 @@ function PostCard({
   const [reelUploadStatus, setReelUploadStatus] = useState<string | null>(null);
   const [reelUploadError, setReelUploadError] = useState<string | null>(null);
   const previewVideo = localEditedVideo || post.editedVideoPath || post.rawVideoPath;
-  const networkColor = SOCIAL_NETWORK_COLORS[post.network];
   const [claudePromptCopied, setClaudePromptCopied] = useState(false);
   const [claudePromptError, setClaudePromptError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ kind: 'scheduled' | 'published'; message: string } | null>(
@@ -1810,13 +1769,17 @@ function PostCard({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">Diffusion</span>
             <span
               className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
-              style={{ backgroundColor: networkColor.bg, color: networkColor.text }}
+              style={{
+                backgroundColor: SOCIAL_NETWORK_COLORS.instagram.bg,
+                color: SOCIAL_NETWORK_COLORS.instagram.text,
+              }}
             >
-              {SOCIAL_NETWORK_LABELS[post.network]}
+              Instagram
             </span>
-            {post.network === 'instagram' && post.alsoPublishFacebook ? (
+            {post.alsoPublishFacebook ? (
               <span
                 className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
                 style={{
@@ -1824,10 +1787,10 @@ function PostCard({
                   color: SOCIAL_NETWORK_COLORS.facebook.text,
                 }}
               >
-                + Facebook
+                Facebook
               </span>
             ) : null}
-            {post.network === 'instagram' && post.alsoPublishTikTok ? (
+            {post.alsoPublishTikTok ? (
               <span
                 className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
                 style={{
@@ -1835,7 +1798,7 @@ function PostCard({
                   color: SOCIAL_NETWORK_COLORS.tiktok.text,
                 }}
               >
-                + TikTok
+                TikTok
               </span>
             ) : null}
             <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
@@ -2688,29 +2651,5 @@ function PostCard({
         </div>
       </div>
     </article>
-  );
-}
-
-function FilterChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
-        active
-          ? 'bg-[#c45d3e] text-white shadow-[0_8px_18px_rgba(196,93,62,0.28)]'
-          : 'border border-white/70 bg-white/80 text-luxury-muted hover:text-luxury-ink'
-      }`}
-    >
-      {label}
-    </button>
   );
 }
