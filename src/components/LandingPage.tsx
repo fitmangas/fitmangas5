@@ -504,7 +504,7 @@ export function LandingPage({
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-8 w-8 items-center justify-center text-[#25D366] transition hover:text-[#20BD5A]"
+                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="WhatsApp"
                   >
                     <WhatsAppIcon size={19} />
@@ -610,7 +610,7 @@ export function LandingPage({
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-9 w-9 items-center justify-center text-[#25D366] drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] transition hover:text-[#20BD5A]"
+                    className="inline-flex h-9 w-9 items-center justify-center text-[#b35338] drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] transition hover:text-[#c45d3e]"
                     aria-label="WhatsApp"
                   >
                     <WhatsAppIcon size={18} />

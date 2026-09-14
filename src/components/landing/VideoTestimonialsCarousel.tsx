@@ -151,24 +151,24 @@ export function VideoTestimonialsCarousel({
   };
 
   return (
-    <section ref={sectionRef} className="mb-32" aria-labelledby="testimonials-heading">
+    <section ref={sectionRef} className="mb-20 md:mb-24" aria-labelledby="testimonials-heading">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="mb-10 text-center md:mb-12">
-        <span className="mb-3 block text-[10px] font-bold uppercase tracking-[0.4em] text-brand-accent">
+      <div className="mb-5 text-center md:mb-6">
+        <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.4em] text-brand-accent">
           {label}
         </span>
         <h2
           id="testimonials-heading"
-          className="mb-8 font-serif text-4xl font-normal italic tracking-tight md:mb-10"
+          className="mb-4 font-serif text-3xl font-normal italic tracking-tight md:mb-5 md:text-4xl"
         >
           {title}
         </h2>
 
-        <div className="mb-5 flex justify-center -space-x-4 overflow-x-clip px-2" aria-hidden>
+        <div className="mb-3 flex justify-center -space-x-4 overflow-x-clip px-2" aria-hidden>
           {VIDEO_TESTIMONIALS.slice(0, 5).map((item, i) => (
             <motion.div
               key={item.id}
@@ -176,7 +176,7 @@ export function VideoTestimonialsCarousel({
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.06 }}
-              className="relative h-14 w-14 overflow-hidden rounded-full border-[3px] border-white shadow-md md:h-16 md:w-16"
+              className="relative h-12 w-12 overflow-hidden rounded-full border-[3px] border-white shadow-md md:h-14 md:w-14"
               style={{ zIndex: 10 - i }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -184,7 +184,7 @@ export function VideoTestimonialsCarousel({
             </motion.div>
           ))}
         </div>
-        <div className="mb-2 flex flex-col items-center gap-1">
+        <div className="mb-0 flex flex-col items-center gap-0.5">
           <div className="flex gap-0.5 text-brand-accent" aria-hidden>
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} className="text-[11px] leading-none">
@@ -212,7 +212,7 @@ export function VideoTestimonialsCarousel({
         }}
       >
         <div
-          className="relative mx-auto h-[min(62vh,520px)] w-full md:h-[560px]"
+          className="relative mx-auto h-[min(48vh,420px)] w-full md:h-[460px]"
           style={{ perspective: '1400px' }}
         >
           {VIDEO_TESTIMONIALS.map((item, index) => {
@@ -231,7 +231,7 @@ export function VideoTestimonialsCarousel({
             return (
               <figure
                 key={item.id}
-                className="absolute left-1/2 top-1/2 w-[min(72vw,280px)] origin-center md:w-[300px]"
+                className="absolute left-1/2 top-1/2 w-[min(68vw,250px)] origin-center md:w-[270px]"
                 style={{
                   zIndex,
                   transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${scale}) rotateY(${rotateY}deg)`,
@@ -242,7 +242,7 @@ export function VideoTestimonialsCarousel({
               >
                 <div
                   className="relative w-full overflow-hidden rounded-[28px] border border-white/70 bg-brand-ink shadow-[0_24px_60px_rgba(48,35,28,0.22)]"
-                  style={{ aspectRatio: '3 / 4' }}
+                  style={{ aspectRatio: '3 / 4', maxHeight: '100%' }}
                 >
                   <video
                     ref={(el) => {
@@ -330,7 +330,7 @@ export function VideoTestimonialsCarousel({
         </button>
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-2" role="tablist" aria-label={title}>
+      <div className="mt-4 flex items-center justify-center gap-2" role="tablist" aria-label={title}>
         {VIDEO_TESTIMONIALS.map((item, index) => (
           <button
             key={item.id}
@@ -353,17 +353,17 @@ export function VideoTestimonialsCarousel({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.28 }}
-          className="mx-auto mt-8 max-w-2xl px-4 text-center font-serif text-base italic leading-relaxed text-brand-ink/70 md:text-lg"
+          className="mx-auto mt-4 max-w-2xl px-4 text-center font-serif text-sm italic leading-relaxed text-brand-ink/70 md:mt-5 md:text-base"
         >
           {seoBlurb(current, lang)}
         </motion.p>
       </AnimatePresence>
 
-      <div className="mt-8 flex justify-center px-4">
+      <div className="mt-5 flex justify-center px-4 md:mt-6">
         <button
           type="button"
           onClick={onCta}
-          className="inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
+          className="inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 px-9 py-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
         >
           {ctaLabel}
         </button>
