@@ -46,7 +46,7 @@
     },
     {
       "path": "/api/admin/community/cron/insights-sync",
-      "schedule": "0 4 * * *"
+      "schedule": "30 4 * * *"
     },
     {
       "path": "/api/admin/blog/cron/generate-articles",

@@ -127,3 +127,68 @@ export async function recordHooks(entries: HookBankEntry[]): Promise<HooksBankSt
   await saveHooksBank(next);
   return next;
 }
+
+/**
+ * Réinjecte les scores Insights (saves/reach) dans la banque de hooks
+ * à partir de la table post_metrics — pour few-shot CM.
+ */
+export async function applyInsightScoresToHooksBank(): Promise<{
+  ok: boolean;
+  updated: number;
+  error?: string;
+}> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('post_metrics')
+      .select('hook, reach, saved, format, pilier, fetched_at')
+      .not('hook', 'is', null)
+      .order('fetched_at', { ascending: false })
+      .limit(80);
+    if (error) return { ok: false, updated: 0, error: error.message };
+
+    const bank = await loadHooksBank();
+    let updated = 0;
+    const byNorm = new Map(bank.entries.map((e) => [normalizeHookText(e.text), e]));
+
+    for (const row of data ?? []) {
+      const hook = String(row.hook ?? '').trim();
+      if (!hook) continue;
+      const reach = row.reach != null ? Number(row.reach) : null;
+      const saved = row.saved != null ? Number(row.saved) : null;
+      const score =
+        saved != null && reach != null && reach > 0
+          ? Math.round((saved / reach) * 10000) / 100
+          : saved;
+      if (score == null) continue;
+
+      const norm = normalizeHookText(hook);
+      const existing = byNorm.get(norm);
+      if (existing) {
+        if (existing.score == null || score > (existing.score ?? 0)) {
+          existing.score = score;
+          updated += 1;
+        }
+      } else {
+        const entry: HookBankEntry = {
+          text: hook.slice(0, 120),
+          pillarId: row.pilier ? String(row.pilier) : 'unknown',
+          format: row.format ? String(row.format) : 'feed',
+          locale: 'fr',
+          date: row.fetched_at ? String(row.fetched_at) : new Date().toISOString(),
+          score,
+        };
+        bank.entries.unshift(entry);
+        byNorm.set(norm, entry);
+        updated += 1;
+      }
+    }
+
+    if (updated > 0) {
+      await saveHooksBank({ version: 1, entries: bank.entries.slice(0, 200) });
+    }
+    return { ok: true, updated };
+  } catch (e) {
+    return { ok: false, updated: 0, error: e instanceof Error ? e.message : 'Erreur scores hooks' };
+  }
+}

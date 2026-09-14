@@ -13,6 +13,10 @@ import {
   acquisitionToggleWorkflow,
   acquisitionTestAction,
   acquisitionConciergeReply,
+  acquisitionRunFollowupsNow,
+  acquisitionEnsureMetaConnection,
+  acquisitionSyncInsightsAndHooks,
+  acquisitionCheckLiveReadiness,
 } from '@/app/admin/acquisition/actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
@@ -118,6 +122,10 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         onToggleWorkflow={acquisitionToggleWorkflow}
         onTestAction={acquisitionTestAction}
         onConciergeReply={acquisitionConciergeReply}
+        onRunFollowupsNow={acquisitionRunFollowupsNow}
+        onEnsureMetaConnection={acquisitionEnsureMetaConnection}
+        onSyncInsightsAndHooks={acquisitionSyncInsightsAndHooks}
+        onCheckLiveReadiness={acquisitionCheckLiveReadiness}
       />
     );
   }

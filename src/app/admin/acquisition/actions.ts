@@ -151,7 +151,7 @@ export async function acquisitionTestAction(conversationId: string, actionType: 
     tag_contact: { tag: 'test_sandbox' },
     set_lifecycle_stage: { stage: 'qualified' },
     book_session_intent: { courseType: 'visio_collectif' },
-    schedule_followup: { delayHours: 24 },
+    schedule_followup: { delayHours: 0 },
     broadcast_optin: { body: 'Test broadcast sandbox — essai 7 jours FitMangas.' },
     mini_poll: { question: 'Sur 1 à 5, te sens-tu accompagnée cette semaine ?' },
   };
@@ -236,4 +236,63 @@ export async function acquisitionAskConcierge(inboundText: string, market: 'fr' 
 export async function acquisitionGetSandboxLog() {
   guardModule();
   return getSandboxLog(30);
+}
+
+/** Exécute immédiatement les relances dues (même logique que le cron). */
+export async function acquisitionRunFollowupsNow() {
+  guardModule();
+  const { runDueFollowups } = await import('@/lib/acquisition/engine/repository');
+  const result = await runDueFollowups(40);
+  revalidateAcquisition();
+  return {
+    ok: true as const,
+    processed: result.processed,
+    succeeded: result.ok,
+    failed: result.failed,
+    details: result.details,
+  };
+}
+
+/** Prépare acquisition_meta_connection depuis le token CM si besoin. */
+export async function acquisitionEnsureMetaConnection() {
+  guardModule();
+  const { ensureAcquisitionMetaFromCm } = await import('@/lib/acquisition/providers/meta-live');
+  const r = await ensureAcquisitionMetaFromCm();
+  revalidateAcquisition();
+  return r;
+}
+
+/**
+ * Passe MESSAGING_MODE=live uniquement si checklist verte.
+ * Note : la variable Vercel doit aussi être mise à jour pour survivre au redeploy —
+ * cette action valide la checklist et retourne l’instruction ; le flag runtime
+ * est lu depuis process.env (set via Vercel/.env).
+ */
+export async function acquisitionCheckLiveReadiness() {
+  guardModule();
+  const { getMetaLiveReadiness, ensureAcquisitionMetaFromCm } = await import(
+    '@/lib/acquisition/providers/meta-live'
+  );
+  await ensureAcquisitionMetaFromCm();
+  const status = await getMetaLiveReadiness();
+  revalidateAcquisition();
+  return status;
+}
+
+/** Sync Insights CM + scores hooks (manuel depuis Acquisition). */
+export async function acquisitionSyncInsightsAndHooks() {
+  guardModule();
+  const { syncSocialPostInsights } = await import('@/lib/admin/social-insights-sync');
+  const { applyInsightScoresToHooksBank } = await import('@/lib/admin/social-hooks-bank');
+  const sync = await syncSocialPostInsights();
+  const scores = await applyInsightScoresToHooksBank();
+  revalidateAcquisition();
+  return {
+    ok: sync.ok,
+    synced: sync.synced,
+    skipped: sync.skipped,
+    error: sync.error,
+    hooksUpdated: scores.updated,
+    hooksError: scores.error,
+  };
 }

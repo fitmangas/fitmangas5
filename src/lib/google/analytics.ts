@@ -127,6 +127,30 @@ export async function getConversionRate(days: number): Promise<{ ratePercent: nu
   };
 }
 
+/** Compte un event nommé GA4 (ex. begin_trial_click) — 0 si absent / non mesuré. */
+export async function getNamedEventCount(eventName: string, days = 30): Promise<number> {
+  const client = createClient();
+  if (!client || !eventName.trim()) return 0;
+  const safeDays = Math.min(Math.max(days, 1), 90);
+  try {
+    const [res] = await client.runReport({
+      property: propertyName(),
+      dateRanges: [{ startDate: `${safeDays}daysAgo`, endDate: 'today' }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'eventName',
+          stringFilter: { matchType: 'EXACT', value: eventName.trim() },
+        },
+      },
+    });
+    return Number(res.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
 export type CountryBucket = { label: string; users: number };
 
 export async function getUsersByCountry(days: number): Promise<CountryBucket[]> {

@@ -44,16 +44,9 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
   if (!provider) {
     return { type: 'send_message', ok: false, detail: `Canal ${ctx.conversation.channel} sans provider messaging.` };
   }
-  const recipientId =
-    ctx.conversation.externalThreadId ||
-    ctx.contact?.externalIds?.meta_sender_id ||
-    ctx.contact?.externalIds?.whatsapp_wa_id ||
-    ctx.contact?.handle ||
-    ctx.conversation.contactHandle ||
-    'unknown';
   const send = await provider.sendMessage({
-    conversationExternalId: ctx.conversation.externalThreadId || ctx.conversation.id,
-    recipientId,
+    conversationExternalId: ctx.conversation.id,
+    recipientId: ctx.contact?.handle ?? ctx.conversation.contactHandle ?? 'unknown',
     body,
   });
   if (send.ok) {
@@ -295,7 +288,7 @@ async function actionEscalateHuman(ctx: ActionContext): Promise<ActionResult> {
     detail: mail.ok
       ? 'Fil assigné à Alejandra + email d’alerte envoyé.'
       : `Fil assigné à Alejandra (email alerte : ${mail.error ?? 'échec'}).`,
-    data: { assignedTo, emailSent: mail.ok },
+    data: { assignedTo, emailOk: mail.ok },
   };
 }
 

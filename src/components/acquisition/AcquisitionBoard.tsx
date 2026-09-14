@@ -27,6 +27,7 @@ import { acq } from './tokens';
 import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
 import { MetaLiveReadinessPanel } from './MetaLiveReadinessPanel';
+import { AcquisitionOpsPanel } from './AcquisitionOpsPanel';
 import { WorkflowManager } from './WorkflowManager';
 
 type TabId = 'overview' | 'conversations' | 'workflows';
@@ -72,6 +73,22 @@ type Props = {
     messagesSent?: boolean;
     actions?: Array<{ ok: boolean; type?: string; detail: string }>;
   }>;
+  onRunFollowupsNow?: () => Promise<{
+    ok: boolean;
+    processed?: number;
+    succeeded?: number;
+    failed?: number;
+    details?: string[];
+  }>;
+  onEnsureMetaConnection?: () => Promise<{ ok: boolean; created?: boolean; error?: string }>;
+  onSyncInsightsAndHooks?: () => Promise<{
+    ok: boolean;
+    synced?: number;
+    skipped?: number;
+    error?: string;
+    hooksUpdated?: number;
+  }>;
+  onCheckLiveReadiness?: () => Promise<{ readyForLive: boolean; blockers: string[] }>;
   /** Intégré dans /admin/croissance — masque en-tête et barre d’onglets internes. */
   embedded?: boolean;
   forcedTab?: TabId;
@@ -97,6 +114,10 @@ export function AcquisitionBoard({
   onToggleWorkflow,
   onTestAction,
   onConciergeReply,
+  onRunFollowupsNow,
+  onEnsureMetaConnection,
+  onSyncInsightsAndHooks,
+  onCheckLiveReadiness,
   embedded = false,
   forcedTab = 'overview',
   routeBase = '/admin/acquisition',
@@ -328,6 +349,65 @@ export function AcquisitionBoard({
                 ))}
               </ChipRow>
             </div>
+            <AcquisitionOpsPanel
+              messagingMode={overview.messagingMode}
+              schemaReady={schemaReady}
+              conversationCount={conversations.length}
+              upcomingFollowups={overview.upcomingFollowups?.length ?? 0}
+              metaLive={overview.metaLiveReadiness}
+              pending={pending}
+              onSeedDemo={handleSeedDemo}
+              onRunFollowups={() =>
+                startTransition(async () => {
+                  if (!onRunFollowupsNow) return;
+                  const r = await onRunFollowupsNow();
+                  setStatus(
+                    r.ok
+                      ? `Relances : ${r.processed ?? 0} traitée(s), ${r.succeeded ?? 0} OK, ${r.failed ?? 0} échec(s).`
+                      : 'Échec exécution relances.',
+                  );
+                  router.refresh();
+                })
+              }
+              onEnsureMeta={() =>
+                startTransition(async () => {
+                  if (!onEnsureMetaConnection) return;
+                  const r = await onEnsureMetaConnection();
+                  setStatus(
+                    r.ok
+                      ? r.created
+                        ? 'Token messaging préparé depuis Meta CM.'
+                        : 'Connexion messaging déjà en place.'
+                      : (r.error ?? 'Préparation Meta impossible.'),
+                  );
+                  router.refresh();
+                })
+              }
+              onSyncInsights={() =>
+                startTransition(async () => {
+                  if (!onSyncInsightsAndHooks) return;
+                  const r = await onSyncInsightsAndHooks();
+                  setStatus(
+                    r.ok
+                      ? `Insights : ${r.synced ?? 0} sync, hooks mis à jour : ${r.hooksUpdated ?? 0}.`
+                      : (r.error ?? 'Sync Insights impossible (active SOCIAL_INSIGHTS_SYNC_ENABLED).'),
+                  );
+                  router.refresh();
+                })
+              }
+              onCheckLive={() =>
+                startTransition(async () => {
+                  if (!onCheckLiveReadiness) return;
+                  const r = await onCheckLiveReadiness();
+                  setStatus(
+                    r.readyForLive
+                      ? 'Checklist LIVE verte — tu peux passer MESSAGING_MODE=live sur Vercel.'
+                      : `LIVE bloqué : ${r.blockers.join(' · ') || 'voir panneau'}`,
+                  );
+                  router.refresh();
+                })
+              }
+            />
             <FunnelChart
               title="Parcours site"
               subtitle="GA4 / Search Console / Stripe — trafic et conversions produit"

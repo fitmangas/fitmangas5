@@ -233,7 +233,7 @@ export async function sendWhatsAppLiveMessage(params: {
   });
 }
 
-/** Template WhatsApp approuvé — hors fenêtre 24h. */
+/** Template WhatsApp Cloud API — hors fenêtre 24h. */
 export async function sendWhatsAppLiveTemplate(params: {
   recipientId: string;
   templateName: string;
@@ -245,18 +245,17 @@ export async function sendWhatsAppLiveTemplate(params: {
   if (!conn.accessToken || !phoneNumberId) {
     return {
       ok: false,
-      error: 'WhatsApp LIVE template : WABA phone_number_id absent dans acquisition_meta_connection.',
+      error: 'WhatsApp LIVE : WABA phone_number_id absent dans acquisition_meta_connection.',
     };
   }
 
-  const language = params.languageCode?.trim() || 'fr';
-  const bodyParams = Object.values(params.variables ?? {}).map((text) => ({ type: 'text', text }));
+  const bodyVars = Object.values(params.variables ?? {});
   const components =
-    bodyParams.length > 0
+    bodyVars.length > 0
       ? [
           {
             type: 'body',
-            parameters: bodyParams,
+            parameters: bodyVars.map((text) => ({ type: 'text', text })),
           },
         ]
       : undefined;
@@ -267,8 +266,48 @@ export async function sendWhatsAppLiveTemplate(params: {
     type: 'template',
     template: {
       name: params.templateName,
-      language: { code: language },
+      language: { code: params.languageCode ?? 'fr' },
       ...(components ? { components } : {}),
     },
   });
+}
+
+/** Copie le token CM vers acquisition_meta_connection si dédié absent (démarrage messaging). */
+export async function ensureAcquisitionMetaFromCm(): Promise<{
+  ok: boolean;
+  created: boolean;
+  error?: string;
+}> {
+  if (await hasDedicatedAcquisitionConnection()) {
+    return { ok: true, created: false };
+  }
+  const cm = await getMetaSocialConnection();
+  if (!cm.connected || !cm.accessToken || !cm.pageId) {
+    return { ok: false, created: false, error: 'Meta CM non connecté — impossible de créer acquisition_meta_connection.' };
+  }
+  if (cm.pageId && cm.igUserId && cm.pageId === cm.igUserId) {
+    return {
+      ok: false,
+      created: false,
+      error: 'Page ID = IG User ID côté CM — corriger avant de brancher le messaging.',
+    };
+  }
+  try {
+    const admin = createAdminClient();
+    const payload: AcquisitionMetaConnection = {
+      ...cm,
+      messagingScopesVerified: false,
+      whatsappPhoneNumberId: null,
+      connected: true,
+      updatedAt: new Date().toISOString(),
+    };
+    const { error } = await admin.from('admin_settings').upsert(
+      { key: ACQUISITION_META_SETTING_KEY, value: JSON.stringify(payload) },
+      { onConflict: 'key' },
+    );
+    if (error) return { ok: false, created: false, error: error.message };
+    return { ok: true, created: true };
+  } catch (e) {
+    return { ok: false, created: false, error: e instanceof Error ? e.message : 'Erreur écriture settings' };
+  }
 }
