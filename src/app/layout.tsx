@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { CookieConsentBanner } from '@/components/Marketing/CookieConsentBanner';
 import { PublicMarketingScripts } from '@/components/Marketing/PublicMarketingScripts';
 import { FloatingWhatsApp } from '@/components/Support/FloatingWhatsApp';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
@@ -10,10 +11,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: 'FitMangas — Cours de Pilates & Barre en visio avec Alejandra',
+    default: 'FitMangas — Pilates & Barre en visio : rendez-vous fixe avec Alejandra',
     template: '%s | FitMangas',
   },
-  description: 'Cours de Pilates et Barre en visio avec Alejandra : live, replay, progression et coaching premium.',
+  description:
+    'Pilates & Barre en visio : un rendez-vous fixe, la correction en direct et le fait d’être vue. Essai gratuit 7 jours avec Alejandra.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -69,6 +71,7 @@ export default async function RootLayout({
           {children}
           <FloatingWhatsApp />
         </div>
+        <CookieConsentBanner />
         <PublicMarketingScripts gaId={gaId} metaPixelId={metaPixelId ?? null} />
       </body>
     </html>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, 
@@ -78,6 +79,8 @@ export function LandingPage({
   const [count, setCount] = useState(2496);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   function openTrialSignup(course: Course | null | undefined, source: string) {
     if (!course) return;
@@ -106,13 +109,15 @@ export function LandingPage({
           bookingRequired: 'Réservation requise',
           testimonialsLabel: 'Témoignages élèves · Pilates & Barre en visio',
           reviews: 'Elles ne s’entraînent plus seules',
-          positiveReviews: '8 adhérentes racontent leur cours FitMangas en vrai',
+          positiveReviews: 'Les adhérentes racontent leur cours FitMangas en vrai',
+          trialCta: 'Essai gratuit 7 jours',
           blogLabel: 'Le Blog',
           blogTitle: 'Inspiration Pilates & bien-être',
           blogCta: 'S’inscrire pour accéder au blog',
           blogArticleCta: 'Réservé aux membres — S’inscrire',
           privacy: 'Confidentialité',
           terms: 'Conditions',
+          legal: 'Mentions légales',
           proofGiven: 'Cours donnés',
           proofPeople: 'Personnes / semaine',
           proofTooltip: 'Cours collectifs et individuels confondus.',
@@ -146,13 +151,15 @@ export function LandingPage({
           bookingRequired: 'Reserva requerida',
           testimonialsLabel: 'Testimonios de alumnas · Pilates y Barre online',
           reviews: 'Ya no entrenan solas',
-          positiveReviews: '8 alumnas cuentan su clase FitMangas de verdad',
+          positiveReviews: 'Las alumnas cuentan su clase FitMangas de verdad',
+          trialCta: 'Prueba gratis 7 días',
           blogLabel: 'El Blog',
           blogTitle: 'Inspiración Pilates y bienestar',
           blogCta: 'Inscribirse para acceder al blog',
           blogArticleCta: 'Reservado a miembros — Inscribirse',
           privacy: 'Privacidad',
           terms: 'Condiciones',
+          legal: 'Aviso legal',
           proofGiven: 'Clases dadas',
           proofPeople: 'Personas / semana',
           proofTooltip: 'Clases grupales e individuales combinadas.',
@@ -224,6 +231,13 @@ export function LandingPage({
 
   const toggleLang = (newLang: Language) => {
     setLang(newLang);
+    if (newLang === 'ES' && pathname === '/') {
+      router.push('/es');
+      return;
+    }
+    if (newLang === 'FR' && pathname === '/es') {
+      router.push('/');
+    }
   };
 
   const getWaLink = (msg: string) => {
@@ -790,6 +804,16 @@ export function LandingPage({
             ))}
           </div>
         </div>
+        </section>
+
+        <VideoTestimonialsCarousel
+          lang={lang}
+          label={l.testimonialsLabel}
+          title={l.reviews}
+          positiveReviews={l.positiveReviews}
+          ctaLabel={l.trialCta}
+          onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
+        />
 
         {/* WhatsApp Help Card */}
         <motion.a
@@ -810,7 +834,6 @@ export function LandingPage({
             <ArrowRight size={14} />
           </div>
         </motion.a>
-        </section>
 
         {/* Pilates styles inspiration section */}
         <section className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10">
@@ -859,13 +882,6 @@ export function LandingPage({
             </button>
           </div>
         </section>
-
-        <VideoTestimonialsCarousel
-          lang={lang}
-          label={l.testimonialsLabel}
-          title={l.reviews}
-          positiveReviews={l.positiveReviews}
-        />
 
         {visibleBlogPreviews.length > 0 ? (
           <section className="py-16 md:py-24">
@@ -971,7 +987,8 @@ export function LandingPage({
           <p className="mb-4 text-[10px] tracking-[0.12em] text-brand-ink/30">
             FitMangas — Mangas Alejandra EI
           </p>
-          <div className="flex justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
+          <div className="flex flex-wrap justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
+            <Link href="/mentions-legales" className="hover:text-brand-ink transition-colors">{l.legal}</Link>
             <Link href="/privacy" className="hover:text-brand-ink transition-colors">{l.privacy}</Link>
             <Link href="/terms" className="hover:text-brand-ink transition-colors">{l.terms}</Link>
           </div>

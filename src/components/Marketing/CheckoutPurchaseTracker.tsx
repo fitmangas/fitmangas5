@@ -1,9 +1,14 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { trackPurchase, trackTrialStarted } from '@/lib/analytics/ga4-client';
+import {
+  COOKIE_CONSENT_EVENT,
+  hasAnalyticsConsent,
+  type CookieConsentValue,
+} from '@/lib/cookies/consent';
 
 type Props = {
   gaId: string | null;
@@ -34,8 +39,21 @@ export function CheckoutPurchaseTracker({
   value,
 }: Props) {
   const fired = useRef(false);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    const sync = () => setAllowed(hasAnalyticsConsent());
+    sync();
+    const onConsent = (event: Event) => {
+      const detail = (event as CustomEvent<CookieConsentValue>).detail;
+      setAllowed(detail === 'accepted');
+    };
+    window.addEventListener(COOKIE_CONSENT_EVENT, onConsent);
+    return () => window.removeEventListener(COOKIE_CONSENT_EVENT, onConsent);
+  }, []);
+
+  useEffect(() => {
+    if (!allowed) return;
     if (fired.current) return;
     const transactionId = sessionId?.trim() || `${courseId ?? 'checkout'}:${isTrial ? 'trial' : value}:${currency}`;
 
@@ -77,9 +95,9 @@ export function CheckoutPurchaseTracker({
 
     const t = window.setTimeout(fire, 500);
     return () => window.clearTimeout(t);
-  }, [gaId, metaPixelId, sessionId, courseId, currency, isTrial, value]);
+  }, [allowed, gaId, metaPixelId, sessionId, courseId, currency, isTrial, value]);
 
-  if (!gaId && !metaPixelId) return null;
+  if (!allowed || (!gaId && !metaPixelId)) return null;
 
   return (
     <>

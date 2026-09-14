@@ -2,16 +2,16 @@ import Link from 'next/link';
 
 export const metadata = {
   title: 'Politique de confidentialité — FitMangas',
-  description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+  description: 'Politique de confidentialité FitMangas : données personnelles, cookies et droits RGPD.',
   openGraph: {
     title: 'Politique de confidentialité — FitMangas',
-    description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+    description: 'Politique de confidentialité FitMangas : données personnelles, cookies et droits RGPD.',
     images: ['/og-default.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Politique de confidentialité — FitMangas',
-    description: 'Politique de confidentialité FitMangas et informations sur les données personnelles.',
+    description: 'Politique de confidentialité FitMangas : données personnelles, cookies et droits RGPD.',
     images: ['/og-default.jpg'],
   },
 };
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         Retour accueil
       </Link>
       <h1 className="mt-8 text-4xl font-serif italic">Politique de confidentialité</h1>
-      <p className="mt-4 text-sm text-luxury-muted">Dernière mise à jour : 13 mai 2026</p>
+      <p className="mt-4 text-sm text-luxury-muted">Dernière mise à jour : 14 septembre 2026</p>
 
       <section className="mt-8 space-y-4 text-sm leading-7 text-luxury-muted">
         <p>
@@ -44,9 +44,28 @@ export default function PrivacyPage() {
           applicables. Vous pouvez demander l’accès, la rectification, l’effacement ou la limitation de vos données en écrivant
           à info@casamangas.fr.
         </p>
+
+        <h2 className="pt-2 text-base font-semibold text-luxury-ink">Cookies</h2>
         <p>
-          Des cookies strictement nécessaires peuvent être utilisés pour l’authentification, la sécurité et la mesure technique
-          du fonctionnement du service. Les données ne sont pas revendues.
+          Des cookies strictement nécessaires peuvent être utilisés pour l’authentification, la sécurité et le fonctionnement
+          technique du service (par exemple session de connexion ou code de parrainage).
+        </p>
+        <p>
+          Avec ton accord explicite (bandeau cookies), nous pouvons aussi déposer des cookies / traceurs de mesure d’audience
+          et marketing : Google Analytics 4 et le pixel Meta. Tu peux refuser ces cookies : le site reste utilisable. Tu peux
+          changer d’avis en effaçant les données du site dans ton navigateur, ce qui réaffichera le bandeau.
+        </p>
+        <p>Les données ne sont pas revendues.</p>
+        <p>
+          Voir aussi les{' '}
+          <Link href="/mentions-legales" className="underline underline-offset-2">
+            mentions légales
+          </Link>{' '}
+          et les{' '}
+          <Link href="/terms" className="underline underline-offset-2">
+            conditions générales
+          </Link>
+          .
         </p>
       </section>
     </main>

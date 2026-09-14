@@ -15,6 +15,8 @@ type Props = {
   label: string;
   title: string;
   positiveReviews: string;
+  ctaLabel: string;
+  onCta: () => void;
 };
 
 function profession(t: VideoTestimonial, lang: Language) {
@@ -41,7 +43,14 @@ async function tryPlay(video: HTMLVideoElement) {
   }
 }
 
-export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews }: Props) {
+export function VideoTestimonialsCarousel({
+  lang,
+  label,
+  title,
+  positiveReviews,
+  ctaLabel,
+  onCta,
+}: Props) {
   const total = VIDEO_TESTIMONIALS.length;
   const [active, setActive] = useState(() => featuredTestimonialIndex(lang));
   const [muted, setMuted] = useState(true);
@@ -349,6 +358,16 @@ export function VideoTestimonialsCarousel({ lang, label, title, positiveReviews 
           {seoBlurb(current, lang)}
         </motion.p>
       </AnimatePresence>
+
+      <div className="mt-8 flex justify-center px-4">
+        <button
+          type="button"
+          onClick={onCta}
+          className="inline-flex items-center justify-center rounded-full border-2 border-[#F8C890] bg-white/80 px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em] text-brand-ink shadow-[0_8px_20px_rgba(248,200,144,0.14)] transition hover:bg-[#F8C890]/88 hover:text-white hover:shadow-[0_12px_26px_rgba(248,200,144,0.28)]"
+        >
+          {ctaLabel}
+        </button>
+      </div>
 
       <ul className="sr-only">
         {VIDEO_TESTIMONIALS.map((item) => (

@@ -1,14 +1,28 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
+import {
+  COOKIE_CONSENT_EVENT,
+  hasAnalyticsConsent,
+  type CookieConsentValue,
+} from '@/lib/cookies/consent';
 
 function isPublicMarketingPath(pathname: string): boolean {
-  if (pathname === '/') return true;
-  if (pathname === '/privacy' || pathname === '/terms' || pathname === '/connexion') return true;
+  if (pathname === '/' || pathname === '/es') return true;
+  if (pathname === '/privacy' || pathname === '/terms' || pathname === '/mentions-legales' || pathname === '/connexion') {
+    return true;
+  }
   if (pathname.startsWith('/blog')) return true;
-  // Espace compte / checkout abandonné : tunnel conversion (begin_checkout, trial_started).
   if (pathname.startsWith('/compte') || pathname.startsWith('/checkout')) return true;
+  if (
+    pathname === '/pilates-en-ligne' ||
+    pathname === '/pilates-debutant-maison' ||
+    pathname === '/cours-pilates-visio'
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -19,7 +33,20 @@ type Props = {
 
 export function PublicMarketingScripts({ gaId, metaPixelId }: Props) {
   const pathname = usePathname();
-  if (!isPublicMarketingPath(pathname)) return null;
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setAllowed(hasAnalyticsConsent());
+    sync();
+    const onConsent = (event: Event) => {
+      const detail = (event as CustomEvent<CookieConsentValue>).detail;
+      setAllowed(detail === 'accepted');
+    };
+    window.addEventListener(COOKIE_CONSENT_EVENT, onConsent);
+    return () => window.removeEventListener(COOKIE_CONSENT_EVENT, onConsent);
+  }, []);
+
+  if (!isPublicMarketingPath(pathname) || !allowed) return null;
 
   return (
     <>
@@ -31,7 +58,7 @@ export function PublicMarketingScripts({ gaId, metaPixelId }: Props) {
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${gaId}');
+              gtag('config', '${gaId}', { anonymize_ip: true });
             `}
           </Script>
         </>

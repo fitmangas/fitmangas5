@@ -32,6 +32,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${APP_URL}/es`,
+      lastModified: HOME_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 1,
+    },
+    {
       url: `${APP_URL}/blog`,
       lastModified: HOME_LAST_MODIFIED,
       changeFrequency: 'weekly',
@@ -48,6 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: HOME_LAST_MODIFIED,
       changeFrequency: 'weekly',
       priority: 0.8,
+    },
+    {
+      url: `${APP_URL}/mentions-legales`,
+      lastModified: LEGAL_LAST_MODIFIED,
+      changeFrequency: 'monthly',
+      priority: 0.65,
     },
     {
       url: `${APP_URL}/privacy`,

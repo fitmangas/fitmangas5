@@ -1,6 +1,7 @@
 'use client';
 
 import { GA4_EVENTS, type Ga4EventName, type Ga4EventParams } from '@/lib/analytics/ga4-events';
+import { hasAnalyticsConsent } from '@/lib/cookies/consent';
 
 const DEDUPE_PREFIX = 'fm_ga4_evt:';
 
@@ -46,6 +47,7 @@ export function trackGa4Event(
   }
 
   if (typeof window === 'undefined') return false;
+  if (!hasAnalyticsConsent()) return false;
   if (typeof window.gtag !== 'function') {
     console.warn('[ga4] gtag absent — événement non envoyé', event, params);
     return false;
