@@ -15,6 +15,14 @@ import type {
 type DbError = { ok: false; error: string; schemaReady: boolean };
 
 function mapContact(row: Record<string, unknown>): AcqContact {
+  const external =
+    row.external_ids && typeof row.external_ids === 'object' && !Array.isArray(row.external_ids)
+      ? Object.fromEntries(
+          Object.entries(row.external_ids as Record<string, unknown>)
+            .filter(([, v]) => v != null)
+            .map(([k, v]) => [k, String(v)]),
+        )
+      : null;
   return {
     id: String(row.id),
     channel: row.channel as AcquisitionChannel,
@@ -25,6 +33,7 @@ function mapContact(row: Record<string, unknown>): AcqContact {
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     sourceAttribution: row.source_attribution ? String(row.source_attribution) : null,
     createdAt: String(row.created_at),
+    externalIds: external && Object.keys(external).length ? external : null,
   };
 }
 
@@ -40,6 +49,7 @@ function mapConversation(row: Record<string, unknown>): AcqConversation {
     lastMessagePreview: row.last_message_preview ? String(row.last_message_preview) : null,
     assignedTo: row.assigned_to ? String(row.assigned_to) : null,
     contactHandle: row.contact_handle ? String(row.contact_handle) : undefined,
+    externalThreadId: row.external_thread_id ? String(row.external_thread_id) : null,
   };
 }
 

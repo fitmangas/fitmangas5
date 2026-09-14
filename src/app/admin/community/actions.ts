@@ -1527,6 +1527,15 @@ export async function markSocialPostManualSentAction(postId: string) {
   return { ok: true as const };
 }
 
+/** Sync IG Insights → post_metrics + scores banque hooks (few-shot CM). */
+export async function syncSocialInsightsNowAction() {
+  await requireAdmin();
+  const { syncSocialPostInsights } = await import('@/lib/admin/social-insights-sync');
+  const result = await syncSocialPostInsights();
+  revalidateCommunity();
+  return result;
+}
+
 export async function saveMetaConnectionManualAction(input: {
   pageId: string;
   pageName?: string;

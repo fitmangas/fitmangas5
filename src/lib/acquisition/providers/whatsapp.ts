@@ -62,11 +62,26 @@ export const whatsappProvider: MessagingProvider = {
     if (isMessagingSandbox()) {
       return sandboxResult('sendTemplate', `${input.templateName} → ${input.recipientId}`);
     }
+    const { sendWhatsAppLiveTemplate } = await import('./meta-live');
+    const live = await sendWhatsAppLiveTemplate({
+      recipientId: input.recipientId,
+      templateName: input.templateName,
+      languageCode: typeof input.variables?.language === 'string' ? input.variables.language : 'fr',
+      variables: input.variables,
+    });
+    if (!live.ok) {
+      return {
+        ok: false,
+        provider: PROVIDER,
+        sandbox: false,
+        error: live.error ?? 'Échec template WhatsApp LIVE.',
+      };
+    }
     return {
-      ok: false,
+      ok: true,
       provider: PROVIDER,
       sandbox: false,
-      error: 'WhatsApp LIVE : templates approuvés requis hors fenêtre 24h.',
+      messageId: live.messageId ?? `wa_tpl_${Date.now()}`,
     };
   },
 

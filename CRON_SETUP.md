@@ -39,6 +39,7 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 - `daily-jobs` — 5h UTC : onboarding, win-back, digest, filet rappels cours + filet posts IG dus
 - `community/publish-scheduled` — **plusieurs créneaux/jour** (UTC) alignés sur les posts IG Paris 07h/08h/11h/12h/17h/18h/19h : filet Vercel Hobby (1×/jour max par expression)
 - `acquisition/run-followups` — toutes les **15 min** : exécute les relances `acq_followups` dues (sandbox ou live selon `MESSAGING_MODE`)
+- `community/insights-sync` — **4h UTC** : Insights IG → `post_metrics` + scores banque hooks
 - `prepare-monthly-validation` — 1er du mois 7h UTC
 
 Ne pas ajouter `course-reminders` dans `vercel.json` si vous utilisez cron-job.org (évite les doubles appels inutiles, l’idempotence reste garantie).

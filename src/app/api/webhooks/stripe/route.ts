@@ -21,7 +21,7 @@ import {
   dispatchSubscriptionRenewed,
   markStripeEventProcessed,
 } from '@/lib/notifications/phase2';
-import { trackSubscriptionActiveServer } from '@/lib/analytics/ga4-mp';
+import { trackPurchaseServer, trackSubscriptionActiveServer, trackTrialStartedServer } from '@/lib/analytics/ga4-mp';
 
 const stripeApiVersion = '2025-02-24.acacia';
 
@@ -256,6 +256,26 @@ export async function POST(request: Request) {
             await attachReferralForNewUser(admin, normalizeReferralCode(refFromMeta), userId, authUser.user?.email);
           }
           await markReferralsSubscribedForUser(admin, userId, courseId, stripe);
+
+          // GA4 Measurement Protocol (fiable même si adblock côté navigateur)
+          if (subscription.status === 'trialing') {
+            void trackTrialStartedServer({
+              stripeEventId: event.id,
+              userId,
+              courseId,
+              sessionId: session.id,
+            }).catch((e) => console.error('[stripe webhook] ga4 trial_started', e));
+          } else if (subscription.status === 'active') {
+            const amountTotal = session.amount_total ?? 0;
+            void trackPurchaseServer({
+              stripeEventId: event.id,
+              userId,
+              courseId,
+              sessionId: session.id,
+              valueEur: amountTotal / 100,
+              currency: session.currency,
+            }).catch((e) => console.error('[stripe webhook] ga4 purchase', e));
+          }
         } else if (session.mode === 'payment') {
           const concreteCourseId = session.metadata?.concrete_course_id ?? (await findNextPresentialCourse(admin, courseId));
           const profilePatch = buildProfileSubscriptionUpdate({

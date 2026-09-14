@@ -232,3 +232,43 @@ export async function sendWhatsAppLiveMessage(params: {
     text: { body: params.body },
   });
 }
+
+/** Template WhatsApp approuvé — hors fenêtre 24h. */
+export async function sendWhatsAppLiveTemplate(params: {
+  recipientId: string;
+  templateName: string;
+  languageCode?: string;
+  variables?: Record<string, string>;
+}): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  const conn = await getAcquisitionMetaConnection();
+  const phoneNumberId = conn.whatsappPhoneNumberId?.trim();
+  if (!conn.accessToken || !phoneNumberId) {
+    return {
+      ok: false,
+      error: 'WhatsApp LIVE template : WABA phone_number_id absent dans acquisition_meta_connection.',
+    };
+  }
+
+  const language = params.languageCode?.trim() || 'fr';
+  const bodyParams = Object.values(params.variables ?? {}).map((text) => ({ type: 'text', text }));
+  const components =
+    bodyParams.length > 0
+      ? [
+          {
+            type: 'body',
+            parameters: bodyParams,
+          },
+        ]
+      : undefined;
+
+  return graphPost(`/${phoneNumberId}/messages`, conn.accessToken, {
+    messaging_product: 'whatsapp',
+    to: params.recipientId.replace(/\D/g, ''),
+    type: 'template',
+    template: {
+      name: params.templateName,
+      language: { code: language },
+      ...(components ? { components } : {}),
+    },
+  });
+}

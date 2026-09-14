@@ -36,7 +36,7 @@ export async function getPerformanceLoopStatus(): Promise<PerformanceLoopStatus>
     metaInsightsNote =
       hooksWithMetaMetrics > 0
         ? `${hooksWithMetaMetrics} post(s) avec métriques IG — sync CM active.`
-        : 'Meta connecté — lance « Sync Insights » dans Publications pour remplir post_metrics.';
+        : 'Meta connecté — utilise « Sync Insights » (Canaux → régler) ou attends le cron 4h UTC.';
   } else if (!meta.connected) {
     metaInsightsNote = 'Connecte Instagram dans Publications (Meta OAuth) pour activer la sync Insights.';
   }

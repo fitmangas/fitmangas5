@@ -156,6 +156,32 @@ export async function syncSocialPostInsights(): Promise<{
     // table absente = OK (proposition de migration non appliquée)
   }
 
+  // Réinjecte les scores saves/reach dans la banque de hooks (few-shot CM)
+  try {
+    const { loadHooksBank, saveHooksBank, normalizeHookText } = await import('@/lib/admin/social-hooks-bank');
+    const bank = await loadHooksBank();
+    let updated = 0;
+    for (const snap of snapshots) {
+      const hookText = snap.hook?.trim();
+      if (!hookText) continue;
+      const norm = normalizeHookText(hookText);
+      const score =
+        snap.saved != null && snap.reach != null && snap.reach > 0
+          ? Math.round((snap.saved / snap.reach) * 10000) / 100
+          : snap.saved ?? null;
+      if (score == null) continue;
+      for (const entry of bank.entries) {
+        if (normalizeHookText(entry.text) === norm || normalizeHookText(entry.text).includes(norm.slice(0, 40))) {
+          entry.score = Math.max(entry.score ?? 0, score);
+          updated += 1;
+        }
+      }
+    }
+    if (updated > 0) await saveHooksBank(bank);
+  } catch (e) {
+    console.warn('[insights] hooks bank score update', e);
+  }
+
   return { ok: true, synced, skipped, snapshots };
 }
 

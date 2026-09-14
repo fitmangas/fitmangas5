@@ -48,6 +48,7 @@ import {
   saveAlejandraDoubleAction,
   saveMetaConnectionManualAction,
   scheduleSocialPostAction,
+  syncSocialInsightsNowAction,
   requeueFailedWeekPlanAction,
   toggleLinkedInAdaptationAction,
   trainAlejandraPhotaAction,
@@ -836,6 +837,23 @@ export function CommunityManagerBoard({
                     Déconnecter
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="btn-luxury-ghost px-3 py-2 text-[10px]"
+                  onClick={() =>
+                    run(async () => {
+                      const r = await syncSocialInsightsNowAction();
+                      if (!r.ok) return { ok: false, error: r.error || 'Sync Insights échouée.' };
+                      return {
+                        ok: true,
+                        message: `Insights OK — ${r.synced} post(s), ${r.skipped} ignoré(s).`,
+                      };
+                    }, 'Insights IG synchronisés.')
+                  }
+                >
+                  Sync Insights
+                </button>
               </div>
               {!metaLiveAck ? (
                 <p className="text-[10px] text-[#92400e]">
