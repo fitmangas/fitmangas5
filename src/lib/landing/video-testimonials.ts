@@ -14,7 +14,12 @@ export type VideoTestimonial = {
   seoBlurbEs: string;
 };
 
-/** Elena en tête (mise en avant FR). Maria / Teresa = seuls drapeaux ES. */
+/**
+ * Elena en tête (mise en avant FR), Maria en fin (mise en avant ES).
+ * Teresa est au milieu volontairement : audio fragile → jamais dans les 3 cartes
+ * visibles au chargement (voisins circulaires d’Elena / Maria).
+ * Maria / Teresa = seuls drapeaux ES.
+ */
 export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
   {
     id: 'elena',
@@ -73,6 +78,20 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
       'Olivia, logopeda, describe su experiencia con las clases de Pilates y Barre FitMangas: constancia, presencia y corrección.',
   },
   {
+    id: 'teresa',
+    name: 'Teresa',
+    flag: '🇪🇸',
+    countryCode: 'ES',
+    professionFr: 'Assistante administrative',
+    professionEs: 'Asistente administrativa',
+    videoSrc: '/testimonials/teresa.mp4',
+    posterSrc: '/testimonials/teresa.jpg',
+    seoBlurbFr:
+      'Teresa, assistante administrative, parle de son expérience FitMangas et de l’importance de se sentir vue pendant le cours.',
+    seoBlurbEs:
+      'Teresa, asistente administrativa, habla de su experiencia FitMangas y de la importancia de sentirse vista durante la clase.',
+  },
+  {
     id: 'jose-luis',
     name: 'José Luis',
     flag: '🇫🇷',
@@ -113,20 +132,6 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
       'Maria, professionnelle du marketing du sport, partage son ressenti sur les cours collectifs en visio avec Alejandra et la communauté FitMangas.',
     seoBlurbEs:
       'Maria, profesional de marketing deportivo, comparte su experiencia en las clases grupales online con Alejandra y la comunidad FitMangas.',
-  },
-  {
-    id: 'teresa',
-    name: 'Teresa',
-    flag: '🇪🇸',
-    countryCode: 'ES',
-    professionFr: 'Assistante administrative',
-    professionEs: 'Asistente administrativa',
-    videoSrc: '/testimonials/teresa.mp4',
-    posterSrc: '/testimonials/teresa.jpg',
-    seoBlurbFr:
-      'Teresa, assistante administrative, parle de son expérience FitMangas et de l’importance de se sentir vue pendant le cours.',
-    seoBlurbEs:
-      'Teresa, asistente administrativa, habla de su experiencia FitMangas y de la importancia de sentirse vista durante la clase.',
   },
 ];
 
