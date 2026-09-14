@@ -37,7 +37,7 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 ### Autres crons Vercel (inchangés)
 
 - `daily-jobs` — 5h UTC : onboarding, win-back, digest, filet rappels cours + filet posts IG dus
-- `community/publish-scheduled` — 5h45 UTC : publie les posts Instagram `scheduled` dont l’heure est passée (filet)
+- `community/publish-scheduled` — **plusieurs créneaux/jour** (UTC) alignés sur les posts IG Paris 07h/08h/11h/12h/17h/18h/19h : filet Vercel Hobby (1×/jour max par expression)
 - `prepare-monthly-validation` — 1er du mois 7h UTC
 
 Ne pas ajouter `course-reminders` dans `vercel.json` si vous utilisez cron-job.org (évite les doubles appels inutiles, l’idempotence reste garantie).
@@ -46,7 +46,9 @@ Ne pas ajouter `course-reminders` dans `vercel.json` si vous utilisez cron-job.o
 
 Facebook utilise la programmation native Meta. Instagram passe par la file FitMangas + cron.
 
-Pour une précision ~15 min (recommandé), ajouter sur cron-job.org :
+**Cause historique des non-publications à l’heure :** un seul cron à 05h45 UTC ne peut pas publier un Reel prévu à 12h Paris. Corrigé via plusieurs jobs quotidiens dans `vercel.json`.
+
+Pour une précision ~15 min (recommandé en plus du filet Vercel), ajouter sur cron-job.org :
 
 - **URL** : `https://fitmangas.com/api/admin/community/cron/publish-scheduled`
 - **Schedule** : toutes les **15 minutes**
