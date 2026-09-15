@@ -1,3 +1,4 @@
+import { detectAcquisitionMarket, workflowKeywordPriority } from '@/lib/acquisition/market';
 import type { AcqContact, AcqWorkflow } from '@/lib/acquisition/types';
 
 import { runWorkflowAction, type ActionContext } from './actions';
@@ -23,7 +24,9 @@ export function workflowMatchesInbound(
   if (
     workflow.triggerType === 'ig_comment_keyword' ||
     workflow.triggerType === 'ig_dm_inbound' ||
-    workflow.triggerType === 'ig_story_reply'
+    workflow.triggerType === 'ig_story_reply' ||
+    workflow.triggerType === 'messenger_inbound' ||
+    workflow.triggerType === 'whatsapp_inbound'
   ) {
     const kw = workflow.triggerConfig.keyword;
     if (typeof kw === 'string' && kw.trim()) {
@@ -95,6 +98,16 @@ export async function runInboundTrigger(params: {
     workflows = wfRes.ok ? wfRes.items : [];
   }
 
+  const market = params.market ?? detectAcquisitionMarket(params.inboundText);
+  const isOptOutKw = (w: AcqWorkflow) =>
+    typeof w.triggerConfig.keyword === 'string' &&
+    /stop|désinscri|desinscri|unsubscribe|no más|no mas|basta|arrête|arrete|optout|opt-out/i.test(
+      w.triggerConfig.keyword,
+    );
+
+  // Contact opt-out : silence sauf workflow stop (accusé de réception)
+  const optedOut = contact?.optIn === false || (contact?.tags ?? []).includes('optout');
+
   const matched = workflows
     .filter((w) =>
       workflowMatchesInbound(w, {
@@ -103,7 +116,10 @@ export async function runInboundTrigger(params: {
         contact,
       }),
     )
+    .filter((w) => !optedOut || isOptOutKw(w))
     .sort((a, b) => {
+      const pDiff = workflowKeywordPriority(b.triggerConfig) - workflowKeywordPriority(a.triggerConfig);
+      if (pDiff !== 0) return pDiff;
       const aKw = typeof a.triggerConfig.keyword === 'string' && a.triggerConfig.keyword.trim() ? 1 : 0;
       const bKw = typeof b.triggerConfig.keyword === 'string' && b.triggerConfig.keyword.trim() ? 1 : 0;
       return bKw - aKw;
@@ -115,7 +131,9 @@ export async function runInboundTrigger(params: {
   const oneShot =
     isComment ||
     params.triggerType === 'ig_dm_inbound' ||
-    params.triggerType === 'ig_story_reply';
+    params.triggerType === 'ig_story_reply' ||
+    params.triggerType === 'messenger_inbound' ||
+    params.triggerType === 'whatsapp_inbound';
 
   for (const wf of matched) {
     const hasKw = typeof wf.triggerConfig.keyword === 'string' && Boolean(wf.triggerConfig.keyword.trim());
@@ -146,7 +164,7 @@ export async function runInboundTrigger(params: {
       conversation: params.conversation,
       contactId,
       inboundText: params.inboundText,
-      market: params.market ?? 'fr',
+      market,
       commentId: params.commentId ?? null,
     });
     results.push(result);
@@ -155,6 +173,7 @@ export async function runInboundTrigger(params: {
     if (!hasKw && params.triggerType === 'ig_dm_inbound') break;
     if (params.triggerType === 'ig_story_reply') break;
     if (isComment) break;
+    if (params.triggerType === 'messenger_inbound' && hasKw) break;
   }
   return results;
 }
