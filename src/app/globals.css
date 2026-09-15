@@ -563,3 +563,31 @@
   transform: translateX(135%) rotate(8deg);
   opacity: 1;
 }
+
+/* —— Scroll animations home (SEO-safe : hide only if .anim-ready) —— */
+@media (prefers-reduced-motion: no-preference) {
+  html.anim-ready [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 46px, 0);
+  }
+
+  html.anim-ready [data-hero-copy] {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+
+  [data-style-card] img {
+    transition: transform 0.5s ease;
+  }
+  [data-style-card]:hover img {
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.anim-ready [data-reveal],
+  html.anim-ready [data-hero-copy] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

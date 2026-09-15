@@ -19,14 +19,27 @@ import { ClientLoginModal } from './ClientLoginModal';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { OfferCardFeatures } from './landing/OfferCardFeatures';
 import { VideoTestimonialsCarousel } from './landing/VideoTestimonialsCarousel';
+import { HomeScrollEffects } from './landing/HomeScrollEffects';
 import type { Course } from '@/types';
 import { Language, translations, WHATSAPP_PHONE } from '@/types';
 import { LANDING_HERO_IMAGE, landingOfferImageUrl } from '@/lib/landing/images';
 import { VIDEO_TESTIMONIALS } from '@/lib/landing/video-testimonials';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { trackBeginTrialClick } from '@/lib/analytics/ga4-client';
+import { useReveal } from '@/hooks/useReveal';
 
 const HERO_IMAGE_URL = process.env.NEXT_PUBLIC_LANDING_HERO_IMAGE_URL || LANDING_HERO_IMAGE;
+
+/** Compteur « cours donnés » — valeur finale stable (SSR / no-JS). */
+function computeCoursesGivenCount(): number {
+  const baseCount = 2496;
+  const baseDate = new Date('2026-03-10T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffTime = Math.max(0, today.getTime() - baseDate.getTime());
+  const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return baseCount + daysElapsed * 3;
+}
 
 function withLocalOfferImages(courses: Course[]): Course[] {
   return courses.map((course) => ({
@@ -73,11 +86,18 @@ export function LandingPage({
 }) {
   const [lang, setLang] = useState<Language>(initialLang);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [count, setCount] = useState(2496);
+  const coursesGivenCount = computeCoursesGivenCount();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  const offersReveal = useReveal<HTMLElement>();
+  const stylesReveal = useReveal<HTMLElement>();
+  const blogReveal = useReveal<HTMLElement>();
+  const guidesReveal = useReveal<HTMLElement>();
+  const newsletterReveal = useReveal<HTMLElement>();
+  const helpReveal = useReveal<HTMLAnchorElement>();
 
   function openTrialSignup(course: Course | null | undefined, source: string) {
     if (!course) return;
@@ -178,34 +198,6 @@ export function LandingPage({
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    // Stats animation logic
-    const baseCount = 2496;
-    const baseDate = new Date("2026-03-10T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffTime = Math.max(0, today.getTime() - baseDate.getTime());
-    const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const targetTotal = baseCount + (daysElapsed * 3);
-
-    let start = baseCount;
-    const duration = 1500;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-      const currentCount = Math.floor(easedProgress * (targetTotal - start) + start);
-      setCount(currentCount);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-
-    // Scroll to top visibility
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
     };
@@ -339,6 +331,7 @@ export function LandingPage({
       : inspirationPilatesCards;
   return (
     <div className="min-h-screen overflow-x-clip bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
+      <HomeScrollEffects />
       {/* Top Bar */}
       <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
         <div className="relative mx-auto max-w-6xl px-5 py-3 md:px-10 md:py-4">
@@ -403,13 +396,12 @@ export function LandingPage({
         </div>
 
         {/* Hero: texte gauche + carte droite */}
-        <section className="mb-16 grid grid-cols-1 items-center gap-6 md:mb-28 md:grid-cols-[0.9fr_1.1fr] md:gap-16">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center text-center md:items-start md:text-left"
-          >
-            <div className="flex flex-col items-center md:flex-col md:items-start md:gap-0">
+        <section
+          data-hero
+          className="mb-16 grid grid-cols-1 items-center gap-6 md:mb-28 md:grid-cols-[0.9fr_1.1fr] md:gap-16"
+        >
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+            <div data-hero-copy className="flex flex-col items-center md:flex-col md:items-start md:gap-0">
               <Image
                 src="/logo.png"
                 alt="Logo FitMangas"
@@ -424,12 +416,16 @@ export function LandingPage({
                 {l.heroTitleBottom}
               </h1>
             </div>
-            <p className="mt-3 max-w-[22rem] text-[0.875rem] font-serif leading-[1.5] tracking-tight text-brand-ink/70 md:mt-6 md:max-w-xl md:text-[1.65rem] md:leading-[1.45] md:text-brand-ink/80">
+            <p
+              data-hero-copy
+              className="mt-3 max-w-[22rem] text-[0.875rem] font-serif leading-[1.5] tracking-tight text-brand-ink/70 md:mt-6 md:max-w-xl md:text-[1.65rem] md:leading-[1.45] md:text-brand-ink/80"
+            >
               {l.heroBody}
             </p>
 
             {/* Bouton principal — pleine largeur sur mobile, terracotta plein */}
             <button
+              data-hero-copy
               type="button"
               onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
               className="btn-luxury-primary mt-6 w-full px-8 py-4 text-[12px] font-bold uppercase tracking-[0.2em] md:!hidden"
@@ -438,10 +434,17 @@ export function LandingPage({
             </button>
 
             {/* Encadré stats — mobile : 2 colonnes ; 180 + avatars à droite ; cours centrés */}
-            <div className="mt-5 flex w-full items-stretch rounded-2xl border border-brand-ink/[0.06] bg-white/60 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.03)] md:hidden">
+            <div
+              data-hero-copy
+              className="mt-5 flex w-full items-stretch rounded-2xl border border-brand-ink/[0.06] bg-white/60 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.03)] md:hidden"
+            >
               <div className="flex flex-1 flex-col items-center justify-center px-2">
-                <span className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
-                  {count.toLocaleString()}
+                <span
+                  data-count
+                  data-count-to={coursesGivenCount}
+                  className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                >
+                  {coursesGivenCount.toLocaleString('fr-FR')}
                 </span>
                 <span className="mt-1.5 text-center text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofGiven}
@@ -450,7 +453,11 @@ export function LandingPage({
               <div className="my-1 w-px shrink-0 bg-brand-ink/10" />
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-2">
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                  <span
+                    data-count
+                    data-count-to={180}
+                    className="text-2xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                  >
                     180
                   </span>
                   <div className="flex items-center -space-x-2" aria-hidden>
@@ -488,7 +495,7 @@ export function LandingPage({
             </div>
 
             {/* Bouton + communauté + stats — version DESKTOP inchangée */}
-            <div className="mt-9 hidden flex-wrap items-center gap-6 md:flex">
+            <div data-hero-copy className="mt-9 hidden flex-wrap items-center gap-6 md:flex">
               <button
                 type="button"
                 onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
@@ -528,10 +535,14 @@ export function LandingPage({
                 </div>
               </div>
             </div>
-            <div className="mt-11 hidden items-start gap-14 md:flex">
+            <div data-hero-copy className="mt-11 hidden items-start gap-14 md:flex">
               <div className="flex flex-col items-start">
-                <span className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
-                  {count.toLocaleString()}
+                <span
+                  data-count
+                  data-count-to={coursesGivenCount}
+                  className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                >
+                  {coursesGivenCount.toLocaleString('fr-FR')}
                 </span>
                 <span className="mt-3 text-[12px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
                   {l.proofGiven}
@@ -539,7 +550,11 @@ export function LandingPage({
               </div>
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-4">
-                  <span className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink">
+                  <span
+                    data-count
+                    data-count-to={180}
+                    className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                  >
                     180
                   </span>
                   <div className="flex items-center -space-x-3" aria-hidden>
@@ -575,23 +590,20 @@ export function LandingPage({
                 </span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="overflow-hidden rounded-[32px] border border-brand-ink/[0.03] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] md:rounded-[40px]"
-          >
+          <div className="overflow-hidden rounded-[32px] border border-brand-ink/[0.03] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] md:rounded-[40px]">
             <div className="relative aspect-[4/5] overflow-hidden">
-              <Image
-                src={HERO_IMAGE_URL}
-                alt="Alejandra Mangas"
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 45vw"
-                className="object-cover"
-              />
+              <div data-hero-image className="absolute inset-0 will-change-transform">
+                <Image
+                  src={HERO_IMAGE_URL}
+                  alt="Alejandra Mangas"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 45vw"
+                  className="object-cover"
+                />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/8 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 pt-10 text-center md:p-10">
                 <h2 className="mb-3 break-words font-serif text-4xl font-normal italic leading-none tracking-tighter sm:text-5xl md:text-7xl">{t.title}</h2>
@@ -635,22 +647,23 @@ export function LandingPage({
               </div>
             </div>
             <div className="p-6 pt-0 md:p-8 md:pt-0" />
-          </motion.section>
+          </div>
         </section>
 
-        <section id="offers" className="scroll-mt-24">
+        <section id="offers" ref={offersReveal} className="scroll-mt-24">
         {/* Offers Grid — visio uniquement */}
         <div className="mb-20 space-y-12">
-          <div className="space-y-3 text-center">
+          <div data-reveal className="space-y-3 text-center">
             <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-brand-accent/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)] sm:tracking-[0.45em]">
               {t.sectionTitle}
             </span>
             <div className="mx-auto h-px w-12 bg-brand-accent/20" />
           </div>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            {activeCourses.map((course, i) => (
-              <motion.div
+            {activeCourses.map((course) => (
+              <div
                 key={course.id}
+                data-reveal
                 role="button"
                 tabIndex={0}
                 onClick={() => openTrialSignup(course, 'offer_card')}
@@ -660,9 +673,6 @@ export function LandingPage({
                     openTrialSignup(course, 'offer_card');
                   }
                 }}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15 }}
                 className="group flex cursor-pointer flex-col overflow-hidden rounded-[40px] border border-brand-ink/[0.03] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.02)] transition-all duration-500 hover:border-brand-accent/20"
               >
                 <div className="relative h-56 overflow-hidden sm:h-64">
@@ -719,31 +729,32 @@ export function LandingPage({
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
         </section>
 
         {/* WhatsApp — juste après les offres (filet anti-hésitation) */}
-        <motion.a
+        <a
+          ref={helpReveal}
           href={getWaLink(t.waMsg)}
           target="_blank"
           rel="noopener noreferrer"
           className="group mb-24 flex flex-col items-center gap-6 rounded-[40px] border border-brand-ink/[0.03] bg-white p-10 text-center transition-all hover:shadow-xl"
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition-all group-hover:bg-[#20BD5A]">
+          <div data-reveal className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition-all group-hover:bg-[#20BD5A]">
             <WhatsAppIcon size={28} />
           </div>
-          <div>
+          <div data-reveal>
             <h4 className="mb-2 font-serif text-2xl font-normal tracking-tight text-brand-ink md:text-3xl">{t.helpTitle}</h4>
             <p className="mx-auto max-w-[240px] text-xs tracking-wide leading-relaxed text-brand-ink/40">{t.helpSub}</p>
           </div>
-          <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#25D366]">
+          <div data-reveal className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#25D366]">
             {lang === 'FR' ? 'Discuter' : 'Chatear'}
             <ArrowRight size={14} />
           </div>
-        </motion.a>
+        </a>
 
         <VideoTestimonialsCarousel
           lang={lang}
@@ -755,8 +766,11 @@ export function LandingPage({
         />
 
         {/* Pilates styles inspiration section */}
-        <section className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10">
-          <div className="mb-7 grid grid-cols-1 items-start gap-5 md:grid-cols-[1.2fr_1fr]">
+        <section
+          ref={stylesReveal}
+          className="mb-28 rounded-[40px] border border-brand-ink/[0.04] bg-white p-6 shadow-[0_14px_40px_rgba(0,0,0,0.06)] md:p-10"
+        >
+          <div data-reveal className="mb-7 grid grid-cols-1 items-start gap-5 md:grid-cols-[1.2fr_1fr]">
             <h3 className="text-4xl md:text-5xl font-sans font-bold leading-[0.98] tracking-tight text-brand-ink">
               {l.stylesTitleTop}
               <br />
@@ -771,16 +785,21 @@ export function LandingPage({
             {levelByColumnCards.map((card, index) => (
               <article
                 key={`${card.title}-${index}`}
+                data-reveal
+                data-style-card
                 className="group relative overflow-hidden rounded-[28px] border border-white/60 bg-[#f4f4f4] p-4 shadow-[0_10px_28px_rgba(0,0,0,0.08)]"
               >
-                <p className="pointer-events-none absolute left-4 top-2 text-[52px] font-black uppercase leading-none tracking-tight text-white/85 md:text-[58px]">
+                <p
+                  data-pilates-watermark
+                  className="pointer-events-none absolute left-4 top-2 text-[52px] font-black uppercase leading-none tracking-tight text-white/85 md:text-[58px]"
+                >
                   Pilates
                 </p>
                 <div className="relative z-10 mt-8 h-40 overflow-hidden rounded-[20px] md:h-44">
                   <img
                     src={card.imageUrl}
                     alt={card.title}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 </div>
@@ -791,7 +810,7 @@ export function LandingPage({
             ))}
           </div>
 
-          <div className="mt-8 flex justify-center">
+          <div data-reveal className="mt-8 flex justify-center">
             <button
               type="button"
               onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
@@ -803,8 +822,8 @@ export function LandingPage({
         </section>
 
         {visibleBlogPreviews.length > 0 ? (
-          <section className="py-16 md:py-24">
-            <div className="mb-10 text-center">
+          <section ref={blogReveal} className="py-16 md:py-24">
+            <div data-reveal className="mb-10 text-center">
               <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">{l.blogLabel}</p>
               <h2 className="mt-3 font-serif text-4xl italic text-brand-ink">
                 {l.blogTitle}
@@ -826,6 +845,7 @@ export function LandingPage({
                 return (
                 <button
                   key={article.titleFr}
+                  data-reveal
                   type="button"
                   onClick={() =>
                     openTrialSignup(
@@ -848,7 +868,7 @@ export function LandingPage({
               );
               })}
             </div>
-            <div className="mt-8 text-center">
+            <div data-reveal className="mt-8 text-center">
               <button
                 type="button"
                 onClick={() =>
@@ -865,8 +885,8 @@ export function LandingPage({
           </section>
         ) : null}
 
-        <section className="py-12 md:py-16">
-          <div className="mb-8 text-center">
+        <section ref={guidesReveal} className="py-12 md:py-16">
+          <div data-reveal className="mb-8 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">
               {lang === 'ES' ? 'Guías Pilates' : 'Guides Pilates'}
             </p>
@@ -878,6 +898,7 @@ export function LandingPage({
             {SEO_PILLAR_PAGES.map((pillar) => (
               <Link
                 key={pillar.slug}
+                data-reveal
                 href={`/${pillar.slug}`}
                 className="rounded-[28px] border border-brand-ink/[0.06] bg-white/65 p-5 text-left shadow-[0_18px_50px_rgba(48,35,28,0.07)] transition hover:-translate-y-1 hover:bg-white/85"
               >
@@ -891,8 +912,8 @@ export function LandingPage({
           </div>
         </section>
 
-        <section className="py-12 md:py-16">
-          <div className="mx-auto max-w-2xl">
+        <section ref={newsletterReveal} className="py-12 md:py-16">
+          <div data-reveal className="mx-auto max-w-2xl">
             <NewsletterCta />
           </div>
         </section>
@@ -904,7 +925,10 @@ export function LandingPage({
             © {currentYear} Alejandra Mangas
           </p>
           <p className="mb-4 text-[10px] tracking-[0.12em] text-brand-ink/30">
-            FitMangas — Mangas Alejandra EI
+            <span data-footer-brand className="inline-block">
+              FitMangas
+            </span>
+            {' — Mangas Alejandra EI'}
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-[10px] tracking-widest uppercase text-brand-ink/30">
             <Link href="/mentions-legales" className="hover:text-brand-ink transition-colors">{l.legal}</Link>
