@@ -150,7 +150,7 @@ async function ingestInbound(params: {
   let conversationId: string | undefined;
   const { data: existingConv } = await admin
     .from('acq_conversations')
-      .select('id')
+    .select('id')
     .eq('external_thread_id', senderId)
     .eq('channel', channel)
     .maybeSingle();
