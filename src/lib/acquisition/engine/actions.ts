@@ -1,5 +1,6 @@
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import { canEscalateToHuman } from '@/lib/acquisition/engine/lifecycle';
+import { detectAcquisitionMarket } from '@/lib/acquisition/market';
 import { getMessagingProvider } from '@/lib/acquisition/providers';
 import { getPublicTrialSignupUrl, getTrialDmMessage } from '@/lib/acquisition/trial-url';
 import type {
@@ -10,12 +11,14 @@ import type {
 } from '@/lib/acquisition/types';
 
 import {
+  cancelScheduledFollowups,
   createBookingIntent,
   escalateConversation,
   getLatestConversationForContact,
   insertOutboundMessage,
   listOptInContacts,
   scheduleFollowup,
+  setContactOptIn,
   tagContact,
   updateContactLifecycle,
 } from './repository';
@@ -56,7 +59,16 @@ function resolveRecipientId(ctx: ActionContext): string | null {
 }
 
 async function actionSendMessage(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
+  const market = ctx.market ?? detectAcquisitionMarket(ctx.inboundText);
+  const localeBody =
+    market === 'mx' && typeof config?.bodyEs === 'string' && config.bodyEs.trim()
+      ? config.bodyEs
+      : typeof config?.bodyFr === 'string' && config.bodyFr.trim()
+        ? config.bodyFr
+        : null;
+
   let body =
+    localeBody ||
     (typeof config?.body === 'string' && config.body) ||
     (typeof config?.template === 'string' && config.template) ||
     'Bonjour 💛 C’est Alejandra. Tu cherches un vrai suivi en visio — pas une vidéo seule ? Essai 7 jours gratuits ✨';
@@ -161,7 +173,22 @@ async function actionTagContact(ctx: ActionContext, config?: Record<string, unkn
   const tag = typeof config?.tag === 'string' ? config.tag : 'interet_essai';
   if (!ctx.contact) return { type: 'tag_contact', ok: false, detail: 'Contact absent.' };
   const r = await tagContact(ctx.contact.id, tag);
-  return { type: 'tag_contact', ok: r.ok, detail: r.ok ? `Tag « ${tag} » ajouté.` : (r.error ?? 'Erreur tag') };
+  if (!r.ok) {
+    return { type: 'tag_contact', ok: false, detail: r.error ?? 'Erreur tag' };
+  }
+
+  // Opt-out durable : silence + annuler les relances programmées
+  if (tag === 'optout') {
+    await setContactOptIn(ctx.contact.id, false);
+    const cancelled = await cancelScheduledFollowups(ctx.contact.id);
+    return {
+      type: 'tag_contact',
+      ok: true,
+      detail: `Tag « optout » + silence${cancelled.ok ? ` · ${cancelled.count ?? 0} relance(s) annulée(s)` : ''}.`,
+    };
+  }
+
+  return { type: 'tag_contact', ok: true, detail: `Tag « ${tag} » ajouté.` };
 }
 
 async function actionSetLifecycle(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
@@ -221,14 +248,26 @@ async function actionBookSession(ctx: ActionContext, config?: Record<string, unk
     body: confirmBody.includes('fitmangas.com')
       ? confirmBody
       : `${confirmBody}\n\nOu démarre tout de suite — Essai 7 jours gratuits ✨`,
+    bodyEs: locale === 'es'
+      ? `${confirmBody}\n\nO empieza ya — Prueba 7 días gratis ✨`
+      : undefined,
     appendTrialLink: !confirmBody.includes('fitmangas.com'),
   });
   await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
 
+  const { sendAcquisitionBookingEmail } = await import('@/lib/acquisition/notify-escalation');
+  const mail = await sendAcquisitionBookingEmail({
+    conversationId: ctx.conversation.id,
+    channel: ctx.conversation.channel,
+    handle: ctx.contact.handle ?? ctx.conversation.contactHandle ?? null,
+    courseType,
+    preview: ctx.inboundText ?? ctx.conversation.lastMessagePreview,
+  });
+
   return {
     type: 'book_session_intent',
     ok: true,
-    detail: `Réservation notée (${courseType}) + confirmation envoyée.`,
+    detail: `Réservation notée (${courseType}) + confirmation envoyée${mail.ok ? ' + alerte Alejandra' : ` (alerte e-mail : ${mail.error ?? 'échec'})`}.`,
     data: r,
   };
 }
@@ -243,6 +282,9 @@ async function actionCaptureEmail(ctx: ActionContext, config?: Record<string, un
 
 async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   if (!ctx.contact) return { type: 'schedule_followup', ok: false, detail: 'Contact absent.' };
+  if (ctx.contact.optIn === false || (ctx.contact.tags ?? []).includes('optout')) {
+    return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — contact en opt-out.' };
+  }
   const hours = typeof config?.delayHours === 'number' ? config.delayHours : 24;
   const runAt = new Date(Date.now() + hours * 3600000).toISOString();
   const r = await scheduleFollowup({

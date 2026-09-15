@@ -191,10 +191,8 @@ export async function listWorkflows(): Promise<
   }
   try {
     const admin = createAdminClient();
-    const { count } = await admin.from('acq_workflows').select('id', { count: 'exact', head: true });
-    if ((count ?? 0) < WORKFLOW_CATALOG_COUNT) {
-      await ensureWorkflowCatalog();
-    }
+    // Toujours resync le catalogue code → DB (nouveaux WF + textes bilingues à jour)
+    await ensureWorkflowCatalog();
     const { data, error } = await admin.from('acq_workflows').select('*').order('name');
     if (error) {
       return { ok: true, items: defaultWorkflows(), schemaReady: true };
@@ -471,6 +469,23 @@ export async function scheduleFollowup(params: {
     .single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, id: String(data.id) };
+}
+
+/** Annule toutes les relances encore programmées pour un contact (opt-out). */
+export async function cancelScheduledFollowups(
+  contactId: string,
+): Promise<{ ok: boolean; count?: number; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('acq_followups')
+    .update({ status: 'cancelled' })
+    .eq('contact_id', contactId)
+    .eq('status', 'scheduled')
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, count: (data ?? []).length };
 }
 
 export async function recordWorkflowRun(params: {
@@ -796,6 +811,7 @@ export async function runDueFollowups(limit = 40): Promise<{
   }
 
   const { runWorkflowAction } = await import('@/lib/acquisition/engine/actions');
+  const { detectAcquisitionMarket } = await import('@/lib/acquisition/market');
   const details: string[] = [];
   let okCount = 0;
   let failCount = 0;
@@ -831,9 +847,21 @@ export async function runDueFollowups(limit = 40): Promise<{
     }
 
     const contact = await getContact(String(row.contact_id));
+    if (contact && (contact.optIn === false || contact.tags.includes('optout'))) {
+      await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+      details.push(`${id}: annulé — opt-out`);
+      continue;
+    }
+
+    const lastInbound =
+      [...detail.messages].reverse().find((m) => m.direction === 'inbound')?.body ??
+      detail.conversation.lastMessagePreview ??
+      '';
+    const market = detectAcquisitionMarket(lastInbound);
+
     const result = await runWorkflowAction(
       { type: actionType },
-      { contact, conversation: detail.conversation, market: 'fr' },
+      { contact, conversation: detail.conversation, market },
     );
 
     await admin
@@ -856,4 +884,80 @@ export async function runDueFollowups(limit = 40): Promise<{
     failed: failCount,
     details,
   };
+}
+
+/**
+ * Aligne les stages CRM Acquisition sur les abonnements Stripe (email match).
+ * trial = trialing · paid = active.
+ */
+export async function syncAcqLifecycleFromSubscriptions(): Promise<{
+  updated: number;
+  checked: number;
+  details: string[];
+}> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { updated: 0, checked: 0, details: ['schema absent'] };
+
+  const admin = createAdminClient();
+  const { data: contacts, error } = await admin
+    .from('acq_contacts')
+    .select('id, email, lifecycle_stage')
+    .not('email', 'is', null)
+    .limit(500);
+
+  if (error || !contacts?.length) {
+    return { updated: 0, checked: 0, details: [error?.message ?? 'aucun contact e-mail'] };
+  }
+
+  const emails = contacts
+    .map((c) => (c.email ? String(c.email).toLowerCase() : ''))
+    .filter(Boolean);
+  if (!emails.length) return { updated: 0, checked: 0, details: ['aucun e-mail'] };
+
+  const { findUserIdByEmail } = await import('@/lib/stripe/find-user-by-email');
+  const emailToUser = new Map<string, string>();
+  for (const email of emails) {
+    const userId = await findUserIdByEmail(admin, email);
+    if (userId) emailToUser.set(email, userId);
+  }
+
+  const userIds = [...emailToUser.values()];
+  if (!userIds.length) return { updated: 0, checked: contacts.length, details: ['aucun profil match'] };
+
+  const { data: subs } = await admin
+    .from('subscriptions')
+    .select('user_id, status')
+    .in('user_id', userIds)
+    .in('status', ['trialing', 'active']);
+
+  const statusByUser = new Map<string, 'trialing' | 'active'>();
+  for (const s of subs ?? []) {
+    const uid = String(s.user_id);
+    const st = s.status === 'trialing' ? 'trialing' : 'active';
+    if (st === 'active' || !statusByUser.has(uid)) statusByUser.set(uid, st);
+  }
+
+  let updated = 0;
+  const details: string[] = [];
+  for (const c of contacts) {
+    const email = c.email ? String(c.email).toLowerCase() : '';
+    const userId = emailToUser.get(email);
+    if (!userId) continue;
+    const sub = statusByUser.get(userId);
+    if (!sub) continue;
+    const next: LifecycleStage = sub === 'trialing' ? 'trial' : 'paid';
+    const current = (c.lifecycle_stage as LifecycleStage) ?? 'new';
+    if (current === next || current === 'member') continue;
+    if (current === 'paid' && next === 'trial') continue;
+    const { error: upErr } = await admin
+      .from('acq_contacts')
+      .update({ lifecycle_stage: next, updated_at: new Date().toISOString() })
+      .eq('id', c.id);
+    if (!upErr) {
+      updated += 1;
+      details.push(`${email}: ${current} → ${next}`);
+    }
+  }
+
+  return { updated, checked: contacts.length, details };
 }

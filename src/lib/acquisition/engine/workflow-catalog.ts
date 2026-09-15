@@ -1,13 +1,12 @@
+import { bilingualSend, lines } from '@/lib/acquisition/copy-bilingual';
 import type { AcqWorkflow } from '@/lib/acquisition/types';
 
 /**
  * Catalogue workflows Acquisition.
  *
- * Voix = Alejandra (je), pas la marque « Nike ».
- * Positionnement Dunford : rendez-vous / correction / être vue.
- * Offre : « Essai 7 jours gratuits » + emoji (carte demandée à l’inscription,
- * prélèvement après l’essai — NE PAS mentir sur « carte à la fin »).
- * CTA fort, 1 bulle, lien via appendTrialLink.
+ * Voix = Alejandra (je). Offre = « Essai 7 jours gratuits ✨ ».
+ * bodyFr / bodyEs résolus selon le marché détecté.
+ * priority (triggerConfig) : prix > essai > objections > salut.
  */
 export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   {
@@ -15,13 +14,13 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Commentaire IG « ESSAI » → DM privé + lien',
     enabled: true,
     triggerType: 'ig_comment_keyword',
-    triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias' },
+    triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias', priority: 90 },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Merci pour ton « ESSAI » 💛',
             '',
             'Moi, je ne te laisse pas seule devant une vidéo.',
@@ -31,12 +30,22 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Clique ici pour démarrer →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Gracias por tu « PRUEBA » 💛',
+            '',
+            'Yo no te dejo sola frente a un vídeo.',
+            'Tienes una cita fija conmigo en visio,',
+            'te corrijo en directo, y te veo de verdad.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí para empezar →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_essai' } },
-      { type: 'set_lifecycle_stage', config: { stage: 'trial' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
       { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
@@ -45,7 +54,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Nouveau DM → concierge (qualifier + répondre)',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: {},
+    triggerConfig: { priority: 0 },
     conditions: {},
     actions: [
       { type: 'qualify_intent' },
@@ -58,13 +67,13 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Commentaire « INFO » / « PRIX » → positionnement + essai',
     enabled: true,
     triggerType: 'ig_comment_keyword',
-    triggerConfig: { keyword: 'info|prix|tarif|combien|cuesta|precio|costo' },
+    triggerConfig: { keyword: 'info|prix|tarif|combien|cuesta|precio|costo', priority: 100 },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Tu as raison de demander 💛',
             '',
             'Tu ne paies pas « du Pilates YouTube ».',
@@ -76,12 +85,69 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Le plus simple : teste, tu jugeras.',
             'Clique ici →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'No pagas « Pilates de YouTube ».',
+            'Pagas una cita conmigo,',
+            'mi corrección en directo,',
+            'y el hecho de ser vista de verdad.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Lo más simple: pruébalo y decides.',
+            'Haz clic aquí →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_prix' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000000f',
+    name: 'DM « prix / combien » → pitch + essai (avant Salut)',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: { keyword: 'prix|tarif|combien|cuesta|precio|costo|info', priority: 100 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu as raison de demander 💛',
+            '',
+            'Tu ne paies pas « du Pilates YouTube ».',
+            'Tu paies un créneau avec moi,',
+            'ma correction en direct,',
+            'et le fait d’être vraiment vue.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Le plus simple : teste, tu jugeras.',
+            'Clique ici →',
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'No pagas « Pilates de YouTube ».',
+            'Pagas una cita conmigo,',
+            'mi corrección en directo,',
+            'y el hecho de ser vista de verdad.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Lo más simple: pruébalo y decides.',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'dm_prix' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -89,13 +155,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Objection « pas le temps » (DM) → ancrage rendez-vous',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'temps|busy|occup|horaire|pas le temps|no tengo tiempo|agenda' },
+    triggerConfig: {
+      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      priority: 60,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Justement 💛',
             '',
             'Je ne te demande pas de « trouver 1h toute seule ».',
@@ -105,11 +174,22 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Teste un vrai créneau avec moi →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Justo 💛',
+            '',
+            'No te pido « encontrar 1h sola ».',
+            'Te pongo una cita en la semana:',
+            'vienes, te veo, ya no tienes que motivarte sola.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Prueba un verdadero horario conmigo →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'objection_temps' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -117,13 +197,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Objection « je ne suis pas souple » (DM)',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'souple|débutante|debutante|jamais fait|trop raide|flexible|principiante' },
+    triggerConfig: {
+      keyword: 'souple|débutante|debutante|jamais fait|trop raide|flexible|principiante',
+      priority: 60,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Tu n’as pas besoin d’être souple pour commencer 💛',
             '',
             'La plupart de mes Mangitas arrivent exactement comme toi.',
@@ -133,11 +216,22 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Viens voir par toi-même →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'No necesitas ser flexible para empezar 💛',
+            '',
+            'La mayoría de mis Mangitas llegan exactamente como tú.',
+            'En visio, adapto y te corrijo en directo —',
+            'no te juzgo, te acompaño.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Ven a verlo por ti misma →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'objection_souplesse' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -145,14 +239,17 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Lead chaud (qualified/trial) → escalade Alejandra',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'alejandra|humaine|parler à|coach|réserver|inscription|hablar con' },
+    triggerConfig: {
+      keyword: 'alejandra|humaine|parler à|coach|réserver|inscription|hablar con',
+      priority: 70,
+    },
     conditions: { lifecycle_in: ['qualified', 'trial', 'paid'] },
     actions: [
       { type: 'escalate_human' },
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Je te prends en direct 💛',
             '',
             'Je te réponds dès que je suis dispo.',
@@ -161,9 +258,18 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Clique ici →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Te atiendo en persona 💛',
+            '',
+            'Te respondo en cuanto esté disponible.',
+            'Mientras tanto, ya puedes empezar la prueba:',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
       },
     ],
   },
@@ -172,7 +278,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'DM « Nantes / présentiel » → intention booking',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'nantes|présentiel|presentiel|sur place|studio' },
+    triggerConfig: { keyword: 'nantes|présentiel|presentiel|sur place|studio', priority: 75 },
     conditions: {},
     actions: [
       { type: 'book_session_intent', config: { courseType: 'nantes_presentiel' } },
@@ -185,13 +291,13 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Réponse story IG → accueil + essai',
     enabled: true,
     triggerType: 'ig_story_reply',
-    triggerConfig: {},
+    triggerConfig: { priority: 50 },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Merci pour ta réponse à la story 💛',
             '',
             'Avec moi, ce n’est pas du solo YouTube :',
@@ -200,11 +306,21 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Viens tester avec moi →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Gracias por responder a la story 💛',
+            '',
+            'Conmigo no es solo de YouTube:',
+            'cita fija, te corrijo en directo, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Ven a probar conmigo →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'story_reply' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -212,13 +328,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Salut / Bonjour / Hola (DM) → accueil + essai',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'bonjour|hello|hola|salut|hey|coucou|buenas|bonsoir' },
+    triggerConfig: {
+      keyword: 'bonjour|hello|hola|salut|hey|coucou|buenas|bonsoir',
+      priority: 10,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Bonjour 💛 C’est Alejandra.',
             '',
             'Tu cherches un vrai suivi —',
@@ -232,12 +351,27 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Clique ici pour démarrer →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Hola 💛 Soy Alejandra.',
+            '',
+            '¿Buscas un verdadero seguimiento —',
+            'no otra vídeo sola frente a la pantalla?',
+            '',
+            'Conmigo en visio:',
+            '• una cita fija',
+            '• te corrijo en directo',
+            '• te veo de verdad (ya no estás sola)',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí para empezar →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'dm_salutation' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -245,13 +379,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Commentaire post-partum / périnée → DM privé',
     enabled: true,
     triggerType: 'ig_comment_keyword',
-    triggerConfig: { keyword: 'postpartum|post-partum|périnée|perinee|après bébé|despues del parto|suelo pélvico' },
+    triggerConfig: {
+      keyword: 'postpartum|post-partum|périnée|perinee|après bébé|despues del parto|suelo pélvico',
+      priority: 85,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Merci pour ton message 💛',
             '',
             'Beaucoup de mes Mangitas sont passées par là.',
@@ -261,12 +398,23 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Viens tester avec moi →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Gracias por tu mensaje 💛',
+            '',
+            'Muchas de mis Mangitas han pasado por eso.',
+            'En visio, adapto y te corrijo en directo —',
+            'no estás sola con esto.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Ven a probar conmigo →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_postpartum' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -274,13 +422,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Objection matériel / chez soi (DM)',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'matériel|materiel|tapis|équipement|equipo|no tengo|pas de mat' },
+    triggerConfig: {
+      keyword: 'matériel|materiel|tapis|équipement|equipo|pas de mat|no tengo mat|no tengo tapete',
+      priority: 60,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Un tapis suffit pour commencer 💛',
             '',
             'Pas besoin d’un studio chez toi.',
@@ -289,11 +440,21 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Clique ici →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Con un tapete basta para empezar 💛',
+            '',
+            'No necesitas un estudio en casa.',
+            'Lo que cuenta: la cita conmigo + mi corrección en directo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'objection_materiel' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -301,7 +462,10 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'DM « horaires / créneaux » → booking visio',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'horaire|créneau|creneau|quand|schedule|horario|qué días|quels jours' },
+    triggerConfig: {
+      keyword: 'horaire|créneau|creneau|quand|schedule|horario|qué días|quels jours|que dias',
+      priority: 80,
+    },
     conditions: {},
     actions: [
       { type: 'book_session_intent', config: { courseType: 'visio_collectif' } },
@@ -314,13 +478,13 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Commentaire « lien / DM » → private reply essai',
     enabled: true,
     triggerType: 'ig_comment_keyword',
-    triggerConfig: { keyword: 'lien|link|dm|mp|mensaje|envoie|manda' },
+    triggerConfig: { keyword: 'lien|link|dm|mp|mensaje|envoie|manda', priority: 80 },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Je t’envoie ça en privé 💛',
             '',
             'Avec moi : rendez-vous fixe + correction en direct.',
@@ -329,11 +493,21 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Clique ici →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'Te lo envío en privado 💛',
+            '',
+            'Conmigo: cita fija + corrección en directo.',
+            'Ya no estás sola frente a tu tapete.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_lien' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
   {
@@ -341,13 +515,16 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'DM « honte / caméra » → rassurer + essai',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'honte|caméra|camera|regard|juger|vergüenza|miedo|timide' },
+    triggerConfig: {
+      keyword: 'honte|caméra|camera|regard|juger|vergüenza|verguenza|miedo|timide',
+      priority: 60,
+    },
     conditions: {},
     actions: [
       {
         type: 'send_message',
-        config: {
-          body: [
+        config: bilingualSend(
+          lines(
             'Tu n’es pas obligée d’être « à l’aise » dès le jour 1 💛',
             '',
             'Je te vois pour te corriger — pas pour te juger.',
@@ -356,11 +533,117 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Essai 7 jours gratuits ✨',
             '',
             'Viens tester avec moi →',
-          ].join('\n'),
-          appendTrialLink: true,
-        },
+          ),
+          lines(
+            'No tienes que estar « a gusto » desde el día 1 💛',
+            '',
+            'Te veo para corregirte — no para juzgarte.',
+            'Muchas de mis Mangitas empezaron exactamente como tú.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Ven a probar conmigo →',
+          ),
+        ),
       },
       { type: 'tag_contact', config: { tag: 'objection_honte' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000010',
+    name: 'Opt-out (stop) → silence + annuler relances',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: {
+      keyword: 'stop|désabonne|desabonne|désinscri|desinscri|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas',
+      priority: 200,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines('Compris 💛', '', 'Je ne t’écris plus.'),
+          lines('Entendido 💛', '', 'No te escribo más.'),
+          false,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'optout' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000011',
+    name: 'Messenger « ESSAI » → message + lien',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias', priority: 90 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Merci pour ton message 💛 C’est Alejandra.',
+            '',
+            'Moi, je ne te laisse pas seule devant une vidéo.',
+            'Rendez-vous fixe, je te corrige en direct, je te vois.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Gracias por tu mensaje 💛 Soy Alejandra.',
+            '',
+            'Yo no te dejo sola frente a un vídeo.',
+            'Cita fija, te corrijo en directo, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'messenger_essai' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000012',
+    name: 'Messenger « prix / info » → pitch + essai',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: { keyword: 'prix|tarif|combien|cuesta|precio|costo|info', priority: 100 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu as raison de demander 💛',
+            '',
+            'Tu paies un créneau avec moi + ma correction en direct.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'Pagas una cita conmigo + mi corrección en directo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'messenger_prix' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
     ],
   },
 ];
