@@ -1,7 +1,13 @@
 import type { ConciergeResult } from '@/lib/acquisition/ai/concierge';
 import { canEscalateToHuman } from '@/lib/acquisition/engine/lifecycle';
 import { runWorkflowAction, type ActionContext, type ActionResult } from '@/lib/acquisition/engine/actions';
-import { updateContactEmail, updateContactLifecycle } from '@/lib/acquisition/engine/repository';
+import {
+  cancelScheduledFollowups,
+  setContactOptIn,
+  tagContact,
+  updateContactEmail,
+  updateContactLifecycle,
+} from '@/lib/acquisition/engine/repository';
 import type { WorkflowActionType } from '@/lib/acquisition/types';
 
 export type ConciergeRunSummary = {
@@ -97,8 +103,20 @@ export async function applyConciergeResult(
   }
 
   if (concierge.intent === 'trial' && ctx.contact) {
-    await updateContactLifecycle(ctx.contact.id, 'trial');
+    // Intérêt essai ≠ essai démarré (Stripe) → qualified
+    await updateContactLifecycle(ctx.contact.id, 'qualified');
     if (!emailCaptured) await runOnce('capture_email_optin');
+  }
+
+  if (concierge.intent === 'optout' && ctx.contact) {
+    await setContactOptIn(ctx.contact.id, false);
+    await tagContact(ctx.contact.id, 'optout');
+    await cancelScheduledFollowups(ctx.contact.id);
+    actions.push({
+      type: 'tag_contact',
+      ok: true,
+      detail: 'Opt-out enregistré — silence + relances annulées.',
+    });
   }
 
   if (concierge.intent === 'booking') {
