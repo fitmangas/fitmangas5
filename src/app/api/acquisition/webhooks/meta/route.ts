@@ -86,16 +86,40 @@ async function ingestInbound(params: {
     (channel === 'whatsapp' ? `wa_${senderId.slice(-10)}` : `@meta_${senderId.slice(-8)}`);
 
   let contactId: string | undefined;
-  const { data: existingContact } = await admin
+  // 1) Déjà connu par handle
+  const { data: byHandle } = await admin
     .from('acq_contacts')
-    .select('id')
+    .select('id, handle')
     .eq('handle', handle)
     .eq('channel', channel)
     .maybeSingle();
+  if (byHandle?.id) contactId = String(byHandle.id);
 
-  if (existingContact?.id) {
-    contactId = String(existingContact.id);
-  } else {
+  // 2) Sinon retrouver via meta_sender_id (évite @meta_xxxxxxx en doublon d'un @username)
+  if (!contactId && channel !== 'whatsapp') {
+    const { data: bySender } = await admin
+      .from('acq_contacts')
+      .select('id, handle')
+      .eq('channel', channel)
+      .contains('external_ids', { meta_sender_id: senderId })
+      .limit(1)
+      .maybeSingle();
+    if (bySender?.id) contactId = String(bySender.id);
+  }
+
+  // 3) Sinon via conversation déjà ouverte sur ce thread
+  if (!contactId) {
+    const { data: byThread } = await admin
+      .from('acq_conversations')
+      .select('id, contact_id')
+      .eq('external_thread_id', senderId)
+      .eq('channel', channel)
+      .limit(1)
+      .maybeSingle();
+    if (byThread?.contact_id) contactId = String(byThread.contact_id);
+  }
+
+  if (!contactId) {
     const externalKey = channel === 'whatsapp' ? 'whatsapp_wa_id' : 'meta_sender_id';
     const { data: inserted } = await admin
       .from('acq_contacts')
@@ -115,8 +139,8 @@ async function ingestInbound(params: {
   const { data: existingConv } = await admin
     .from('acq_conversations')
     .select('id')
-    .eq('contact_id', contactId)
     .eq('external_thread_id', senderId)
+    .eq('channel', channel)
     .maybeSingle();
 
   if (existingConv?.id) {
@@ -216,7 +240,6 @@ export async function POST(request: Request) {
         hasFbSecret: Boolean(process.env.META_APP_SECRET?.trim()),
         allowUnsigned,
       });
-      // Secours temporaire : accepter le payload Meta tant que le secret IG n'est pas en env
       if (!allowUnsigned) {
         return NextResponse.json({ error: 'Signature Meta invalide.' }, { status: 401 });
       }
@@ -236,7 +259,6 @@ export async function POST(request: Request) {
     let workflowsRun = 0;
 
     for (const entry of body.entry ?? []) {
-      // Instagram / Messenger classic messaging array
       for (const msg of entry.messaging ?? []) {
         const text = msg.message?.text?.trim();
         const senderId = msg.sender?.id;
@@ -252,7 +274,6 @@ export async function POST(request: Request) {
         workflowsRun += r.workflowsRun;
       }
 
-      // WhatsApp Cloud API (object=whatsapp_business_account)
       if (body.object === 'whatsapp_business_account') {
         for (const change of entry.changes ?? []) {
           if (change.field !== 'messages') continue;
