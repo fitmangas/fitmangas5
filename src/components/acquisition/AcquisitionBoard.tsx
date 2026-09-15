@@ -703,7 +703,7 @@ export function AcquisitionBoard({
             {(overview.upcomingFollowups?.length ?? 0) > 0 ? (
               <JourneyBoard
                 title="Relances programmées"
-                subtitle="Exécutées automatiquement toutes les 15 min (cron Vercel)"
+                subtitle="Exécutées automatiquement toutes les ~2 h (cron Vercel)"
               >
                 <div
                   className="space-y-2 rounded-[20px] p-3"
