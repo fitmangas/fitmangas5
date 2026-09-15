@@ -38,7 +38,7 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" \
 
 - `daily-jobs` — 5h UTC : onboarding, win-back, digest, filet rappels cours + filet posts IG dus
 - `community/publish-scheduled` — **plusieurs créneaux/jour** (UTC) alignés sur les posts IG Paris 07h/08h/11h/12h/17h/18h/19h : filet Vercel Hobby (1×/jour max par expression)
-- `acquisition/run-followups` — toutes les **15 min** : exécute les relances `acq_followups` dues (sandbox ou live selon `MESSAGING_MODE`)
+- `acquisition/run-followups` — **3×/jour** (06h05 / 12h05 / 18h05 UTC) sur Vercel Hobby ; pour ~15 min ajouter cron-job.org sur la même URL + `CRON_SECRET`
 - `community/insights-sync` — **04h30 UTC** : Insights IG → `post_metrics` + scores hooks CM (nécessite `SOCIAL_INSIGHTS_SYNC_ENABLED=true`)
 - `prepare-monthly-validation` — 1er du mois 7h UTC
 
