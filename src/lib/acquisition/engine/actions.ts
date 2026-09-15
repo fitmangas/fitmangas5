@@ -1,7 +1,7 @@
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import { canEscalateToHuman } from '@/lib/acquisition/engine/lifecycle';
 import { getMessagingProvider } from '@/lib/acquisition/providers';
-import { getTrialDmMessage } from '@/lib/acquisition/trial-url';
+import { getPublicTrialSignupUrl, getTrialDmMessage } from '@/lib/acquisition/trial-url';
 import type {
   AcqContact,
   AcqConversation,
@@ -56,10 +56,22 @@ function resolveRecipientId(ctx: ActionContext): string | null {
 }
 
 async function actionSendMessage(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
-  const body =
+  let body =
     (typeof config?.body === 'string' && config.body) ||
     (typeof config?.template === 'string' && config.template) ||
     'Bonjour ! FitMangas, c’est un rendez-vous fixe en visio avec correction en direct — tu n’es pas seule.';
+
+  // Lien essai dans la MÊME bulle (évite 2 DM tac-o-tac répétitifs)
+  if (config?.appendTrialLink === true) {
+    const url = getPublicTrialSignupUrl({
+      utmSource: ctx.conversation.channel,
+      utmCampaign: 'acquisition_dm',
+    });
+    if (!body.includes(url)) {
+      body = `${body.trim()}\n${url}`;
+    }
+  }
+
   const provider = getMessagingProvider(ctx.conversation.channel);
   if (!provider) {
     return { type: 'send_message', ok: false, detail: `Canal ${ctx.conversation.channel} sans provider messaging.` };
@@ -90,9 +102,10 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
       return {
         type: 'send_message',
         ok: false,
-        detail: priv.error ?? 'Private reply échoué et pas d’ID destinataire DM.',
+        detail: `Private reply échoué (${priv.error ?? 'erreur Meta'}) et pas d’ID destinataire DM.`,
       };
     }
+    // Continuer en DM classique (contact déjà connu)
   }
 
   if (!recipientId) {
@@ -118,7 +131,9 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
   return {
     type: 'send_message',
     ok: send.ok,
-    detail: send.ok ? (send.logLine ?? 'Message envoyé.') : (send.error ?? 'Échec envoi'),
+    detail: send.ok
+      ? (send.logLine ?? (ctx.commentId ? 'DM fallback après commentaire envoyé.' : 'Message envoyé.'))
+      : (send.error ?? 'Échec envoi'),
     data: send,
   };
 }
@@ -160,12 +175,14 @@ async function actionSetLifecycle(ctx: ActionContext, config?: Record<string, un
   };
 }
 
-async function actionSendTrialLink(ctx: ActionContext): Promise<ActionResult> {
+async function actionSendTrialLink(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   const locale = ctx.market === 'mx' ? 'es' : 'fr';
+  const style = config?.style === 'compact' ? 'compact' : 'full';
   const body = getTrialDmMessage({
     locale,
     utmSource: ctx.conversation.channel,
     utmCampaign: 'acquisition_dm',
+    style,
   });
   return actionSendMessage(ctx, { body });
 }
@@ -200,7 +217,12 @@ async function actionBookSession(ctx: ActionContext, config?: Record<string, unk
         ? 'Perfecto — anoto tu interés por el visio colectivo. Alejandra te enviará los horarios disponibles.'
         : 'Parfait — je note ton intérêt pour le visio collectif. Alejandra te envoie les créneaux disponibles.';
 
-  await actionSendMessage(ctx, { body: confirmBody });
+  await actionSendMessage(ctx, {
+    body: confirmBody.includes('fitmangas.com')
+      ? confirmBody
+      : `${confirmBody}\n\nTu peux aussi démarrer l’essai 7 jours :`,
+    appendTrialLink: !confirmBody.includes('fitmangas.com'),
+  });
   await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
 
   return {
@@ -373,7 +395,7 @@ export async function runWorkflowAction(
     case 'set_lifecycle_stage':
       return actionSetLifecycle(ctx, spec.config);
     case 'send_trial_link':
-      return actionSendTrialLink(ctx);
+      return actionSendTrialLink(ctx, spec.config);
     case 'book_session_intent':
       return actionBookSession(ctx, spec.config);
     case 'capture_email_optin':
