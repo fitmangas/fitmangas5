@@ -53,7 +53,14 @@ export async function pollInstagramInbox(params?: {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const msgsJson = (await msgsRes.json()) as { messages?: { data?: IgMessage[] } };
-      const messages = [...(msgsJson.messages?.data ?? [])].reverse();
+      const messages = [...(msgsJson.messages?.data ?? [])].sort((a, b) => {
+        const ta = a.created_time ? Date.parse(a.created_time) : 0;
+        const tb = b.created_time ? Date.parse(b.created_time) : 0;
+        return ta - tb;
+      });
+
+      let newestAt: string | null = null;
+      let newestPreview: string | null = null;
 
       for (const m of messages) {
         const text = (m.message ?? '').trim();
@@ -65,7 +72,13 @@ export async function pollInstagramInbox(params?: {
           .select('id')
           .eq('external_message_id', mid)
           .maybeSingle();
-        if (existing) continue;
+        if (existing) {
+          if (m.created_time && (!newestAt || Date.parse(m.created_time) >= Date.parse(newestAt))) {
+            newestAt = m.created_time;
+            newestPreview = text.slice(0, 120);
+          }
+          continue;
+        }
 
         const fromUs = String(m.from?.id) === ourIgId;
         const direction = fromUs ? 'outbound' : 'inbound';
@@ -131,14 +144,29 @@ export async function pollInstagramInbox(params?: {
           sandbox: false,
           ...(m.created_time ? { created_at: m.created_time } : {}),
         });
-        await admin
-          .from('acq_conversations')
-          .update({
-            last_message_at: m.created_time ?? new Date().toISOString(),
-            last_message_preview: text.slice(0, 120),
-          })
-          .eq('id', conversationId);
+        if (m.created_time && (!newestAt || Date.parse(m.created_time) >= Date.parse(newestAt))) {
+          newestAt = m.created_time;
+          newestPreview = text.slice(0, 120);
+        }
         imported += 1;
+      }
+
+      if (newestAt && newestPreview) {
+        const { data: convRow } = await admin
+          .from('acq_conversations')
+          .select('id, last_message_at')
+          .eq('external_thread_id', senderId)
+          .eq('channel', 'instagram')
+          .maybeSingle();
+        if (convRow?.id) {
+          const current = convRow.last_message_at ? Date.parse(String(convRow.last_message_at)) : 0;
+          if (Date.parse(newestAt) >= current) {
+            await admin
+              .from('acq_conversations')
+              .update({ last_message_at: newestAt, last_message_preview: newestPreview })
+              .eq('id', convRow.id);
+          }
+        }
       }
     }
 
