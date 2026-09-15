@@ -127,10 +127,16 @@ export async function runInboundTrigger(params: {
 
     const contactId = params.contactId ?? contact?.id;
     if (contactId && (await wasWorkflowRunRecently(wf.id, contactId, 6))) {
-      results.push({
+      const cooldownSteps = [
+        { type: 'cooldown', ok: true, detail: 'Déjà exécuté avec succès < 6h — ignoré (anti-spam).' },
+      ];
+      results.push({ workflowId: wf.id, ok: true, steps: cooldownSteps });
+      await recordWorkflowRun({
         workflowId: wf.id,
-        ok: true,
-        steps: [{ type: 'cooldown', ok: true, detail: 'Déjà exécuté < 6h — ignoré (anti-spam).' }],
+        contactId,
+        conversationId: params.conversation.id,
+        status: 'skipped',
+        log: cooldownSteps,
       });
       if (hasKw || isComment) ranSpecific = true;
       continue;
