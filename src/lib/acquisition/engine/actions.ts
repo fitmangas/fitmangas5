@@ -59,7 +59,7 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
   let body =
     (typeof config?.body === 'string' && config.body) ||
     (typeof config?.template === 'string' && config.template) ||
-    'Bonjour ! FitMangas, c’est un rendez-vous fixe en visio avec correction en direct — tu n’es pas seule.';
+    'Bonjour 💛 C’est Alejandra. Tu cherches un vrai suivi en visio — pas une vidéo seule ? Essai 7 jours gratuits ✨';
 
   // Lien essai dans la MÊME bulle (évite 2 DM tac-o-tac répétitifs)
   if (config?.appendTrialLink === true) {
@@ -211,16 +211,16 @@ async function actionBookSession(ctx: ActionContext, config?: Record<string, unk
   const confirmBody =
     courseType === 'nantes_presentiel'
       ? locale === 'es'
-        ? 'Perfecto — anoto tu interés por un curso presencial en Nantes. Alejandra te contactará con los horarios.'
-        : 'Parfait — je note ton intérêt pour un cours présentiel à Nantes. Alejandra te recontacte avec les créneaux.'
+        ? 'Perfecto 💛 Anoto tu interés por un curso presencial en Nantes. Te escribo yo con los horarios.'
+        : 'Parfait 💛 Je note ton intérêt pour un cours présentiel à Nantes. Je te recontacte moi-même avec les créneaux.'
       : locale === 'es'
-        ? 'Perfecto — anoto tu interés por el visio colectivo. Alejandra te enviará los horarios disponibles.'
-        : 'Parfait — je note ton intérêt pour le visio collectif. Alejandra te envoie les créneaux disponibles.';
+        ? 'Perfecto 💛 Anoto tu interés por el visio colectivo. Te envío yo los horarios disponibles.'
+        : 'Parfait 💛 Je note ton intérêt pour le visio collectif. Je t’envoie moi-même les créneaux.';
 
   await actionSendMessage(ctx, {
     body: confirmBody.includes('fitmangas.com')
       ? confirmBody
-      : `${confirmBody}\n\nTu peux aussi démarrer l’essai 7 jours :`,
+      : `${confirmBody}\n\nOu démarre tout de suite — Essai 7 jours gratuits ✨`,
     appendTrialLink: !confirmBody.includes('fitmangas.com'),
   });
   await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
@@ -237,7 +237,7 @@ async function actionCaptureEmail(ctx: ActionContext, config?: Record<string, un
   const prompt =
     typeof config?.prompt === 'string'
       ? config.prompt
-      : 'Pour t’envoyer le lien et les horaires, quel est ton e-mail ? (opt-in infos FitMangas uniquement)';
+      : 'Pour t’envoyer le lien et les horaires, quel est ton e-mail ? (infos cours uniquement, rien d’autre)';
   return actionSendMessage(ctx, { body: prompt });
 }
 
@@ -262,7 +262,7 @@ async function actionBroadcastOptin(ctx: ActionContext, config?: Record<string, 
   const body =
     typeof config?.body === 'string' && config.body.trim()
       ? config.body.trim()
-      : 'Actu FitMangas — essai 7 jours en visio avec correction en direct : fitmangas.com';
+      : 'C’est Alejandra 💛 Nouvelle actu + Essai 7 jours gratuits ✨ en visio avec moi — correction en direct :';
 
   const contacts = await listOptInContacts(500);
   if (!contacts.length) {
