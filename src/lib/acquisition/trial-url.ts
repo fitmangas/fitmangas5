@@ -1,1 +1,1 @@
-PLACEHOLDER
+LOAD_FROM_FILE:/tmp/acq-src__lib__acquisition__trial-url.ts
