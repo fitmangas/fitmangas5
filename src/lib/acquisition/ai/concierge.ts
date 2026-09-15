@@ -116,10 +116,8 @@ export async function runConcierge(params: {
     });
     const body = await res.text();
     if (!res.ok) {
-      return {
-        ok: false,
-        error: `Claude indisponible (${res.status}) — ${body.slice(0, 200)}`,
-      };
+      // Jamais de silence : si Claude tombe, on répond quand même (fallback).
+      return fallbackConcierge(params.inboundText, market);
     }
     const json = JSON.parse(body) as { content?: Array<{ type?: string; text?: string }> };
     const text = (json.content ?? [])
@@ -132,10 +130,7 @@ export async function runConcierge(params: {
     }
     if (prefix) parsed.reply = prefix + parsed.reply;
     return parsed;
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'Erreur concierge IA',
-    };
+  } catch {
+    return fallbackConcierge(params.inboundText, market);
   }
 }

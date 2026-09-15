@@ -26,6 +26,8 @@ export type ActionContext = {
   conversation: AcqConversation;
   inboundText?: string;
   market?: 'fr' | 'mx';
+  /** Si présent (commentaire IG) → private reply prioritaire */
+  commentId?: string | null;
 };
 
 export type ActionResult = {
@@ -63,6 +65,36 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
     return { type: 'send_message', ok: false, detail: `Canal ${ctx.conversation.channel} sans provider messaging.` };
   }
   const recipientId = resolveRecipientId(ctx);
+  // Commentaire IG : private reply (ouvre le DM) — sinon message classique
+  if (ctx.commentId?.trim() && provider.sendPrivateReply) {
+    const priv = await provider.sendPrivateReply({
+      commentId: ctx.commentId.trim(),
+      body,
+    });
+    if (priv.ok) {
+      await insertOutboundMessage({
+        conversationId: ctx.conversation.id,
+        body,
+        provider: provider.id,
+        sandbox: priv.sandbox,
+      });
+      return {
+        type: 'send_message',
+        ok: true,
+        detail: priv.logLine ?? 'Private reply commentaire envoyé.',
+        data: priv,
+      };
+    }
+    // Fallback DM si private reply échoue et qu'on a un IGSID
+    if (!recipientId) {
+      return {
+        type: 'send_message',
+        ok: false,
+        detail: priv.error ?? 'Private reply échoué et pas d’ID destinataire DM.',
+      };
+    }
+  }
+
   if (!recipientId) {
     return {
       type: 'send_message',

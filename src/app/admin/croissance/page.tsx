@@ -17,6 +17,7 @@ import {
   acquisitionEnsureMetaConnection,
   acquisitionSyncInsightsAndHooks,
   acquisitionCheckLiveReadiness,
+  acquisitionEnsureWorkflowCatalog,
 } from '@/app/admin/acquisition/actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
@@ -29,6 +30,7 @@ import { buildAcquisitionOverview } from '@/lib/acquisition/dashboard/build-over
 import {
   getConversationWithMessages,
   listConversations,
+  listRecentWorkflowRuns,
   listWorkflows,
 } from '@/lib/acquisition/engine/repository';
 import { isAcquisitionModuleEnabled } from '@/lib/acquisition/feature-flag';
@@ -76,10 +78,11 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
   let acquisitionPanel: ReactNode = null;
 
   if (needsAcquisition) {
-    const [overview, convList, wfList] = await Promise.all([
+    const [overview, convList, wfList, runsList] = await Promise.all([
       buildAcquisitionOverview(channel),
       listConversations(40),
       listWorkflows(),
+      listRecentWorkflowRuns(20),
     ]);
 
     let selectedMessages: AcqMessage[] = [];
@@ -97,6 +100,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
     const conversations = convList.ok ? convList.items : [];
     const conversationsError = convList.ok ? null : convList.error;
     const workflows = wfList.ok ? wfList.items : [];
+    const recentWorkflowRuns = runsList.ok ? runsList.items : [];
     const sandboxLog = getSandboxLog(30);
 
     acquisitionPanel = (
@@ -107,6 +111,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         overview={overview}
         conversations={conversations}
         workflows={workflows}
+        recentWorkflowRuns={recentWorkflowRuns}
         conversationsError={conversationsError}
         schemaReady={overview.schemaReady}
         selectedConversationId={selectedId}
@@ -126,6 +131,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         onEnsureMetaConnection={acquisitionEnsureMetaConnection}
         onSyncInsightsAndHooks={acquisitionSyncInsightsAndHooks}
         onCheckLiveReadiness={acquisitionCheckLiveReadiness}
+        onEnsureWorkflowCatalog={acquisitionEnsureWorkflowCatalog}
       />
     );
   }

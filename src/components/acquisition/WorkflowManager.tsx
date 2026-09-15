@@ -7,6 +7,7 @@ import {
   WORKFLOW_ACTION_OPTIONS,
   WORKFLOW_TRIGGER_OPTIONS,
 } from '@/lib/acquisition/config';
+import { WORKFLOW_CATALOG_COUNT } from '@/lib/acquisition/engine/workflow-catalog';
 import type { AcqWorkflow, WorkflowActionSpec, WorkflowActionType } from '@/lib/acquisition/types';
 
 import { Card } from './Card';
@@ -30,11 +31,19 @@ type Props = {
   schemaReady: boolean;
   selectedConversationId: string | null;
   pending: boolean;
+  recentRuns?: Array<{
+    id: string;
+    workflowName: string | null;
+    status: string;
+    createdAt: string;
+    logPreview: string;
+  }>;
   onSaveWorkflow: (payload: SavePayload) => Promise<{ ok: boolean; id?: string; error?: string }>;
   onDeleteWorkflow: (workflowId: string) => Promise<{ ok: boolean; error?: string }>;
   onToggleWorkflow: (workflowId: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
   onRunWorkflow: (workflowId: string) => Promise<{ ok: boolean; detail: string }>;
   onTestAction: (actionType: WorkflowActionType) => Promise<{ ok: boolean; type: string; detail: string }>;
+  onEnsureCatalog?: () => Promise<{ ok: boolean; upserted?: number; error?: string }>;
   onStatus: (message: string) => void;
 };
 
@@ -92,11 +101,13 @@ export function WorkflowManager({
   schemaReady,
   selectedConversationId,
   pending,
+  recentRuns = [],
   onSaveWorkflow,
   onDeleteWorkflow,
   onToggleWorkflow,
   onRunWorkflow,
   onTestAction,
+  onEnsureCatalog,
   onStatus,
 }: Props) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>
@@ -258,15 +269,20 @@ export function WorkflowManager({
               ))}
             </select>
           </label>
-          {draft.triggerType === 'ig_comment_keyword' ? (
+          {draft.triggerType === 'ig_comment_keyword' ||
+          draft.triggerType === 'ig_dm_inbound' ||
+          draft.triggerType === 'ig_story_reply' ? (
             <label className="block text-xs">
-              <span style={{ color: acq.muted }}>Mot-clé (ex. essai)</span>
+              <span style={{ color: acq.muted }}>
+                Mot-clé (optionnel, ex. bonjour|essai — vide = tous les messages)
+              </span>
               <input
                 type="text"
                 value={draft.triggerKeyword ?? ''}
                 onChange={(e) => onPatch({ triggerKeyword: e.target.value })}
                 className="mt-1 w-full rounded-lg border px-2 py-2 text-sm"
                 style={{ borderColor: acq.warmBeigeDeep }}
+                placeholder="essai|prueba"
               />
             </label>
           ) : (
@@ -283,6 +299,21 @@ export function WorkflowManager({
             </label>
           )}
         </div>
+        {(draft.triggerType === 'ig_comment_keyword' ||
+          draft.triggerType === 'ig_dm_inbound' ||
+          draft.triggerType === 'ig_story_reply') && (
+          <label className="block text-xs">
+            <span style={{ color: acq.muted }}>Conditions lifecycle (optionnel)</span>
+            <input
+              type="text"
+              value={draft.lifecycleIn ?? ''}
+              onChange={(e) => onPatch({ lifecycleIn: e.target.value })}
+              className="mt-1 w-full rounded-lg border px-2 py-2 text-sm"
+              style={{ borderColor: acq.warmBeigeDeep }}
+              placeholder="qualified, trial"
+            />
+          </label>
+        )}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: acq.muted }}>
             Actions (dans l’ordre)
@@ -328,7 +359,39 @@ export function WorkflowManager({
           >
             <Plus size={16} /> Nouveau workflow
           </button>
+          {onEnsureCatalog ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                void (async () => {
+                  const r = await onEnsureCatalog();
+                  onStatus(
+                    r.ok
+                      ? `Catalogue installé : ${r.upserted ?? 0} recettes à jour.`
+                      : r.error ?? 'Échec catalogue',
+                  );
+                })();
+              }}
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+              style={{ backgroundColor: '#FFFFFF', color: acq.ink, boxShadow: acq.shadowCard }}
+            >
+              Installer les {WORKFLOW_CATALOG_COUNT} recettes pro
+            </button>
+          ) : null}
         </div>
+
+        {workflowList.length < WORKFLOW_CATALOG_COUNT && onEnsureCatalog ? (
+          <Card className="mb-4" padding="md">
+            <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+              Catalogue incomplet ({workflowList.length}/{WORKFLOW_CATALOG_COUNT})
+            </p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: acq.muted }}>
+              Clique « Installer les {WORKFLOW_CATALOG_COUNT} recettes pro » pour activer saluts DM,
+              commentaires ESSAI/INFO, objections, story, Nantes, etc.
+            </p>
+          </Card>
+        ) : null}
 
         {creating ? (
           <Card className="mb-4" padding="md">
@@ -364,6 +427,9 @@ export function WorkflowManager({
                       {WORKFLOW_TRIGGER_OPTIONS.find((t) => t.id === wf.triggerType)?.label ?? wf.triggerType}
                       {' · '}
                       {wf.actions.length} action{wf.actions.length > 1 ? 's' : ''}
+                      {typeof wf.triggerConfig.keyword === 'string' && wf.triggerConfig.keyword.trim()
+                        ? ` · mot-clé « ${wf.triggerConfig.keyword} »`
+                        : ' · tous les messages'}
                     </p>
                     <Chip
                       label={wf.enabled ? 'Actif' : 'Désactivé'}
@@ -424,6 +490,45 @@ export function WorkflowManager({
           })}
         </div>
       </JourneyBoard>
+
+      {recentRuns.length ? (
+        <JourneyBoard
+          title="Dernières exécutions"
+          subtitle="Ce que les robots ont vraiment fait (succès / échec)"
+        >
+          <div className="space-y-2 rounded-[20px] p-3" style={{ backgroundColor: acq.zoneInner }}>
+            {recentRuns.slice(0, 12).map((run, i) => (
+              <Card key={run.id} overlap={i > 0} padding="md">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+                    {run.workflowName ?? 'Workflow'} · {run.status}
+                  </p>
+                  <p className="text-xs" style={{ color: acq.muted }}>
+                    {new Date(run.createdAt).toLocaleString('fr-FR', {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                </div>
+                {run.logPreview ? (
+                  <p className="mt-1 text-xs leading-relaxed" style={{ color: acq.muted }}>
+                    {run.logPreview}
+                  </p>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+        </JourneyBoard>
+      ) : (
+        <JourneyBoard
+          title="Dernières exécutions"
+          subtitle="Vide pour l’instant — envoie un DM « Bonjour » ou commente « ESSAI » sur IG"
+        >
+          <p className="text-sm" style={{ color: acq.muted }}>
+            Dès qu’un workflow tourne, tu verras ici le détail (message envoyé, cooldown, erreur Meta…).
+          </p>
+        </JourneyBoard>
+      )}
 
       <JourneyBoard title="Laboratoire sandbox" subtitle="Tester chaque action sur le fil sélectionné">
         {!selectedConversationId ? (

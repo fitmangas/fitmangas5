@@ -11,6 +11,7 @@ import type {
   LifecycleStage,
   WorkflowActionType,
 } from '@/lib/acquisition/types';
+import { WORKFLOW_CATALOG, WORKFLOW_CATALOG_COUNT } from './workflow-catalog';
 
 type DbError = { ok: false; error: string; schemaReady: boolean };
 
@@ -190,12 +191,25 @@ export async function listWorkflows(): Promise<
   }
   try {
     const admin = createAdminClient();
+    const { count } = await admin.from('acq_workflows').select('id', { count: 'exact', head: true });
+    if ((count ?? 0) < WORKFLOW_CATALOG_COUNT) {
+      await ensureWorkflowCatalog();
+    }
     const { data, error } = await admin.from('acq_workflows').select('*').order('name');
     if (error) {
       return { ok: true, items: defaultWorkflows(), schemaReady: true };
     }
     const items = (data ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>));
-    return { ok: true, items: items.length ? items : defaultWorkflows(), schemaReady: true };
+    if (!items.length) {
+      await ensureWorkflowCatalog();
+      const { data: again } = await admin.from('acq_workflows').select('*').order('name');
+      return {
+        ok: true,
+        items: (again ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>)),
+        schemaReady: true,
+      };
+    }
+    return { ok: true, items, schemaReady: true };
   } catch (e) {
     return {
       ok: false,
@@ -207,39 +221,7 @@ export async function listWorkflows(): Promise<
 
 /** Workflows par défaut (mémoire) tant que la table n'existe pas ou est vide. */
 export function defaultWorkflows(): AcqWorkflow[] {
-  return [
-    {
-      id: 'wf-ig-keyword-trial',
-      name: 'Commentaire IG « ESSAI » → lien essai',
-      enabled: true,
-      triggerType: 'ig_comment_keyword',
-      triggerConfig: { keyword: 'essai' },
-      conditions: {},
-      actions: [
-        { type: 'send_message', config: { body: 'Merci pour ton commentaire ! Voici ton essai 7 jours FitMangas :' } },
-        { type: 'send_trial_link' },
-        { type: 'set_lifecycle_stage', config: { stage: 'trial' } },
-      ],
-    },
-    {
-      id: 'wf-dm-qualify',
-      name: 'Nouveau DM → qualifier + réponse concierge',
-      enabled: true,
-      triggerType: 'ig_dm_inbound',
-      triggerConfig: {},
-      conditions: {},
-      actions: [{ type: 'qualify_intent' }],
-    },
-    {
-      id: 'wf-hot-escalate',
-      name: 'Lead chaud → escalade Alejandra',
-      enabled: true,
-      triggerType: 'whatsapp_inbound',
-      triggerConfig: {},
-      conditions: { lifecycle_in: ['qualified', 'trial'] },
-      actions: [{ type: 'escalate_human' }],
-    },
-  ];
+  return WORKFLOW_CATALOG;
 }
 
 function mapWorkflowRow(row: Record<string, unknown>): AcqWorkflow {
@@ -508,6 +490,113 @@ export async function recordWorkflowRun(params: {
     status: params.status,
     log: params.log,
   });
+}
+
+/** Anti-spam : même workflow + même contact dans les N dernières heures. */
+export async function wasWorkflowRunRecently(
+  workflowId: string,
+  contactId: string,
+  withinHours = 6,
+): Promise<boolean> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return false;
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - withinHours * 3600000).toISOString();
+  const { data } = await admin
+    .from('acq_workflow_runs')
+    .select('id')
+    .eq('workflow_id', workflowId)
+    .eq('contact_id', contactId)
+    .gte('created_at', since)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data?.id);
+}
+
+export async function listRecentWorkflowRuns(limit = 20): Promise<{
+  ok: boolean;
+  items: Array<{
+    id: string;
+    workflowId: string | null;
+    workflowName: string | null;
+    contactId: string | null;
+    status: string;
+    createdAt: string;
+    logPreview: string;
+  }>;
+  error?: string;
+}> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: true, items: [] };
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('acq_workflow_runs')
+      .select('id, workflow_id, contact_id, status, log, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) return { ok: false, items: [], error: error.message };
+
+    const wfIds = [...new Set((data ?? []).map((r) => r.workflow_id).filter(Boolean))] as string[];
+    const nameById = new Map<string, string>();
+    if (wfIds.length) {
+      const { data: wfs } = await admin.from('acq_workflows').select('id, name').in('id', wfIds);
+      for (const w of wfs ?? []) nameById.set(String(w.id), String(w.name));
+    }
+
+    return {
+      ok: true,
+      items: (data ?? []).map((row) => {
+        const log = row.log;
+        let logPreview = '';
+        if (Array.isArray(log)) {
+          logPreview = log
+            .slice(0, 3)
+            .map((s: { ok?: boolean; type?: string; detail?: string }) =>
+              `${s.ok ? '✓' : '✗'} ${s.type ?? '?'}: ${String(s.detail ?? '').slice(0, 60)}`,
+            )
+            .join(' · ');
+        }
+        return {
+          id: String(row.id),
+          workflowId: row.workflow_id ? String(row.workflow_id) : null,
+          workflowName: row.workflow_id ? nameById.get(String(row.workflow_id)) ?? null : null,
+          contactId: row.contact_id ? String(row.contact_id) : null,
+          status: String(row.status),
+          createdAt: String(row.created_at),
+          logPreview,
+        };
+      }),
+    };
+  } catch (e) {
+    return { ok: false, items: [], error: e instanceof Error ? e.message : 'Erreur runs' };
+  }
+}
+
+/** Upsert le catalogue opérationnel (8 recettes) — idempotent. */
+export async function ensureWorkflowCatalog(): Promise<{ ok: boolean; upserted: number; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, upserted: 0, error: 'Schema absent.' };
+
+  const { WORKFLOW_CATALOG } = await import('./workflow-catalog');
+  const admin = createAdminClient();
+  let upserted = 0;
+
+  for (const wf of WORKFLOW_CATALOG) {
+    const payload = {
+      id: wf.id,
+      name: wf.name,
+      enabled: wf.enabled,
+      trigger_type: wf.triggerType,
+      trigger_config: wf.triggerConfig,
+      conditions: wf.conditions,
+      actions: wf.actions,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await admin.from('acq_workflows').upsert(payload, { onConflict: 'id' });
+    if (!error) upserted += 1;
+  }
+  return { ok: true, upserted };
 }
 
 export async function seedSandboxDemoData(): Promise<{ ok: boolean; error?: string; seeded?: boolean }> {

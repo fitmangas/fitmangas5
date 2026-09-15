@@ -106,7 +106,10 @@ export async function acquisitionSaveWorkflow(payload: {
 }) {
   guardModule();
   const triggerConfig =
-    payload.triggerType === 'ig_comment_keyword' && payload.triggerKeyword?.trim()
+    payload.triggerKeyword?.trim() &&
+    (payload.triggerType === 'ig_comment_keyword' ||
+      payload.triggerType === 'ig_dm_inbound' ||
+      payload.triggerType === 'ig_story_reply')
       ? { keyword: payload.triggerKeyword.trim().toLowerCase() }
       : {};
   const conditions = payload.lifecycleIn?.trim()
@@ -310,4 +313,19 @@ export async function acquisitionSyncInsightsAndHooks() {
     hooksUpdated: scores.updated,
     hooksError: scores.error,
   };
+}
+
+/** Installe / met à jour le catalogue de workflows opérationnels. */
+export async function acquisitionEnsureWorkflowCatalog() {
+  guardModule();
+  const { ensureWorkflowCatalog } = await import('@/lib/acquisition/engine/repository');
+  const r = await ensureWorkflowCatalog();
+  revalidateAcquisition();
+  return r;
+}
+
+export async function acquisitionListRecentWorkflowRuns() {
+  guardModule();
+  const { listRecentWorkflowRuns } = await import('@/lib/acquisition/engine/repository');
+  return listRecentWorkflowRuns(25);
 }

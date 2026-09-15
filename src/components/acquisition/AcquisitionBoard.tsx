@@ -89,6 +89,14 @@ type Props = {
     hooksUpdated?: number;
   }>;
   onCheckLiveReadiness?: () => Promise<{ readyForLive: boolean; blockers: string[] }>;
+  onEnsureWorkflowCatalog?: () => Promise<{ ok: boolean; upserted?: number; error?: string }>;
+  recentWorkflowRuns?: Array<{
+    id: string;
+    workflowName: string | null;
+    status: string;
+    createdAt: string;
+    logPreview: string;
+  }>;
   /** Intégré dans /admin/croissance — masque en-tête et barre d’onglets internes. */
   embedded?: boolean;
   forcedTab?: TabId;
@@ -118,6 +126,8 @@ export function AcquisitionBoard({
   onEnsureMetaConnection,
   onSyncInsightsAndHooks,
   onCheckLiveReadiness,
+  onEnsureWorkflowCatalog,
+  recentWorkflowRuns = [],
   embedded = false,
   forcedTab = 'overview',
   routeBase = '/admin/acquisition',
@@ -736,10 +746,12 @@ export function AcquisitionBoard({
               schemaReady={schemaReady}
               selectedConversationId={selectedConversationId}
               pending={pending}
+              recentRuns={recentWorkflowRuns}
               onStatus={setStatus}
               onSaveWorkflow={onSaveWorkflow}
               onDeleteWorkflow={onDeleteWorkflow}
               onToggleWorkflow={onToggleWorkflow}
+              onEnsureCatalog={onEnsureWorkflowCatalog}
               onRunWorkflow={(id) =>
                 new Promise((resolve) => {
                   if (!selectedConversationId) {

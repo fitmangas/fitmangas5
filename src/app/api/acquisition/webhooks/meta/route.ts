@@ -12,7 +12,12 @@ export const dynamic = 'force-dynamic';
 type MetaMessagingEvent = {
   sender?: { id?: string };
   recipient?: { id?: string };
-  message?: { mid?: string; text?: string };
+  message?: {
+    mid?: string;
+    text?: string;
+    reply_to?: { story?: { id?: string; url?: string } };
+    is_echo?: boolean;
+  };
   timestamp?: number;
 };
 
@@ -22,6 +27,10 @@ type MetaWebhookEntry = {
   changes?: Array<{
     field?: string;
     value?: {
+      id?: string;
+      text?: string;
+      from?: { id?: string; username?: string };
+      media?: { id?: string };
       contacts?: Array<{ wa_id?: string; profile?: { name?: string } }>;
       messages?: Array<{ from?: string; id?: string; text?: { body?: string }; type?: string }>;
     };
@@ -78,6 +87,8 @@ async function ingestInbound(params: {
   text: string;
   externalMessageId?: string | null;
   handleOverride?: string | null;
+  triggerType?: WorkflowTriggerType;
+  commentId?: string | null;
 }): Promise<{ stored: boolean; workflowsRun: number }> {
   const admin = createAdminClient();
   const { channel, senderId, text } = params;
@@ -198,10 +209,11 @@ async function ingestInbound(params: {
       externalThreadId: senderId,
     };
     const results = await runInboundTrigger({
-      triggerType: triggerForChannel(channel),
+      triggerType: params.triggerType ?? triggerForChannel(channel),
       conversation,
       contactId,
       inboundText: text,
+      commentId: params.commentId ?? null,
       workflows,
     });
     workflowsRun = results.length;
@@ -260,18 +272,49 @@ export async function POST(request: Request) {
 
     for (const entry of body.entry ?? []) {
       for (const msg of entry.messaging ?? []) {
+        if (msg.message?.is_echo) continue;
         const text = msg.message?.text?.trim();
         const senderId = msg.sender?.id;
         if (!text || !senderId) continue;
         const channel: AcquisitionChannel = body.object === 'instagram' ? 'instagram' : 'facebook';
+        const isStoryReply = Boolean(msg.message?.reply_to?.story);
         const r = await ingestInbound({
           channel,
           senderId,
           text,
           externalMessageId: msg.message?.mid ?? null,
+          triggerType: isStoryReply
+            ? 'ig_story_reply'
+            : channel === 'instagram'
+              ? 'ig_dm_inbound'
+              : triggerForChannel(channel),
         });
         if (r.stored) stored += 1;
         workflowsRun += r.workflowsRun;
+      }
+
+      // Commentaires Instagram (field=comments) → private reply + workflows mot-clé
+      if (body.object === 'instagram') {
+        for (const change of entry.changes ?? []) {
+          if (change.field !== 'comments') continue;
+          const value = change.value;
+          const text = value?.text?.trim();
+          const commentId = value?.id;
+          const senderId = value?.from?.id;
+          const username = value?.from?.username;
+          if (!text || !senderId || !commentId) continue;
+          const r = await ingestInbound({
+            channel: 'instagram',
+            senderId,
+            text,
+            externalMessageId: `comment_${commentId}`,
+            handleOverride: username ? `@${username}` : null,
+            triggerType: 'ig_comment_keyword',
+            commentId,
+          });
+          if (r.stored) stored += 1;
+          workflowsRun += r.workflowsRun;
+        }
       }
 
       if (body.object === 'whatsapp_business_account') {
