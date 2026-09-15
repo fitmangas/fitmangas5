@@ -22,20 +22,20 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
   const replies: Record<ConciergeIntent, string> = {
     info:
       market === 'mx'
-        ? `${CONCIERGE_OPENING_ES}\n\n¿Te interesa probar 7 días gratis?\nLa tarjeta solo al final — si sigues.`
-        : `${CONCIERGE_OPENING_FR}\n\nTu veux tester l’essai 7 jours ?\nLa carte n’est demandée qu’à la fin — seulement si tu continues.`,
+        ? `${CONCIERGE_OPENING_ES}\n\nPrueba 7 días gratis ✨\nHaz clic aquí para empezar →`
+        : `${CONCIERGE_OPENING_FR}\n\nEssai 7 jours gratuits ✨\nClique ici pour démarrer →`,
     trial:
       market === 'mx'
-        ? `${CONCIERGE_OPENING_ES}\n\nTe envío el enlace de prueba 7 días.\nTarjeta solo al final si sigues.`
-        : `${CONCIERGE_OPENING_FR}\n\nJe t’envoie le lien d’essai 7 jours.\nCarte seulement à la fin si tu continues.`,
+        ? `${CONCIERGE_OPENING_ES}\n\nPrueba 7 días gratis ✨\nTe envío el enlace →`
+        : `${CONCIERGE_OPENING_FR}\n\nEssai 7 jours gratuits ✨\nJe t’envoie le lien →`,
     booking:
       market === 'mx'
-        ? '¿Prefieres visio colectivo o presencial en Nantes?\n\nTe ayudo a reservar un hueco.'
-        : 'Tu préfères le visio collectif ou le présentiel à Nantes ?\n\nJe note ta demande de créneau.',
+        ? '¿Prefieres visio colectivo o presencial en Nantes?\n\nDime y te ayudo a reservar.'
+        : 'Tu préfères le visio collectif ou le présentiel à Nantes ?\n\nDis-moi, je t’aide à réserver.',
     human:
       market === 'mx'
-        ? 'Alejandra responde personalmente a las clientas en prueba o suscritas.\n\n¿Quieres empezar con la prueba 7 días?'
-        : 'Alejandra répond en direct aux clientes en essai ou abonnées.\n\nTu veux commencer par l’essai 7 jours ?',
+        ? 'Te respondo yo en persona cuando estás en prueba o suscrita.\n\n¿Empezamos con la prueba 7 días gratis ✨?'
+        : 'Je te réponds en personne quand tu es en essai ou abonnée.\n\nOn commence par l’essai 7 jours gratuits ✨ ?',
     optout: market === 'mx' ? 'Entendido, no te escribo más.' : 'Compris, je ne t’écris plus.',
   };
 
@@ -90,7 +90,7 @@ export async function runConcierge(params: {
   }
 
   const disclosure = isAiDisclosureEnabled(market);
-  const prefix = disclosure ? 'Assistant IA FitMangas — ' : '';
+  const prefix = disclosure ? 'Réponse assistée — ' : '';
 
   try {
     const model = process.env.ANTHROPIC_MODEL?.trim() || 'claude-sonnet-4-5';
