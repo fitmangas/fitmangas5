@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Exclut le flux ICS : Apple le fetch sans session ; éviter Set-Cookie / session rewrite.
-    '/((?!_next/static|_next/image|favicon.ico|api/calendar/feed|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Exclut ICS (Apple) + webhooks Meta (HMAC sur body brut — ne pas toucher la requête).
+    '/((?!_next/static|_next/image|favicon.ico|api/calendar/feed|api/acquisition/webhooks/meta|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
