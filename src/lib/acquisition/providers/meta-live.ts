@@ -26,7 +26,10 @@ export type MetaLiveReadiness = {
   notes: string[];
 };
 
+/** Messenger / WhatsApp Cloud API */
 const GRAPH = 'https://graph.facebook.com/v21.0';
+/** Instagram API with Instagram Login (tokens IGAA…) */
+const GRAPH_IG = 'https://graph.instagram.com/v21.0';
 
 function emptyConnection(): AcquisitionMetaConnection {
   return {
@@ -150,8 +153,13 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
   };
 }
 
-async function graphPost(path: string, token: string, body: Record<string, unknown>) {
-  const res = await fetch(`${GRAPH}${path}`, {
+async function graphPost(
+  base: typeof GRAPH | typeof GRAPH_IG,
+  path: string,
+  token: string,
+  body: Record<string, unknown>,
+) {
+  const res = await fetch(`${base}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -178,7 +186,8 @@ export async function sendInstagramLiveMessage(params: {
   if (!conn.accessToken || !conn.igUserId) {
     return { ok: false, error: 'Connexion Meta Acquisition incomplète (IG User ID + token).' };
   }
-  return graphPost(`/${conn.igUserId}/messages`, conn.accessToken, {
+  // Tokens Instagram Login (IGAA…) → graph.instagram.com uniquement
+  return graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, {
     recipient: { id: params.recipientId },
     message: { text: params.body },
   });
@@ -192,7 +201,7 @@ export async function sendMessengerLiveMessage(params: {
   if (!conn.accessToken || !conn.pageId) {
     return { ok: false, error: 'Connexion Meta Acquisition incomplète (Page ID + token).' };
   }
-  return graphPost(`/${conn.pageId}/messages`, conn.accessToken, {
+  return graphPost(GRAPH, `/${conn.pageId}/messages`, conn.accessToken, {
     recipient: { id: params.recipientId },
     message: { text: params.body },
     messaging_type: 'RESPONSE',
@@ -207,7 +216,7 @@ export async function sendInstagramPrivateReplyLive(params: {
   if (!conn.accessToken || !conn.igUserId) {
     return { ok: false, error: 'Connexion Meta Acquisition incomplète.' };
   }
-  return graphPost(`/${conn.igUserId}/messages`, conn.accessToken, {
+  return graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, {
     recipient: { comment_id: params.commentId },
     message: { text: params.body },
   });
@@ -225,7 +234,7 @@ export async function sendWhatsAppLiveMessage(params: {
       error: 'WhatsApp LIVE : WABA phone_number_id absent dans acquisition_meta_connection.',
     };
   }
-  return graphPost(`/${phoneNumberId}/messages`, conn.accessToken, {
+  return graphPost(GRAPH, `/${phoneNumberId}/messages`, conn.accessToken, {
     messaging_product: 'whatsapp',
     to: params.recipientId.replace(/\D/g, ''),
     type: 'text',
@@ -260,7 +269,7 @@ export async function sendWhatsAppLiveTemplate(params: {
         ]
       : undefined;
 
-  return graphPost(`/${phoneNumberId}/messages`, conn.accessToken, {
+  return graphPost(GRAPH, `/${phoneNumberId}/messages`, conn.accessToken, {
     messaging_product: 'whatsapp',
     to: params.recipientId.replace(/\D/g, ''),
     type: 'template',
