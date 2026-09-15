@@ -22,18 +22,15 @@ export function getPublicTrialSignupUrl(options?: {
 
 export function getTrialOfferLabel(locale: 'fr' | 'es' = 'fr'): string {
   if (locale === 'es') {
-    return `Prueba gratis ${VISIO_FREE_TRIAL_DAYS} días en FitMangas`;
+    return `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`;
   }
-  return `Essai gratuit ${VISIO_FREE_TRIAL_DAYS} jours sur FitMangas`;
+  return `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`;
 }
 
 /**
- * Message DM offre essai — logique Hormozi appliquée au positionnement FitMangas :
- * valeur (rendez-vous fixe + correction live + être vue) + inversion du risque (7j gratuits).
- *
- * style:
- * - full = message complet (1 bulle autonome)
- * - compact = juste le lien (2e bulle, sans répéter le pitch)
+ * Message DM offre essai.
+ * Voix Alejandra + « Essai 7 jours gratuits ✨ ».
+ * Ne jamais mentir sur la carte (prise à l’inscription, prélèvement après essai).
  */
 export function getTrialDmMessage(options?: {
   locale?: 'fr' | 'es';
@@ -50,34 +47,34 @@ export function getTrialDmMessage(options?: {
 
   if (style === 'compact') {
     return locale === 'es'
-      ? `Aquí tienes el enlace para tus ${VISIO_FREE_TRIAL_DAYS} días 💛\n\n${url}`
-      : `Voici ton lien pour les ${VISIO_FREE_TRIAL_DAYS} jours 💛\n\n${url}`;
+      ? `Aquí tienes el enlace ✨\n\n${url}`
+      : `Voici ton lien ✨\n\n${url}`;
   }
 
   if (locale === 'es') {
     return [
-      'No pagas un vídeo más.',
-      'Pagas una cita fija en visio, corrección en directo, y ser vista de verdad.',
+      'Yo no te dejo sola frente a un vídeo.',
+      'Cita fija conmigo, te corrijo en directo, te veo.',
       '',
-      `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis.`,
-      'La tarjeta solo al final — si sigues.',
+      `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
       '',
+      'Haz clic aquí →',
       url,
     ].join('\n');
   }
 
   return [
-    'Tu ne paies pas une vidéo de plus.',
-    'Tu paies un rendez-vous fixe en visio, la correction en direct, et le fait d’être vraiment vue.',
+    'Moi, je ne te laisse pas seule devant une vidéo.',
+    'Rendez-vous fixe avec moi, je te corrige en direct, je te vois.',
     '',
-    `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits.`,
-    'La carte n’est demandée qu’à la fin — seulement si tu continues.',
+    `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
     '',
+    'Clique ici →',
     url,
   ].join('\n');
 }
 
-/** Pitch + lien dans UNE seule bulle (saluts, commentaires) — évite le double DM robot. */
+/** Pitch + lien dans UNE seule bulle. */
 export function getNaturalTrialInviteMessage(options?: {
   locale?: 'fr' | 'es';
   utmSource?: string;
@@ -91,17 +88,17 @@ export function getNaturalTrialInviteMessage(options?: {
   });
   const opener =
     options?.opener?.trim() ||
-    (locale === 'es' ? 'Gracias por escribir 💛' : 'Merci pour ton message 💛');
+    (locale === 'es' ? 'Gracias por escribir 💛 Soy Alejandra.' : 'Merci pour ton message 💛 C’est Alejandra.');
 
   if (locale === 'es') {
     return [
       opener,
       '',
-      'FitMangas = cita fija + corrección en directo + ser vista.',
-      'Ya no estás sola frente a YouTube.',
+      'Conmigo: cita fija + corrección en directo + te veo de verdad.',
       '',
-      `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis — tarjeta solo al final si sigues.`,
+      `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
       '',
+      'Haz clic aquí →',
       url,
     ].join('\n');
   }
@@ -109,11 +106,11 @@ export function getNaturalTrialInviteMessage(options?: {
   return [
     opener,
     '',
-    'FitMangas = rendez-vous fixe + correction en direct + être vue.',
-    'Tu n’es plus seule devant YouTube.',
+    'Avec moi : rendez-vous fixe + correction en direct + je te vois vraiment.',
     '',
-    `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits — carte seulement à la fin si tu continues.`,
+    `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
     '',
+    'Clique ici →',
     url,
   ].join('\n');
 }
