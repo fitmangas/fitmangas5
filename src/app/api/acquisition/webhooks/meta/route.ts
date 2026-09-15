@@ -35,20 +35,31 @@ function triggerForChannel(channel: AcquisitionChannel): WorkflowTriggerType {
   return 'email_inbound';
 }
 
-function verifyMetaSignature(rawBody: string, signatureHeader: string | null): boolean {
+function verifyMetaSignature(rawBody: string, request: Request): boolean {
   const secret = process.env.META_APP_SECRET?.trim();
   if (!secret) return false;
-  if (!signatureHeader?.startsWith('sha256=')) return false;
-  const expected = createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex');
-  const received = signatureHeader.slice('sha256='.length);
-  try {
-    const a = Buffer.from(expected, 'hex');
-    const b = Buffer.from(received, 'hex');
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
-  } catch {
-    return false;
+
+  const sig256 = request.headers.get('x-hub-signature-256');
+  const sig1 = request.headers.get('x-hub-signature');
+
+  const checks: Array<{ prefix: string; algo: string; header: string | null }> = [
+    { prefix: 'sha256=', algo: 'sha256', header: sig256 },
+    { prefix: 'sha1=', algo: 'sha1', header: sig1 },
+  ];
+
+  for (const { prefix, algo, header } of checks) {
+    if (!header?.startsWith(prefix)) continue;
+    const expected = createHmac(algo, secret).update(rawBody, 'utf8').digest('hex');
+    const received = header.slice(prefix.length).trim();
+    try {
+      const a = Buffer.from(expected, 'hex');
+      const b = Buffer.from(received, 'hex');
+      if (a.length === b.length && timingSafeEqual(a, b)) return true;
+    } catch {
+      // essayer le check suivant
+    }
   }
+  return false;
 }
 
 async function ingestInbound(params: {
@@ -182,8 +193,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    const signature = request.headers.get('x-hub-signature-256');
-    if (!verifyMetaSignature(rawBody, signature)) {
+    if (!verifyMetaSignature(rawBody, request)) {
+      console.error('[meta-webhook] signature invalide', {
+        hasSha256: Boolean(request.headers.get('x-hub-signature-256')),
+        hasSha1: Boolean(request.headers.get('x-hub-signature')),
+        bodyLen: rawBody.length,
+        secretConfigured: Boolean(process.env.META_APP_SECRET?.trim()),
+      });
       return NextResponse.json({ error: 'Signature Meta invalide.' }, { status: 401 });
     }
 
