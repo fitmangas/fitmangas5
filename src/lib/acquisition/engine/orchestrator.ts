@@ -135,7 +135,7 @@ export async function runInboundTrigger(params: {
         workflowId: wf.id,
         contactId,
         conversationId: params.conversation.id,
-        status: 'skipped',
+        status: 'ok',
         log: cooldownSteps,
       });
       if (hasKw || isComment) ranSpecific = true;
