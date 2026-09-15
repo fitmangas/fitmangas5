@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
 import { runInboundTrigger } from '@/lib/acquisition/engine/orchestrator';
 import { getContact, listWorkflows } from '@/lib/acquisition/engine/repository';
+import { detectAcquisitionMarket } from '@/lib/acquisition/market';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { AcquisitionChannel, WorkflowTriggerType } from '@/lib/acquisition/types';
 
@@ -149,7 +150,7 @@ async function ingestInbound(params: {
   let conversationId: string | undefined;
   const { data: existingConv } = await admin
     .from('acq_conversations')
-    .select('id')
+      .select('id')
     .eq('external_thread_id', senderId)
     .eq('channel', channel)
     .maybeSingle();
@@ -213,6 +214,7 @@ async function ingestInbound(params: {
       conversation,
       contactId,
       inboundText: text,
+      market: detectAcquisitionMarket(text),
       commentId: params.commentId ?? null,
       workflows,
     });
