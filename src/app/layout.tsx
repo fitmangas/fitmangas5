@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { CookieConsentBanner } from '@/components/Marketing/CookieConsentBanner';
 import { PublicMarketingScripts } from '@/components/Marketing/PublicMarketingScripts';
+import { SmoothScroll } from '@/components/SmoothScroll';
 import { FloatingWhatsApp } from '@/components/Support/FloatingWhatsApp';
 import { getMarketingSettings } from '@/lib/admin/marketing-settings';
 
@@ -67,10 +68,12 @@ export default async function RootLayout({
   return (
     <html lang="fr">
       <body className="relative min-h-screen overflow-x-clip">
-        <div className="relative min-h-screen">
-          {children}
-          <FloatingWhatsApp />
-        </div>
+        <SmoothScroll>
+          <div className="relative min-h-screen">
+            {children}
+            <FloatingWhatsApp />
+          </div>
+        </SmoothScroll>
         <CookieConsentBanner />
         <PublicMarketingScripts gaId={gaId} metaPixelId={metaPixelId ?? null} />
       </body>
