@@ -18,6 +18,50 @@ export async function sendAcquisitionEscalationEmail(params: {
   handle: string | null;
   preview: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
+  return sendAcquisitionOpsEmail({
+    subjectPrefix: 'Escalade DM',
+    title: 'Escalade inbox Acquisition',
+    intro: 'Un fil a besoin d’une réponse humaine.',
+    conversationId: params.conversationId,
+    channel: params.channel,
+    handle: params.handle,
+    preview: params.preview,
+    extraLines: [],
+  });
+}
+
+/** Alerte ops — intention de réservation (Nantes / créneaux). */
+export async function sendAcquisitionBookingEmail(params: {
+  conversationId: string;
+  channel: string;
+  handle: string | null;
+  courseType: string;
+  preview: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const courseLabel =
+    params.courseType === 'nantes_presentiel' ? 'Présentiel Nantes' : 'Visio collectif (créneaux)';
+  return sendAcquisitionOpsEmail({
+    subjectPrefix: 'Booking intent',
+    title: 'Nouvelle demande de cours',
+    intro: 'Une lead a demandé des créneaux — réponds vite pour convertir.',
+    conversationId: params.conversationId,
+    channel: params.channel,
+    handle: params.handle,
+    preview: params.preview,
+    extraLines: [`<li><strong>Type</strong> : ${escapeHtml(courseLabel)}</li>`],
+  });
+}
+
+async function sendAcquisitionOpsEmail(params: {
+  subjectPrefix: string;
+  title: string;
+  intro: string;
+  conversationId: string;
+  channel: string;
+  handle: string | null;
+  preview: string | null;
+  extraLines: string[];
+}): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.NEWSLETTER_FROM_EMAIL?.trim();
   const to =
@@ -35,11 +79,12 @@ export async function sendAcquisitionEscalationEmail(params: {
   const preview = (params.preview || '—').slice(0, 280);
 
   const innerHtml = `
-    <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Escalade inbox Acquisition</h1>
-    <p style="margin:0 0 12px;color:#2D2D2D;">Un fil a besoin d’une réponse humaine.</p>
+    <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">${escapeHtml(params.title)}</h1>
+    <p style="margin:0 0 12px;color:#2D2D2D;">${escapeHtml(params.intro)}</p>
     <ul style="margin:0 0 16px;padding-left:18px;color:#2D2D2D;">
       <li><strong>Contact</strong> : ${escapeHtml(who)}</li>
       <li><strong>Canal</strong> : ${escapeHtml(params.channel)}</li>
+      ${params.extraLines.join('\n')}
       <li><strong>Aperçu</strong> : ${escapeHtml(preview)}</li>
     </ul>
     <p style="margin:0;">
@@ -54,7 +99,7 @@ export async function sendAcquisitionEscalationEmail(params: {
     await resend.emails.send({
       from,
       to,
-      subject: `[FitMangas] Escalade DM — ${who} (${params.channel})`,
+      subject: `[FitMangas] ${params.subjectPrefix} — ${who} (${params.channel})`,
       html: wrapResendEmail({ innerHtml, locale: 'fr', showPreferencesLink: false }),
     });
     return { ok: true };
