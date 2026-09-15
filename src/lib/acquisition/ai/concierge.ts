@@ -18,6 +18,9 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
   if (/essai|gratuit|prix|abon|trial|prueba/.test(lower)) intent = 'trial';
   if (/cours|horaire|réserver|reserv|nantes|visio/.test(lower)) intent = 'booking';
   if (/humain|alejandra|appel|téléphone|telefono/.test(lower)) intent = 'human';
+  if (/stop|désabonne|desabonne|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas/.test(lower)) {
+    intent = 'optout';
+  }
 
   const replies: Record<ConciergeIntent, string> = {
     info:
