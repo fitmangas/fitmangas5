@@ -76,6 +76,12 @@ export type SocialPost = {
   facebookExternalId: string | null;
   /** Id TikTok (publish_id) si miroir IG→TT publié. */
   tiktokExternalId: string | null;
+  /** Conteneur IG Graph en cours (Reel) — reprise cron sans re-upload. */
+  igContainerId?: string | null;
+  /** Dernière erreur de publication auto (cron) — visible UI, pas de silence. */
+  publishError?: string | null;
+  /** Horodatage dernière tentative de publication auto. */
+  publishAttemptAt?: string | null;
   /** Suivi génération CM progressive (post par post). */
   generationStatus?: 'pending' | 'done' | 'failed' | 'retrying' | null;
   generationError?: string | null;
@@ -364,6 +370,9 @@ function normalizePost(raw: unknown, _index = 0): SocialPost | null {
     adaptedFromId: typeof row.adaptedFromId === 'string' ? row.adaptedFromId : null,
     facebookExternalId: typeof row.facebookExternalId === 'string' ? row.facebookExternalId : null,
     tiktokExternalId: typeof row.tiktokExternalId === 'string' ? row.tiktokExternalId : null,
+    igContainerId: typeof row.igContainerId === 'string' ? row.igContainerId : null,
+    publishError: typeof row.publishError === 'string' ? row.publishError : null,
+    publishAttemptAt: typeof row.publishAttemptAt === 'string' ? row.publishAttemptAt : null,
     generationStatus:
       row.generationStatus === 'pending' ||
       row.generationStatus === 'done' ||
@@ -429,6 +438,14 @@ export class SocialCommsBoardLoadError extends Error {
   }
 }
 
+/** Corrige les surrogates Unicode orphelins qui cassent JSON.parse / Postgres jsonb. */
+function sanitizeJsonText(text: string): string {
+  return text
+    .replace(/\\u[dD][c-fC-F][0-9a-fA-F]{2}/g, '\\uFFFD')
+    .replace(/\\u[dD][89abAB][0-9a-fA-F]{2}(?!\\u[dD][c-fC-F][0-9a-fA-F]{2})/g, '\\uFFFD')
+    .replace(/[\uD800-\uDFFF]/g, '\uFFFD');
+}
+
 /** Charge le board CM. Erreur DB / JSON → throw (jamais un board vide silencieux). Absence de clé = board vide légitime. */
 export async function getSocialCommsBoard(): Promise<SocialCommsBoard> {
   try {
@@ -444,7 +461,8 @@ export async function getSocialCommsBoard(): Promise<SocialCommsBoard> {
     }
     if (!data?.value) return emptySocialCommsBoard();
     try {
-      return parseSocialCommsBoard(JSON.parse(String(data.value)));
+      const rawText = sanitizeJsonText(String(data.value));
+      return parseSocialCommsBoard(JSON.parse(rawText));
     } catch (e) {
       console.error('[social-comms] getSocialCommsBoard JSON', e);
       throw new SocialCommsBoardLoadError('Board CM corrompu (JSON invalide).');

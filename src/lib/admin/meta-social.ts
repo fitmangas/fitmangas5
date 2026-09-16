@@ -173,14 +173,84 @@ export function facebookMirrorMediaReady(post: SocialPost): boolean {
 
 /** Publie immédiatement sur Instagram (compte pro lié à la Page). */
 export async function publishInstagramNow(connection: MetaSocialConnection, post: SocialPost) {
+  const result = await publishInstagramWithResume(connection, post, {
+    containerId: post.igContainerId,
+    maxWaitMs: 120_000,
+  });
+  if (!result.done) {
+    throw new Error(
+      'Timeout : le Reel Instagram n’est pas encore prêt côté Meta. Réessaie dans 1 minute (le conteneur est déjà créé).',
+    );
+  }
+  return result.mediaId;
+}
+
+export type InstagramPublishProgress =
+  | { done: true; mediaId: string; containerId?: string }
+  | { done: false; containerId: string };
+
+async function sleepMs(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+/** Attend qu’un conteneur IG soit FINISHED, ou retourne pending si le budget temps est dépassé. */
+async function waitInstagramContainerReady(
+  token: string,
+  creationId: string,
+  maxWaitMs: number,
+): Promise<'FINISHED' | 'PENDING'> {
+  const deadline = Date.now() + Math.max(3_000, maxWaitMs);
+  while (Date.now() < deadline) {
+    await sleepMs(2_500);
+    const status = await graphJson(
+      `${GRAPH}/${creationId}?fields=status_code&access_token=${encodeURIComponent(token)}`,
+    );
+    const code = String(status.status_code || '');
+    if (code === 'FINISHED') return 'FINISHED';
+    if (code === 'ERROR' || code === 'EXPIRED') {
+      throw new Error(
+        `Upload Reel Instagram en erreur (${code}). Vérifie que le MP4 est public et en 9:16.`,
+      );
+    }
+  }
+  return 'PENDING';
+}
+
+/**
+ * Publication IG avec reprise : pour les Reels, crée le conteneur puis poll avec un budget temps.
+ * Si Meta n’a pas fini → `{ done:false, containerId }` pour le prochain cron.
+ */
+export async function publishInstagramWithResume(
+  connection: MetaSocialConnection,
+  post: SocialPost,
+  opts?: { containerId?: string | null; maxWaitMs?: number },
+): Promise<InstagramPublishProgress> {
   if (!connection.accessToken || !connection.igUserId) {
     throw new Error('Instagram non connecté (IG User ID manquant).');
   }
   const caption = captionForPublish(post);
   const token = connection.accessToken;
+  const maxWaitMs = opts?.maxWaitMs ?? 45_000;
+  const existingContainerId = opts?.containerId?.trim() || null;
 
-  // Reel vidéo (MP4 monté public) — URL Storage telle quelle, aucun ré-encodage FitMangas.
-  // Meta peut recompresser côté IG ; on ne touche pas au fichier.
+  // Reprise : conteneur déjà créé (Reel / parfois carousel)
+  if (existingContainerId) {
+    const ready = await waitInstagramContainerReady(token, existingContainerId, maxWaitMs);
+    if (ready === 'PENDING') {
+      return { done: false, containerId: existingContainerId };
+    }
+    const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creation_id: existingContainerId,
+        access_token: token,
+      }),
+    });
+    return { done: true, mediaId: String(published.id || existingContainerId), containerId: existingContainerId };
+  }
+
+  // Reel vidéo (MP4 monté public)
   if (post.format === 'reel' && post.editedVideoPath) {
     const videoUrl = absolutePublicUrl(post.editedVideoPath);
     const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
@@ -197,22 +267,10 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
     const creationId = String(create.id || '');
     if (!creationId) throw new Error('Création Reel Instagram échouée.');
 
-    let ready = false;
-    for (let attempt = 0; attempt < 40; attempt += 1) {
-      await new Promise((r) => setTimeout(r, 3000));
-      const status = await graphJson(
-        `${GRAPH}/${creationId}?fields=status_code&access_token=${encodeURIComponent(token)}`,
-      );
-      const code = String(status.status_code || '');
-      if (code === 'FINISHED') {
-        ready = true;
-        break;
-      }
-      if (code === 'ERROR' || code === 'EXPIRED') {
-        throw new Error(`Upload Reel Instagram en erreur (${code}). Vérifie que le MP4 est public et en 9:16.`);
-      }
+    const ready = await waitInstagramContainerReady(token, creationId, maxWaitMs);
+    if (ready === 'PENDING') {
+      return { done: false, containerId: creationId };
     }
-    if (!ready) throw new Error('Timeout : le Reel Instagram n’est pas prêt (réessaie dans 1 min).');
 
     const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
       method: 'POST',
@@ -222,7 +280,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
         access_token: token,
       }),
     });
-    return String(published.id || creationId);
+    return { done: true, mediaId: String(published.id || creationId), containerId: creationId };
   }
 
   if (post.format === 'reel' && !post.editedVideoPath) {
@@ -235,7 +293,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
   }
   const publishImageUrls = await resolveMetaPublishImageUrls(post);
 
-  // Carousel IG : plusieurs enfants + conteneur CAROUSEL
+  // Carousel IG
   if (post.format === 'carousel' && publishImageUrls.length >= 2) {
     const childIds: string[] = [];
     for (const imageUrl of publishImageUrls.slice(0, 10)) {
@@ -264,7 +322,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
     });
     const creationId = String(container.id || '');
     if (!creationId) throw new Error('Création carousel Instagram échouée.');
-    await new Promise((r) => setTimeout(r, 3500));
+    await sleepMs(3_500);
     const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -273,7 +331,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
         access_token: token,
       }),
     });
-    return String(published.id || creationId);
+    return { done: true, mediaId: String(published.id || creationId), containerId: creationId };
   }
 
   const imageUrl = publishImageUrls[0]!;
@@ -289,7 +347,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
   const creationId = String(create.id || '');
   if (!creationId) throw new Error('Création média Instagram échouée.');
 
-  await new Promise((r) => setTimeout(r, 2500));
+  await sleepMs(2_500);
 
   const published = await graphJson(`${GRAPH}/${connection.igUserId}/media_publish`, {
     method: 'POST',
@@ -299,7 +357,7 @@ export async function publishInstagramNow(connection: MetaSocialConnection, post
       access_token: token,
     }),
   });
-  return String(published.id || creationId);
+  return { done: true, mediaId: String(published.id || creationId), containerId: creationId };
 }
 
 /** Publie un Reel Facebook via l’API officielle video_reels (pas /videos — crée des Reels fantômes). */
