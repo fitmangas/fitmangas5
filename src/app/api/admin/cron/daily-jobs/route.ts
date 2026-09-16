@@ -6,16 +6,19 @@ import { runCourseCycles, runPhase2DailyJobs } from '@/lib/notifications/phase2'
 import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
   try {
+    // Social en premier : prioritaire vs jobs lourds (reminders / Vimeo recover).
+    const social = await processDueSocialPostsAction();
     const admin = createAdminClient();
     const courseReminders = await runCourseCycles(admin);
     const result = await runPhase2DailyJobs(admin);
-    const social = await processDueSocialPostsAction();
     let replayRecover: Awaited<ReturnType<typeof recoverOrphanCourseReplays>> | { error: string };
     try {
       replayRecover = await recoverOrphanCourseReplays({ lookbackDays: 45 });
