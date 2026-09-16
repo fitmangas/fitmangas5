@@ -1741,7 +1741,9 @@ function PostCard({
                   ? post.alsoPublishFacebook && !post.facebookExternalId
                     ? 'border-[#fcd34d] bg-[#fffbeb] text-[#92400e]'
                     : 'border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46]'
-                  : 'border-[#bfdbfe] bg-[#eff6ff] text-[#1e40af]'
+                  : post.publishError
+                    ? 'border-[#fecaca] bg-[#fef2f2] text-[#991b1b]'
+                    : 'border-[#bfdbfe] bg-[#eff6ff] text-[#1e40af]'
               }`}
               role="status"
             >
@@ -1766,10 +1768,19 @@ function PostCard({
                       ? post.alsoPublishFacebook && !post.facebookExternalId
                         ? 'Instagram est en ligne, mais Facebook n’a pas d’ID de publication. Clique « Publier miroir FB » ci-dessous.'
                         : 'Le post est en ligne. Le statut reste visible ici.'
-                      : post.alsoPublishFacebook
-                        ? 'Instagram en file. Miroir Facebook au même instant (cron FitMangas).'
-                        : 'En file FitMangas. Publication automatique à l’heure prévue.')}
+                      : post.publishError
+                        ? `Échec auto : ${post.publishError}`
+                        : post.igContainerId
+                          ? 'Upload Meta en cours — le prochain cron finalise la publication (Reels).'
+                          : post.alsoPublishFacebook
+                            ? 'Instagram en file. Miroir Facebook au même instant (cron FitMangas).'
+                            : 'En file FitMangas. Publication automatique à l’heure prévue.')}
                 </p>
+                {post.publishError && bannerKind !== 'published' ? (
+                  <p className="mt-1.5 text-[12px] font-semibold text-[#991b1b]">
+                    Le cron réessaiera. Tu peux aussi cliquer « PUBLIER IG + FB + TT » pour forcer maintenant.
+                  </p>
+                ) : null}
                 {post.facebookExternalId ? (
                   <p className="mt-1.5 text-[12px]">
                     <a

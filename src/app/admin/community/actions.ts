@@ -12,6 +12,7 @@ import {
   metaAppConfigured,
   publishFacebookPost,
   publishInstagramNow,
+  publishInstagramWithResume,
   verifyFacebookPublishId,
 } from '@/lib/admin/meta-social';
 import {
@@ -1721,7 +1722,34 @@ export async function publishSocialPostNowAction(postId: string) {
     const notes: string[] = [];
 
     if (post.network === 'instagram') {
-      externalId = await publishInstagramNow(connection, post);
+      const progress = await publishInstagramWithResume(connection, post, {
+        containerId: post.igContainerId,
+        maxWaitMs: 120_000,
+      });
+      if (!progress.done) {
+        await saveSocialCommsBoard({
+          ...board,
+          posts: board.posts.map((item) =>
+            item.id === postId
+              ? {
+                  ...item,
+                  igContainerId: progress.containerId,
+                  publishError: null,
+                  publishAttemptAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }
+              : item,
+          ),
+        });
+        revalidateCommunity();
+        return {
+          ok: true as const,
+          pending: true as const,
+          message:
+            'Upload Instagram en cours côté Meta (surtout les Reels). Réessaie « Publier » dans 30–60 s — on reprend le même conteneur.',
+        };
+      }
+      externalId = progress.mediaId;
       notes.push('Instagram');
 
       if (post.alsoPublishFacebook) {
@@ -1783,6 +1811,9 @@ export async function publishSocialPostNowAction(postId: string) {
               metaExternalId: externalId,
               facebookExternalId,
               tiktokExternalId,
+              igContainerId: null,
+              publishError: null,
+              publishAttemptAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             }
           : item,
@@ -1855,6 +1886,9 @@ export async function scheduleSocialPostAction(postId: string) {
               ...item,
               status: 'scheduled',
               facebookExternalId: null,
+              igContainerId: null,
+              publishError: null,
+              publishAttemptAt: null,
               updatedAt: new Date().toISOString(),
             }
           : item,
@@ -1911,16 +1945,89 @@ export async function processDueSocialPostsAction() {
   const board = await getSocialCommsBoard();
   const connection = await getMetaSocialConnection();
   const now = Date.now();
-  let published = 0;
-  let nextPosts = [...board.posts];
+  const startedAt = now;
+  /** Budget temps cron Hobby : laisser de la marge avant kill Vercel. */
+  const TIME_BUDGET_MS = 90_000;
+  const PER_POST_WAIT_MS = 40_000;
 
-  for (const post of board.posts) {
-    if (post.status !== 'scheduled' || !post.plannedAt) continue;
-    if (new Date(post.plannedAt).getTime() > now) continue;
-    if (post.network !== 'instagram') continue;
-    if (!connection.connected) continue;
+  let published = 0;
+  let pending = 0;
+  let failed = 0;
+  let nextPosts = [...board.posts];
+  const errors: Array<{ id: string; error: string }> = [];
+
+  const duePosts = board.posts
+    .filter((post) => {
+      if (post.status !== 'scheduled' || !post.plannedAt) return false;
+      if (post.network !== 'instagram') return false;
+      // Reprise conteneur même si l’heure est passée ; sinon attendre plannedAt
+      if (post.igContainerId) return true;
+      return new Date(post.plannedAt).getTime() <= now;
+    })
+    .sort((a, b) => {
+      // Priorité aux reprises de conteneur, puis les plus anciens
+      const aPend = a.igContainerId ? 0 : 1;
+      const bPend = b.igContainerId ? 0 : 1;
+      if (aPend !== bPend) return aPend - bPend;
+      return String(a.plannedAt).localeCompare(String(b.plannedAt));
+    });
+
+  if (duePosts.length === 0) {
+    return { ok: true as const, published: 0, pending: 0, failed: 0, due: 0, errors };
+  }
+
+  if (!connection.connected || !connection.accessToken || !connection.igUserId) {
+    const msg =
+      'Meta non connecté (token / Page / IG User ID). Reconnecte Meta dans Community → réglages.';
+    for (const post of duePosts) {
+      nextPosts = nextPosts.map((item) =>
+        item.id === post.id
+          ? {
+              ...item,
+              publishError: msg,
+              publishAttemptAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      );
+      failed += 1;
+      errors.push({ id: post.id, error: msg });
+    }
+    await saveSocialCommsBoard({ ...board, posts: nextPosts });
+    revalidateCommunity();
+    return { ok: true as const, published: 0, pending: 0, failed, due: duePosts.length, errors };
+  }
+
+  for (const post of duePosts) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) {
+      console.warn('[processDueSocialPostsAction] time budget reached, deferring remaining posts');
+      break;
+    }
+
+    const attemptAt = new Date().toISOString();
     try {
-      const externalId = await publishInstagramNow(connection, post);
+      const progress = await publishInstagramWithResume(connection, { ...post, igContainerId: post.igContainerId }, {
+        containerId: post.igContainerId,
+        maxWaitMs: PER_POST_WAIT_MS,
+      });
+
+      if (!progress.done) {
+        nextPosts = nextPosts.map((item) =>
+          item.id === post.id
+            ? {
+                ...item,
+                igContainerId: progress.containerId,
+                publishError: null,
+                publishAttemptAt: attemptAt,
+                updatedAt: attemptAt,
+              }
+            : item,
+        );
+        pending += 1;
+        await saveSocialCommsBoard({ ...board, posts: nextPosts });
+        continue;
+      }
+
       let facebookExternalId = post.facebookExternalId;
       let tiktokExternalId = post.tiktokExternalId;
       if (post.alsoPublishFacebook) {
@@ -1942,42 +2049,67 @@ export async function processDueSocialPostsAction() {
         try {
           let ttConn = await getTikTokSocialConnection();
           if (ttConn.connected && ttConn.accessToken) {
-            const published = await publishTikTokReel(ttConn, post, {
+            const ttPublished = await publishTikTokReel(ttConn, post, {
               onTokenRefreshed: async (next) => {
                 await saveTikTokSocialConnection(next);
                 ttConn = next;
               },
             });
-            tiktokExternalId = published.publishId;
-            await saveTikTokSocialConnection(published.connection);
+            tiktokExternalId = ttPublished.publishId;
+            await saveTikTokSocialConnection(ttPublished.connection);
           }
         } catch (ttError) {
           console.error('[processDueSocialPostsAction] TT mirror', post.id, ttError);
         }
       }
+
       nextPosts = nextPosts.map((item) =>
         item.id === post.id
           ? {
               ...item,
               status: 'published',
-              metaExternalId: externalId,
+              metaExternalId: progress.mediaId,
               facebookExternalId,
               tiktokExternalId,
-              updatedAt: new Date().toISOString(),
+              igContainerId: null,
+              publishError: null,
+              publishAttemptAt: attemptAt,
+              updatedAt: attemptAt,
             }
           : item,
       );
       published += 1;
+      await saveSocialCommsBoard({ ...board, posts: nextPosts });
     } catch (e) {
+      const message = e instanceof Error ? e.message : 'Publication Instagram échouée.';
       console.error('[processDueSocialPostsAction]', post.id, e);
+      nextPosts = nextPosts.map((item) =>
+        item.id === post.id
+          ? {
+              ...item,
+              publishError: message,
+              publishAttemptAt: attemptAt,
+              updatedAt: attemptAt,
+            }
+          : item,
+      );
+      failed += 1;
+      errors.push({ id: post.id, error: message });
+      await saveSocialCommsBoard({ ...board, posts: nextPosts });
     }
   }
 
-  if (published > 0) {
-    await saveSocialCommsBoard({ ...board, posts: nextPosts });
+  if (published > 0 || pending > 0 || failed > 0) {
     revalidateCommunity();
   }
-  return { ok: true as const, published };
+  return {
+    ok: true as const,
+    published,
+    pending,
+    failed,
+    due: duePosts.length,
+    errors,
+  };
 }
 
 /** Publie / complète le miroir Facebook d’un post IG (refuse le doublon sauf force). */
