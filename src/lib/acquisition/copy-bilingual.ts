@@ -57,11 +57,17 @@ export function bilingualSend(
   };
 }
 
-/** Boutons d’accueil DM (≤20 car. chacun). */
+/** Boutons d’accueil DM — style ManyChat (pas de lien brut d’abord). */
 export const QR_ACCUEIL = [
   { title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW' },
   { title: 'Prix / info', payload: 'PRICE_INFO' },
   { title: 'Horaires', payload: 'SCHEDULE' },
+];
+
+/** Boutons après pitch / prix — CTA propres. */
+export const QR_AFTER_PITCH = [
+  { title: 'Obtenir le lien', payload: 'GET_RESOURCE' },
+  { title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW' },
 ];
 
 /** Boutons gate abonnement → ressource. */

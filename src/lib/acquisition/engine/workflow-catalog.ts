@@ -1,4 +1,4 @@
-import { bilingualSend, lines, trialFollowupSequence, QR_ACCUEIL, QR_FOLLOW_GATE, QR_FOLLOW_DONE, QR_RESOURCE } from '@/lib/acquisition/copy-bilingual';
+import { bilingualSend, lines, trialFollowupSequence, QR_ACCUEIL, QR_AFTER_PITCH, QR_FOLLOW_GATE, QR_FOLLOW_DONE, QR_RESOURCE } from '@/lib/acquisition/copy-bilingual';
 import type { AcqWorkflow } from '@/lib/acquisition/types';
 
 /**
@@ -100,6 +100,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Lo más simple: pruébalo y decides.',
             'Haz clic aquí →',
           ),
+          true,
+          QR_AFTER_PITCH,
         ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_prix' } },
@@ -144,6 +146,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             'Lo más simple: pruébalo y decides.',
             'Haz clic aquí →',
           ),
+          true,
+          QR_AFTER_PITCH,
         ),
       },
       { type: 'tag_contact', config: { tag: 'dm_prix' } },
@@ -330,7 +334,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'ig_dm_inbound',
     triggerConfig: {
-      keyword: 'bonjour|hello|hola|salut|hey|coucou|buenas|bonsoir',
+      keyword: 'bonjour|hello|hola|salut|hey|coucou|buenas|bonsoir|ça va|ca va|comment vas',
       priority: 10,
     },
     conditions: {},
@@ -351,7 +355,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Essai 7 jours gratuits ✨',
             '',
-            'Clique ici pour démarrer →',
+            'Dis-moi ce dont tu as besoin ↓',
           ),
           lines(
             'Hola 💛 Soy Alejandra.',
@@ -366,9 +370,9 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Prueba 7 días gratis ✨',
             '',
-            'Haz clic aquí para empezar →',
+            'Dime qué necesitas ↓',
           ),
-          true,
+          false,
           QR_ACCUEIL,
         ),
       },
@@ -642,6 +646,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Haz clic aquí →',
           ),
+          true,
+          QR_AFTER_PITCH,
         ),
       },
       { type: 'tag_contact', config: { tag: 'messenger_prix' } },
@@ -770,6 +776,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Haz clic aquí →',
           ),
+          true,
+          QR_AFTER_PITCH,
         ),
       },
       { type: 'tag_contact', config: { tag: 'wa_prix' } },
