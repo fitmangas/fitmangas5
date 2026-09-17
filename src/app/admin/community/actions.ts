@@ -13,6 +13,7 @@ import {
   publishFacebookPost,
   publishInstagramNow,
   publishInstagramWithResume,
+  probeMetaToken,
   verifyFacebookPublishId,
 } from '@/lib/admin/meta-social';
 import {
@@ -1978,7 +1979,7 @@ export async function processDueSocialPostsAction() {
 
   if (!connection.connected || !connection.accessToken || !connection.igUserId) {
     const msg =
-      'Meta non connecté (token / Page / IG User ID). Reconnecte Meta dans Community → réglages.';
+      'Meta non connecté (token / Page / IG User ID). Reconnecte Meta dans Community → Connecter Instagram/Facebook.';
     for (const post of duePosts) {
       nextPosts = nextPosts.map((item) =>
         item.id === post.id
@@ -1992,6 +1993,27 @@ export async function processDueSocialPostsAction() {
       );
       failed += 1;
       errors.push({ id: post.id, error: msg });
+    }
+    await saveSocialCommsBoard({ ...board, posts: nextPosts });
+    revalidateCommunity();
+    return { ok: true as const, published: 0, pending: 0, failed, due: duePosts.length, errors };
+  }
+
+  const probe = await probeMetaToken(connection);
+  if (!probe.ok) {
+    for (const post of duePosts) {
+      nextPosts = nextPosts.map((item) =>
+        item.id === post.id
+          ? {
+              ...item,
+              publishError: probe.error,
+              publishAttemptAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      );
+      failed += 1;
+      errors.push({ id: post.id, error: probe.error });
     }
     await saveSocialCommsBoard({ ...board, posts: nextPosts });
     revalidateCommunity();

@@ -503,10 +503,28 @@ export async function getMetaSocialConnection(): Promise<MetaSocialConnection> {
       .maybeSingle();
     if (error || !data?.value) return emptyMetaConnection();
     const parsed = JSON.parse(String(data.value)) as Partial<MetaSocialConnection>;
+    const hasCreds = Boolean(parsed.accessToken && parsed.pageId && parsed.igUserId);
+    if (!hasCreds) return emptyMetaConnection();
+
+    // Token expiré stocké → traité comme déconnecté (évite file « programmée » morte).
+    if (parsed.tokenExpiresAt) {
+      const exp = new Date(parsed.tokenExpiresAt).getTime();
+      if (Number.isFinite(exp) && exp <= Date.now()) {
+        return {
+          ...emptyMetaConnection(),
+          ...parsed,
+          connected: false,
+          accessToken: parsed.accessToken ?? null,
+          pageId: parsed.pageId ?? null,
+          igUserId: parsed.igUserId ?? null,
+        };
+      }
+    }
+
     return {
       ...emptyMetaConnection(),
       ...parsed,
-      connected: Boolean(parsed.accessToken && parsed.pageId),
+      connected: true,
     };
   } catch {
     return emptyMetaConnection();

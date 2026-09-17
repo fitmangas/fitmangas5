@@ -17,10 +17,31 @@ async function graphJson(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
   const data = (await res.json()) as Record<string, unknown>;
   if (!res.ok) {
-    const err = data.error as { message?: string } | undefined;
-    throw new Error(err?.message || `Erreur Meta ${res.status}`);
+    const err = data.error as { message?: string; code?: number; error_subcode?: number } | undefined;
+    const msg = err?.message || `Erreur Meta ${res.status}`;
+    if (err?.code === 190 || /expired|session has expired|validating access token/i.test(msg)) {
+      throw new Error(
+        `Token Meta expiré — reconnecte Instagram/Facebook dans Community (réglages Meta), puis republie. (${msg})`,
+      );
+    }
+    throw new Error(msg);
   }
   return data;
+}
+
+/** Probe rapide : token encore valide ? */
+export async function probeMetaToken(connection: MetaSocialConnection): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!connection.accessToken || !connection.igUserId) {
+    return { ok: false, error: 'Meta non connecté.' };
+  }
+  try {
+    await graphJson(
+      `${GRAPH}/${encodeURIComponent(connection.igUserId)}?fields=id,username&access_token=${encodeURIComponent(connection.accessToken)}`,
+    );
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Token Meta invalide.' };
+  }
 }
 
 export function metaAppConfigured() {

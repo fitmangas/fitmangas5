@@ -599,7 +599,17 @@ export function CommunityManagerBoard({
             Canaux{' '}
             {meta.accessToken
               ? meta.tokenExpiresAt && new Date(meta.tokenExpiresAt).getTime() < Date.now()
-                ? `· Meta expiré${meta.tokenExpiresAt ? ` (${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')})` : ''}`
+                ? (
+                    <span className="font-semibold text-[#991b1b]">
+                      · Meta expiré ({new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')}) — reconnecte pour publier
+                    </span>
+                  )
+                : !meta.connected
+                  ? (
+                    <span className="font-semibold text-[#991b1b]">
+                      · Meta déconnecté — reconnecte pour publier
+                    </span>
+                  )
                 : meta.tokenExpiresAt
                   ? `· Meta jusqu’au ${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')}`
                   : '· Meta OK'
