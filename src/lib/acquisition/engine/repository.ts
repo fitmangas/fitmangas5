@@ -673,6 +673,7 @@ export async function ensureWorkflowCatalog(): Promise<{ ok: boolean; upserted: 
   let upserted = 0;
 
   for (const wf of WORKFLOW_CATALOG) {
+    if (!wf?.id) continue;
     const payload = {
       id: wf.id,
       name: wf.name,
@@ -921,7 +922,7 @@ export async function runDueFollowups(limit = 40): Promise<{
     }
 
     const contact = await getContact(String(row.contact_id));
-    if (contact && (contact.optIn === false || contact.tags.includes('optout'))) {
+    if (contact && contact.tags.includes('optout')) {
       await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
       details.push(`${id}: annulé — opt-out`);
       continue;

@@ -1,10 +1,17 @@
 import type { AcquisitionChannel } from '@/lib/acquisition/types';
 
+export type QuickReplyButton = {
+  title: string;
+  payload: string;
+};
+
 export type SendMessageInput = {
   conversationExternalId: string;
   recipientId: string;
   body: string;
   metadata?: Record<string, unknown>;
+  /** Boutons type ManyChat (max 13, titre ≤20 car.) */
+  quickReplies?: QuickReplyButton[];
 };
 
 export type SendPrivateReplyInput = {

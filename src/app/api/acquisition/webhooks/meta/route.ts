@@ -24,6 +24,7 @@ type MetaMessagingEvent = {
     text?: string;
     reply_to?: { story?: { id?: string; url?: string } };
     is_echo?: boolean;
+    quick_reply?: { payload?: string };
   };
   timestamp?: number;
 };
@@ -145,6 +146,7 @@ async function ingestInbound(params: {
         channel,
         handle,
         lifecycle_stage: 'new',
+        opt_in: true,
         external_ids: { [externalKey]: senderId },
       })
       .select('id')
@@ -197,6 +199,12 @@ async function ingestInbound(params: {
     .eq('id', conversationId);
 
   await bumpContactLeadScore(contactId, LEAD_SCORE_DELTA.inbound_message);
+  // Elle vient d’écrire → on peut lui répondre (sauf optout explicite)
+  await admin
+    .from('acq_contacts')
+    .update({ opt_in: true, updated_at: new Date().toISOString() })
+    .eq('id', contactId)
+    .not('tags', 'cs', '{optout}');
   const emailInText = extractEmailFromText(text);
   if (emailInText) {
     await updateContactEmail(contactId, emailInText, true);
@@ -287,7 +295,10 @@ export async function POST(request: Request) {
     for (const entry of body.entry ?? []) {
       for (const msg of entry.messaging ?? []) {
         if (msg.message?.is_echo) continue;
-        const text = msg.message?.text?.trim();
+        const rawText = msg.message?.text?.trim() ?? '';
+        const qrPayload = msg.message?.quick_reply?.payload?.trim() ?? '';
+        // Bouton ManyChat : on matche aussi le payload (ex. FOLLOW_CLAIM)
+        const text = [rawText, qrPayload].filter(Boolean).join(' ').trim();
         const senderId = msg.sender?.id;
         if (!text || !senderId) continue;
         const channel: AcquisitionChannel = body.object === 'instagram' ? 'instagram' : 'facebook';

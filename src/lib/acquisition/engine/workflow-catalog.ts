@@ -1,4 +1,4 @@
-import { bilingualSend, lines, trialFollowupSequence } from '@/lib/acquisition/copy-bilingual';
+import { bilingualSend, lines, trialFollowupSequence, QR_ACCUEIL, QR_FOLLOW_GATE, QR_FOLLOW_DONE, QR_RESOURCE } from '@/lib/acquisition/copy-bilingual';
 import type { AcqWorkflow } from '@/lib/acquisition/types';
 
 /**
@@ -12,7 +12,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   {
     id: '00000000-0000-4000-8000-000000000001',
     name: 'Commentaire IG « ESSAI » → DM privé + lien',
-    enabled: true,
+    enabled: false,
     triggerType: 'ig_comment_keyword',
     triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias', priority: 90 },
     conditions: {},
@@ -368,6 +368,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
             '',
             'Haz clic aquí para empezar →',
           ),
+          true,
+          QR_ACCUEIL,
         ),
       },
       { type: 'tag_contact', config: { tag: 'dm_salutation' } },
@@ -811,8 +813,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'tag_contact', config: { tag: 'optout' } },
     ],
   },
-,
-
   {
     id: '00000000-0000-4000-8000-000000000019',
     name: 'Messenger objection « pas le temps »',
@@ -991,6 +991,150 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'book_session_intent', config: { courseType: 'visio_collectif' } },
       { type: 'tag_contact', config: { tag: 'demande_horaires' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001f',
+    name: 'Commentaire « ESSAI » → gate abonnement + bouton',
+    enabled: true,
+    triggerType: 'ig_comment_keyword',
+    triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias|lien gratuit|ressource', priority: 95 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Merci pour ton commentaire 💛',
+            '',
+            'Je réserve l’essai gratuit à mes abonnées.',
+            'Si tu ne me suis pas encore, abonne-toi puis clique sur le bouton.',
+            '',
+            '(Le bouton apparaît surtout sur mobile.)',
+          ),
+          lines(
+            'Gracias por tu comentario 💛',
+            '',
+            'Reservo la prueba gratis a mis seguidoras.',
+            'Si aún no me sigues, sígueme y pulsa el botón.',
+            '',
+            '(El botón se ve sobre todo en móvil.)',
+          ),
+          false,
+          QR_FOLLOW_GATE,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'follow_gate_pending' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000020',
+    name: 'DM « Je te suis » → vérifier + bouton C’est bon',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: { keyword: 'je te suis|je te suis ✅|follow_claim|te sigo', priority: 110 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Parfait 💛',
+            '',
+            'Dès que tu me suis, clique ici — je t’envoie le lien tout de suite.',
+          ),
+          lines(
+            'Perfecto 💛',
+            '',
+            'En cuanto me sigas, pulsa aquí — te envío el enlace al momento.',
+          ),
+          false,
+          QR_FOLLOW_DONE,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'follow_claimed' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000021',
+    name: 'DM « C’est bon » / Obtenir le lien → essai',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: {
+      keyword: "c'est bon|cest bon|c'est bon ✅|follow_done|obtenir le lien|get_resource|trial_now",
+      priority: 110,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Voici ton accès 💛',
+            '',
+            'Moi, je ne te laisse pas seule devant une vidéo.',
+            'Rendez-vous fixe, je te corrige en direct, je te vois.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Aquí tienes tu acceso 💛',
+            '',
+            'Yo no te dejo sola frente a un vídeo.',
+            'Cita fija, te corrijo en directo, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+          true,
+          QR_RESOURCE,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'follow_gate_passed' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000022',
+    name: 'DM bouton « Prix / info » (payload)',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: { keyword: 'price_info|prix / info', priority: 105 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu as raison de demander 💛',
+            '',
+            'Tu paies un créneau avec moi + ma correction en direct — pas du YouTube.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'Pagas una cita conmigo + mi corrección en directo — no YouTube.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+          true,
+          QR_RESOURCE,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'dm_prix' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      ...trialFollowupSequence(),
     ],
   },
 

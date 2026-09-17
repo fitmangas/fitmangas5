@@ -34,6 +34,7 @@ export const instagramProvider: MessagingProvider = {
     const live = await sendInstagramLiveMessage({
       recipientId: input.recipientId,
       body: input.body,
+      quickReplies: input.quickReplies,
     });
     if (!live.ok) {
       return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec Instagram LIVE.' };

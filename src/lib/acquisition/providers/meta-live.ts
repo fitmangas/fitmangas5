@@ -242,15 +242,24 @@ async function graphPost(
 export async function sendInstagramLiveMessage(params: {
   recipientId: string;
   body: string;
+  quickReplies?: Array<{ title: string; payload: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
   if (!conn.accessToken || !conn.igUserId) {
     return { ok: false, error: 'Connexion Meta Acquisition incomplète (IG User ID + token).' };
   }
+  const message: Record<string, unknown> = { text: params.body };
+  if (params.quickReplies?.length) {
+    message.quick_replies = params.quickReplies.slice(0, 13).map((q) => ({
+      content_type: 'text',
+      title: q.title.slice(0, 20),
+      payload: q.payload.slice(0, 1000),
+    }));
+  }
   // Tokens Instagram Login (IGAA…) → graph.instagram.com uniquement
   return graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, {
     recipient: { id: params.recipientId },
-    message: { text: params.body },
+    message,
   });
 }
 

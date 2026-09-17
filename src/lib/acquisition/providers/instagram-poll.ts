@@ -137,6 +137,7 @@ export async function pollInstagramInbox(params?: {
                   channel: 'instagram',
                   handle,
                   lifecycle_stage: 'new',
+                  opt_in: true,
                   external_ids: { meta_sender_id: senderId, ig_username: peer.username ?? null },
                 })
                 .select('id')

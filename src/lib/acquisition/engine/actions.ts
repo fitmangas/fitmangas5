@@ -131,6 +131,14 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
     conversationExternalId: ctx.conversation.id,
     recipientId,
     body,
+    quickReplies: Array.isArray(config?.quickReplies)
+      ? (config.quickReplies as Array<{ title?: string; payload?: string }>)
+          .filter((q) => typeof q?.title === 'string' && q.title.trim())
+          .map((q) => ({
+            title: String(q.title).slice(0, 20),
+            payload: String(q.payload ?? q.title).slice(0, 1000),
+          }))
+      : undefined,
   });
   if (send.ok) {
     await insertOutboundMessage({
@@ -314,7 +322,7 @@ async function actionCaptureEmail(ctx: ActionContext, config?: Record<string, un
 
 async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   if (!ctx.contact) return { type: 'schedule_followup', ok: false, detail: 'Contact absent.' };
-  if (ctx.contact.optIn === false || (ctx.contact.tags ?? []).includes('optout')) {
+  if (ctx.contact.tags.includes('optout')) {
     return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — contact en opt-out.' };
   }
   const hours = typeof config?.delayHours === 'number' ? config.delayHours : 24;

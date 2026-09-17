@@ -105,8 +105,10 @@ export async function runInboundTrigger(params: {
       w.triggerConfig.keyword,
     );
 
-  // Contact opt-out : silence sauf workflow stop (accusé de réception)
-  const optedOut = contact?.optIn === false || (contact?.tags ?? []).includes('optout');
+  // Silence UNIQUEMENT si tag optout (stop explicite).
+  // Ne PAS utiliser opt_in===false : la colonne démarre à false en DB
+  // et bloquait 90 %+ des réponses auto (bug silencieux).
+  const optedOut = (contact?.tags ?? []).includes('optout');
 
   const matched = workflows
     .filter((w) =>

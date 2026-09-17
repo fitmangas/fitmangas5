@@ -39,8 +39,41 @@ export type BilingualSendConfig = {
   bodyFr: string;
   bodyEs: string;
   appendTrialLink?: boolean;
+  quickReplies?: Array<{ title: string; payload: string }>;
 };
 
-export function bilingualSend(fr: string, es: string, appendTrialLink = true): BilingualSendConfig {
-  return { body: fr, bodyFr: fr, bodyEs: es, appendTrialLink };
+export function bilingualSend(
+  fr: string,
+  es: string,
+  appendTrialLink = true,
+  quickReplies?: Array<{ title: string; payload: string }>,
+): BilingualSendConfig {
+  return {
+    body: fr,
+    bodyFr: fr,
+    bodyEs: es,
+    appendTrialLink,
+    ...(quickReplies?.length ? { quickReplies } : {}),
+  };
 }
+
+/** Boutons d’accueil DM (≤20 car. chacun). */
+export const QR_ACCUEIL = [
+  { title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW' },
+  { title: 'Prix / info', payload: 'PRICE_INFO' },
+  { title: 'Horaires', payload: 'SCHEDULE' },
+];
+
+/** Boutons gate abonnement → ressource. */
+export const QR_FOLLOW_GATE = [
+  { title: 'Je te suis ✅', payload: 'FOLLOW_CLAIM' },
+];
+
+export const QR_FOLLOW_DONE = [
+  { title: "C'est bon ✅", payload: 'FOLLOW_DONE' },
+];
+
+export const QR_RESOURCE = [
+  { title: 'Obtenir le lien', payload: 'GET_RESOURCE' },
+  { title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW' },
+];
