@@ -73,8 +73,12 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
     (typeof config?.template === 'string' && config.template) ||
     'Bonjour 💛 C’est Alejandra. Tu cherches un vrai suivi en visio — pas une vidéo seule ? Essai 7 jours gratuits ✨';
 
-  // Lien essai dans la MÊME bulle (évite 2 DM tac-o-tac répétitifs)
-  if (config?.appendTrialLink === true) {
+  const hasTrialUrlButton =
+    Array.isArray(config?.buttons) &&
+    (config.buttons as Array<{ url?: string }>).some((b) =>
+      typeof b?.url === 'string' ? /fitmangas\.com\/connexion/i.test(b.url) : false,
+    );
+  if (config?.appendTrialLink === true && !hasTrialUrlButton) {
     const url = getPublicTrialSignupUrl({
       utmSource: ctx.conversation.channel,
       utmCampaign: 'acquisition_dm',
@@ -89,7 +93,6 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
     return { type: 'send_message', ok: false, detail: `Canal ${ctx.conversation.channel} sans provider messaging.` };
   }
   const recipientId = resolveRecipientId(ctx);
-  // Commentaire IG : private reply (ouvre le DM) — sinon message classique
   if (ctx.commentId?.trim() && provider.sendPrivateReply) {
     const priv = await provider.sendPrivateReply({
       commentId: ctx.commentId.trim(),
@@ -109,7 +112,6 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
         data: priv,
       };
     }
-    // Fallback DM si private reply échoue et qu'on a un IGSID
     if (!recipientId) {
       return {
         type: 'send_message',
@@ -117,7 +119,6 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
         detail: `Private reply échoué (${priv.error ?? 'erreur Meta'}) et pas d’ID destinataire DM.`,
       };
     }
-    // Continuer en DM classique (contact déjà connu)
   }
 
   if (!recipientId) {
@@ -127,18 +128,26 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
       detail: 'ID destinataire Meta manquant (meta_sender_id / thread). Impossible d’envoyer en LIVE.',
     };
   }
+  const buttonsRaw = Array.isArray(config?.buttons)
+    ? config.buttons
+    : Array.isArray(config?.quickReplies)
+      ? config.quickReplies
+      : null;
+  const buttons = buttonsRaw
+    ? (buttonsRaw as Array<{ title?: string; payload?: string; url?: string }>)
+        .filter((q) => typeof q?.title === 'string' && q.title.trim())
+        .map((q) => ({
+          title: String(q.title).slice(0, 20),
+          payload: String(q.payload ?? q.title).slice(0, 1000),
+          ...(typeof q.url === 'string' && q.url.trim() ? { url: q.url.trim() } : {}),
+        }))
+    : undefined;
+
   const send = await provider.sendMessage({
     conversationExternalId: ctx.conversation.id,
     recipientId,
     body,
-    quickReplies: Array.isArray(config?.quickReplies)
-      ? (config.quickReplies as Array<{ title?: string; payload?: string }>)
-          .filter((q) => typeof q?.title === 'string' && q.title.trim())
-          .map((q) => ({
-            title: String(q.title).slice(0, 20),
-            payload: String(q.payload ?? q.title).slice(0, 1000),
-          }))
-      : undefined,
+    buttons,
   });
   if (send.ok) {
     await insertOutboundMessage({
@@ -185,7 +194,6 @@ async function actionTagContact(ctx: ActionContext, config?: Record<string, unkn
     return { type: 'tag_contact', ok: false, detail: r.error ?? 'Erreur tag' };
   }
 
-  // Opt-out durable : silence + annuler les relances programmées
   if (tag === 'optout') {
     await setContactOptIn(ctx.contact.id, false);
     const cancelled = await cancelScheduledFollowups(ctx.contact.id);
