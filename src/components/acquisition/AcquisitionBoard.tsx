@@ -546,6 +546,12 @@ export function AcquisitionBoard({
                                 label={LIFECYCLE_LABELS[c.lifecycleStage] ?? c.lifecycleStage}
                                 tone={selected ? 'onDark' : 'neutral'}
                               />
+                              {typeof c.contactLeadScore === 'number' && c.contactLeadScore > 0 ? (
+                                <Chip
+                                  label={`Score ${c.contactLeadScore}`}
+                                  tone={selected ? 'onDark' : 'neutral'}
+                                />
+                              ) : null}
                             </ChipRow>
                           </div>
                         </div>

@@ -138,7 +138,14 @@ export async function runInboundTrigger(params: {
   for (const wf of matched) {
     const hasKw = typeof wf.triggerConfig.keyword === 'string' && Boolean(wf.triggerConfig.keyword.trim());
     // Catch-all DM : seulement si aucun mot-clé précis n’a déjà tourné
-    if (!hasKw && ranSpecific && params.triggerType === 'ig_dm_inbound') continue;
+    if (
+      !hasKw &&
+      ranSpecific &&
+      (params.triggerType === 'ig_dm_inbound' ||
+        params.triggerType === 'messenger_inbound' ||
+        params.triggerType === 'whatsapp_inbound')
+    )
+      continue;
     // Un seul robot par message (évite 3 DM d’affilée)
     if (oneShot && ranSpecific && hasKw) continue;
     if (isComment && ranSpecific) continue;
@@ -169,11 +176,14 @@ export async function runInboundTrigger(params: {
     });
     results.push(result);
     if (hasKw) ranSpecific = true;
-    // Catch-all DM ou story : une seule exécution
+    // Catch-all DM / Messenger / WhatsApp : une seule exécution
     if (!hasKw && params.triggerType === 'ig_dm_inbound') break;
+    if (!hasKw && params.triggerType === 'messenger_inbound') break;
+    if (!hasKw && params.triggerType === 'whatsapp_inbound') break;
     if (params.triggerType === 'ig_story_reply') break;
     if (isComment) break;
     if (params.triggerType === 'messenger_inbound' && hasKw) break;
+    if (params.triggerType === 'whatsapp_inbound' && hasKw) break;
   }
   return results;
 }

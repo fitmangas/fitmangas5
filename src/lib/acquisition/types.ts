@@ -44,6 +44,8 @@ export type AcqContact = {
   tags: string[];
   sourceAttribution: string | null;
   createdAt: string;
+  /** Score conversion 0–100 */
+  leadScore?: number;
   /** IDs Graph Meta (ex. meta_sender_id) pour envoi LIVE */
   externalIds?: Record<string, string> | null;
 };
@@ -59,6 +61,8 @@ export type AcqConversation = {
   lastMessagePreview: string | null;
   assignedTo: string | null;
   contactHandle?: string | null;
+  /** Score lead du contact (liste inbox) */
+  contactLeadScore?: number | null;
   /** PSID / IGSID / WA user id pour réponse LIVE */
   externalThreadId?: string | null;
 };

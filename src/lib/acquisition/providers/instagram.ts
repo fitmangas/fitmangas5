@@ -1,11 +1,6 @@
 import { isMessagingSandbox } from '@/lib/acquisition/feature-flag';
 
-import {
-  sendInstagramLiveMessage,
-  sendInstagramPrivateReplyLive,
-  sendMessengerLiveMessage,
-  sendWhatsAppLiveMessage,
-} from './meta-live';
+import { sendInstagramLiveMessage, sendInstagramPrivateReplyLive } from './meta-live';
 import { logSandboxSend } from './sandbox-log';
 import type {
   MessagingProvider,

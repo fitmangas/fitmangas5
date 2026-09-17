@@ -3,7 +3,13 @@ import { NextResponse } from 'next/server';
 
 import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
 import { runInboundTrigger } from '@/lib/acquisition/engine/orchestrator';
-import { getContact, listWorkflows } from '@/lib/acquisition/engine/repository';
+import {
+  bumpContactLeadScore,
+  getContact,
+  listWorkflows,
+  updateContactEmail,
+} from '@/lib/acquisition/engine/repository';
+import { LEAD_SCORE_DELTA, extractEmailFromText } from '@/lib/acquisition/engine/lead-score';
 import { detectAcquisitionMarket } from '@/lib/acquisition/market';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { AcquisitionChannel, WorkflowTriggerType } from '@/lib/acquisition/types';
@@ -189,6 +195,12 @@ async function ingestInbound(params: {
     .from('acq_conversations')
     .update({ last_message_at: new Date().toISOString(), last_message_preview: text.slice(0, 120) })
     .eq('id', conversationId);
+
+  await bumpContactLeadScore(contactId, LEAD_SCORE_DELTA.inbound_message);
+  const emailInText = extractEmailFromText(text);
+  if (emailInText) {
+    await updateContactEmail(contactId, emailInText, true);
+  }
 
   const wfRes = await listWorkflows();
   const workflows = wfRes.ok ? wfRes.items : [];

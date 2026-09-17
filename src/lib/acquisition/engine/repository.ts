@@ -34,6 +34,7 @@ function mapContact(row: Record<string, unknown>): AcqContact {
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     sourceAttribution: row.source_attribution ? String(row.source_attribution) : null,
     createdAt: String(row.created_at),
+    leadScore: typeof row.lead_score === 'number' ? row.lead_score : Number(row.lead_score ?? 0) || 0,
     externalIds: external && Object.keys(external).length ? external : null,
   };
 }
@@ -50,6 +51,8 @@ function mapConversation(row: Record<string, unknown>): AcqConversation {
     lastMessagePreview: row.last_message_preview ? String(row.last_message_preview) : null,
     assignedTo: row.assigned_to ? String(row.assigned_to) : null,
     contactHandle: row.contact_handle ? String(row.contact_handle) : undefined,
+    contactLeadScore:
+      row.contact_lead_score != null ? Number(row.contact_lead_score) || 0 : null,
     externalThreadId: row.external_thread_id ? String(row.external_thread_id) : null,
   };
 }
@@ -85,16 +88,22 @@ export async function listConversations(limit = 50): Promise<
     }
     const contactIds = [...new Set((data ?? []).map((r) => r.contact_id as string))];
     const handles = new Map<string, string | null>();
+    const scores = new Map<string, number>();
     if (contactIds.length) {
-      const { data: contacts } = await admin.from('acq_contacts').select('id, handle').in('id', contactIds);
+      const { data: contacts } = await admin
+        .from('acq_contacts')
+        .select('id, handle, lead_score')
+        .in('id', contactIds);
       for (const c of contacts ?? []) {
         handles.set(String(c.id), c.handle ? String(c.handle) : null);
+        scores.set(String(c.id), typeof c.lead_score === 'number' ? c.lead_score : Number(c.lead_score ?? 0) || 0);
       }
     }
     const items = (data ?? []).map((row) =>
       mapConversation({
         ...row,
         contact_handle: handles.get(String(row.contact_id)) ?? null,
+        contact_lead_score: scores.get(String(row.contact_id)) ?? 0,
       }),
     );
     return { ok: true, items, schemaReady: true };
@@ -334,9 +343,52 @@ export async function updateContactLifecycle(
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
   const admin = createAdminClient();
-  const { error } = await admin.from('acq_contacts').update({ lifecycle_stage: stage }).eq('id', contactId);
+  const { scoreForLifecycle, clampLeadScore } = await import('./lead-score');
+  const { data: current } = await admin
+    .from('acq_contacts')
+    .select('lead_score')
+    .eq('id', contactId)
+    .maybeSingle();
+  const bump = scoreForLifecycle(stage);
+  const nextScore = clampLeadScore(Number(current?.lead_score ?? 0) + bump);
+  const { error } = await admin
+    .from('acq_contacts')
+    .update({
+      lifecycle_stage: stage,
+      lead_score: nextScore,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', contactId);
   if (error) return { ok: false, error: error.message };
+  await admin
+    .from('acq_conversations')
+    .update({ lifecycle_stage: stage, updated_at: new Date().toISOString() })
+    .eq('contact_id', contactId);
   return { ok: true };
+}
+
+/** Incrémente le score lead (0–100). */
+export async function bumpContactLeadScore(
+  contactId: string,
+  delta: number,
+): Promise<{ ok: boolean; score?: number; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  if (!delta) return { ok: true, score: undefined };
+  const admin = createAdminClient();
+  const { clampLeadScore } = await import('./lead-score');
+  const { data: current } = await admin
+    .from('acq_contacts')
+    .select('lead_score')
+    .eq('id', contactId)
+    .maybeSingle();
+  const next = clampLeadScore(Number(current?.lead_score ?? 0) + delta);
+  const { error } = await admin
+    .from('acq_contacts')
+    .update({ lead_score: next, updated_at: new Date().toISOString() })
+    .eq('id', contactId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, score: next };
 }
 
 export async function updateContactEmail(
@@ -347,11 +399,31 @@ export async function updateContactEmail(
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
   const admin = createAdminClient();
-  const patch: { email: string; opt_in?: boolean; updated_at: string } = {
+  const { LEAD_SCORE_DELTA, clampLeadScore } = await import('./lead-score');
+  const { data: current } = await admin
+    .from('acq_contacts')
+    .select('lead_score, email')
+    .eq('id', contactId)
+    .maybeSingle();
+  const patch: {
+    email: string;
+    opt_in?: boolean;
+    updated_at: string;
+    lead_score?: number;
+    profile_id?: string | null;
+  } = {
     email: email.trim().toLowerCase(),
     updated_at: new Date().toISOString(),
   };
   if (optIn) patch.opt_in = true;
+  if (!current?.email) {
+    patch.lead_score = clampLeadScore(Number(current?.lead_score ?? 0) + LEAD_SCORE_DELTA.email_captured);
+  }
+
+  const { findUserIdByEmail } = await import('@/lib/stripe/find-user-by-email');
+  const profileId = await findUserIdByEmail(admin, patch.email);
+  if (profileId) patch.profile_id = profileId;
+
   const { error } = await admin.from('acq_contacts').update(patch).eq('id', contactId);
   if (error) return { ok: false, error: error.message };
 
@@ -450,6 +522,7 @@ export async function scheduleFollowup(params: {
   conversationId: string;
   runAt: string;
   actionType: string;
+  payload?: Record<string, unknown>;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) {
@@ -464,6 +537,7 @@ export async function scheduleFollowup(params: {
       run_at: params.runAt,
       action_type: params.actionType,
       status: 'scheduled',
+      payload: params.payload ?? {},
     })
     .select('id')
     .single();
@@ -589,7 +663,7 @@ export async function listRecentWorkflowRuns(limit = 20): Promise<{
   }
 }
 
-/** Upsert le catalogue opérationnel (8 recettes) — idempotent. */
+/** Upsert le catalogue opérationnel — idempotent (IG + Messenger + WhatsApp). */
 export async function ensureWorkflowCatalog(): Promise<{ ok: boolean; upserted: number; error?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return { ok: false, upserted: 0, error: 'Schema absent.' };
@@ -800,7 +874,7 @@ export async function runDueFollowups(limit = 40): Promise<{
   const nowIso = new Date().toISOString();
   const { data: due, error } = await admin
     .from('acq_followups')
-    .select('id, contact_id, conversation_id, action_type, run_at')
+    .select('id, contact_id, conversation_id, action_type, run_at, payload')
     .eq('status', 'scheduled')
     .lte('run_at', nowIso)
     .order('run_at', { ascending: true })
@@ -859,8 +933,13 @@ export async function runDueFollowups(limit = 40): Promise<{
       '';
     const market = detectAcquisitionMarket(lastInbound);
 
+    const payload =
+      row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+        ? (row.payload as Record<string, unknown>)
+        : {};
+
     const result = await runWorkflowAction(
-      { type: actionType },
+      { type: actionType, config: payload },
       { contact, conversation: detail.conversation, market },
     );
 
@@ -887,47 +966,74 @@ export async function runDueFollowups(limit = 40): Promise<{
 }
 
 /**
- * Aligne les stages CRM Acquisition sur les abonnements Stripe (email match).
- * trial = trialing · paid = active.
+ * Aligne les stages CRM Acquisition sur les abonnements Stripe (email + profile_id).
+ * trial = trialing · paid = active. Synchronise aussi les conversations.
  */
 export async function syncAcqLifecycleFromSubscriptions(): Promise<{
   updated: number;
   checked: number;
+  emailsHarvested: number;
   details: string[];
 }> {
   const schemaReady = await isAcquisitionSchemaReady();
-  if (!schemaReady) return { updated: 0, checked: 0, details: ['schema absent'] };
+  if (!schemaReady) return { updated: 0, checked: 0, emailsHarvested: 0, details: ['schema absent'] };
 
   const admin = createAdminClient();
+  const harvested = await harvestEmailsFromRecentInbound(80);
+
   const { data: contacts, error } = await admin
     .from('acq_contacts')
-    .select('id, email, lifecycle_stage')
-    .not('email', 'is', null)
-    .limit(500);
+    .select('id, email, lifecycle_stage, profile_id, lead_score')
+    .or('email.not.is.null,profile_id.not.is.null')
+    .limit(800);
 
   if (error || !contacts?.length) {
-    return { updated: 0, checked: 0, details: [error?.message ?? 'aucun contact e-mail'] };
+    return {
+      updated: 0,
+      checked: 0,
+      emailsHarvested: harvested,
+      details: [error?.message ?? 'aucun contact e-mail/profil'],
+    };
   }
-
-  const emails = contacts
-    .map((c) => (c.email ? String(c.email).toLowerCase() : ''))
-    .filter(Boolean);
-  if (!emails.length) return { updated: 0, checked: 0, details: ['aucun e-mail'] };
 
   const { findUserIdByEmail } = await import('@/lib/stripe/find-user-by-email');
+  const { clampLeadScore, scoreForLifecycle } = await import('./lead-score');
+
   const emailToUser = new Map<string, string>();
-  for (const email of emails) {
+  const userIds = new Set<string>();
+
+  for (const c of contacts) {
+    if (c.profile_id) userIds.add(String(c.profile_id));
+    const email = c.email ? String(c.email).toLowerCase() : '';
+    if (!email) continue;
+    if (c.profile_id) {
+      emailToUser.set(email, String(c.profile_id));
+      continue;
+    }
     const userId = await findUserIdByEmail(admin, email);
-    if (userId) emailToUser.set(email, userId);
+    if (userId) {
+      emailToUser.set(email, userId);
+      userIds.add(userId);
+      await admin
+        .from('acq_contacts')
+        .update({ profile_id: userId, updated_at: new Date().toISOString() })
+        .eq('id', c.id);
+    }
   }
 
-  const userIds = [...emailToUser.values()];
-  if (!userIds.length) return { updated: 0, checked: contacts.length, details: ['aucun profil match'] };
+  if (!userIds.size) {
+    return {
+      updated: 0,
+      checked: contacts.length,
+      emailsHarvested: harvested,
+      details: ['aucun profil match'],
+    };
+  }
 
   const { data: subs } = await admin
     .from('subscriptions')
     .select('user_id, status')
-    .in('user_id', userIds)
+    .in('user_id', [...userIds])
     .in('status', ['trialing', 'active']);
 
   const statusByUser = new Map<string, 'trialing' | 'active'>();
@@ -938,10 +1044,13 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
   }
 
   let updated = 0;
-  const details: string[] = [];
+  const details: string[] = harvested
+    ? [`${harvested} e-mail(s) récoltés depuis les DM`]
+    : [];
+
   for (const c of contacts) {
     const email = c.email ? String(c.email).toLowerCase() : '';
-    const userId = emailToUser.get(email);
+    const userId = (c.profile_id ? String(c.profile_id) : null) || (email ? emailToUser.get(email) : null);
     if (!userId) continue;
     const sub = statusByUser.get(userId);
     if (!sub) continue;
@@ -949,15 +1058,64 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
     const current = (c.lifecycle_stage as LifecycleStage) ?? 'new';
     if (current === next || current === 'member') continue;
     if (current === 'paid' && next === 'trial') continue;
+    const nextScore = clampLeadScore(Number(c.lead_score ?? 0) + scoreForLifecycle(next));
     const { error: upErr } = await admin
       .from('acq_contacts')
-      .update({ lifecycle_stage: next, updated_at: new Date().toISOString() })
+      .update({
+        lifecycle_stage: next,
+        lead_score: nextScore,
+        profile_id: userId,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', c.id);
     if (!upErr) {
+      await admin
+        .from('acq_conversations')
+        .update({ lifecycle_stage: next, updated_at: new Date().toISOString() })
+        .eq('contact_id', c.id);
       updated += 1;
-      details.push(`${email}: ${current} → ${next}`);
+      details.push(`${email || userId}: ${current} → ${next}`);
     }
   }
 
-  return { updated, checked: contacts.length, details };
+  return { updated, checked: contacts.length, emailsHarvested: harvested, details };
+}
+
+/** Scanne les messages inbound récents pour rattacher un e-mail au contact. */
+export async function harvestEmailsFromRecentInbound(limit = 60): Promise<number> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return 0;
+  const admin = createAdminClient();
+  const { extractEmailFromText } = await import('./lead-score');
+  const { data: msgs } = await admin
+    .from('acq_messages')
+    .select('body, conversation_id')
+    .eq('direction', 'inbound')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  let harvested = 0;
+  const seenConv = new Set<string>();
+  for (const m of msgs ?? []) {
+    const convId = String(m.conversation_id);
+    if (seenConv.has(convId)) continue;
+    const email = extractEmailFromText(String(m.body ?? ''));
+    if (!email) continue;
+    seenConv.add(convId);
+    const { data: conv } = await admin
+      .from('acq_conversations')
+      .select('contact_id')
+      .eq('id', convId)
+      .maybeSingle();
+    if (!conv?.contact_id) continue;
+    const { data: contact } = await admin
+      .from('acq_contacts')
+      .select('id, email')
+      .eq('id', conv.contact_id)
+      .maybeSingle();
+    if (!contact || contact.email) continue;
+    const r = await updateContactEmail(String(contact.id), email, true);
+    if (r.ok) harvested += 1;
+  }
+  return harvested;
 }

@@ -1,4 +1,4 @@
-import { bilingualSend, lines } from '@/lib/acquisition/copy-bilingual';
+import { bilingualSend, lines, trialFollowupSequence } from '@/lib/acquisition/copy-bilingual';
 import type { AcqWorkflow } from '@/lib/acquisition/types';
 
 /**
@@ -46,7 +46,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'commentaire_essai' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -59,7 +59,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     actions: [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'dm_entrant' } },
-      { type: 'schedule_followup', config: { delayHours: 48, actionType: 'send_trial_link' } },
+      { type: 'capture_email_optin' },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -103,7 +104,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'commentaire_prix' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -147,7 +148,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'dm_prix' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -189,7 +190,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'objection_temps' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -231,7 +232,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'objection_souplesse' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -320,7 +321,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'story_reply' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -371,7 +372,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'dm_salutation' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -414,7 +415,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'commentaire_postpartum' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -454,7 +455,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'objection_materiel' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -507,7 +508,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'commentaire_lien' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -547,7 +548,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'objection_honte' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -607,7 +608,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'messenger_essai' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
   {
@@ -643,9 +644,174 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'messenger_prix' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      { type: 'schedule_followup', config: { delayHours: 24, actionType: 'send_trial_link' } },
+      ...trialFollowupSequence(),
     ],
   },
+
+  {
+    id: '00000000-0000-4000-8000-000000000013',
+    name: 'Messenger catch-all → concierge + essai',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: { priority: 0 },
+    conditions: {},
+    actions: [
+      { type: 'qualify_intent' },
+      { type: 'tag_contact', config: { tag: 'messenger_entrant' } },
+      { type: 'capture_email_optin' },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000014',
+    name: 'Messenger Salut → accueil + essai',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: {
+      keyword: 'bonjour|hello|hola|salut|hey|coucou|buenas|bonsoir',
+      priority: 10,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Bonjour 💛 C’est Alejandra.',
+            '',
+            'Tu cherches un vrai suivi — pas une vidéo seule ?',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Hola 💛 Soy Alejandra.',
+            '',
+            '¿Buscas un verdadero seguimiento — no un vídeo sola?',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'messenger_salut' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000015',
+    name: 'WhatsApp « ESSAI / PRUEBA » → lien',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias', priority: 90 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Merci 💛 C’est Alejandra.',
+            '',
+            'Moi, je ne te laisse pas seule devant une vidéo.',
+            'Rendez-vous fixe, je te corrige en direct, je te vois.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Gracias 💛 Soy Alejandra.',
+            '',
+            'Yo no te dejo sola frente a un vídeo.',
+            'Cita fija, te corrijo en directo, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'wa_essai' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000016',
+    name: 'WhatsApp « prix / info » → pitch + essai',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: { keyword: 'prix|tarif|combien|cuesta|precio|costo|info', priority: 100 },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu as raison de demander 💛',
+            '',
+            'Tu paies un créneau avec moi + ma correction en direct — pas du YouTube.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'Pagas una cita conmigo + mi corrección en directo — no YouTube.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'wa_prix' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000017',
+    name: 'WhatsApp Salut / catch-all → concierge',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: { priority: 0 },
+    conditions: {},
+    actions: [
+      { type: 'qualify_intent' },
+      { type: 'tag_contact', config: { tag: 'wa_entrant' } },
+      { type: 'capture_email_optin' },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000018',
+    name: 'WhatsApp Opt-out (stop)',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: {
+      keyword: 'stop|désabonne|desabonne|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas',
+      priority: 200,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines('Compris 💛', '', 'Je ne t’écris plus.'),
+          lines('Entendido 💛', '', 'No te escribo más.'),
+          false,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'optout' } },
+    ],
+  },
+
 ];
 
 export const WORKFLOW_CATALOG_COUNT = WORKFLOW_CATALOG.length;

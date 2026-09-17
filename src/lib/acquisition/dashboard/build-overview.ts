@@ -199,6 +199,8 @@ export async function buildAcquisitionOverview(
   const crmTrial = acqCrm.ok ? acqCrm.data.trial : 0;
   const crmPaid = acqCrm.ok ? acqCrm.data.paid + acqCrm.data.member : 0;
   const crmMember = acqCrm.ok ? acqCrm.data.member : 0;
+  const crmHot = acqCrm.ok ? acqCrm.data.hotLeads : 0;
+  const crmAvgScore = acqCrm.ok ? acqCrm.data.avgLeadScore : null;
 
   const crmFunnel = buildSteps({
     reach: crmContacts,
@@ -217,11 +219,17 @@ export async function buildAcquisitionOverview(
 
   const kpis: AcquisitionKpi[] = [
     {
-      id: 'cac',
-      label: 'CAC',
-      value: '—',
-      hint: 'Non calculable sans budget publicitaire branché. Suivre le coût organique via le CRM.',
-      tone: 'neutral',
+      id: 'hot_leads',
+      label: 'Leads chauds (score ≥40)',
+      value: formatNum(crmHot),
+      hint: 'Contacts CRM prêts à convertir (inbox + tags + e-mail).',
+      tone: crmHot > 0 ? 'good' : 'watch',
+    },
+    {
+      id: 'avg_score',
+      label: 'Score lead moyen',
+      value: crmAvgScore != null ? String(crmAvgScore) : '—',
+      hint: '0–100 · engagement DM, e-mail, booking, Stripe.',
     },
     {
       id: 'arpu',

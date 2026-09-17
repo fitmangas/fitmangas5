@@ -188,6 +188,22 @@ async function actionTagContact(ctx: ActionContext, config?: Record<string, unkn
     };
   }
 
+  if (tag.startsWith('objection_')) {
+    const { bumpContactLeadScore } = await import('./repository');
+    const { LEAD_SCORE_DELTA } = await import('./lead-score');
+    await bumpContactLeadScore(ctx.contact.id, LEAD_SCORE_DELTA.objection_handled);
+  } else if (
+    tag.startsWith('commentaire_') ||
+    tag.startsWith('messenger_') ||
+    tag.startsWith('wa_') ||
+    tag === 'story_reply' ||
+    tag === 'dm_entrant'
+  ) {
+    const { bumpContactLeadScore } = await import('./repository');
+    const { LEAD_SCORE_DELTA } = await import('./lead-score');
+    await bumpContactLeadScore(ctx.contact.id, LEAD_SCORE_DELTA.comment_engagement);
+  }
+
   return { type: 'tag_contact', ok: true, detail: `Tag « ${tag} » ajouté.` };
 }
 
@@ -204,14 +220,27 @@ async function actionSetLifecycle(ctx: ActionContext, config?: Record<string, un
 
 async function actionSendTrialLink(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   const locale = ctx.market === 'mx' ? 'es' : 'fr';
-  const style = config?.style === 'compact' ? 'compact' : 'full';
+  const styleRaw = typeof config?.style === 'string' ? config.style : 'full';
+  const style =
+    styleRaw === 'compact' ||
+    styleRaw === 'reminder_j1' ||
+    styleRaw === 'social_proof' ||
+    styleRaw === 'last_chance'
+      ? styleRaw
+      : 'full';
   const body = getTrialDmMessage({
     locale,
     utmSource: ctx.conversation.channel,
     utmCampaign: 'acquisition_dm',
     style,
   });
-  return actionSendMessage(ctx, { body });
+  const send = await actionSendMessage(ctx, { body });
+  if (send.ok && ctx.contact) {
+    const { bumpContactLeadScore } = await import('./repository');
+    const { LEAD_SCORE_DELTA } = await import('./lead-score');
+    await bumpContactLeadScore(ctx.contact.id, LEAD_SCORE_DELTA.trial_link_sent);
+  }
+  return send;
 }
 
 function resolveCourseType(ctx: ActionContext, config?: Record<string, unknown>): 'visio_collectif' | 'nantes_presentiel' {
@@ -254,6 +283,9 @@ async function actionBookSession(ctx: ActionContext, config?: Record<string, unk
     appendTrialLink: !confirmBody.includes('fitmangas.com'),
   });
   await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
+  const { bumpContactLeadScore } = await import('./repository');
+  const { LEAD_SCORE_DELTA } = await import('./lead-score');
+  await bumpContactLeadScore(ctx.contact.id, LEAD_SCORE_DELTA.booking_intent);
 
   const { sendAcquisitionBookingEmail } = await import('@/lib/acquisition/notify-escalation');
   const mail = await sendAcquisitionBookingEmail({
@@ -287,16 +319,23 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
   }
   const hours = typeof config?.delayHours === 'number' ? config.delayHours : 24;
   const runAt = new Date(Date.now() + hours * 3600000).toISOString();
+  const actionType = typeof config?.actionType === 'string' ? config.actionType : 'send_trial_link';
+  const payload: Record<string, unknown> = {};
+  if (typeof config?.style === 'string') payload.style = config.style;
+  if (typeof config?.body === 'string') payload.body = config.body;
+  if (typeof config?.bodyFr === 'string') payload.bodyFr = config.bodyFr;
+  if (typeof config?.bodyEs === 'string') payload.bodyEs = config.bodyEs;
   const r = await scheduleFollowup({
     contactId: ctx.contact.id,
     conversationId: ctx.conversation.id,
     runAt,
-    actionType: typeof config?.actionType === 'string' ? config.actionType : 'send_trial_link',
+    actionType,
+    payload,
   });
   return {
     type: 'schedule_followup',
     ok: r.ok,
-    detail: r.ok ? `Relance programmée dans ${hours}h.` : (r.error ?? 'Erreur relance'),
+    detail: r.ok ? `Relance programmée dans ${hours}h (${actionType}).` : (r.error ?? 'Erreur relance'),
   };
 }
 
