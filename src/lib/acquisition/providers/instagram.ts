@@ -34,6 +34,7 @@ export const instagramProvider: MessagingProvider = {
     const live = await sendInstagramLiveMessage({
       recipientId: input.recipientId,
       body: input.body,
+      buttons: input.buttons,
       quickReplies: input.quickReplies,
     });
     if (!live.ok) {
