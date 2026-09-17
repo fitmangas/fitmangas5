@@ -34,6 +34,7 @@ export const messengerProvider: MessagingProvider = {
     const live = await sendMessengerLiveMessage({
       recipientId: input.recipientId,
       body: input.body,
+      buttons: input.buttons,
     });
     if (!live.ok) {
       return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec Messenger LIVE.' };
