@@ -3,6 +3,8 @@ import type { AcquisitionChannel } from '@/lib/acquisition/types';
 export type QuickReplyButton = {
   title: string;
   payload: string;
+  /** Si présent → bouton URL dans la bulle (sinon postback) */
+  url?: string;
 };
 
 export type SendMessageInput = {
@@ -10,7 +12,12 @@ export type SendMessageInput = {
   recipientId: string;
   body: string;
   metadata?: Record<string, unknown>;
-  /** Boutons type ManyChat (max 13, titre ≤20 car.) */
+  /**
+   * Boutons DANS la bulle (template Meta — rendu ManyChat).
+   * À préférer aux quick replies (pastilles sous le message).
+   */
+  buttons?: QuickReplyButton[];
+  /** @deprecated pastilles sous le message — rendu différent, éviter */
   quickReplies?: QuickReplyButton[];
 };
 
