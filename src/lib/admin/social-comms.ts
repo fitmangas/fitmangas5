@@ -107,7 +107,10 @@ export type MetaSocialConnection = {
   igUserId: string | null;
   igUsername: string | null;
   accessToken: string | null;
+  /** Expiration du token d’accès. Null = token Page (ne expire pas). */
   tokenExpiresAt: string | null;
+  /** Fenêtre « data access » Meta (~90 j) — rappel de re-auth, pas mort du token Page. */
+  dataAccessExpiresAt?: string | null;
   updatedAt: string | null;
 };
 
@@ -190,6 +193,7 @@ export function emptyMetaConnection(): MetaSocialConnection {
     igUsername: null,
     accessToken: null,
     tokenExpiresAt: null,
+    dataAccessExpiresAt: null,
     updatedAt: null,
   };
 }

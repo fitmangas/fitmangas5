@@ -612,7 +612,9 @@ export function CommunityManagerBoard({
                   )
                 : meta.tokenExpiresAt
                   ? `· Meta jusqu’au ${new Date(meta.tokenExpiresAt).toLocaleDateString('fr-FR')}`
-                  : '· Meta OK'
+                  : meta.dataAccessExpiresAt
+                    ? `· Meta OK (token Page sans expiration · re-auth data ~${new Date(meta.dataAccessExpiresAt).toLocaleDateString('fr-FR')})`
+                    : '· Meta OK (token Page sans expiration)'
               : '· Meta non connecté'}
             {tiktok.connected ? ' · TikTok OK' : ' · TikTok à connecter'}
             <button type="button" className="ml-1 underline decoration-[#C45D3E]/40" onClick={() => setShowMetaPanel((v) => !v)}>

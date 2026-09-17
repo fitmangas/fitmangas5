@@ -84,7 +84,23 @@ export async function exchangeMetaCodeForConnection(code: string): Promise<MetaS
   if (!page) throw new Error('Aucune Page Facebook trouvée sur ce compte.');
 
   const ig = page.instagram_business_account as { id?: string; username?: string } | undefined;
-  const expiresIn = typeof longData.expires_in === 'number' ? longData.expires_in : null;
+  const pageToken = String(page.access_token || userToken);
+
+  // Token Page issu d’un user token long-lived : expires_at=0 (ne expire pas).
+  // Ne pas recopier expires_in du user token (~60 j) — c’était le bug d’affichage « jusqu’au 16 nov ».
+  let dataAccessExpiresAt: string | null = null;
+  try {
+    const appToken = `${appId}|${appSecret}`;
+    const debug = await graphJson(
+      `${GRAPH}/debug_token?input_token=${encodeURIComponent(pageToken)}&access_token=${encodeURIComponent(appToken)}`,
+    );
+    const info = debug.data as { data_access_expires_at?: number; expires_at?: number } | undefined;
+    if (info?.data_access_expires_at && info.data_access_expires_at > 0) {
+      dataAccessExpiresAt = new Date(info.data_access_expires_at * 1000).toISOString();
+    }
+  } catch {
+    // debug_token optionnel
+  }
 
   return {
     connected: true,
@@ -92,8 +108,9 @@ export async function exchangeMetaCodeForConnection(code: string): Promise<MetaS
     pageName: typeof page.name === 'string' ? page.name : null,
     igUserId: ig?.id ? String(ig.id) : null,
     igUsername: ig?.username ? String(ig.username) : null,
-    accessToken: String(page.access_token || userToken),
-    tokenExpiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
+    accessToken: pageToken,
+    tokenExpiresAt: null,
+    dataAccessExpiresAt,
     updatedAt: new Date().toISOString(),
   };
 }

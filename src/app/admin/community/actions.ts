@@ -1554,6 +1554,7 @@ export async function saveMetaConnectionManualAction(input: {
     igUsername: input.igUsername?.trim() || null,
     accessToken: input.accessToken.trim(),
     tokenExpiresAt: null,
+    dataAccessExpiresAt: null,
     updatedAt: new Date().toISOString(),
   };
   if (!connection.pageId || !connection.accessToken) {
