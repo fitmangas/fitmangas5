@@ -811,6 +811,188 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'tag_contact', config: { tag: 'optout' } },
     ],
   },
+,
+
+  {
+    id: '00000000-0000-4000-8000-000000000019',
+    name: 'Messenger objection « pas le temps »',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: {
+      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      priority: 60,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Justement 💛',
+            '',
+            'Je te pose un rendez-vous : tu viens, je te vois, tu n’as plus à t’auto-motiver.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Teste un vrai créneau avec moi →',
+          ),
+          lines(
+            'Justo 💛',
+            '',
+            'Te pongo una cita: vienes, te veo, ya no tienes que motivarte sola.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Prueba un verdadero horario conmigo →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'objection_temps' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001a',
+    name: 'Messenger objection « pas souple »',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: {
+      keyword: 'souple|débutante|debutante|jamais fait|trop raide|flexible|principiante',
+      priority: 60,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu n’as pas besoin d’être souple pour commencer 💛',
+            '',
+            'En visio, j’adapte et je te corrige en direct.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Viens voir par toi-même →',
+          ),
+          lines(
+            'No necesitas ser flexible para empezar 💛',
+            '',
+            'En visio, adapto y te corrijo en directo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Ven a verlo por ti misma →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'objection_souplesse' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001b',
+    name: 'WhatsApp objection « pas le temps »',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: {
+      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      priority: 60,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Justement 💛',
+            '',
+            'Je te pose un rendez-vous : tu viens, je te vois.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Justo 💛',
+            '',
+            'Te pongo una cita: vienes, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'objection_temps' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001c',
+    name: 'WhatsApp objection « pas souple »',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: {
+      keyword: 'souple|débutante|debutante|jamais fait|trop raide|flexible|principiante',
+      priority: 60,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Tu n’as pas besoin d’être souple pour commencer 💛',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'No necesitas ser flexible para empezar 💛',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'objection_souplesse' } },
+      ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001d',
+    name: 'Messenger / WhatsApp « horaires » → booking',
+    enabled: true,
+    triggerType: 'messenger_inbound',
+    triggerConfig: {
+      keyword: 'horaire|créneau|creneau|quand|schedule|horario|qué días|quels jours|que dias',
+      priority: 80,
+    },
+    conditions: {},
+    actions: [
+      { type: 'book_session_intent', config: { courseType: 'visio_collectif' } },
+      { type: 'tag_contact', config: { tag: 'demande_horaires' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000001e',
+    name: 'WhatsApp « horaires » → booking',
+    enabled: true,
+    triggerType: 'whatsapp_inbound',
+    triggerConfig: {
+      keyword: 'horaire|créneau|creneau|quand|schedule|horario|qué días|quels jours|que dias',
+      priority: 80,
+    },
+    conditions: {},
+    actions: [
+      { type: 'book_session_intent', config: { courseType: 'visio_collectif' } },
+      { type: 'tag_contact', config: { tag: 'demande_horaires' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
+    ],
+  },
 
 ];
 

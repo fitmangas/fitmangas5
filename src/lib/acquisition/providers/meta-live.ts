@@ -6,7 +6,10 @@ export const ACQUISITION_META_SETTING_KEY = 'acquisition_meta_connection';
 
 export type AcquisitionMetaConnection = MetaSocialConnection & {
   messagingScopesVerified?: boolean;
+  /** ID technique Meta Cloud API (≠ numéro affiché) */
   whatsappPhoneNumberId?: string | null;
+  /** Numéro public E.164 sans + (ex. 33784835972) */
+  whatsappDisplayPhone?: string | null;
 };
 
 export type MetaLiveReadiness = {
@@ -24,6 +27,13 @@ export type MetaLiveReadiness = {
   readyForLive: boolean;
   blockers: string[];
   notes: string[];
+  /** WhatsApp robot (API) — pas le bouton wa.me du site */
+  whatsapp: {
+    displayPhone: string | null;
+    phoneNumberIdPresent: boolean;
+    robotReady: boolean;
+    plainStatus: string;
+  };
 };
 
 /** Messenger / WhatsApp Cloud API */
@@ -43,7 +53,28 @@ function emptyConnection(): AcquisitionMetaConnection {
     updatedAt: null,
     messagingScopesVerified: false,
     whatsappPhoneNumberId: null,
+    whatsappDisplayPhone: null,
   };
+}
+
+/** Numéro affiché site / Acquisition (E.164 sans +). */
+export function getWhatsAppDisplayPhoneE164(): string {
+  const fromEnv =
+    process.env.NEXT_PUBLIC_LANDING_WHATSAPP_PHONE?.replace(/\D/g, '') ||
+    process.env.NEXT_PUBLIC_WHATSAPP_E164?.replace(/\D/g, '') ||
+    '';
+  return fromEnv || '33784835972';
+}
+
+/** ID technique Cloud API : settings d’abord, sinon env. */
+export function resolveWhatsAppPhoneNumberId(conn?: AcquisitionMetaConnection | null): string | null {
+  const fromConn = conn?.whatsappPhoneNumberId?.trim();
+  if (fromConn) return fromConn;
+  const fromEnv =
+    process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() ||
+    process.env.META_WHATSAPP_PHONE_NUMBER_ID?.trim() ||
+    '';
+  return fromEnv || null;
 }
 
 export async function getAcquisitionMetaConnection(): Promise<AcquisitionMetaConnection> {
@@ -131,6 +162,17 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
     blockers.push('Migration §9 (tables acq_*) non appliquée.');
   }
 
+  const displayPhone = conn.whatsappDisplayPhone?.replace(/\D/g, '') || getWhatsAppDisplayPhoneE164();
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
+  const waRobotReady = Boolean(phoneNumberId && conn.accessToken);
+  let waPlain =
+    'Le numéro 07… du site sert à discuter à la main. Le robot WhatsApp a besoin d’un branchement Meta séparé (pas encore fait).';
+  if (waRobotReady) {
+    waPlain = `Robot WhatsApp branché (n° ${displayPhone}).`;
+  } else if (displayPhone) {
+    waPlain = `N° public ${displayPhone} connu. Manque l’ID technique Meta (WHATSAPP_PHONE_NUMBER_ID) pour que le robot réponde tout seul.`;
+  }
+
   const tokenExpired = Boolean(
     conn.tokenExpiresAt && new Date(conn.tokenExpiresAt).getTime() < Date.now(),
   );
@@ -150,6 +192,12 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
     readyForLive: blockers.length === 0,
     blockers,
     notes,
+    whatsapp: {
+      displayPhone,
+      phoneNumberIdPresent: Boolean(phoneNumberId),
+      robotReady: waRobotReady,
+      plainStatus: waPlain,
+    },
   };
 }
 
@@ -172,8 +220,21 @@ async function graphPost(
     message_id?: string;
   };
   if (!res.ok) {
-    const msg = data.error?.message ?? `Erreur Meta ${res.status}`;
-    return { ok: false as const, error: msg };
+    const raw = data.error?.message ?? `Erreur Meta ${res.status}`;
+    const code = data.error?.code;
+    // Fenêtre 24h Meta — message compréhensible pour Kevin / Alejandra
+    if (
+      code === 10 ||
+      code === 551 ||
+      /outside.*allowed window|message.*24 hour|(#10)|(#551)/i.test(raw)
+    ) {
+      return {
+        ok: false as const,
+        error:
+          'Meta bloque l’envoi : elle ne t’a pas écrit depuis plus de 24 h. Dès qu’elle répond, on peut re-parler librement. (Sinon il faudrait un message « modèle » validé par Meta.)',
+      };
+    }
+    return { ok: false as const, error: raw };
   }
   return { ok: true as const, messageId: data.message_id ? String(data.message_id) : undefined };
 }
@@ -236,11 +297,12 @@ export async function sendWhatsAppLiveMessage(params: {
   body: string;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
-  const phoneNumberId = conn.whatsappPhoneNumberId?.trim();
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
   if (!conn.accessToken || !phoneNumberId) {
     return {
       ok: false,
-      error: 'WhatsApp LIVE : WABA phone_number_id absent dans acquisition_meta_connection.',
+      error:
+        'WhatsApp robot pas encore branché à Meta. Le n° 0784835972 du site ouvre un chat manuel — il manque WHATSAPP_PHONE_NUMBER_ID (ID technique Meta).',
     };
   }
   return graphPost(GRAPH, `/${phoneNumberId}/messages`, conn.accessToken, {
@@ -259,11 +321,12 @@ export async function sendWhatsAppLiveTemplate(params: {
   variables?: Record<string, string>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
-  const phoneNumberId = conn.whatsappPhoneNumberId?.trim();
+  const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
   if (!conn.accessToken || !phoneNumberId) {
     return {
       ok: false,
-      error: 'WhatsApp LIVE : WABA phone_number_id absent dans acquisition_meta_connection.',
+      error:
+        'WhatsApp robot pas encore branché à Meta (WHATSAPP_PHONE_NUMBER_ID manquant).',
     };
   }
 
@@ -315,7 +378,8 @@ export async function ensureAcquisitionMetaFromCm(): Promise<{
     const payload: AcquisitionMetaConnection = {
       ...cm,
       messagingScopesVerified: false,
-      whatsappPhoneNumberId: null,
+      whatsappPhoneNumberId: resolveWhatsAppPhoneNumberId(null),
+      whatsappDisplayPhone: getWhatsAppDisplayPhoneE164(),
       connected: true,
       updatedAt: new Date().toISOString(),
     };

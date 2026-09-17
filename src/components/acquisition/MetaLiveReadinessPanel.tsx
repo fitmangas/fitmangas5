@@ -53,7 +53,21 @@ export function MetaLiveReadinessPanel({ status }: Props) {
                 : 'Aucune'
           }
         />
+        <Item
+          label="WhatsApp (n° public)"
+          value={status.whatsapp?.displayPhone ? `+${status.whatsapp.displayPhone}` : '—'}
+        />
+        <Item
+          label="WhatsApp robot"
+          value={status.whatsapp?.robotReady ? 'Branché' : 'Pas encore (API Meta manquante)'}
+        />
       </dl>
+
+      {status.whatsapp?.plainStatus ? (
+        <p className="mt-4 text-sm leading-relaxed" style={{ color: acq.ink }}>
+          {status.whatsapp.plainStatus}
+        </p>
+      ) : null}
 
       {status.blockers.length ? (
         <ul className="mt-6 space-y-2 text-sm" style={{ color: '#991B1B' }}>
