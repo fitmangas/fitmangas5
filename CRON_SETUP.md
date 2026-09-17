@@ -48,12 +48,15 @@ Ne pas ajouter `course-reminders` dans `vercel.json` si vous utilisez cron-job.o
 
 Facebook utilise la programmation native Meta. Instagram passe par la file FitMangas + cron.
 
-**Cause historique des non-publications à l’heure :** un seul cron à 05h45 UTC ne peut pas publier un Reel prévu à 12h Paris. Corrigé via plusieurs jobs quotidiens dans `vercel.json`.
+**Cause n°1 des non-publications :** token Meta expiré (OAuth 190). Reconnecte Meta dans Community avant tout.
 
-Pour une précision ~15 min (recommandé en plus du filet Vercel), ajouter sur cron-job.org :
+**Cause n°2 :** Vercel Hobby ne déclenche pas toujours les crons `publish-scheduled`. Le filet fiable est **cron-job.org → course-reminders** (toutes les 10 min), qui appelle aussi `processDueSocialPostsAction`.
 
-- **URL** : `https://fitmangas.com/api/admin/community/cron/publish-scheduled`
-- **Schedule** : toutes les **15 minutes**
+Pour une précision ~10 min, garder sur cron-job.org :
+
+- **URL** : `https://fitmangas.com/api/admin/cron/course-reminders` (rappels + publications IG)
+- **OU** en plus : `https://fitmangas.com/api/admin/community/cron/publish-scheduled`
+- **Schedule** : toutes les **10–15 minutes**
 - **Header** : `Authorization: Bearer <CRON_SECRET>`
 
 Test manuel :
