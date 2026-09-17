@@ -26,6 +26,12 @@ type MetaMessagingEvent = {
     is_echo?: boolean;
     quick_reply?: { payload?: string };
   };
+  /** Clic bouton DANS la bulle (generic / button template) */
+  postback?: {
+    mid?: string;
+    title?: string;
+    payload?: string;
+  };
   timestamp?: number;
 };
 
@@ -53,7 +59,6 @@ function triggerForChannel(channel: AcquisitionChannel): WorkflowTriggerType {
 }
 
 function verifyMetaSignature(rawBody: string, request: Request): boolean {
-  // IG Login App signe avec la clé secrète Instagram (≠ App Secret Facebook)
   const secrets = [
     process.env.INSTAGRAM_APP_SECRET?.trim(),
     process.env.META_IG_APP_SECRET?.trim(),
@@ -105,7 +110,6 @@ async function ingestInbound(params: {
     (channel === 'whatsapp' ? `wa_${senderId.slice(-10)}` : `@meta_${senderId.slice(-8)}`);
 
   let contactId: string | undefined;
-  // 1) Déjà connu par handle
   const { data: byHandle } = await admin
     .from('acq_contacts')
     .select('id, handle')
@@ -114,7 +118,6 @@ async function ingestInbound(params: {
     .maybeSingle();
   if (byHandle?.id) contactId = String(byHandle.id);
 
-  // 2) Sinon retrouver via meta_sender_id (évite @meta_xxxxxxx en doublon d'un @username)
   if (!contactId && channel !== 'whatsapp') {
     const { data: bySender } = await admin
       .from('acq_contacts')
@@ -126,7 +129,6 @@ async function ingestInbound(params: {
     if (bySender?.id) contactId = String(bySender.id);
   }
 
-  // 3) Sinon via conversation déjà ouverte sur ce thread
   if (!contactId) {
     const { data: byThread } = await admin
       .from('acq_conversations')
@@ -199,7 +201,6 @@ async function ingestInbound(params: {
     .eq('id', conversationId);
 
   await bumpContactLeadScore(contactId, LEAD_SCORE_DELTA.inbound_message);
-  // Elle vient d’écrire → on peut lui répondre (sauf optout explicite)
   await admin
     .from('acq_contacts')
     .update({ opt_in: true, updated_at: new Date().toISOString() })
@@ -244,7 +245,6 @@ async function ingestInbound(params: {
   return { stored: true, workflowsRun };
 }
 
-/** Vérification webhook Meta (GET) + réception événements (POST). */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
@@ -297,8 +297,12 @@ export async function POST(request: Request) {
         if (msg.message?.is_echo) continue;
         const rawText = msg.message?.text?.trim() ?? '';
         const qrPayload = msg.message?.quick_reply?.payload?.trim() ?? '';
-        // Bouton ManyChat : on matche aussi le payload (ex. FOLLOW_CLAIM)
-        const text = [rawText, qrPayload].filter(Boolean).join(' ').trim();
+        const postbackTitle = msg.postback?.title?.trim() ?? '';
+        const postbackPayload = msg.postback?.payload?.trim() ?? '';
+        const text = [rawText, qrPayload, postbackTitle, postbackPayload]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
         const senderId = msg.sender?.id;
         if (!text || !senderId) continue;
         const channel: AcquisitionChannel = body.object === 'instagram' ? 'instagram' : 'facebook';
@@ -307,7 +311,7 @@ export async function POST(request: Request) {
           channel,
           senderId,
           text,
-          externalMessageId: msg.message?.mid ?? null,
+          externalMessageId: msg.postback?.mid ?? msg.message?.mid ?? null,
           triggerType: isStoryReply
             ? 'ig_story_reply'
             : channel === 'instagram'
@@ -318,7 +322,6 @@ export async function POST(request: Request) {
         workflowsRun += r.workflowsRun;
       }
 
-      // Commentaires Instagram (field=comments) → private reply + workflows mot-clé
       if (body.object === 'instagram') {
         for (const change of entry.changes ?? []) {
           if (change.field !== 'comments') continue;
