@@ -347,14 +347,89 @@ export async function sendInstagramLiveMessage(params: {
 export async function sendMessengerLiveMessage(params: {
   recipientId: string;
   body: string;
+  /** Boutons DANS la bulle (même rendu ManyChat que IG) */
+  buttons?: Array<{ title: string; payload: string; url?: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
   if (!conn.accessToken || !conn.pageId) {
     return { ok: false, error: 'Connexion Meta Acquisition incomplète (Page ID + token).' };
   }
-  return graphPost(GRAPH, `/${conn.pageId}/messages`, conn.accessToken, {
-    recipient: { id: params.recipientId },
-    message: { text: params.body },
+
+  const recipient = { id: params.recipientId };
+  const text = params.body.trim();
+  const path = `/${conn.pageId}/messages`;
+
+  if (params.buttons?.length) {
+    const buttons = params.buttons.slice(0, 3).map((b) => {
+      if (b.url?.trim()) {
+        return {
+          type: 'web_url' as const,
+          url: b.url.trim(),
+          title: b.title.slice(0, 20),
+        };
+      }
+      return {
+        type: 'postback' as const,
+        title: b.title.slice(0, 20),
+        payload: b.payload.slice(0, 1000),
+      };
+    });
+
+    const buttonTpl = await graphPost(GRAPH, path, conn.accessToken, {
+      recipient,
+      messaging_type: 'RESPONSE',
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'button',
+            text: text.slice(0, 640),
+            buttons,
+          },
+        },
+      },
+    });
+    if (buttonTpl.ok) return buttonTpl;
+
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = (lines[0] ?? 'FitMangas').slice(0, 80);
+    const subtitle = (lines.slice(1).join(' ') || 'Essai 7 jours gratuits ✨').slice(0, 80);
+    const genericTpl = await graphPost(GRAPH, path, conn.accessToken, {
+      recipient,
+      messaging_type: 'RESPONSE',
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: [{ title, subtitle, buttons }],
+          },
+        },
+      },
+    });
+    if (genericTpl.ok) return genericTpl;
+
+    const plain = await graphPost(GRAPH, path, conn.accessToken, {
+      recipient,
+      messaging_type: 'RESPONSE',
+      message: { text },
+    });
+    if (plain.ok) {
+      return {
+        ok: true,
+        messageId: plain.messageId,
+        error: `Boutons Messenger refusés (${buttonTpl.error ?? genericTpl.error}) — texte seul.`,
+      };
+    }
+    return {
+      ok: false,
+      error: buttonTpl.error ?? genericTpl.error ?? plain.error ?? 'Échec envoi Messenger.',
+    };
+  }
+
+  return graphPost(GRAPH, path, conn.accessToken, {
+    recipient,
+    message: { text },
     messaging_type: 'RESPONSE',
   });
 }
