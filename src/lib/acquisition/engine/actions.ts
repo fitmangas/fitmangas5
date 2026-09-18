@@ -2,7 +2,24 @@ import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import { canEscalateToHuman } from '@/lib/acquisition/engine/lifecycle';
 import { detectAcquisitionMarket } from '@/lib/acquisition/market';
 import { getMessagingProvider } from '@/lib/acquisition/providers';
-import { getPublicTrialSignupUrl, getTrialDmMessage } from '@/lib/acquisition/trial-url';
+import { checkInstagramFollowsBusiness } from '@/lib/acquisition/providers/meta-live';
+import {
+  bilingualSend,
+  followGateAskEs,
+  followGateAskFr,
+  followGateRetryEs,
+  followGateRetryFr,
+  followGateThanksEs,
+  followGateThanksFr,
+  lines,
+  QR_ACCUEIL,
+  QR_FOLLOW_DONE,
+  QR_FOLLOW_GATE,
+  QR_PRICE_CHOICE,
+  QR_RESOURCE,
+  trialFollowupSequence,
+} from '@/lib/acquisition/copy-bilingual';
+import { getTrialDmMessage } from '@/lib/acquisition/trial-url';
 import type {
   AcqContact,
   AcqConversation,
@@ -10,6 +27,7 @@ import type {
   WorkflowActionType,
 } from '@/lib/acquisition/types';
 
+import { readPendingIntent, type PendingIntent } from './follow-gate';
 import {
   cancelScheduledFollowups,
   createBookingIntent,
@@ -17,6 +35,7 @@ import {
   getLatestConversationForContact,
   insertOutboundMessage,
   listOptInContacts,
+  patchContactExternalIds,
   scheduleFollowup,
   setContactOptIn,
   tagContact,
@@ -478,6 +497,186 @@ async function actionEscalateHuman(ctx: ActionContext): Promise<ActionResult> {
   };
 }
 
+/** Demande d’abonnement IG (voix Alejandra, pas de Bonjour). */
+export async function actionAskFollowGate(ctx: ActionContext): Promise<ActionResult> {
+  const send = await actionSendMessage(ctx, bilingualSend(followGateAskFr(), followGateAskEs(), false, QR_FOLLOW_GATE));
+  if (ctx.contact) {
+    await tagContact(ctx.contact.id, 'follow_gate_pending');
+  }
+  return {
+    type: 'send_message',
+    ok: send.ok,
+    detail: send.ok ? 'Gate abonnement IG envoyé.' : send.detail,
+    data: send.data,
+  };
+}
+
+function resumeConfigForIntent(
+  intent: PendingIntent,
+): { send: Record<string, unknown>; extra?: WorkflowActionSpec[] } {
+  switch (intent) {
+    case 'price':
+      return {
+        send: bilingualSend(
+          lines(
+            'Tu as raison de demander 💛',
+            '',
+            'Tu ne paies pas « du Pilates YouTube ».',
+            'Tu paies un créneau avec moi + ma correction en direct.',
+            '',
+            'Quelle formule tu veux voir ?',
+          ),
+          lines(
+            'Tienes razón en preguntar 💛',
+            '',
+            'No pagas « Pilates de YouTube ».',
+            'Pagas una cita conmigo + mi corrección en directo.',
+            '',
+            '¿Qué fórmula quieres ver?',
+          ),
+          false,
+          QR_PRICE_CHOICE,
+        ),
+      };
+    case 'trial':
+      return {
+        send: bilingualSend(
+          lines(
+            'Voici ton accès 💛',
+            '',
+            'Moi, je ne te laisse pas seule devant une vidéo.',
+            'Rendez-vous fixe, je te corrige en direct, je te vois.',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Clique ici →',
+          ),
+          lines(
+            'Aquí tienes tu acceso 💛',
+            '',
+            'Yo no te dejo sola frente a un vídeo.',
+            'Cita fija, te corrijo en directo, te veo.',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Haz clic aquí →',
+          ),
+          true,
+          QR_RESOURCE,
+        ),
+        extra: trialFollowupSequence(),
+      };
+    case 'schedule':
+      return {
+        send: bilingualSend(
+          lines(
+            'Les créneaux, on les pose ensemble 💛',
+            '',
+            'Dis-moi ce qui t’arrange — ou démarre l’essai et tu choisis ton premier cours.',
+            '',
+            'Essai 7 jours gratuits ✨',
+          ),
+          lines(
+            'Los horarios los fijamos juntas 💛',
+            '',
+            'Dime qué te va — o empieza la prueba y eliges tu primera clase.',
+            '',
+            'Prueba 7 días gratis ✨',
+          ),
+          true,
+          QR_RESOURCE,
+        ),
+        extra: [{ type: 'book_session_intent', config: { courseType: 'visio_collectif' } }],
+      };
+    case 'greeting':
+    case 'general':
+    default:
+      return {
+        send: bilingualSend(
+          lines(
+            'On reprend 💛',
+            '',
+            'Tu cherches un vrai suivi — pas une vidéo seule ?',
+            '',
+            'Essai 7 jours gratuits ✨',
+            '',
+            'Dis-moi ce dont tu as besoin ↓',
+          ),
+          lines(
+            'Retomamos 💛',
+            '',
+            '¿Buscas un verdadero seguimiento — no un vídeo sola?',
+            '',
+            'Prueba 7 días gratis ✨',
+            '',
+            'Dime qué necesitas ↓',
+          ),
+          false,
+          QR_ACCUEIL,
+        ),
+        extra: trialFollowupSequence(),
+      };
+  }
+}
+
+async function actionVerifyFollowAndResume(
+  ctx: ActionContext,
+  config?: Record<string, unknown>,
+): Promise<ActionResult> {
+  if (!ctx.contact) {
+    return { type: 'verify_follow_and_resume', ok: false, detail: 'Contact absent.' };
+  }
+  const mode = config?.mode === 'claim' ? 'claim' : 'confirm';
+  const igsid = resolveRecipientId(ctx);
+  const status = igsid ? await checkInstagramFollowsBusiness(igsid) : 'unknown';
+
+  const pass = status === 'yes' || (mode === 'confirm' && status === 'unknown');
+
+  if (!pass) {
+    const retry = await actionSendMessage(
+      ctx,
+      bilingualSend(followGateRetryFr(), followGateRetryEs(), false, QR_FOLLOW_DONE),
+    );
+    await tagContact(ctx.contact.id, mode === 'claim' ? 'follow_claimed' : 'follow_gate_pending');
+    return {
+      type: 'verify_follow_and_resume',
+      ok: retry.ok,
+      detail:
+        status === 'no'
+          ? 'Abonnement non détecté — message de relance envoyé.'
+          : `Vérif API = ${status} — demande confirmation (C’est bon).`,
+      data: { status, mode },
+    };
+  }
+
+  await tagContact(ctx.contact.id, 'follow_verified');
+  await tagContact(ctx.contact.id, 'follow_gate_passed');
+  const intent = readPendingIntent(ctx.contact);
+  await patchContactExternalIds(ctx.contact.id, { pending_intent: null });
+
+  const thanks = await actionSendMessage(
+    ctx,
+    bilingualSend(followGateThanksFr(), followGateThanksEs(), false),
+  );
+  const resume = resumeConfigForIntent(intent);
+  const resumed = await actionSendMessage(ctx, resume.send);
+
+  const extraSteps: string[] = [];
+  if (resume.extra) {
+    for (const spec of resume.extra) {
+      const r = await runWorkflowAction(spec, ctx);
+      extraSteps.push(`${r.ok ? '✓' : '✗'} ${r.type}`);
+    }
+  }
+
+  return {
+    type: 'verify_follow_and_resume',
+    ok: thanks.ok && resumed.ok,
+    detail: `Abo OK (${status}) · merci + reprise « ${intent} »${extraSteps.length ? ` · ${extraSteps.join(' · ')}` : ''}.`,
+    data: { status, intent },
+  };
+}
+
 export async function runWorkflowAction(
   spec: WorkflowActionSpec,
   ctx: ActionContext,
@@ -505,6 +704,8 @@ export async function runWorkflowAction(
       return actionEscalateHuman(ctx);
     case 'mini_poll':
       return actionMiniPoll(ctx, spec.config);
+    case 'verify_follow_and_resume':
+      return actionVerifyFollowAndResume(ctx, spec.config);
     default:
       return { type: spec.type, ok: false, detail: `Action inconnue : ${spec.type}` };
   }
