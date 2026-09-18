@@ -10,6 +10,13 @@ export type AcquisitionMetaConnection = MetaSocialConnection & {
   whatsappPhoneNumberId?: string | null;
   /** Numéro public E.164 sans + (ex. 33784835972) */
   whatsappDisplayPhone?: string | null;
+  /** WABA ID Meta (ex. 1427605062481966) */
+  whatsappWabaId?: string | null;
+  /**
+   * Token Facebook Cloud API WhatsApp (System User / Page).
+   * Séparé du accessToken IGAA Instagram — un token IGAA ne peut pas parler à WhatsApp.
+   */
+  whatsappAccessToken?: string | null;
 };
 
 export type MetaLiveReadiness = {
@@ -54,7 +61,30 @@ function emptyConnection(): AcquisitionMetaConnection {
     messagingScopesVerified: false,
     whatsappPhoneNumberId: null,
     whatsappDisplayPhone: null,
+    whatsappWabaId: null,
+    whatsappAccessToken: null,
   };
+}
+
+/** Token Cloud API WhatsApp : dédié d’abord, sinon accessToken Facebook (jamais IGAA). */
+export function resolveWhatsAppAccessToken(conn?: AcquisitionMetaConnection | null): string | null {
+  const dedicated = conn?.whatsappAccessToken?.trim();
+  if (dedicated) return dedicated;
+  const fromEnv =
+    process.env.WHATSAPP_ACCESS_TOKEN?.trim() ||
+    process.env.META_WHATSAPP_ACCESS_TOKEN?.trim() ||
+    '';
+  if (fromEnv) return fromEnv;
+  const shared = conn?.accessToken?.trim();
+  if (!shared) return null;
+  // Tokens Instagram Login (IGAA…) ne marchent pas sur graph.facebook.com / WhatsApp.
+  if (shared.startsWith('IGAA') || shared.startsWith('IGAV')) return null;
+  return shared;
+}
+
+export function isInstagramOnlyToken(token?: string | null): boolean {
+  const t = token?.trim() ?? '';
+  return t.startsWith('IGAA') || t.startsWith('IGAV');
 }
 
 /** Numéro affiché site / Acquisition (E.164 sans +). */
@@ -164,13 +194,18 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
 
   const displayPhone = conn.whatsappDisplayPhone?.replace(/\D/g, '') || getWhatsAppDisplayPhoneE164();
   const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
-  const waRobotReady = Boolean(phoneNumberId && conn.accessToken);
+  const waToken = resolveWhatsAppAccessToken(conn);
+  const waRobotReady = Boolean(phoneNumberId && waToken);
   let waPlain =
     'Le numéro 07… du site sert à discuter à la main. Le robot WhatsApp a besoin d’un branchement Meta séparé (pas encore fait).';
   if (waRobotReady) {
     waPlain = `Robot WhatsApp branché (n° ${displayPhone}).`;
-  } else if (displayPhone) {
+  } else if (phoneNumberId && !waToken) {
+    waPlain = `ID technique WhatsApp OK (${phoneNumberId}). Manque un token Facebook Cloud API (pas le token Instagram IGAA) — générer via Utilisateur système Meta.`;
+  } else if (displayPhone && !phoneNumberId) {
     waPlain = `N° public ${displayPhone} connu. Manque l’ID technique Meta (WHATSAPP_PHONE_NUMBER_ID) pour que le robot réponde tout seul.`;
+  } else if (displayPhone) {
+    waPlain = `N° public ${displayPhone} connu. Branchement robot incomplet.`;
   }
 
   const tokenExpired = Boolean(
@@ -222,7 +257,6 @@ async function graphPost(
   if (!res.ok) {
     const raw = data.error?.message ?? `Erreur Meta ${res.status}`;
     const code = data.error?.code;
-    // Fenêtre 24h Meta — message compréhensible pour Kevin / Alejandra
     if (
       code === 10 ||
       code === 551 ||
@@ -242,9 +276,7 @@ async function graphPost(
 export async function sendInstagramLiveMessage(params: {
   recipientId: string;
   body: string;
-  /** Boutons DANS la bulle (Button / Generic template) */
   buttons?: Array<{ title: string; payload: string; url?: string }>;
-  /** Pastilles sous le message — rendu différent, fallback uniquement */
   quickReplies?: Array<{ title: string; payload: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
@@ -255,7 +287,6 @@ export async function sendInstagramLiveMessage(params: {
   const recipient = { id: params.recipientId };
   const text = params.body.trim();
 
-  // 1) Boutons DANS la bulle — template "button" (texte + CTA collés, style ManyChat)
   if (params.buttons?.length) {
     const buttons = params.buttons.slice(0, 3).map((b) => {
       if (b.url?.trim()) {
@@ -287,7 +318,6 @@ export async function sendInstagramLiveMessage(params: {
     });
     if (buttonTpl.ok) return buttonTpl;
 
-    // 2) Fallback Generic template (carte + boutons dans la carte)
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
     const title = (lines[0] ?? 'FitMangas').slice(0, 80);
     const subtitle = (lines.slice(1).join(' ') || 'Essai 7 jours gratuits ✨').slice(0, 80);
@@ -311,7 +341,6 @@ export async function sendInstagramLiveMessage(params: {
     });
     if (genericTpl.ok) return genericTpl;
 
-    // Si les templates échouent, on envoie quand même le texte (erreur visible en détail)
     const plain = await graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, {
       recipient,
       message: { text },
@@ -329,7 +358,6 @@ export async function sendInstagramLiveMessage(params: {
     };
   }
 
-  // Sans boutons dans la bulle : texte (+ quick replies optionnelles, rendu différent)
   const message: Record<string, unknown> = { text };
   if (params.quickReplies?.length) {
     message.quick_replies = params.quickReplies.slice(0, 13).map((q) => ({
@@ -347,7 +375,6 @@ export async function sendInstagramLiveMessage(params: {
 export async function sendMessengerLiveMessage(params: {
   recipientId: string;
   body: string;
-  /** Boutons DANS la bulle (même rendu ManyChat que IG) */
   buttons?: Array<{ title: string; payload: string; url?: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
@@ -446,7 +473,6 @@ export async function sendInstagramPrivateReplyLive(params: {
     recipient: { comment_id: params.commentId },
     message: { text: params.body },
   };
-  // Docs Meta : POST /{IG_ID}/messages (Instagram Login). /me/messages en secours.
   const primary = await graphPost(GRAPH_IG, `/${conn.igUserId}/messages`, conn.accessToken, payload);
   if (primary.ok) return primary;
   const fallback = await graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, payload);
@@ -463,14 +489,22 @@ export async function sendWhatsAppLiveMessage(params: {
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
   const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
-  if (!conn.accessToken || !phoneNumberId) {
+  const token = resolveWhatsAppAccessToken(conn);
+  if (!phoneNumberId) {
     return {
       ok: false,
       error:
         'WhatsApp robot pas encore branché à Meta. Le n° 0784835972 du site ouvre un chat manuel — il manque WHATSAPP_PHONE_NUMBER_ID (ID technique Meta).',
     };
   }
-  return graphPost(GRAPH, `/${phoneNumberId}/messages`, conn.accessToken, {
+  if (!token) {
+    return {
+      ok: false,
+      error:
+        'WhatsApp : ID technique OK, mais le token Instagram (IGAA) ne marche pas pour WhatsApp. Il faut un token Facebook Cloud API (Utilisateur système) dans whatsappAccessToken.',
+    };
+  }
+  return graphPost(GRAPH, `/${phoneNumberId}/messages`, token, {
     messaging_product: 'whatsapp',
     to: params.recipientId.replace(/\D/g, ''),
     type: 'text',
@@ -487,11 +521,13 @@ export async function sendWhatsAppLiveTemplate(params: {
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
   const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
-  if (!conn.accessToken || !phoneNumberId) {
+  const token = resolveWhatsAppAccessToken(conn);
+  if (!phoneNumberId || !token) {
     return {
       ok: false,
-      error:
-        'WhatsApp robot pas encore branché à Meta (WHATSAPP_PHONE_NUMBER_ID manquant).',
+      error: !phoneNumberId
+        ? 'WhatsApp robot pas encore branché à Meta (WHATSAPP_PHONE_NUMBER_ID manquant).'
+        : 'WhatsApp : manque token Facebook Cloud API (whatsappAccessToken) — le token Instagram IGAA ne suffit pas.',
     };
   }
 
@@ -506,7 +542,7 @@ export async function sendWhatsAppLiveTemplate(params: {
         ]
       : undefined;
 
-  return graphPost(GRAPH, `/${phoneNumberId}/messages`, conn.accessToken, {
+  return graphPost(GRAPH, `/${phoneNumberId}/messages`, token, {
     messaging_product: 'whatsapp',
     to: params.recipientId.replace(/\D/g, ''),
     type: 'template',
