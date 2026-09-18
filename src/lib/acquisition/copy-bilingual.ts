@@ -100,12 +100,69 @@ export const QR_AFTER_PITCH = [
 
 /** Boutons gate abonnement → ressource. */
 export const QR_FOLLOW_GATE = [
-  { title: 'Je te suis ✅', payload: 'FOLLOW_CLAIM' },
+  { title: "Je m'abonne ✅", payload: 'FOLLOW_CLAIM' },
 ];
 
 export const QR_FOLLOW_DONE = [
   { title: "C'est bon ✅", payload: 'FOLLOW_DONE' },
 ];
+
+/** Message demande d’abonnement (conversation déjà engagée — pas de Bonjour). */
+export function followGateAskFr(): string {
+  return lines(
+    'Pour que je puisse t’accompagner au mieux dans ce choix 💛',
+    '',
+    'Abonne-toi d’abord à mon compte Instagram —',
+    'ensuite je te réponds avec les infos / l’essai.',
+    '',
+    'Quand c’est fait, clique ici ↓',
+  );
+}
+
+export function followGateAskEs(): string {
+  return lines(
+    'Para acompañarte mejor en esta elección 💛',
+    '',
+    'Suscríbete primero a mi cuenta de Instagram —',
+    'después te respondo con la info / la prueba.',
+    '',
+    'Cuando esté listo, pulsa aquí ↓',
+  );
+}
+
+export function followGateThanksFr(): string {
+  return lines(
+    'Merci pour ton abonnement 💛',
+    '',
+    'On reprend exactement là où on en était.',
+  );
+}
+
+export function followGateThanksEs(): string {
+  return lines(
+    'Gracias por tu suscripción 💛',
+    '',
+    'Retomamos exactamente donde lo dejamos.',
+  );
+}
+
+export function followGateRetryFr(): string {
+  return lines(
+    'Je ne te vois pas encore parmi mes abonnées 💛',
+    '',
+    'Abonne-toi à mon compte, puis clique ici —',
+    'je vérifie et je te réponds tout de suite.',
+  );
+}
+
+export function followGateRetryEs(): string {
+  return lines(
+    'Aún no te veo entre mis suscriptoras 💛',
+    '',
+    'Suscríbete a mi cuenta y pulsa aquí —',
+    'verifico y te respondo al momento.',
+  );
+}
 
 export const QR_RESOURCE = [
   { title: 'Obtenir le lien', payload: 'GET_RESOURCE', url: trialButtonUrl('v-coll') },
