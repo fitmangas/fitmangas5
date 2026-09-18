@@ -8,16 +8,16 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 );
 
 export const metadata: Metadata = {
-  title: 'Profils FitMangas — 5 tests pour comprendre comment tu tiens',
+  title: 'Évaluations FitMangas — rapport de profil, pas un sticker',
   description:
-    'Profil de discipline, énergie du jour, seule face au tapis, carte du stress, archétype « je rate puis… ». Des miroirs — pas un guide Pilates.',
+    'Lecture type DISC (discipline), énergie, seule face au tapis, carte du stress, archétype après un raté. Un compte-rendu à lire et enregistrer en PDF.',
   alternates: {
     canonical: '/quiz',
     languages: { fr: '/quiz', es: '/es/quiz' },
   },
   openGraph: {
-    title: 'Profils FitMangas — 5 tests',
-    description: 'Comprendre comment tu tiens — ou pourquoi tu lâches.',
+    title: 'Évaluations FitMangas — un rapport, pas un sticker',
+    description: 'Comprendre comment tu tiens — rapport lisible, pas quatre lignes.',
     url: `${APP_URL}/quiz`,
     type: 'website',
     images: ['/og-default.jpg'],
