@@ -1,463 +1,175 @@
-import type { QuizDefinition } from '@/lib/quiz/types';
+import { opt, q } from '@/lib/quiz/build';
+import { lines, t, type QuizDefinition } from '@/lib/quiz/types';
 
-/** DISC-like sport : 4 profils de discipline (pas licence DISC). */
+import { DISC_DISCIPLINE_RESULTS } from '@/lib/quiz/quizzes/profil-discipline-reports';
+
+const D = { rouge: 2 };
+const I = { jaune: 2 };
+const S = { vert: 2 };
+const C = { bleu: 2 };
+
+/** Évaluation comportementale type DISC (sport / agenda) — pas un sticker, pas une licence DISC. */
 export const quizProfilDiscipline: QuizDefinition = {
   slug: 'profil-discipline',
   order: 1,
   accent: '#C45D3E',
-  eyebrow: { fr: 'Profil DISC-like · 8 scénarios', es: 'Perfil DISC-like · 8 escenarios' },
+  discLike: true,
+  eyebrow: { fr: 'Évaluation · 12 situations', es: 'Evaluación · 12 situaciones' },
   title: {
     fr: 'Ton profil de discipline',
     es: 'Tu perfil de disciplina',
   },
   description: {
-    fr: 'Comme un DISC, mais pour ton corps et ton agenda. Tu découvres comment tu t’engages — et le moment exact où tu abandonnes quand personne ne regarde. Puis : rendez-vous fixe, pas une autre vidéo.',
-    es: 'Como un DISC, pero para tu cuerpo y tu agenda. Descubres cómo te comprometes — y el momento exacto en que sueltas cuando nadie mira. Luego: cita fija, no otro vídeo.',
+    fr: 'Inspiré du DISC : quatre couleurs de comportement — pas un test de personnalité, pas un horoscope fitness. Tu réponds à des situations. À la fin : un rapport (forces, stress, peurs, comment te parler) + PDF.',
+    es: 'Inspirado en DISC: cuatro colores de comportamiento — no un test de personalidad, no un horóscopo fitness. Respondes a situaciones. Al final: un informe (fuerzas, estrés, miedos, cómo hablarte) + PDF.',
   },
-  durationHint: { fr: '~3 min', es: '~3 min' },
-  cta: { fr: 'Essai 7 jours gratuits ✨', es: 'Prueba 7 días gratis ✨' },
+  durationHint: { fr: '~6 min', es: '~6 min' },
+  briefing: lines(
+    [
+      'Ce n’est pas un test de personnalité. C’est une lecture de ton comportement quand il s’agit de bouger, de tenir un créneau, de te faire corriger.',
+      'Il n’y a pas de bonne réponse. Choisis celle qui te ressemble le plus — même si tu n’aimes pas te le dire.',
+      'Les scores restent cachés jusqu’au rapport. On ne te colle pas une étiquette en cours de route.',
+    ],
+    [
+      'No es un test de personalidad. Es una lectura de tu comportamiento cuando se trata de moverte, sostener un horario, dejarte corregir.',
+      'No hay respuesta correcta. Elige la que más se te parece — aunque no te guste decírtelo.',
+      'Las puntuaciones se ocultan hasta el informe. No te pegamos una etiqueta a mitad de camino.',
+    ],
+  ),
+  cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },
   questions: [
-    {
-      id: 'q1',
-      prompt: {
-        fr: 'Tu bloques un créneau sport dans ton agenda. Deux jours plus tard…',
-        es: 'Bloqueas un hueco deporte en tu agenda. Dos días después…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Tu le défends comme un RDV client : personne ne touche.',
-            es: 'Lo defiendes como una cita de trabajo: nadie lo toca.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'Tu le gardes… sauf si quelqu’un a vraiment besoin de toi.',
-            es: 'Lo mantienes… salvo si alguien te necesita de verdad.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Tu le déplaces « juste cette fois » — ça devient une habitude.',
-            es: 'Lo mueves « solo esta vez » — y se vuelve hábito.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Tu as déjà tout recalculé : charge, sommeil, charge mentale.',
-            es: 'Ya lo recalculaste todo: carga, sueño, carga mental.',
-          },
-          scores: { bleu: 2 },
-        },
+    q(
+      'q1',
+      'Un imprévu casse le créneau que tu avais posé. Ton premier mouvement…',
+      'Un imprevisto rompe el horario que habías fijado. Tu primer movimiento…',
+      [
+        opt('a', 'Tu le recales tout de suite, même plus tôt. Le créneau ne se discute pas.', 'Lo recolocas ya, aunque sea más temprano. El horario no se discute.', D),
+        opt('b', 'Tu improvises autre chose « pour garder l’élan » — souvent plus léger.', 'Improvisas otra cosa « para no perder el impulso » — a menudo más ligera.', I),
+        opt('c', 'Tu cèdes : « cette fois ça va ». Tu n’aimes pas te battre contre l’agenda des autres.', 'Cedes: « esta vez da igual ». No te gusta pelear contra la agenda de los demás.', S),
+        opt('d', 'Tu recalcules charge, sommeil, logique — tu ne bouges que si ça reste cohérent.', 'Recalculas carga, sueño, lógica — solo te mueves si sigue siendo coherente.', C),
       ],
-    },
-    {
-      id: 'q2',
-      prompt: {
-        fr: 'Ce qui te fait vraiment démarrer une séance, c’est…',
-        es: 'Lo que de verdad te hace empezar una sesión es…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Un objectif clair et un chrono : tu entres, tu exécutes.',
-            es: 'Un objetivo claro y un chrono: entras y ejecutas.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'L’idée de te sentir mieux après — et un peu de plaisir.',
-            es: 'La idea de sentirte mejor después — y un poco de placer.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Savoir que quelqu’un t’attend ou te verra.',
-            es: 'Saber que alguien te espera o te verá.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Un plan logique : durée, ordre, pourquoi chaque chose.',
-            es: 'Un plan lógico: duración, orden, por qué cada cosa.',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q2',
+      'Dans un cours, la coach change la consigne en cours de route. Toi…',
+      'En una clase, la coach cambia la consigna a mitad. Tú…',
+      [
+        opt('a', 'Tu t’adaptes vite si le nouveau but est clair. Sinon tu t’impatientes.', 'Te adaptas rápido si el nuevo objetivo es claro. Si no, te impacientas.', D),
+        opt('b', 'Tu suis l’énergie. Le changement te va s’il reste vivant.', 'Sigues la energía. El cambio te va si sigue vivo.', I),
+        opt('c', 'Tu te tends : tu avais enfin compris. Tu as besoin qu’on t’accompagne.', 'Te tensas: por fin habías entendido. Necesitas que te acompañen.', S),
+        opt('d', 'Tu veux savoir pourquoi on change. Sans raison, tu décroches.', 'Quieres saber por qué se cambia. Sin razón, te desconectas.', C),
       ],
-    },
-    {
-      id: 'q3',
-      prompt: {
-        fr: 'Tu rates une semaine entière. Ton premier réflexe…',
-        es: 'Fallaste una semana entera. Tu primer reflejo…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Tu te remets une barre plus haute pour « rattraper ».',
-            es: 'Te pones el listón más alto para « recuperar ».',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'Tu te racontes une histoire légère — puis tu remets à plus tard.',
-            es: 'Te cuentas una historia ligera — y lo dejas para luego.',
-          },
-          scores: { jaune: 1, vert: 1 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Tu te sens coupable… et tu évites d’en parler.',
-            es: 'Te sientes culpable… y evitas hablarlo.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Tu analyses pourquoi le système a cassé.',
-            es: 'Analizas por qué se rompió el sistema.',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q3',
+      'On te corrige devant le groupe (même en visio). Ton système…',
+      'Te corrigen delante del grupo (aunque sea en visio). Tu sistema…',
+      [
+        opt('a', 'OK si c’est utile et court. Tu n’as pas besoin qu’on adoucisse.', 'OK si es útil y corto. No necesitas que lo endulcen.', D),
+        opt('b', 'Ça va si le ton reste humain. Un rire, un lien, tu encaisses.', 'Va si el tono sigue humano. Una risa, un vínculo, lo asumes.', I),
+        opt('c', 'Tu rougis. Tu as peur d’avoir dérangé. Tu aimerais que ce soit plus discret.', 'Te sonrojas. Temes haber molestado. Preferirías que fuera más discreto.', S),
+        opt('d', 'Tu écoutes le détail technique. Le regard des autres te pèse moins que l’imprécision.', 'Escuchas el detalle técnico. La mirada de las demás pesa menos que la imprecisión.', C),
       ],
-    },
-    {
-      id: 'q4',
-      prompt: {
-        fr: 'Dans un cours en groupe, tu es plutôt…',
-        es: 'En una clase grupal, eres más bien…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Focalisée sur ta perf, tu veux la correction utile.',
-            es: 'Enfocada en tu rendimiento, quieres la corrección útil.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'Branchée sur l’ambiance et l’énergie de la salle.',
-            es: 'Enganchada al ambiente y a la energía de la sala.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Attentive à ne déranger personne — et à être « comme il faut ».',
-            es: 'Atenta a no molestar — y a « hacerlo bien ».',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Tu observes la consigne avant de bouger vraiment.',
-            es: 'Observas la consigna antes de moverte de verdad.',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q4',
+      'On te demande de choisir : aller plus vite, ou mieux faire. Toi…',
+      'Te piden elegir: ir más rápido, o hacerlo mejor. Tú…',
+      [
+        opt('a', 'Le résultat d’abord. Tu accélères, tu ajusteras après.', 'El resultado primero. Aceleras, ajustarás después.', D),
+        opt('b', 'Ce qui garde le plaisir. Si ça devient une corvée, tu sors.', 'Lo que conserve el gusto. Si se vuelve una obligación, sales.', I),
+        opt('c', 'Ce qui ne casse pas le groupe ni le rythme habituel.', 'Lo que no rompa el grupo ni el ritmo habitual.', S),
+        opt('d', 'Mieux faire. Vitesse sans qualité, ça ne compte pas.', 'Hacerlo mejor. Velocidad sin calidad no cuenta.', C),
       ],
-    },
-    {
-      id: 'q5',
-      prompt: {
-        fr: 'Ce qui te fait abandonner un programme en ligne…',
-        es: 'Lo que te hace abandonar un programa online…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Trop lent : tu veux des résultats visibles vite.',
-            es: 'Demasiado lento: quieres resultados visibles ya.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'Trop monotone : tu t’ennuies et tu zappes.',
-            es: 'Demasiado monótono: te aburres y saltas.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Trop seule : personne ne remarque si tu disparais.',
-            es: 'Demasiado sola: nadie nota si desapareces.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Trop flou : tu ne sais pas si tu « fais juste ».',
-            es: 'Demasiado vago: no sabes si lo haces « bien ».',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q5',
+      'Ce qui te fait vraiment démarrer une séance, ce n’est pas « la motivation ». C’est…',
+      'Lo que de verdad te hace empezar una sesión no es « la motivación ». Es…',
+      [
+        opt('a', 'Un objectif net et un chrono. Tu entres, tu exécutes.', 'Un objetivo nítido y un chrono. Entras y ejecutas.', D),
+        opt('b', 'Une étincelle : musique, groupe, envie de te sentir vivante.', 'Una chispa: música, grupo, ganas de sentirte viva.', I),
+        opt('c', 'Savoir que quelqu’un t’attend. Le lien fait le premier pas.', 'Saber que alguien te espera. El vínculo da el primer paso.', S),
+        opt('d', 'Un plan logique : durée, ordre, pourquoi chaque chose.', 'Un plan lógico: duración, orden, por qué cada cosa.', C),
       ],
-    },
-    {
-      id: 'q6',
-      prompt: {
-        fr: 'On te propose un essai 7 jours avec une coach en visio. Tu penses d’abord…',
-        es: 'Te proponen una prueba de 7 días con una coach en visio. Piensas primero…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: '« Est-ce que ça va m’amener quelque part concrètement ? »',
-            es: '« ¿Esto me lleva a algo concreto? »',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: '« Est-ce que ça va être agréable / vivant ? »',
-            es: '« ¿Va a ser agradable / vivo? »',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: '« Est-ce qu’elle va me voir vraiment — sans me juger ? »',
-            es: '« ¿Me va a ver de verdad — sin juzgarme? »',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: '« Comment ça marche exactement : horaires, format, engagement ? »',
-            es: '« ¿Cómo funciona exactamente: horarios, formato, compromiso? »',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q6',
+      'Ce qui t’irrite le plus dans un programme en ligne…',
+      'Lo que más te irrita de un programa online…',
+      [
+        opt('a', 'Trop lent, trop mou : tu ne vois pas le progrès.', 'Demasiado lento, demasiado flojo: no ves el progreso.', D),
+        opt('b', 'Trop monotone : tu t’ennuies et tu zappes.', 'Demasiado monótono: te aburres y saltas.', I),
+        opt('c', 'Trop seule : personne ne remarque si tu disparais.', 'Demasiado sola: nadie nota si desapareces.', S),
+        opt('d', 'Trop flou : tu ne sais pas si tu « fais juste ».', 'Demasiado vago: no sabes si lo haces « bien ».', C),
       ],
-    },
-    {
-      id: 'q7',
-      prompt: {
-        fr: 'Ta plus grande peur avec le sport…',
-        es: 'Tu mayor miedo con el deporte…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Perdre du temps sans progresser.',
-            es: 'Perder tiempo sin progresar.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'Que ça devienne une corvée sans joie.',
-            es: 'Que se vuelva una obligación sin alegría.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Être seule à nouveau — et tout faire tomber.',
-            es: 'Volver a estar sola — y dejarlo todo.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Mal faire et me blesser / me tromper.',
-            es: 'Hacerlo mal y lesionarme / equivocarme.',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q7',
+      'Tu rates une semaine entière. Premier réflexe…',
+      'Fallaste una semana entera. Primer reflejo…',
+      [
+        opt('a', 'Tu te remets une barre plus haute pour « rattraper ».', 'Te pones el listón más alto para « recuperar ».', D),
+        opt('b', 'Tu te racontes une histoire légère — puis tu remets à plus tard.', 'Te cuentas una historia ligera — y lo dejas para luego.', I),
+        opt('c', 'Tu te sens coupable… et tu évites d’en parler.', 'Te sientes culpable… y evitas hablarlo.', S),
+        opt('d', 'Tu analyses pourquoi le système a cassé, avant de reprendre.', 'Analizas por qué se rompió el sistema, antes de retomar.', C),
       ],
-    },
-    {
-      id: 'q8',
-      prompt: {
-        fr: 'Ce dont tu as le plus besoin pour tenir 3 mois…',
-        es: 'Lo que más necesitas para sostener 3 meses…',
-      },
-      options: [
-        {
-          id: 'a',
-          label: {
-            fr: 'Des jalons clairs et une exigence bienveillante.',
-            es: 'Hitos claros y una exigencia amable.',
-          },
-          scores: { rouge: 2 },
-        },
-        {
-          id: 'b',
-          label: {
-            fr: 'De la variété et une énergie qui te tire vers le haut.',
-            es: 'Variedad y una energía que te impulse.',
-          },
-          scores: { jaune: 2 },
-        },
-        {
-          id: 'c',
-          label: {
-            fr: 'Un rendez-vous humain : être attendue.',
-            es: 'Una cita humana: que te esperen.',
-          },
-          scores: { vert: 2 },
-        },
-        {
-          id: 'd',
-          label: {
-            fr: 'Une méthode stable + des corrections précises.',
-            es: 'Un método estable + correcciones precisas.',
-          },
-          scores: { bleu: 2 },
-        },
+    ),
+    q(
+      'q8',
+      'Sous pression (deadline, maison, tête pleine), ton corps…',
+      'Bajo presión (deadline, casa, cabeza llena), tu cuerpo…',
+      [
+        opt('a', 'Veut un effort net, vite fait, pour clore le sujet.', 'Quiere un esfuerzo nítido, rápido, para cerrar el tema.', D),
+        opt('b', 'Cherche de l’air : bouger pour se changer les idées, pas pour « performer ».', 'Busca aire: moverse para cambiar de tema, no para « rendir ».', I),
+        opt('c', 'Veut du connu. Un rituel doux, pas une nouveauté.', 'Quiere lo conocido. Un ritual suave, no una novedad.', S),
+        opt('d', 'Veut réduire les variables. Moins, mais juste. Ou rien si c’est sale.', 'Quiere reducir variables. Menos, pero bien. O nada si sale chapucero.', C),
       ],
-    },
+    ),
+    q(
+      'q9',
+      'Une partenaire de cours est en retard / brouillonne. Toi…',
+      'Una compañera de clase llega tarde / desordenada. Tú…',
+      [
+        opt('a', 'Ça t’agace. Tu es là pour avancer, pas pour attendre.', 'Te fastidia. Estás para avanzar, no para esperar.', D),
+        opt('b', 'Tu compenses avec de l’ambiance. Tu dédramatises.', 'Compensas con ambiente. Quitas hierro.', I),
+        opt('c', 'Tu t’adaptes pour ne pas créer de tension.', 'Te adaptas para no crear tensión.', S),
+        opt('d', 'Tu notes que le cadre n’est pas tenu. Ça te fait douter du sérieux.', 'Notas que el marco no se sostiene. Te hace dudar del rigor.', C),
+      ],
+    ),
+    q(
+      'q10',
+      'Pour tenir 3 mois, ce dont tu as vraiment besoin…',
+      'Para sostener 3 meses, lo que de verdad necesitas…',
+      [
+        opt('a', 'Des jalons clairs et une exigence qui ne ramollit pas.', 'Hitos claros y una exigencia que no se ablande.', D),
+        opt('b', 'De la variété et une énergie qui te tire — pas une liste grise.', 'Variedad y una energía que te tire — no una lista gris.', I),
+        opt('c', 'Un rendez-vous humain : être attendue, semaine après semaine.', 'Una cita humana: que te esperen, semana tras semana.', S),
+        opt('d', 'Une méthode stable + des corrections qui lèvent le doute.', 'Un método estable + correcciones que quiten la duda.', C),
+      ],
+    ),
+    q(
+      'q11',
+      'Comment tu prends la décision de t’inscrire à un cadre (cours, essai, studio)…',
+      'Cómo decides apuntarte a un marco (clase, prueba, estudio)…',
+      [
+        opt('a', 'Vite, si ça a l’air de mener quelque part. Tu n’aimes pas ruminer.', 'Rápido, si parece llevar a algún sitio. No te gusta rumiar.', D),
+        opt('b', 'Si ça te parle, si les gens ont l’air vivants. Le feeling d’abord.', 'Si te habla, si la gente se ve viva. El feeling primero.', I),
+        opt('c', 'Lentement. Tu as besoin de sentir que tu seras bien traitée.', 'Despacio. Necesitas sentir que te van a tratar bien.', S),
+        opt('d', 'Après avoir lu comment ça marche : horaires, règles, sérieux.', 'Después de leer cómo funciona: horarios, reglas, rigor.', C),
+      ],
+    ),
+    q(
+      'q12',
+      'Ta plus grande peur, concrètement, avec « me remettre au sport »…',
+      'Tu mayor miedo, en concreto, con « volver al deporte »…',
+      [
+        opt('a', 'Perdre du temps sans progresser.', 'Perder tiempo sin progresar.', D),
+        opt('b', 'Que ça devienne une corvée sans joie.', 'Que se vuelva una obligación sin alegría.', I),
+        opt('c', 'Être seule à nouveau — et tout faire tomber.', 'Volver a estar sola — y dejarlo todo.', S),
+        opt('d', 'Mal faire, me tromper, me blesser faute de critères.', 'Hacerlo mal, equivocarme, lesionarme por falta de criterios.', C),
+      ],
+    ),
   ],
-  results: [
-    {
-      id: 'rouge',
-      title: { fr: 'Profil Directe', es: 'Perfil Directa' },
-      tagline: {
-        fr: 'Tu avances fort — jusqu’à ce que le système te paraisse trop mou.',
-        es: 'Avanzas fuerte — hasta que el sistema te parece demasiado flojo.',
-      },
-      body: {
-        fr: [
-          'Tu abandonnes quand il n’y a plus de sens de progression. Pas par paresse : par frustration.',
-          'Seule devant une vidéo, tu finis souvent par accélérer, sauter, ou jeter l’éponge si le feedback manque.',
-          'Ce dont tu as besoin : un cadre qui te challenge sans te laisser seule à juger si « c’est assez ».',
-        ],
-        es: [
-          'Abandonas cuando ya no hay sensación de progreso. No por pereza: por frustración.',
-          'Sola frente a un vídeo, aceleras, saltas o tiras la toalla si falta feedback.',
-          'Lo que necesitas: un marco que te rete sin dejarte sola juzgando si « es suficiente ».',
-        ],
-      },
-      bridge: {
-        fr: 'Un rendez-vous fixe avec correction en direct, ce n’est pas du « plus doux ». C’est du feedback utile — exactement ce qui te fait tenir.',
-        es: 'Una cita fija con corrección en directo no es « más suave ». Es feedback útil — justo lo que te hace sostener.',
-      },
-      shareLine: {
-        fr: 'Mon profil de discipline : Directe — j’abandonne quand je n’avance plus.',
-        es: 'Mi perfil de disciplina: Directa — abandono cuando ya no avanzo.',
-      },
-    },
-    {
-      id: 'jaune',
-      title: { fr: 'Profil Envolée', es: 'Perfil Impulso' },
-      tagline: {
-        fr: 'Tu démarres avec du feu — tu lâches quand ça devient gris.',
-        es: 'Empiezas con fuego — sueltas cuando se vuelve gris.',
-      },
-      body: {
-        fr: [
-          'Tu as besoin de sens vivant, d’énergie, parfois de lien. La routine froide t’éteint.',
-          'Seule, tu commences souvent bien… puis tu te disperses vers autre chose « plus stimulant ».',
-          'Ce n’est pas de l’inconstance : c’est un cerveau qui cherche du carburant émotionnel.',
-        ],
-        es: [
-          'Necesitas sentido vivo, energía, a veces vínculo. La rutina fría te apaga.',
-          'Sola, empiezas bien… y te dispersas hacia algo « más estimulante ».',
-          'No es inconstancia: es un cerebro que busca combustible emocional.',
-        ],
-      },
-      bridge: {
-        fr: 'Le créneau avec une coach qui te voit, ça remet du vivant dans la régularité — sans te demander de devenir une machine.',
-        es: 'El horario con una coach que te ve pone vida en la constancia — sin pedirte que seas una máquina.',
-      },
-      shareLine: {
-        fr: 'Mon profil de discipline : Envolée — je lâche quand ça devient gris.',
-        es: 'Mi perfil de disciplina: Impulso — suelto cuando se vuelve gris.',
-      },
-    },
-    {
-      id: 'vert',
-      title: { fr: 'Profil Ancrée', es: 'Perfil Anclada' },
-      tagline: {
-        fr: 'Tu tiens par le lien — tu disparais quand tu es seule trop longtemps.',
-        es: 'Te sostienes por el vínculo — desapareces cuando estás sola demasiado tiempo.',
-      },
-      body: {
-        fr: [
-          'Ton vrai frein n’est presque jamais le mouvement. C’est de le porter sans être vue.',
-          'Tu te juges vite, tu te compares, tu évites — puis tu te dis que tu « n’as pas de volonté ».',
-          'Faux. Tu as besoin d’un cadre relationnel : quelqu’un qui attend ton rendez-vous.',
-        ],
-        es: [
-          'Tu freno casi nunca es el movimiento. Es llevarlo sin ser vista.',
-          'Te juzgas rápido, te comparas, evitas — y te dices que « no tienes voluntad ».',
-          'Falso. Necesitas un marco relacional: alguien que espera tu cita.',
-        ],
-      },
-      bridge: {
-        fr: 'FitMangas, ce n’est pas « plus de vidéos ». C’est être attendue, corrigée, vue — pour ne plus abandonner seule.',
-        es: 'FitMangas no es « más vídeos ». Es ser esperada, corregida, vista — para no abandonar sola.',
-      },
-      shareLine: {
-        fr: 'Mon profil de discipline : Ancrée — je disparais quand je suis seule trop longtemps.',
-        es: 'Mi perfil de disciplina: Anclada — desaparezco cuando estoy sola demasiado tiempo.',
-      },
-    },
-    {
-      id: 'bleu',
-      title: { fr: 'Profil Méthode', es: 'Perfil Método' },
-      tagline: {
-        fr: 'Tu tiens si c’est clair — tu bloquees si tu doutes de la qualité.',
-        es: 'Te sostienes si está claro — te bloqueas si dudas de la calidad.',
-      },
-      body: {
-        fr: [
-          'Tu as besoin de comprendre. Une vidéo floue ou un « fais comme tu sens » te fait décrocher.',
-          'Seule, tu peux tourner en boucle sur la technique… et ne jamais démarrer vraiment.',
-          'Ce dont tu as besoin : une méthode stable + une correction qui te dit « oui, comme ça ».',
-        ],
-        es: [
-          'Necesitas entender. Un vídeo vago o un « haz como sientas » te desconecta.',
-          'Sola, puedes dar vueltas a la técnica… y nunca empezar de verdad.',
-          'Lo que necesitas: un método estable + una corrección que diga « sí, así ».',
-        ],
-      },
-      bridge: {
-        fr: 'La correction en direct en visio, c’est exactement ton levier : moins de doute, plus de continuité.',
-        es: 'La corrección en directo en visio es tu palanca: menos duda, más continuidad.',
-      },
-      shareLine: {
-        fr: 'Mon profil de discipline : Méthode — je bloque si je doute de la qualité.',
-        es: 'Mi perfil de disciplina: Método — me bloqueo si dudo de la calidad.',
-      },
-    },
-  ],
+  results: DISC_DISCIPLINE_RESULTS,
 };
