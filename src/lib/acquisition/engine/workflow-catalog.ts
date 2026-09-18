@@ -28,7 +28,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   {
     id: '00000000-0000-4000-8000-000000000001',
     name: 'Commentaire IG « ESSAI » → DM privé + lien',
-    enabled: false,
+    enabled: true,
     triggerType: 'ig_comment_keyword',
     triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias', priority: 90 },
     conditions: {},
@@ -1071,7 +1071,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   {
     id: '00000000-0000-4000-8000-00000000001f',
     name: 'Commentaire « ESSAI » → gate abonnement + bouton',
-    enabled: true,
+    enabled: false,
     triggerType: 'ig_comment_keyword',
     triggerConfig: { keyword: 'essai|prueba|trial|7 jours|7 dias|lien gratuit|ressource', priority: 95 },
     conditions: {},
@@ -1105,40 +1105,36 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   },
   {
     id: '00000000-0000-4000-8000-000000000020',
-    name: 'DM « Je te suis » → vérifier + bouton C’est bon',
-    enabled: true,
-    triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'je te suis|je te suis ✅|follow_claim|te sigo', priority: 110 },
-    conditions: {},
-    actions: [
-      {
-        type: 'send_message',
-        config: bilingualSend(
-          lines(
-            'Parfait 💛',
-            '',
-            'Dès que tu me suis, clique ici — je t’envoie le lien tout de suite.',
-          ),
-          lines(
-            'Perfecto 💛',
-            '',
-            'En cuanto me sigas, pulsa aquí — te envío el enlace al momento.',
-          ),
-          false,
-          QR_FOLLOW_DONE,
-        ),
-      },
-      { type: 'tag_contact', config: { tag: 'follow_claimed' } },
-    ],
-  },
-  {
-    id: '00000000-0000-4000-8000-000000000021',
-    name: 'DM « C’est bon » / Obtenir le lien → essai',
+    name: 'DM « Je m’abonne » → vérifier abonnement',
     enabled: true,
     triggerType: 'ig_dm_inbound',
     triggerConfig: {
-      keyword: "c'est bon|cest bon|c'est bon ✅|follow_done|obtenir le lien|get_resource|trial_now|trial_ind",
+      keyword: "je te suis|je m'abonne|je m’abonne|je viens de m'abonner|je viens de m’abonner|follow_claim|te sigo",
       priority: 110,
+    },
+    conditions: {},
+    actions: [{ type: 'verify_follow_and_resume', config: { mode: 'claim' } }],
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000021',
+    name: 'DM « C’est bon » → confirmer abo + reprendre',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: {
+      keyword: "c'est bon|cest bon|c'est bon ✅|follow_done",
+      priority: 110,
+    },
+    conditions: {},
+    actions: [{ type: 'verify_follow_and_resume', config: { mode: 'confirm' } }],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000002a',
+    name: 'DM « Obtenir le lien / Essai » (déjà abonnée) → essai',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: {
+      keyword: 'obtenir le lien|get_resource|trial_now|trial_ind',
+      priority: 105,
     },
     conditions: {},
     actions: [
@@ -1169,7 +1165,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
           QR_RESOURCE,
         ),
       },
-      { type: 'tag_contact', config: { tag: 'follow_gate_passed' } },
+      { type: 'tag_contact', config: { tag: 'dm_essai_direct' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
       ...trialFollowupSequence(),
     ],
@@ -1326,6 +1322,48 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'tag_contact', config: { tag: 'wa_prix_solo' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
       ...trialFollowupSequence(),
+    ],
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000002b',
+    name: 'DM « quiz / attachement » → lien quiz discipline',
+    enabled: true,
+    triggerType: 'ig_dm_inbound',
+    triggerConfig: {
+      keyword: 'quiz|attachement|apego|attachment|discipline',
+      priority: 85,
+    },
+    conditions: {},
+    actions: [
+      {
+        type: 'send_message',
+        config: bilingualSend(
+          lines(
+            'Voici mon quiz 💛',
+            '',
+            '« Ton style d’attachement à la discipline » —',
+            'comment tu te traites seule face au tapis.',
+            '',
+            'Fais-le ici → https://fitmangas.com/quiz/attachement',
+            '',
+            'Ensuite, si tu veux, on en parle — ou tu démarres l’essai 7 jours.',
+          ),
+          lines(
+            'Aquí tienes mi quiz 💛',
+            '',
+            '« Tu estilo de apego a la disciplina » —',
+            'cómo te tratas sola frente al tapete.',
+            '',
+            'Hazlo aquí → https://fitmangas.com/es/quiz/attachement',
+            '',
+            'Después, si quieres, lo hablamos — o empiezas la prueba 7 días.',
+          ),
+          true,
+          QR_RESOURCE,
+        ),
+      },
+      { type: 'tag_contact', config: { tag: 'quiz_attachement' } },
+      { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
     ],
   },
 
