@@ -485,6 +485,36 @@ export async function tagContact(contactId: string, tag: string): Promise<{ ok: 
   return { ok: true };
 }
 
+/** Fusionne des clés dans external_ids (pending_intent, follow flags…). */
+export async function patchContactExternalIds(
+  contactId: string,
+  patch: Record<string, string | null>,
+): Promise<{ ok: boolean; error?: string }> {
+  const schemaReady = await isAcquisitionSchemaReady();
+  if (!schemaReady) return { ok: false, error: 'Tables absentes.' };
+  const admin = createAdminClient();
+  const { data, error: gErr } = await admin
+    .from('acq_contacts')
+    .select('external_ids')
+    .eq('id', contactId)
+    .maybeSingle();
+  if (gErr || !data) return { ok: false, error: gErr?.message ?? 'Contact introuvable' };
+  const prev =
+    data.external_ids && typeof data.external_ids === 'object' && !Array.isArray(data.external_ids)
+      ? { ...(data.external_ids as Record<string, unknown>) }
+      : {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === null) delete prev[k];
+    else prev[k] = v;
+  }
+  const { error } = await admin
+    .from('acq_contacts')
+    .update({ external_ids: prev, updated_at: new Date().toISOString() })
+    .eq('id', contactId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function getContact(contactId: string): Promise<AcqContact | null> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) return null;
