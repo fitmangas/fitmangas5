@@ -1,8 +1,20 @@
 import { detectAcquisitionMarket, workflowKeywordPriority } from '@/lib/acquisition/market';
 import type { AcqContact, AcqWorkflow } from '@/lib/acquisition/types';
 
-import { runWorkflowAction, type ActionContext } from './actions';
-import { getContact, listWorkflows, recordWorkflowRun, wasWorkflowRunRecently } from './repository';
+import { actionAskFollowGate, runWorkflowAction, type ActionContext } from './actions';
+import {
+  inferPendingIntent,
+  isContactFollowVerified,
+  isFollowGateBypassText,
+  shouldEnforceFollowGate,
+} from './follow-gate';
+import {
+  getContact,
+  listWorkflows,
+  patchContactExternalIds,
+  recordWorkflowRun,
+  wasWorkflowRunRecently,
+} from './repository';
 import { textMatchesKeyword } from './workflow-catalog';
 
 export type OrchestratorResult = {
@@ -10,6 +22,8 @@ export type OrchestratorResult = {
   ok: boolean;
   steps: Array<{ type: string; ok: boolean; detail: string }>;
 };
+
+export const FOLLOW_GATE_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f601';
 
 export function workflowMatchesInbound(
   workflow: AcqWorkflow,
@@ -91,7 +105,7 @@ export async function runInboundTrigger(params: {
   commentId?: string | null;
   workflows?: AcqWorkflow[];
 }): Promise<OrchestratorResult[]> {
-  const contact = params.contactId ? await getContact(params.contactId) : null;
+  let contact = params.contactId ? await getContact(params.contactId) : null;
   let workflows = params.workflows;
   if (!workflows) {
     const wfRes = await listWorkflows();
@@ -105,10 +119,36 @@ export async function runInboundTrigger(params: {
       w.triggerConfig.keyword,
     );
 
-  // Silence UNIQUEMENT si tag optout (stop explicite).
-  // Ne PAS utiliser opt_in===false : la colonne démarre à false en DB
-  // et bloquait 90 %+ des réponses auto (bug silencieux).
   const optedOut = (contact?.tags ?? []).includes('optout');
+
+  // Gate abonnement IG (ManyChat) — avant les workflows conversion.
+  if (
+    shouldEnforceFollowGate(params.triggerType) &&
+    contact &&
+    !optedOut &&
+    !isContactFollowVerified(contact) &&
+    !isFollowGateBypassText(params.inboundText)
+  ) {
+    const intent = inferPendingIntent(params.inboundText);
+    await patchContactExternalIds(contact.id, { pending_intent: intent });
+    contact = (await getContact(contact.id)) ?? contact;
+    const ask = await actionAskFollowGate({
+      contact,
+      conversation: params.conversation,
+      inboundText: params.inboundText,
+      market,
+      commentId: params.commentId ?? null,
+    });
+    const steps = [{ type: ask.type, ok: ask.ok, detail: `${ask.detail} · intent=${intent}` }];
+    await recordWorkflowRun({
+      workflowId: FOLLOW_GATE_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: ask.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: FOLLOW_GATE_INTERCEPT_ID, ok: ask.ok, steps }];
+  }
 
   const matched = workflows
     .filter((w) =>
@@ -139,7 +179,6 @@ export async function runInboundTrigger(params: {
 
   for (const wf of matched) {
     const hasKw = typeof wf.triggerConfig.keyword === 'string' && Boolean(wf.triggerConfig.keyword.trim());
-    // Catch-all DM : seulement si aucun mot-clé précis n’a déjà tourné
     if (
       !hasKw &&
       ranSpecific &&
@@ -148,7 +187,6 @@ export async function runInboundTrigger(params: {
         params.triggerType === 'whatsapp_inbound')
     )
       continue;
-    // Un seul robot par message (évite 3 DM d’affilée)
     if (oneShot && ranSpecific && hasKw) continue;
     if (isComment && ranSpecific) continue;
 
@@ -178,7 +216,6 @@ export async function runInboundTrigger(params: {
     });
     results.push(result);
     if (hasKw) ranSpecific = true;
-    // Catch-all DM / Messenger / WhatsApp : une seule exécution
     if (!hasKw && params.triggerType === 'ig_dm_inbound') break;
     if (!hasKw && params.triggerType === 'messenger_inbound') break;
     if (!hasKw && params.triggerType === 'whatsapp_inbound') break;
