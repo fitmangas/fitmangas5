@@ -32,7 +32,8 @@ export type WorkflowActionType =
   | 'schedule_followup'
   | 'broadcast_optin'
   | 'escalate_human'
-  | 'mini_poll';
+  | 'mini_poll'
+  | 'verify_follow_and_resume';
 
 export type AcqContact = {
   id: string;

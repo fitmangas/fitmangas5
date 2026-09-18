@@ -39,6 +39,7 @@ export const WORKFLOW_ACTION_OPTIONS: Array<{ id: WorkflowActionType; label: str
   { id: 'broadcast_optin', label: 'Broadcast opt-in (liste)' },
   { id: 'escalate_human', label: 'Escalade Alejandra' },
   { id: 'mini_poll', label: 'Mini-sondage satisfaction' },
+  { id: 'verify_follow_and_resume', label: 'Vérifier abo IG + reprendre intention' },
 ];
 
 /** Copie d’ouverture — voix Alejandra + positionnement Dunford. */
