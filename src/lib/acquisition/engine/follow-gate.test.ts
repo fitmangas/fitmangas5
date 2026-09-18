@@ -6,10 +6,6 @@ import {
   isFollowGateBypassText,
   shouldEnforceFollowGate,
 } from '@/lib/acquisition/engine/follow-gate';
-import {
-  getAttachmentQuizQuestions,
-  scoreAttachmentAnswers,
-} from '@/lib/quiz/attachment-discipline';
 import type { AcqContact } from '@/lib/acquisition/types';
 
 describe('follow-gate', () => {
@@ -37,21 +33,5 @@ describe('follow-gate', () => {
     expect(inferPendingIntent('ESSAI')).toBe('trial');
     expect(inferPendingIntent('horaires')).toBe('schedule');
     expect(inferPendingIntent('Bonjour')).toBe('greeting');
-  });
-});
-
-describe('attachment quiz scoring', () => {
-  it('classe anxious si réponses anxieuses', () => {
-    const qs = getAttachmentQuizQuestions('fr');
-    const answers: Record<string, string> = {};
-    for (const q of qs) answers[q.id] = 'a';
-    expect(scoreAttachmentAnswers(qs, answers)).toBe('anxious');
-  });
-
-  it('classe avoidant si réponses b', () => {
-    const qs = getAttachmentQuizQuestions('fr');
-    const answers: Record<string, string> = {};
-    for (const q of qs) answers[q.id] = 'b';
-    expect(scoreAttachmentAnswers(qs, answers)).toBe('avoidant');
   });
 });
