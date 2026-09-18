@@ -34,6 +34,7 @@ export const whatsappProvider: MessagingProvider = {
     const live = await sendWhatsAppLiveMessage({
       recipientId: input.recipientId,
       body: input.body,
+      buttons: input.buttons,
     });
     if (!live.ok) {
       return { ok: false, provider: PROVIDER, sandbox: false, error: live.error ?? 'Échec WhatsApp LIVE.' };
