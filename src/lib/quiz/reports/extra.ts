@@ -440,7 +440,7 @@ export const EXTRA_REPORTS: Record<string, Record<string, QuizReportSections>> =
       ),
       develop: lines(
         ['Apprendre à desserrer avec un guide, pas contre toi.'],
-        ['Aprender a soltar con una gía, no contra ti.'],
+        ['Aprender a soltar con una guía, no contra ti.'],
       ),
     }),
     ventre: R({
@@ -552,7 +552,7 @@ export const EXTRA_REPORTS: Record<string, Record<string, QuizReportSections>> =
       ),
       howYouWork: lines(
         ['Tu décroches du corps.', 'Tu as besoin d’un guide externe pour revenir, pas d’un défi.'],
-        ['Te desconectas del cuerpo.', 'Necesitas una gía externa para volver, no un reto.'],
+        ['Te desconectas del cuerpo.', 'Necesitas una guía externa para volver, no un reto.'],
       ),
       strengths: lines(
         ['Sensibilité (même quand elle se coupe)', 'Capacité à revenir avec un filet', 'Honnêteté dès que le flou est nommé'],

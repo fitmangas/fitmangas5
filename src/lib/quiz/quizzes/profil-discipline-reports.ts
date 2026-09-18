@@ -256,7 +256,7 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       underStress: lines(
         [
-          'Tu parles plus, tu explicas, tu cherches de l’air.',
+          'Tu parles plus, tu expliques, tu cherches de l’air.',
           'Tu changes de plan pour retrouver une étincelle — parfois trop souvent.',
           'Tu minimises le creux (« ça va aller ») jusqu’à ce qu’il soit trop tard.',
           'Le risque : collectionner les départs, jamais les 8 semaines.',
@@ -666,7 +666,7 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       develop: lines(
         [
-          'Commencer imparfaitement avec un filet (une coach) plutôt que d’attendre le protocolo idéal.',
+          'Commencer imparfaitement avec un filet (une coach) plutôt que d’attendre le protocole idéal.',
           'Traiter la correction comme une donnée, pas comme un verdict sur toi.',
           'Accepter qu’un cadre bon à 80 % tenu vaut mieux qu’un cadre parfait jamais commencé.',
         ],
