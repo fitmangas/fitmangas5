@@ -257,6 +257,7 @@ async function graphPost(
   if (!res.ok) {
     const raw = data.error?.message ?? `Erreur Meta ${res.status}`;
     const code = data.error?.code;
+    // Fenêtre 24h Meta — message compréhensible pour Kevin / Alejandra
     if (
       code === 10 ||
       code === 551 ||
@@ -276,7 +277,9 @@ async function graphPost(
 export async function sendInstagramLiveMessage(params: {
   recipientId: string;
   body: string;
+  /** Boutons DANS la bulle (Button / Generic template) */
   buttons?: Array<{ title: string; payload: string; url?: string }>;
+  /** Pastilles sous le message — rendu différent, fallback uniquement */
   quickReplies?: Array<{ title: string; payload: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
@@ -287,6 +290,7 @@ export async function sendInstagramLiveMessage(params: {
   const recipient = { id: params.recipientId };
   const text = params.body.trim();
 
+  // 1) Boutons DANS la bulle — template "button" (texte + CTA collés, style ManyChat)
   if (params.buttons?.length) {
     const buttons = params.buttons.slice(0, 3).map((b) => {
       if (b.url?.trim()) {
@@ -318,6 +322,7 @@ export async function sendInstagramLiveMessage(params: {
     });
     if (buttonTpl.ok) return buttonTpl;
 
+    // 2) Fallback Generic template (carte + boutons dans la carte)
     const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
     const title = (lines[0] ?? 'FitMangas').slice(0, 80);
     const subtitle = (lines.slice(1).join(' ') || 'Essai 7 jours gratuits ✨').slice(0, 80);
@@ -341,6 +346,7 @@ export async function sendInstagramLiveMessage(params: {
     });
     if (genericTpl.ok) return genericTpl;
 
+    // Si les templates échouent, on envoie quand même le texte (erreur visible en détail)
     const plain = await graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, {
       recipient,
       message: { text },
@@ -358,6 +364,7 @@ export async function sendInstagramLiveMessage(params: {
     };
   }
 
+  // Sans boutons dans la bulle : texte (+ quick replies optionnelles, rendu différent)
   const message: Record<string, unknown> = { text };
   if (params.quickReplies?.length) {
     message.quick_replies = params.quickReplies.slice(0, 13).map((q) => ({
@@ -375,6 +382,7 @@ export async function sendInstagramLiveMessage(params: {
 export async function sendMessengerLiveMessage(params: {
   recipientId: string;
   body: string;
+  /** Boutons DANS la bulle (même rendu ManyChat que IG) */
   buttons?: Array<{ title: string; payload: string; url?: string }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const conn = await getAcquisitionMetaConnection();
@@ -473,6 +481,7 @@ export async function sendInstagramPrivateReplyLive(params: {
     recipient: { comment_id: params.commentId },
     message: { text: params.body },
   };
+  // Docs Meta : POST /{IG_ID}/messages (Instagram Login). /me/messages en secours.
   const primary = await graphPost(GRAPH_IG, `/${conn.igUserId}/messages`, conn.accessToken, payload);
   if (primary.ok) return primary;
   const fallback = await graphPost(GRAPH_IG, `/me/messages`, conn.accessToken, payload);
