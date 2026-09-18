@@ -5,14 +5,14 @@ export const quizProfilDiscipline: QuizDefinition = {
   slug: 'profil-discipline',
   order: 1,
   accent: '#C45D3E',
-  eyebrow: { fr: 'Profil · 8 questions', es: 'Perfil · 8 preguntas' },
+  eyebrow: { fr: 'Profil DISC-like · 8 scénarios', es: 'Perfil DISC-like · 8 escenarios' },
   title: {
     fr: 'Ton profil de discipline',
     es: 'Tu perfil de disciplina',
   },
   description: {
-    fr: 'Pas un test de souplesse. Un miroir de la façon dont tu t’engages — et de ce qui te fait lâcher quand personne ne regarde.',
-    es: 'No es un test de flexibilidad. Un espejo de cómo te comprometes — y de lo que te hace soltar cuando nadie mira.',
+    fr: 'Comme un DISC, mais pour ton corps et ton agenda. Tu découvres comment tu t’engages — et le moment exact où tu abandonnes quand personne ne regarde. Puis : rendez-vous fixe, pas une autre vidéo.',
+    es: 'Como un DISC, pero para tu cuerpo y tu agenda. Descubres cómo te comprometes — y el momento exacto en que sueltas cuando nadie mira. Luego: cita fija, no otro vídeo.',
   },
   durationHint: { fr: '~3 min', es: '~3 min' },
   cta: { fr: 'Essai 7 jours gratuits ✨', es: 'Prueba 7 días gratis ✨' },
