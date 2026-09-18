@@ -1,23 +1,29 @@
 import { getAppBaseUrl } from '@/lib/stripe/create-checkout-session';
 import { VISIO_FREE_TRIAL_DAYS } from '@/lib/stripe/create-checkout-session';
 
+export type TrialCourseId = 'v-coll' | 'v-ind';
+
 /**
- * Lien public vers le parcours d'inscription + essai existant (aucun appel Stripe côté Acquisition).
+ * Lien public vers l’accueil avec deep-link offre → ouvre le modal inscription + paiement
+ * (SignupCheckoutModal via ?offer=v-coll|v-ind). Jamais /connexion (page login cliente).
  */
 export function getPublicTrialSignupUrl(options?: {
-  courseId?: 'v-coll' | 'v-ind';
+  courseId?: TrialCourseId;
   utmSource?: string;
   utmCampaign?: string;
+  /** Page d’accueil FR `/` ou ES `/es`. */
+  locale?: 'fr' | 'es';
 }): string {
-  const base = getAppBaseUrl();
+  const base = getAppBaseUrl().replace(/\/$/, '');
   const courseId = options?.courseId ?? 'v-coll';
+  const path = options?.locale === 'es' ? '/es' : '';
   const params = new URLSearchParams({
-    course: courseId,
+    offer: courseId,
     utm_source: options?.utmSource ?? 'acquisition',
     utm_medium: 'dm',
   });
   if (options?.utmCampaign) params.set('utm_campaign', options.utmCampaign);
-  return `${base}/connexion?${params.toString()}`;
+  return `${base}${path}/?${params.toString()}`;
 }
 
 export function getTrialOfferLabel(locale: 'fr' | 'es' = 'fr'): string {
@@ -39,12 +45,15 @@ export function getTrialDmMessage(options?: {
   utmSource?: string;
   utmCampaign?: string;
   style?: TrialDmStyle;
+  courseId?: TrialCourseId;
 }): string {
   const locale = options?.locale ?? 'fr';
   const style = options?.style ?? 'full';
   const url = getPublicTrialSignupUrl({
+    courseId: options?.courseId,
     utmSource: options?.utmSource,
     utmCampaign: options?.utmCampaign ?? 'acquisition_dm',
+    locale,
   });
 
   if (style === 'compact') {
@@ -165,11 +174,14 @@ export function getNaturalTrialInviteMessage(options?: {
   utmSource?: string;
   utmCampaign?: string;
   opener?: string;
+  courseId?: TrialCourseId;
 }): string {
   const locale = options?.locale ?? 'fr';
   const url = getPublicTrialSignupUrl({
+    courseId: options?.courseId,
     utmSource: options?.utmSource,
     utmCampaign: options?.utmCampaign ?? 'acquisition_dm',
+    locale,
   });
   const opener =
     options?.opener?.trim() ||

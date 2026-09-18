@@ -38,14 +38,14 @@ export const metadata: Metadata = {
   },
 };
 
-type HomeSearchParams = Promise<{ compte?: string; offer?: string }>;
+type HomeSearchParams = Promise<{ compte?: string; offer?: string; course?: string }>;
 
 export const revalidate = 300;
 
 export default async function EsHomePage({ searchParams }: { searchParams: HomeSearchParams }) {
   const sp = await searchParams;
   const openLoginRequired = sp.compte === 'connexion-requise';
-  const initialOfferId = sp.offer?.trim() || undefined;
+  const initialOfferId = sp.offer?.trim() || sp.course?.trim() || undefined;
   const { vimeoShowcase, blogPreviews } = await loadLandingHomeData();
 
   const jsonLd = {
