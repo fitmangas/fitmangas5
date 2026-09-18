@@ -1,118 +1,116 @@
+import { opt, q } from '@/lib/quiz/build';
 import type { QuizDefinition } from '@/lib/quiz/types';
 
 export const quizEnergieJournee: QuizDefinition = {
   slug: 'energie-journee',
   order: 2,
-  accent: '#E8B86D',
-  eyebrow: { fr: 'Énergie · 7 questions', es: 'Energía · 7 preguntas' },
+  accent: '#C9A227',
+  eyebrow: { fr: 'Évaluation · 8 situations', es: 'Evaluación · 8 situaciones' },
   title: {
     fr: 'Ton style d’énergie dans la journée',
     es: 'Tu estilo de energía en el día',
   },
   description: {
-    fr: 'Matin, après-midi, crash 15h… Ce n’est pas de la motivation. C’est une carte de ton carburant — pour poser un créneau qui tient.',
-    es: 'Mañana, tarde, bajón a las 15h… No es motivación. Es un mapa de tu combustible — para fijar un horario que sostenga.',
+    fr: 'Pas « tu te lèves tôt donc profil 1 ». Une carte de carburant : où tu décides encore, où tu négocies, où le système nerveux coupe. Rapport + PDF à la fin.',
+    es: 'No es « te levantas temprano luego perfil 1 ». Un mapa de combustible: dónde aún decides, dónde negocias, dónde el sistema nervioso corta. Informe + PDF al final.',
   },
-  durationHint: { fr: '~2 min', es: '~2 min' },
-  cta: { fr: 'Essai 7 jours gratuits ✨', es: 'Prueba 7 días gratis ✨' },
+  durationHint: { fr: '~4 min', es: '~4 min' },
+  cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },
   questions: [
-    {
-      id: 'q1',
-      prompt: {
-        fr: 'Sans alarme, ton corps voudrait se lever…',
-        es: 'Sin alarma, tu cuerpo querría levantarse…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Tôt — tu as déjà de l’élan.', es: 'Temprano — ya tienes impulso.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: 'Milieu de matinée, sans stress.', es: 'Media mañana, sin estrés.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Le plus tard possible.', es: 'Lo más tarde posible.' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'Ça change chaque jour selon le stress.', es: 'Cambia cada día según el estrés.' }, scores: { crash: 2 } },
+    q(
+      'q1',
+      'On te demande de poser un créneau qui tiendra 8 semaines. Ton vrai critère…',
+      'Te piden fijar un horario que aguante 8 semanas. Tu criterio de verdad…',
+      [
+        opt('a', 'Le poser tôt, avant que la journée (et les autres) te prennent.', 'Ponerlo temprano, antes de que el día (y los demás) te tomen.', { matin: 2 }),
+        opt('b', 'Le même créneau, milieu de journée, sans pic ni héroïsme.', 'El mismo horario, a media jornada, sin pico ni heroicidad.', { plateau: 2 }),
+        opt('c', 'Après le travail — c’est là que tu as encore de l’air.', 'Después del trabajo — ahí aún tienes aire.', { soir: 2 }),
+        opt('d', 'Éviter le trou de fin d’après-midi. C’est là que tout bascule.', 'Evitar el hueco de final de tarde. Ahí se vuelca todo.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q2',
-      prompt: {
-        fr: 'Ton meilleur créneau mental pour un effort…',
-        es: 'Tu mejor franja mental para un esfuerzo…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Avant 10h.', es: 'Antes de las 10h.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: '11h–14h.', es: '11h–14h.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Après 18h.', es: 'Después de las 18h.' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'Je ne sais plus : le 15h me détruit.', es: 'Ya no sé: las 15h me destrozan.' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q2',
+      'On te propose un cours à 7h. Toi…',
+      'Te proponen una clase a las 7h. Tú…',
+      [
+        opt('a', 'Oui — c’est même le seul créneau que tu défendrais.', 'Sí — incluso es el único horario que defenderías.', { matin: 2 }),
+        opt('b', 'Possible, mais tu tiens mieux un peu plus tard, sans te punir.', 'Posible, pero te sostienes mejor un poco más tarde, sin castigarte.', { plateau: 2 }),
+        opt('c', 'Tu dis oui par honte… et tu rates. Ce n’est pas ton horloge.', 'Dices que sí por vergüenza… y fallas. No es tu reloj.', { soir: 2 }),
+        opt('d', 'Tu tiens un jour, puis le crash de la veille te rattrape.', 'Aguantas un día, y el bajón de la víspera te alcanza.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q3',
-      prompt: {
-        fr: 'Vers 15h, tu es plutôt…',
-        es: 'Hacia las 15h, eres más bien…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Encore claire — tu peux enchaîner.', es: 'Todavía clara — puedes seguir.' }, scores: { matin: 1, plateau: 1 } },
-        { id: 'b', label: { fr: 'Stable, sans pic.', es: 'Estable, sin pico.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'En train de te réveiller vraiment.', es: 'Empezando a despertar de verdad.' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'En mode « écran + café + culpabilité ».', es: 'Modo « pantalla + café + culpa ».' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q3',
+      'Fin d’après-midi, une amie te dit « on bouge maintenant ? ». Ton corps…',
+      'Final de tarde, una amiga dice « ¿nos movemos ahora? ». Tu cuerpo…',
+      [
+        opt('a', 'A déjà donné. Tu aurais dit oui ce matin.', 'Ya dio. Hubieras dicho que sí por la mañana.', { matin: 2 }),
+        opt('b', 'Peut suivre si c’est le créneau habituel — pas un à-coup.', 'Puede seguir si es el horario de siempre — no un tirón.', { plateau: 2 }),
+        opt('c', 'Commence à s’allumer. C’est souvent là que tu es enfin disponible.', 'Empieza a encenderse. A menudo ahí por fin estás disponible.', { soir: 2 }),
+        opt('d', 'Veut l’écran. Tu te juges. Tu ne bouges pas.', 'Quiere la pantalla. Te juzgas. No te mueves.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q4',
-      prompt: {
-        fr: 'Quand tu rates ton créneau habituel…',
-        es: 'Cuando fallas tu horario habitual…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Tu le décale au matin suivant.', es: 'Lo mueves a la mañana siguiente.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: 'Tu trouves une fenêtre dans la journée.', es: 'Encuentras una ventana en el día.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Tu te dis « ce soir » — et souvent non.', es: 'Dices « esta noche » — y a menudo no.' }, scores: { soir: 1, crash: 1 } },
-        { id: 'd', label: { fr: 'Tu abandonnes la semaine.', es: 'Abandonas la semana.' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q4',
+      'Quand tu rates le créneau prévu, tu fais quoi — vraiment…',
+      'Cuando fallas el horario previsto, qué haces — de verdad…',
+      [
+        opt('a', 'Tu le recales au matin suivant. Pas le soir : le soir tu n’as plus le même cerveau.', 'Lo recolocas a la mañana siguiente. No de noche: de noche ya no tienes el mismo cerebro.', { matin: 2 }),
+        opt('b', 'Tu trouves une fenêtre dans la journée, sans tout décaler.', 'Encuentras una ventana en el día, sin moverlo todo.', { plateau: 2 }),
+        opt('c', 'Tu te dis « ce soir » — et souvent ça devient demain.', 'Dices « esta noche » — y a menudo se vuelve mañana.', { soir: 2 }),
+        opt('d', 'Tu lis ça comme une preuve. La semaine part avec.', 'Lo lees como una prueba. La semana se va con ello.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q5',
-      prompt: {
-        fr: 'Le café / thé, pour toi…',
-        es: 'El café / té, para ti…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Rituel du matin, puis ça roule.', es: 'Ritual de mañana, y sigue.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: 'Dose régulière pour rester linéaire.', es: 'Dosis regular para mantenerte lineal.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Surtout l’après-midi / soir pour tenir.', es: 'Sobre todo tarde / noche para aguantar.' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'Béquille anti-crash — sinon tu tombes.', es: 'Muletas anti-bajón — si no, caes.' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q5',
+      'Ce que tu appelles « je n’ai pas d’énergie », c’est surtout…',
+      'Lo que llamas « no tengo energía », sobre todo es…',
+      [
+        opt('a', 'Que la fenêtre du matin est passée. Le reste est déjà négocié.', 'Que pasó la ventana de la mañana. El resto ya está negociado.', { matin: 2 }),
+        opt('b', 'Que le rythme a cassé. Sans rails, tu glisses.', 'Que se rompió el ritmo. Sin rieles, te deslizas.', { plateau: 2 }),
+        opt('c', 'Qu’on te demande d’être du matin. Le soir, l’énergie est là — sans rendez-vous, elle se perd.', 'Que te pidan ser mañanera. De noche la energía está — sin cita, se pierde.', { soir: 2 }),
+        opt('d', 'Un trou prévisible. Tu le prends pour un défaut de caractère.', 'Un hueco previsible. Lo tomas por un defecto de carácter.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q6',
-      prompt: {
-        fr: 'Un rendez-vous fixe avec une coach, ça t’aiderait surtout à…',
-        es: 'Una cita fija con una coach te ayudaría sobre todo a…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'Protéger ton créneau du matin.', es: 'Proteger tu franja de mañana.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: 'Ancrer un rythme sans te demander d’être une machine.', es: 'Anclar un ritmo sin pedirte ser una máquina.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Te sortir du « ce soir peut-être ».', es: 'Sacarte del « esta noche quizá ».' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'Te tenir quand le 15h te vide.', es: 'Sostenerte cuando las 15h te vacían.' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q6',
+      'Pour tenir, le café / l’écran en milieu d’après-midi…',
+      'Para aguantar, el café / la pantalla a media tarde…',
+      [
+        opt('a', 'Peu décisif. Ton sujet, c’est d’avoir déjà bougé.', 'Poco decisivo. Tu tema es haber movido ya.', { matin: 2 }),
+        opt('b', 'Une dose pour rester linéaire — pas un sauvetage.', 'Una dosis para seguir lineal — no un salvavidas.', { plateau: 2 }),
+        opt('c', 'Un pont vers le soir, où tu t’allumes vraiment.', 'Un puente hacia la noche, donde de verdad te enciendes.', { soir: 2 }),
+        opt('d', 'Une béquille. Sans filet humain, tu tombes dans le trou.', 'Una muleta. Sin red humana, caes en el hueco.', { crash: 2 }),
       ],
-    },
-    {
-      id: 'q7',
-      prompt: {
-        fr: 'Ce que tu te racontes sur ta « motivation »…',
-        es: 'Lo que te cuentas sobre tu « motivación »…',
-      },
-      options: [
-        { id: 'a', label: { fr: 'J’en ai le matin — moins le soir.', es: 'La tengo por la mañana — menos por la noche.' }, scores: { matin: 2 } },
-        { id: 'b', label: { fr: 'Elle est stable si mon agenda l’est.', es: 'Es estable si mi agenda lo es.' }, scores: { plateau: 2 } },
-        { id: 'c', label: { fr: 'Elle arrive tard — trop tard souvent.', es: 'Llega tarde — a menudo demasiado.' }, scores: { soir: 2 } },
-        { id: 'd', label: { fr: 'Elle disparaît avec le crash.', es: 'Desaparece con el bajón.' }, scores: { crash: 2 } },
+    ),
+    q(
+      'q7',
+      'Ce que tu te racontes sur ta « motivation »…',
+      'Lo que te cuentas sobre tu « motivación »…',
+      [
+        opt('a', 'J’en ai le matin. Le soir, ce n’est pas de la volonté qui manque : c’est le carburant.', 'La tengo por la mañana. De noche no falta voluntad: falta combustible.', { matin: 2 }),
+        opt('b', 'Elle est stable si l’agenda l’est. Pas un feu d’artifice.', 'Es estable si la agenda lo es. No un fuego artificial.', { plateau: 2 }),
+        opt('c', 'Elle arrive tard. On m’a appris à la honte.', 'Llega tarde. Me enseñaron a avergonzarme.', { soir: 2 }),
+        opt('d', 'Elle disparaît avec le crash. Je me punis — ça n’aide pas.', 'Desaparece con el bajón. Me castigo — no ayuda.', { crash: 2 }),
       ],
-    },
+    ),
+    q(
+      'q8',
+      'Un rendez-vous fixe avec une coach, ça t’aiderait surtout à…',
+      'Una cita fija con una coach te ayudaría sobre todo a…',
+      [
+        opt('a', 'Protéger la fenêtre du matin — comme un client, pas comme une envie.', 'Proteger la ventana de la mañana — como a un cliente, no como unas ganas.', { matin: 2 }),
+        opt('b', 'Poser des rails. Sans à-coups, tu tiens.', 'Poner rieles. Sin tirones, te sostienes.', { plateau: 2 }),
+        opt('c', 'Sortir du « ce soir peut-être ». Un vrai soir, tenu.', 'Salir del « esta noche quizá ». Una noche de verdad, cumplida.', { soir: 2 }),
+        opt('d', 'Te tenir au bord du trou — sans te demander d’être une autre.', 'Sostenerte al borde del hueco — sin pedirte ser otra.', { crash: 2 }),
+      ],
+    ),
   ],
   results: [
     {
       id: 'matin',
       title: { fr: 'Énergie Matinale', es: 'Energía Matutina' },
-      tagline: { fr: 'Ton carburant est tôt — protége-le comme un rendez-vous.', es: 'Tu combustible es temprano — protégelo como una cita.' },
+      tagline: { fr: 'Ton carburant est tôt — protège-le comme un rendez-vous.', es: 'Tu combustible es temprano — protégelo como una cita.' },
       body: {
         fr: [
           'Tu n’as pas un problème de volonté le soir : tu as déjà dépensé ton meilleur carburant.',
