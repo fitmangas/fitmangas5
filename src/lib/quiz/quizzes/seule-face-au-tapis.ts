@@ -14,7 +14,7 @@ export const quizSeuleFaceAuTapis: QuizDefinition = {
     es: 'Cómo te tratas cuando nadie te ve. No es un juicio — un mapa para entender por qué te sostienes… o desapareces.',
   },
   durationHint: { fr: '~2 min', es: '~2 min' },
-  cta: { fr: 'Essai 7 jours gratuits ✨', es: 'Prueba 7 días gratis ✨' },
+  cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },
   questions: [
     {
       id: 'q1',

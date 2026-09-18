@@ -14,7 +14,7 @@ export const quizCarteStress: QuizDefinition = {
     es: 'Dónde se bloquea de verdad: mandíbula, vientre, espalda… No es un diagnóstico médico — una lectura sensible de lo que necesita tu sistema.',
   },
   durationHint: { fr: '~2 min', es: '~2 min' },
-  cta: { fr: 'Essai 7 jours gratuits ✨', es: 'Prueba 7 días gratis ✨' },
+  cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },
   questions: [
     {
       id: 'q1',
