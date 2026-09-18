@@ -1,1 +1,1 @@
-PLACEHOLDER_LOAD_FROM_DISK
+LOAD_FROM:/Users/kevinpicard/.cursor/projects/Users-kevinpicard-Projets-fitmangas5/agent-tools/mcp-push-files-actions-ts.json
