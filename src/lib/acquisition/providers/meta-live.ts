@@ -236,6 +236,54 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
   };
 }
 
+async function graphGet(
+  base: typeof GRAPH | typeof GRAPH_IG,
+  path: string,
+  token: string,
+): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(`${base}${path}${sep}access_token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await res.json()) as Record<string, unknown> & {
+    error?: { message?: string };
+  };
+  if (!res.ok) {
+    return { ok: false, error: data.error?.message ?? `Erreur Meta GET ${res.status}` };
+  }
+  return { ok: true, data };
+}
+
+/**
+ * Vérifie si l’IGSID suit le compte pro (ManyChat-like).
+ * Retourne unknown si l’API Meta ne expose pas le champ (fréquent selon le type de token).
+ */
+export async function checkInstagramFollowsBusiness(
+  igsid: string,
+): Promise<'yes' | 'no' | 'unknown'> {
+  const id = igsid.trim();
+  if (!id) return 'unknown';
+  const conn = await getAcquisitionMetaConnection();
+  if (!conn.accessToken) return 'unknown';
+
+  const tryField = async (base: typeof GRAPH | typeof GRAPH_IG) => {
+    const r = await graphGet(base, `/${id}?fields=is_user_follow_business`, conn.accessToken!);
+    if (!r.ok) return null;
+    const v = r.data.is_user_follow_business;
+    if (v === true) return 'yes' as const;
+    if (v === false) return 'no' as const;
+    return null;
+  };
+
+  // Page token Facebook d’abord, puis Instagram Login.
+  const viaFb = await tryField(GRAPH);
+  if (viaFb) return viaFb;
+  const viaIg = await tryField(GRAPH_IG);
+  if (viaIg) return viaIg;
+  return 'unknown';
+}
+
 async function graphPost(
   base: typeof GRAPH | typeof GRAPH_IG,
   path: string,
