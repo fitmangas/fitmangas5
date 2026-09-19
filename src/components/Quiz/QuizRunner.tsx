@@ -45,10 +45,29 @@ export function QuizRunner({ quiz, locale }: Props) {
 
   const allAnswered = quiz.questions.every((q) => Boolean(answers[q.id]));
 
-  const pick = useCallback((questionId: string, optionId: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-    setSubmitted(false);
-  }, []);
+  /** Choix = enregistre + passe à la question suivante (ou rapport si dernière). */
+  const pickAndAdvance = useCallback(
+    (questionId: string, optionId: string) => {
+      const nextAnswers = { ...answers, [questionId]: optionId };
+      setAnswers(nextAnswers);
+
+      const qi = quiz.questions.findIndex((q) => q.id === questionId);
+      const isLast = qi >= 0 && qi === quiz.questions.length - 1;
+
+      if (isLast) {
+        const complete = quiz.questions.every((q) => Boolean(nextAnswers[q.id]));
+        setSubmitted(complete);
+        return;
+      }
+
+      setSubmitted(false);
+      // Petite pause pour voir la sélection avant le fondu d’étape
+      window.setTimeout(() => {
+        setActiveIndex((i) => i + 1);
+      }, 180);
+    },
+    [answers, quiz.questions],
+  );
 
   const submitReport = useCallback(() => {
     if (!allAnswered) return;
@@ -172,8 +191,8 @@ export function QuizRunner({ quiz, locale }: Props) {
             </h2>
             <p className="mt-3 text-[14px]" style={{ color: 'var(--qc-muted)' }}>
               {locale === 'es'
-                ? 'Elige la que más se te parece. Avanzas con « Siguiente » — no se envía todavía.'
-                : 'Choisis celle qui te ressemble le plus. Tu avances avec « Suivant » — rien n’est envoyé encore.'}
+                ? 'Elige la que más se te parece — pasas a la siguiente al instante.'
+                : 'Choisis celle qui te ressemble le plus — tu passes tout de suite à la suivante.'}
             </p>
             <div className="quiz-chapter-card" role="radiogroup" aria-label={q.prompt[locale]}>
               {q.options.map((opt, oi) => (
@@ -184,7 +203,7 @@ export function QuizRunner({ quiz, locale }: Props) {
                   aria-checked={selected === opt.id}
                   data-selected={selected === opt.id ? 'true' : 'false'}
                   className="quiz-chapter-option"
-                  onClick={() => pick(q.id, opt.id)}
+                  onClick={() => pickAndAdvance(q.id, opt.id)}
                 >
                   <span className="quiz-chapter-option-letter">{String.fromCharCode(65 + oi)}</span>
                   <span className="text-[15px] leading-snug" style={{ color: 'var(--qc-ink)' }}>
@@ -230,7 +249,7 @@ export function QuizRunner({ quiz, locale }: Props) {
     );
     const byId = new Map(all.map((s) => [s.id, s]));
     return resolved.map((r) => byId.get(r.id)!).filter(Boolean);
-  }, [answers, allAnswered, card, hubHref, locale, pick, quiz, result, score, submitReport, submitted]);
+  }, [answers, allAnswered, card, hubHref, locale, pickAndAdvance, quiz, result, score, submitReport, submitted]);
 
   // Première soumission → chapitre Rapport. Retour arrière ensuite autorisé.
   useEffect(() => {
