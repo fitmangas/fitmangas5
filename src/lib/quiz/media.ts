@@ -22,7 +22,6 @@ export const QUIZ_PROOF_MIX = QUIZ_TESTIMONIALS.map((t) => ({
 
 /**
  * Visuel des 5 cartes hub / intro : photos library nettes (pas poster MP4).
- * Variété thèmes pour coller au quiz.
  */
 export const QUIZ_CARD_BY_SLUG: Record<
   string,
@@ -60,10 +59,10 @@ export const QUIZ_CARD_BY_SLUG: Record<
   },
 };
 
-/** Petites images d’ambiance par section du rapport (biblio + Unsplash). */
+/** Bannières section rapport — assez larges pour porter le sens (pas des timbres). */
 export const QUIZ_SECTION_IMAGES = {
   stress: {
-    src: 'https://images.unsplash.com/photo-1541199249251-f712dc791be0?auto=format&fit=crop&w=400&q=80',
+    src: 'https://images.unsplash.com/photo-1541199249251-f712dc791be0?auto=format&fit=crop&w=1200&q=80',
     altFr: 'Moment de tension',
     altEs: 'Momento de tensión',
   },
@@ -78,9 +77,14 @@ export const QUIZ_SECTION_IMAGES = {
     altEs: 'Intercambio en clase',
   },
   develop: {
-    src: 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=400&q=80',
+    src: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
     altFr: 'Progression',
     altEs: 'Progreso',
+  },
+  how: {
+    src: '/library/pilates-mat/pilates-mat-02-4x5.webp',
+    altFr: 'Comment tu fonctionnes',
+    altEs: 'Cómo funcionas',
   },
 } as const;
 
