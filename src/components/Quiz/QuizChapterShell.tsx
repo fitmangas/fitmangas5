@@ -106,13 +106,25 @@ export function QuizChapterShell({
     setBreathe(false);
   }, [hideChrome, safeIndex, reducedMotion]);
 
+  /** Lenis (smooth scroll site) capture la molette : on l’arrête sur le quiz. */
+  useEffect(() => {
+    document.documentElement.dataset.quizNativeScroll = '1';
+    window.__fitmangasLenis?.stop?.();
+    return () => {
+      delete document.documentElement.dataset.quizNativeScroll;
+      window.__fitmangasLenis?.start?.();
+    };
+  }, []);
+
   const rootRef = useRef<HTMLDivElement>(null);
 
   const resetScroll = useCallback(() => {
     const run = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       if (rootRef.current) rootRef.current.scrollTop = 0;
       if (viewportRef.current) viewportRef.current.scrollTop = 0;
-      window.scrollTo(0, 0);
     };
     requestAnimationFrame(() => requestAnimationFrame(run));
   }, []);

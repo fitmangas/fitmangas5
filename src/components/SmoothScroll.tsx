@@ -9,12 +9,21 @@ type LenisLike = {
   raf: (time: number) => void;
   on: (event: string, handler: () => void) => void;
   destroy: () => void;
+  stop?: () => void;
+  start?: () => void;
 };
+
+declare global {
+  interface Window {
+    __fitmangasLenis?: LenisLike | null;
+  }
+}
 
 /**
  * Smooth-scroll Lenis branché sur le ticker GSAP.
  * Désactivé si prefers-reduced-motion.
  * Une seule instance au layout racine.
+ * Les pages quiz appellent stop()/start() via window.__fitmangasLenis.
  */
 export function SmoothScroll({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -33,6 +42,12 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const instance = new (Lenis as any)({ lerp: 0.085, smoothWheel: true }) as LenisLike;
       lenis = instance;
+      window.__fitmangasLenis = instance;
+
+      // Si un quiz est déjà monté (navigation client), rester arrêté.
+      if (document.documentElement.dataset.quizNativeScroll === '1') {
+        instance.stop?.();
+      }
 
       instance.on('scroll', () => {
         ScrollTrigger.update();
@@ -48,6 +63,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
       if (tickerFn) gsap.ticker.remove(tickerFn);
+      if (window.__fitmangasLenis === lenis) window.__fitmangasLenis = null;
       lenis?.destroy();
       lenis = null;
     };
