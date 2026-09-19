@@ -23,6 +23,8 @@ type Props = {
   locale: QuizLocale;
   trialHref: string;
   hubHref: string;
+  /** Affiché dans le lecteur de chapitres (sticky relatif au panneau). */
+  embeddedInChapter?: boolean;
 };
 
 const LABELS = {
@@ -176,7 +178,7 @@ function cleanProfileTitle(title: string) {
   return title.replace(/^Profil\s+/i, '').replace(/^Perfil\s+/i, '');
 }
 
-export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: Props) {
+export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, embeddedInChapter }: Props) {
   const t = LABELS[locale];
   const report = result.report;
   if (!report) return null;
@@ -260,8 +262,8 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
     locale === 'es' ? QUIZ_SECTION_IMAGES[key].altEs : QUIZ_SECTION_IMAGES[key].altFr;
 
   return (
-    <article className="quiz-report mx-auto max-w-3xl px-5 py-10 sm:max-w-4xl sm:py-14">
-      <nav className="quiz-no-print sticky top-[52px] z-40 mb-8">
+    <article className={`quiz-report mx-auto max-w-3xl px-5 py-10 sm:max-w-4xl sm:py-14${embeddedInChapter ? ' quiz-report--chapter' : ''}`}>
+      <nav className={`quiz-no-print sticky z-40 mb-8 ${embeddedInChapter ? 'top-0' : 'top-[52px]'}`}>
         <ul className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1 rounded-full border border-brand-ink/[0.06] bg-white/95 px-2 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md">
           {navItems.map((item) => (
             <li key={item.id}>
