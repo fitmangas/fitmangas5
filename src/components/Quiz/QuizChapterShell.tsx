@@ -224,7 +224,7 @@ export function QuizChapterShell({
         <header className="quiz-chapter-header quiz-no-print">
           <Link href={homeHref} className="flex shrink-0 items-center gap-2.5">
             <Image src="/logo.png" alt="FitMangas" width={28} height={28} className="h-7 w-7 object-contain" />
-            <span className="text-[13px] font-semibold tracking-wide" style={{ color: 'var(--qc-navy)' }}>
+            <span className="text-[13px] font-semibold tracking-wide" style={{ color: 'var(--qc-ink)' }}>
               FitMangas
             </span>
           </Link>
@@ -274,7 +274,14 @@ export function QuizChapterShell({
               data-active="true"
               data-anim={reducedMotion ? 'off' : 'on'}
               data-chapter-id={step.id}
-              style={{ display: 'block', height: '100%', overflowY: 'auto', overscrollBehavior: 'contain' }}
+              style={{
+                display: 'block',
+                height: '100%',
+                maxHeight: '100%',
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+              }}
             >
               <div className="quiz-chapter-step-inner">
                 {step.hideChrome ? (

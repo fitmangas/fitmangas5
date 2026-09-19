@@ -94,7 +94,7 @@ export function QuizRunner({ quiz, locale }: Props) {
               />
               <div className="quiz-chapter-cover-veil" />
               <div className="absolute bottom-5 left-5 right-5 z-[1]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--qc-gold)]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--qc-accent)]">
                   {locale === 'es' ? card.captionEs : card.captionFr}
                 </p>
                 <p className="mt-1 text-[1.15rem] font-semibold text-white">
@@ -114,7 +114,7 @@ export function QuizRunner({ quiz, locale }: Props) {
                   <li key={i} className="flex gap-3 text-[15px] leading-snug" style={{ color: 'var(--qc-ink)' }}>
                     <span
                       className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: 'var(--qc-navy)' }}
+                      style={{ background: 'var(--qc-accent)' }}
                     >
                       {String(i + 1).padStart(2, '0')}
                     </span>
@@ -265,7 +265,7 @@ export function QuizRunner({ quiz, locale }: Props) {
         <Link
           href={hubHref}
           className="inline-flex items-center rounded-full px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] transition hover:bg-black/[0.04]"
-          style={{ color: 'var(--qc-navy)' }}
+          style={{ color: 'var(--qc-accent)' }}
         >
           {locale === 'es' ? 'Las 5 evaluaciones' : 'Les 5 évaluations'}
         </Link>
