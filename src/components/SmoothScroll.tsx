@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 
@@ -9,8 +10,6 @@ type LenisLike = {
   raf: (time: number) => void;
   on: (event: string, handler: () => void) => void;
   destroy: () => void;
-  stop?: () => void;
-  start?: () => void;
 };
 
 declare global {
@@ -19,16 +18,53 @@ declare global {
   }
 }
 
+/** Retire les verrous DOM que Lenis (surtout stop()) laisse sur html/body. */
+function clearLenisDomLocks() {
+  const html = document.documentElement;
+  const body = document.body;
+  html.style.removeProperty('overflow');
+  html.style.removeProperty('height');
+  html.style.removeProperty('touch-action');
+  body.style.removeProperty('overflow');
+  body.style.removeProperty('height');
+  body.style.removeProperty('touch-action');
+  html.classList.remove(
+    'lenis',
+    'lenis-smooth',
+    'lenis-stopped',
+    'lenis-scrolling',
+    'lenis-smooth-touch',
+  );
+}
+
 /**
- * Smooth-scroll Lenis branché sur le ticker GSAP.
- * Désactivé si prefers-reduced-motion.
- * Une seule instance au layout racine.
- * Les pages quiz appellent stop()/start() via window.__fitmangasLenis.
+ * Smooth-scroll Lenis — DÉTRUIT (pas stoppé) sur /quiz.
+ * lenis.stop() met overflow:clip + preventDefault sur la molette → Safari desktop mort.
  */
 export function SmoothScroll({ children }: { children: ReactNode }) {
+  const pathname = usePathname() || '';
+  const isQuizRoute = pathname.includes('/quiz');
+
   useEffect(() => {
     markAnimReady();
-    if (prefersReducedMotion()) return;
+
+    if (isQuizRoute) {
+      document.documentElement.dataset.quizNativeScroll = '1';
+      window.__fitmangasLenis?.destroy();
+      window.__fitmangasLenis = null;
+      clearLenisDomLocks();
+      return () => {
+        delete document.documentElement.dataset.quizNativeScroll;
+        clearLenisDomLocks();
+      };
+    }
+
+    delete document.documentElement.dataset.quizNativeScroll;
+
+    if (prefersReducedMotion()) {
+      clearLenisDomLocks();
+      return;
+    }
 
     let cancelled = false;
     let lenis: LenisLike | null = null;
@@ -38,16 +74,13 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       ensureGsapPlugins();
       const { default: Lenis } = await import('lenis');
       if (cancelled) return;
+      // Navigation concurrente vers /quiz pendant l’import dynamique.
+      if (document.documentElement.dataset.quizNativeScroll === '1') return;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const instance = new (Lenis as any)({ lerp: 0.085, smoothWheel: true }) as LenisLike;
       lenis = instance;
       window.__fitmangasLenis = instance;
-
-      // Si un quiz est déjà monté (navigation client), rester arrêté.
-      if (document.documentElement.dataset.quizNativeScroll === '1') {
-        instance.stop?.();
-      }
 
       instance.on('scroll', () => {
         ScrollTrigger.update();
@@ -66,8 +99,9 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       if (window.__fitmangasLenis === lenis) window.__fitmangasLenis = null;
       lenis?.destroy();
       lenis = null;
+      clearLenisDomLocks();
     };
-  }, []);
+  }, [isQuizRoute]);
 
   return <>{children}</>;
 }
