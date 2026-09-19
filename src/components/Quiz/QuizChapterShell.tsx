@@ -20,7 +20,7 @@ import {
 } from '@/lib/quiz/chapter-steps';
 import type { QuizLocale } from '@/lib/quiz/types';
 
-import './quiz-chapter.css';
+// Styles via src/app/globals.css → @import quiz-chapter.css (CSS global Next).
 
 export type QuizChapterStep = {
   id: string;
@@ -261,69 +261,71 @@ export function QuizChapterShell({
         ref={viewportRef}
         className={`quiz-chapter-viewport${hideChrome ? ' quiz-chapter-viewport--opening' : ''}`}
       >
-        {steps.map((step, i) => (
-          <section
-            key={step.id}
-            ref={(el) => {
-              stepRefs.current[step.id] = el;
-            }}
-            className="quiz-chapter-step"
-            data-active={i === safeIndex ? 'true' : 'false'}
-            data-anim={reducedMotion ? 'off' : 'on'}
-            data-chapter-id={step.id}
-            aria-hidden={i !== safeIndex}
-            // Remount animation on each visit
-            data-visit={i === safeIndex ? animKey : undefined}
-          >
-            <div className="quiz-chapter-step-inner" key={i === safeIndex ? `${step.id}-${animKey}` : step.id}>
-              {step.hideChrome ? (
-                <div className="quiz-chapter-opening">
-                  <div className="quiz-chapter-opening-stage">
-                    <div className="quiz-chapter-pulse-ring" aria-hidden />
+        {steps.map((step, i) => {
+          const isActive = i === safeIndex;
+          if (!isActive) return null;
+          return (
+            <section
+              key={`${step.id}-${animKey}`}
+              ref={(el) => {
+                stepRefs.current[step.id] = el;
+              }}
+              className="quiz-chapter-step"
+              data-active="true"
+              data-anim={reducedMotion ? 'off' : 'on'}
+              data-chapter-id={step.id}
+              style={{ display: 'block', height: '100%', overflowY: 'auto', overscrollBehavior: 'contain' }}
+            >
+              <div className="quiz-chapter-step-inner">
+                {step.hideChrome ? (
+                  <div className="quiz-chapter-opening">
+                    <div className="quiz-chapter-opening-stage">
+                      <div className="quiz-chapter-pulse-ring" aria-hidden />
+                      <div
+                        className="quiz-chapter-logo-block"
+                        data-breathe={breathe && !logoExiting ? 'true' : 'false'}
+                        data-exiting={logoExiting ? 'true' : 'false'}
+                      >
+                        <Image
+                          src="/logo.png"
+                          alt=""
+                          width={120}
+                          height={120}
+                          className="quiz-chapter-logo-mark"
+                          priority
+                        />
+                        <p className="quiz-chapter-logo-title">{brandTitle}</p>
+                        <p className="quiz-chapter-logo-sub">{sub}</p>
+                      </div>
+                    </div>
                     <div
-                      className="quiz-chapter-logo-block"
-                      data-breathe={breathe && !logoExiting ? 'true' : 'false'}
+                      className="quiz-chapter-opening-footer"
                       data-exiting={logoExiting ? 'true' : 'false'}
                     >
-                      <Image
-                        src="/logo.png"
-                        alt=""
-                        width={120}
-                        height={120}
-                        className="quiz-chapter-logo-mark"
-                        priority
-                      />
-                      <p className="quiz-chapter-logo-title">{brandTitle}</p>
-                      <p className="quiz-chapter-logo-sub">{sub}</p>
+                      <p className="quiz-chapter-promise">{openingPromise}</p>
+                      <button
+                        type="button"
+                        className="quiz-chapter-enter-btn"
+                        disabled={enteringLocked}
+                        onClick={handleEnter}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === 'Enter') e.stopPropagation();
+                        }}
+                      >
+                        {openingCta}
+                        <span className="quiz-chapter-enter-arrow" aria-hidden>
+                          →
+                        </span>
+                      </button>
                     </div>
                   </div>
-                  <div
-                    className="quiz-chapter-opening-footer"
-                    data-exiting={logoExiting ? 'true' : 'false'}
-                  >
-                    <p className="quiz-chapter-promise">{openingPromise}</p>
-                    <button
-                      type="button"
-                      className="quiz-chapter-enter-btn"
-                      disabled={enteringLocked}
-                      onClick={handleEnter}
-                      onKeyDown={(e: ReactKeyboardEvent) => {
-                        if (e.key === 'Enter') e.stopPropagation();
-                      }}
-                    >
-                      {openingCta}
-                      <span className="quiz-chapter-enter-arrow" aria-hidden>
-                        →
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                step.content
-              )}
-            </div>
-          </section>
-        ))}
+                ) : (
+                  step.content
+                )}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {!hideChrome ? (

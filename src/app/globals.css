@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&family=Outfit:wght@300;400;500&family=Playfair+Display:ital,wght@1,600;1,700&display=swap');
 @import 'tailwindcss';
+@import '../components/Quiz/quiz-chapter.css';
 
 /* Base publique simple + composants luxury réservés aux espaces privés */
 
