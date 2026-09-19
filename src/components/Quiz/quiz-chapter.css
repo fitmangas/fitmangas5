@@ -21,12 +21,15 @@
   position: fixed;
   inset: 0;
   z-index: 30;
-  display: flex;
-  flex-direction: column;
+  display: block;
   width: 100%;
   height: 100dvh;
   max-height: 100dvh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   background:
     radial-gradient(900px 480px at -8% -16%, rgba(255, 209, 153, 0.2) 0%, transparent 62%),
     radial-gradient(800px 420px at 108% -12%, rgba(229, 208, 186, 0.18) 0%, transparent 64%),
@@ -36,16 +39,16 @@
 }
 
 .quiz-chapter-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 40;
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   height: 64px;
   padding: 0 20px;
-  background: rgb(255 255 255 / 90%);
+  background: rgb(255 255 255 / 92%);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgb(29 29 31 / 6%);
@@ -101,28 +104,21 @@
 
 .quiz-chapter-viewport {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0; /* critique : hauteur bornée dans le flex */
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  /* Place pour la barre basse — le contenu Cadre / Rapport doit passer dessous au scroll */
+  /* Plus de scroll imbriqué : c’est .quiz-chapter-root qui défile. */
+  overflow: visible;
+  min-height: calc(100dvh - 64px);
   padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
 }
 
 .quiz-chapter-viewport--opening {
-  flex: 1 1 auto;
-  min-height: 0;
+  min-height: 100dvh;
   padding-bottom: 0;
 }
 
-/* Une seule étape montée : le scroll est sur .quiz-chapter-viewport, pas ici. */
+/* Une seule étape montée ; hauteur naturelle du contenu. */
 .quiz-chapter-step {
   display: block;
   height: auto;
-  min-height: 0;
   overflow: visible;
   padding-bottom: 24px;
 }

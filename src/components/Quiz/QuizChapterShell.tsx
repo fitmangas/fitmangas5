@@ -99,17 +99,6 @@ export function QuizChapterShell({
   }, []);
 
   useEffect(() => {
-    const prevHtml = document.documentElement.style.overflow;
-    const prevBody = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
-    };
-  }, []);
-
-  useEffect(() => {
     if (hideChrome && !reducedMotion) {
       const t = window.setTimeout(() => setBreathe(true), 1200);
       return () => window.clearTimeout(t);
@@ -117,12 +106,13 @@ export function QuizChapterShell({
     setBreathe(false);
   }, [hideChrome, safeIndex, reducedMotion]);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
   const resetScroll = useCallback(() => {
     const run = () => {
+      if (rootRef.current) rootRef.current.scrollTop = 0;
+      if (viewportRef.current) viewportRef.current.scrollTop = 0;
       window.scrollTo(0, 0);
-      viewportRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
     };
     requestAnimationFrame(() => requestAnimationFrame(run));
   }, []);
@@ -207,7 +197,7 @@ export function QuizChapterShell({
     (locale === 'es' ? 'Evaluación' : 'Évaluation');
 
   return (
-    <div className="quiz-chapter-root quiz-doc" data-locale={locale}>
+    <div ref={rootRef} className="quiz-chapter-root quiz-doc" data-locale={locale}>
       <div className="quiz-chapter-sr" aria-live="polite" id={liveId}>
         {locale === 'es'
           ? `Paso ${counter.current} de ${counter.total}: ${active.label}`
