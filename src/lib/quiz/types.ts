@@ -30,8 +30,8 @@ export type QuizReportSections = {
 
 export type QuizResult = {
   id: string;
-  /** Lettre DISC si applicable : D / I / S / C */
-  letter?: 'D' | 'I' | 'S' | 'C';
+  /** Lettre profil FitMangas : D / E / A / M */
+  letter?: 'D' | 'E' | 'A' | 'M';
   /** Nom de style (ex. « La Décideuse ») */
   styleName?: Record<QuizLocale, string>;
   title: Record<QuizLocale, string>;

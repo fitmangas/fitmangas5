@@ -16,40 +16,24 @@ export function QuizShell({ locale, children }: Props) {
   const hub = locale === 'es' ? '/es/quiz' : '/quiz';
 
   return (
-    <div className="quiz-doc relative min-h-screen overflow-x-hidden bg-[#FFFAF5] text-[#2C241E]">
-      {/* Grille + glow façon monteur-ia, adaptés crème / terracotta */}
-      <div
-        aria-hidden
-        className="quiz-no-print pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(44,36,30,0.045) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(44,36,30,0.045) 1px, transparent 1px)
-          `,
-          backgroundSize: '48px 48px',
-          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="quiz-no-print pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-[#C45D3E]/15 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="quiz-no-print pointer-events-none absolute -right-16 top-[40%] h-80 w-80 rounded-full bg-[#C9A227]/12 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="quiz-no-print pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-[#6B8F71]/10 blur-3xl"
-      />
-
-      <header className="quiz-no-print relative z-20 border-b border-[#2C241E]/10 bg-[#FFFAF5]/75 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+    <div
+      className="quiz-doc relative min-h-screen overflow-x-hidden text-brand-ink font-sans selection:bg-[#c45d3e]/20"
+      style={{
+        backgroundColor: '#f6f3ed',
+        backgroundImage:
+          'radial-gradient(900px 480px at -8% -16%, rgba(255,209,153,0.22) 0%, transparent 62%), radial-gradient(800px 420px at 108% -12%, rgba(229,208,186,0.2) 0%, transparent 64%), linear-gradient(180deg, #f8f5ef 0%, #f2eee7 100%)',
+      }}
+    >
+      <header className="quiz-no-print sticky top-0 z-50 border-b border-brand-ink/[0.03] bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3.5">
           <Link href={home} className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="FitMangas" width={28} height={28} className="h-7 w-7 object-contain" />
-            <span className="text-[13px] font-semibold tracking-wide">FitMangas</span>
+            <span className="text-[13px] font-semibold tracking-wide text-brand-ink">FitMangas</span>
           </Link>
-          <Link href={hub} className="text-[12px] text-[#2C241E]/55 transition hover:text-[#C45D3E]">
+          <Link
+            href={hub}
+            className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/55 transition hover:text-[#c45d3e]"
+          >
             {locale === 'es' ? 'Las 5 evaluaciones' : 'Les 5 évaluations'}
           </Link>
         </div>

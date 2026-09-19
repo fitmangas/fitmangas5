@@ -6,64 +6,74 @@ import Link from 'next/link';
 import { DiscColorStrip } from '@/components/Quiz/QuizVisuals';
 import { QuizShell } from '@/components/Quiz/QuizShell';
 import { QUIZ_CATALOG } from '@/lib/quiz/catalog';
-import { QUIZ_HERO_BY_SLUG, QUIZ_PROOF_IMAGES } from '@/lib/quiz/media';
+import { QUIZ_CARD_BY_SLUG, QUIZ_PROOF_MIX } from '@/lib/quiz/media';
 import type { QuizLocale } from '@/lib/quiz/types';
 
 type Props = { locale: QuizLocale };
 
 const COPY = {
   fr: {
-    eyebrow: '5 évaluations · un rapport graphique, pas un sticker',
+    eyebrow: '5 évaluations · un rapport clair, pas un sticker',
     title: 'Comprendre comment tu tiens — ou pourquoi tu lâches.',
-    lead: 'Situations concrètes, puis un compte-rendu visuel : roue des 4 couleurs, radar, forces, stress, comment te parler. Inspiration libre du modèle DISC (pas un test Wiley certifié) — appliquée à ton agenda et à ton corps.',
+    lead: 'Situations concrètes, puis un rapport avec graphiques + texte + témoignages. Quatre profils simples (D · E · A · M). Pas un test officiel.',
     start: 'Commencer',
     questions: 'situations',
-    stripTitle: 'Les 4 couleurs du rapport',
-    stripLead: 'Directe · Envolée · Ancrée · Méthode — chacune a sa teinte. Ton mix apparaît à la fin.',
-    proof: 'Cours & coach réels FitMangas',
+    stripTitle: 'Les 4 profils',
+    stripLead: 'Une lettre = un mot clair. Ton mix apparaît à la fin.',
+    proof: 'Elles ne s’entraînent plus seules',
   },
   es: {
-    eyebrow: '5 evaluaciones · un informe gráfico, no una etiqueta',
+    eyebrow: '5 evaluaciones · un informe claro, no una etiqueta',
     title: 'Entender cómo te sostienes — o por qué sueltas.',
-    lead: 'Situaciones concretas, luego un informe visual: rueda de 4 colores, radar, fuerzas, estrés, cómo hablarte. Inspiración libre del modelo DISC (no es un test Wiley certificado) — aplicada a tu agenda y a tu cuerpo.',
+    lead: 'Situaciones concretas, luego un informe con gráficos + texto + testimonios. Cuatro perfiles simples (D · E · A · M). No es un test oficial.',
     start: 'Empezar',
     questions: 'situaciones',
-    stripTitle: 'Los 4 colores del informe',
-    stripLead: 'Directa · Volada · Anclada · Método — cada una tiene su tono. Tu mix aparece al final.',
-    proof: 'Clases y coach reales FitMangas',
+    stripTitle: 'Los 4 perfiles',
+    stripLead: 'Una letra = una palabra clara. Tu mix aparece al final.',
+    proof: 'Ya no entrenan solas',
   },
 } as const;
+
+const terracottaCta =
+  'inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition group-hover:bg-[#c45d3e] group-hover:text-white group-hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]';
 
 export function QuizHub({ locale }: Props) {
   const t = COPY[locale];
   const quizBase = locale === 'es' ? '/es/quiz' : '/quiz';
-  const marquee = [...QUIZ_PROOF_IMAGES.slice(0, 6), ...QUIZ_PROOF_IMAGES.slice(0, 6)];
+  const marquee = [...QUIZ_PROOF_MIX, ...QUIZ_PROOF_MIX];
 
   return (
     <QuizShell locale={locale}>
       <section className="mx-auto max-w-5xl px-5 pb-8 pt-12 sm:pt-16">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">{t.eyebrow}</p>
-        <h1
-          className="mt-4 max-w-3xl text-[2.1rem] leading-[1.12] tracking-tight text-[#2C241E] sm:text-[2.65rem]"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600 }}
-        >
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c45d3e]">{t.eyebrow}</p>
+        <h1 className="mt-4 max-w-3xl font-serif text-[2.1rem] italic leading-[1.12] tracking-tight text-brand-ink sm:text-[2.65rem]">
           {t.title}
         </h1>
-        <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-[#2C241E]/65">{t.lead}</p>
+        <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-brand-ink/60">{t.lead}</p>
       </section>
 
-      {/* Marquee preuve — densité monteur-ia, photos biblio */}
-      <div className="quiz-no-print relative mb-10 overflow-hidden border-y border-[#2C241E]/10 bg-[#2C241E]/[0.03] py-4">
-        <p className="mb-3 px-5 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2C241E]/40">
+      {/* Preuve humaine : clientes + coach, pas 100 % Alejandra */}
+      <div className="quiz-no-print relative mb-10 overflow-hidden border-y border-brand-ink/[0.04] bg-white py-5">
+        <p className="mb-4 px-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">
           {t.proof}
         </p>
-        <div className="flex w-max animate-[quizMarquee_42s_linear_infinite] gap-3 px-3">
-          {marquee.map((src, i) => (
+        <div className="flex w-max animate-[quizMarquee_48s_linear_infinite] gap-3 px-3">
+          {marquee.map((item, i) => (
             <div
-              key={`${src}-${i}`}
-              className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl border border-[#2C241E]/10 shadow-[0_18px_40px_-28px_rgba(44,36,30,0.7)] sm:h-36 sm:w-28"
+              key={`${item.src}-${i}`}
+              className="relative h-36 w-[7.5rem] shrink-0 overflow-hidden rounded-[22px] border border-brand-ink/[0.06] shadow-[0_10px_28px_rgba(0,0,0,0.08)] sm:h-40 sm:w-32"
             >
-              <Image src={src} alt="" fill className="object-cover" sizes="112px" />
+              <Image src={item.src} alt={item.name} fill className="object-cover" sizes="128px" />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-2.5 pb-2.5 pt-8">
+                <p className="truncate text-[11px] font-semibold text-white">{item.name}</p>
+                <p className="text-[9px] uppercase tracking-wider text-white/70">
+                  {item.kind === 'client'
+                    ? locale === 'es'
+                      ? 'Mangita'
+                      : 'Mangita'
+                    : 'Coach'}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -76,9 +86,9 @@ export function QuizHub({ locale }: Props) {
       </div>
 
       <section className="mx-auto max-w-5xl px-5 pb-8">
-        <div className="rounded-2xl border border-[#2C241E]/10 bg-white/70 p-5 shadow-[0_28px_60px_-36px_rgba(44,36,30,0.55)] backdrop-blur-sm sm:p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#C45D3E]">{t.stripTitle}</p>
-          <p className="mt-2 text-[14px] text-[#2C241E]/55">{t.stripLead}</p>
+        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.06)] sm:p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.stripTitle}</p>
+          <p className="mt-2 text-[14px] text-brand-ink/55">{t.stripLead}</p>
           <div className="mt-5">
             <DiscColorStrip locale={locale} />
           </div>
@@ -87,39 +97,44 @@ export function QuizHub({ locale }: Props) {
 
       <ol className="mx-auto max-w-5xl space-y-4 px-5 pb-20">
         {QUIZ_CATALOG.map((quiz, i) => {
-          const hero = QUIZ_HERO_BY_SLUG[quiz.slug] ?? QUIZ_PROOF_IMAGES[0];
+          const card = QUIZ_CARD_BY_SLUG[quiz.slug];
           return (
             <li key={quiz.slug}>
               <Link
                 href={`${quizBase}/${quiz.slug}`}
-                className="group grid overflow-hidden rounded-2xl border border-[#2C241E]/10 bg-white/80 shadow-[0_22px_50px_-32px_rgba(44,36,30,0.55)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-[#C45D3E]/35 hover:shadow-[0_28px_60px_-28px_rgba(196,93,62,0.35)] sm:grid-cols-[140px_1fr]"
+                className="group grid overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(196,93,62,0.14)] sm:grid-cols-[150px_1fr]"
               >
-                <div className="relative hidden h-full min-h-[140px] sm:block">
-                  <Image src={hero} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" sizes="140px" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#FFFAF5]/30" />
+                <div className="relative hidden min-h-[160px] sm:block">
+                  {card ? (
+                    <>
+                      <Image src={card.poster} alt={card.name} fill className="object-cover" sizes="150px" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-[12px] font-semibold text-white">{card.name}</p>
+                        <p className="truncate text-[10px] text-white/75">
+                          {locale === 'es' ? card.professionEs : card.professionFr}
+                        </p>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
-                <div className="flex items-start gap-5 p-5 sm:p-6">
-                  <span className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#C45D3E] text-[12px] font-bold text-white shadow-[0_12px_28px_-12px_#C45D3E]">
+                <div className="flex items-start gap-4 p-5 sm:p-6">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-[11px] font-bold text-white shadow-lg">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span
-                        className="text-[1.35rem] tracking-tight text-[#2C241E]"
-                        style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 600 }}
-                      >
+                      <span className="font-serif text-[1.35rem] italic tracking-tight text-brand-ink">
                         {quiz.title[locale]}
                       </span>
-                      <span className="text-[12px] text-[#2C241E]/40">
+                      <span className="text-[12px] text-brand-ink/40">
                         {quiz.questions.length} {t.questions} · {quiz.durationHint[locale]}
                       </span>
                     </span>
-                    <span className="mt-2 block text-[14px] leading-relaxed text-[#2C241E]/60">
+                    <span className="mt-2 block text-[14px] leading-relaxed text-brand-ink/60">
                       {quiz.description[locale]}
                     </span>
-                    <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#C45D3E]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#C45D3E] transition group-hover:bg-[#C45D3E] group-hover:text-white">
-                      {t.start} →
-                    </span>
+                    <span className={`${terracottaCta} mt-4`}>{t.start} →</span>
                   </span>
                 </div>
               </Link>

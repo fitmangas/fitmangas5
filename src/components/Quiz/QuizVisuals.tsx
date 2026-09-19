@@ -3,49 +3,42 @@
 import type { ReactNode } from 'react';
 
 import type { DiscLetter } from '@/lib/quiz/disc-palette';
-import { DISC_LETTER_COLOR, DISC_LETTER_LABEL } from '@/lib/quiz/disc-palette';
+import { DISC_LETTER_COLOR, DISC_LETTER_LABEL, DISC_LETTER_ORDER } from '@/lib/quiz/disc-palette';
 import type { QuizLocale } from '@/lib/quiz/types';
 
 type Slice = { letter: DiscLetter; percent: number; label: string; winner?: boolean };
 
 export function DiscColorStrip({ locale }: { locale: QuizLocale }) {
-  const letters = (['D', 'I', 'S', 'C'] as const).map((letter) => ({
-    letter,
-    color: DISC_LETTER_COLOR[letter],
-    label: DISC_LETTER_LABEL[locale][letter].short,
-  }));
-
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {letters.map((item) => (
-        <div
-          key={item.letter}
-          className="relative overflow-hidden rounded-2xl border border-[#2C241E]/10 bg-white/70 p-4 shadow-[0_18px_40px_-28px_rgba(44,36,30,0.55)] backdrop-blur-sm"
-        >
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {DISC_LETTER_ORDER.map((letter) => {
+        const color = DISC_LETTER_COLOR[letter];
+        const meta = DISC_LETTER_LABEL[locale][letter];
+        return (
           <div
-            className="absolute inset-x-0 top-0 h-1"
-            style={{ background: `linear-gradient(90deg, ${item.color}, transparent)` }}
-          />
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-[1.15rem] font-semibold text-white shadow-lg"
-            style={{
-              background: item.color,
-              boxShadow: `0 12px 28px -12px ${item.color}`,
-            }}
+            key={letter}
+            className="relative overflow-hidden rounded-[24px] border border-brand-ink/[0.06] bg-white p-4 shadow-[0_10px_28px_rgba(0,0,0,0.06)]"
           >
-            {item.letter}
+            <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: color }} />
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-11 w-11 items-center justify-center rounded-2xl text-[1.05rem] font-bold text-white"
+                style={{ background: color, boxShadow: `0 10px 22px -10px ${color}` }}
+              >
+                {letter}
+              </span>
+              <div>
+                <p className="font-serif text-[1.15rem] italic text-brand-ink">{meta.short}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-brand-ink/55">{meta.plain}</p>
+              </div>
+            </div>
           </div>
-          <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#2C241E]/45">
-            {item.letter}
-          </p>
-          <p className="mt-1 text-[15px] font-medium text-[#2C241E]">{item.label}</p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-/** Roue 4 quadrants type DISC — rendu graphique, pas un sticker texte. */
 export function DiscWheel({
   slices,
   size = 220,
@@ -57,12 +50,11 @@ export function DiscWheel({
   const cy = size / 2;
   const r = size * 0.42;
   const angles = [
-    { start: -90, end: 0 }, // D top-right-ish
+    { start: -90, end: 0 },
     { start: 0, end: 90 },
     { start: 90, end: 180 },
     { start: 180, end: 270 },
   ];
-  const order: DiscLetter[] = ['D', 'I', 'S', 'C'];
 
   function polar(deg: number, radius: number) {
     const rad = (deg * Math.PI) / 180;
@@ -87,8 +79,8 @@ export function DiscWheel({
           </feMerge>
         </filter>
       </defs>
-      <circle cx={cx} cy={cy} r={r + 8} fill="#FFFAF5" stroke="rgba(44,36,30,0.08)" />
-      {order.map((letter, i) => {
+      <circle cx={cx} cy={cy} r={r + 8} fill="#faf8f5" stroke="rgba(44,36,30,0.06)" />
+      {DISC_LETTER_ORDER.map((letter, i) => {
         const slice = slices.find((s) => s.letter === letter);
         const { start, end } = angles[i]!;
         const mid = (start + end) / 2;
@@ -100,7 +92,7 @@ export function DiscWheel({
               d={arcPath(start, end, r)}
               fill={DISC_LETTER_COLOR[letter]}
               opacity={winner ? 0.95 : 0.42}
-              stroke="#FFFAF5"
+              stroke="#faf8f5"
               strokeWidth={3}
             />
             <text
@@ -129,23 +121,21 @@ export function DiscWheel({
           </g>
         );
       })}
-      <circle cx={cx} cy={cy} r={r * 0.28} fill="#FFFAF5" stroke="rgba(44,36,30,0.08)" />
-      <text x={cx} y={cy - 4} textAnchor="middle" fill="#2C241E" fontSize={11} fontWeight={700}>
+      <circle cx={cx} cy={cy} r={r * 0.28} fill="#faf8f5" stroke="rgba(44,36,30,0.06)" />
+      <text x={cx} y={cy - 2} textAnchor="middle" fill="#2C241E" fontSize={11} fontWeight={700}>
         MIX
       </text>
       <text x={cx} y={cy + 12} textAnchor="middle" fill="rgba(44,36,30,0.45)" fontSize={10}>
-        4 couleurs
+        4 profils
       </text>
     </svg>
   );
 }
 
-/** Radar 4 axes — graphique de rapport type bilan DISC. */
 export function DiscRadar({ slices, size = 260 }: { slices: Slice[]; size?: number }) {
   const cx = size / 2;
   const cy = size / 2;
   const maxR = size * 0.36;
-  const order: DiscLetter[] = ['D', 'I', 'S', 'C'];
   const angles = [-90, 0, 90, 180];
 
   function pt(letterIndex: number, pct: number) {
@@ -155,13 +145,11 @@ export function DiscRadar({ slices, size = 260 }: { slices: Slice[]; size?: numb
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   }
 
-  const points = order
-    .map((letter, i) => {
-      const slice = slices.find((s) => s.letter === letter);
-      const p = pt(i, slice?.percent ?? 0);
-      return `${p.x},${p.y}`;
-    })
-    .join(' ');
+  const points = DISC_LETTER_ORDER.map((letter, i) => {
+    const slice = slices.find((s) => s.letter === letter);
+    const p = pt(i, slice?.percent ?? 0);
+    return `${p.x},${p.y}`;
+  }).join(' ');
 
   const winner = slices.find((s) => s.winner);
   const stroke = winner ? DISC_LETTER_COLOR[winner.letter] : '#C45D3E';
@@ -177,23 +165,21 @@ export function DiscRadar({ slices, size = 260 }: { slices: Slice[]; size?: numb
       {[0.25, 0.5, 0.75, 1].map((scale) => (
         <polygon
           key={scale}
-          points={order
-            .map((_, i) => {
-              const p = pt(i, scale * 100);
-              return `${p.x},${p.y}`;
-            })
-            .join(' ')}
+          points={DISC_LETTER_ORDER.map((_, i) => {
+            const p = pt(i, scale * 100);
+            return `${p.x},${p.y}`;
+          }).join(' ')}
           fill="none"
-          stroke="rgba(44,36,30,0.12)"
+          stroke="rgba(44,36,30,0.1)"
           strokeWidth={1}
         />
       ))}
-      {order.map((letter, i) => {
+      {DISC_LETTER_ORDER.map((letter, i) => {
         const outer = pt(i, 100);
         const label = pt(i, 118);
         return (
           <g key={letter}>
-            <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(44,36,30,0.12)" />
+            <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(44,36,30,0.1)" />
             <circle cx={outer.x} cy={outer.y} r={4} fill={DISC_LETTER_COLOR[letter]} />
             <text
               x={label.x}
@@ -210,10 +196,12 @@ export function DiscRadar({ slices, size = 260 }: { slices: Slice[]; size?: numb
         );
       })}
       <polygon points={points} fill="url(#radarFill)" stroke={stroke} strokeWidth={2.5} />
-      {order.map((letter, i) => {
+      {DISC_LETTER_ORDER.map((letter, i) => {
         const slice = slices.find((s) => s.letter === letter);
         const p = pt(i, slice?.percent ?? 0);
-        return <circle key={`dot-${letter}`} cx={p.x} cy={p.y} r={5} fill={DISC_LETTER_COLOR[letter]} stroke="#FFFAF5" strokeWidth={2} />;
+        return (
+          <circle key={`dot-${letter}`} cx={p.x} cy={p.y} r={5} fill={DISC_LETTER_COLOR[letter]} stroke="#faf8f5" strokeWidth={2} />
+        );
       })}
     </svg>
   );
@@ -221,24 +209,24 @@ export function DiscRadar({ slices, size = 260 }: { slices: Slice[]; size?: numb
 
 export function MixBars({ slices }: { slices: Slice[] }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {slices.map((slice) => (
-        <div key={slice.letter} className="group">
+        <div key={slice.letter}>
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <span
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[12px] font-bold text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-[12px] font-bold text-white"
                 style={{ background: DISC_LETTER_COLOR[slice.letter] }}
               >
                 {slice.letter}
               </span>
-              <span className={`text-[13px] ${slice.winner ? 'font-semibold text-[#2C241E]' : 'text-[#2C241E]/55'}`}>
-                {slice.label}
+              <span className={`text-[14px] ${slice.winner ? 'font-semibold text-brand-ink' : 'text-brand-ink/55'}`}>
+                {slice.label.replace(/^Profil\s+/i, '')}
               </span>
             </div>
-            <span className="tabular-nums text-[13px] font-semibold text-[#2C241E]/45">{slice.percent}%</span>
+            <span className="tabular-nums text-[13px] font-semibold text-brand-ink/40">{slice.percent}%</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-[#2C241E]/[0.07] ring-1 ring-[#2C241E]/05">
+          <div className="h-2.5 overflow-hidden rounded-full bg-brand-ink/[0.06]">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
@@ -268,19 +256,18 @@ export function ReportCard({
 }) {
   const color = accent || '#C45D3E';
   return (
-    <section className="break-inside-avoid relative overflow-hidden rounded-2xl border border-[#2C241E]/10 bg-white/80 p-5 shadow-[0_22px_50px_-32px_rgba(44,36,30,0.55)] backdrop-blur-sm sm:p-6">
-      <div className="absolute inset-y-0 left-0 w-1.5" style={{ background: color }} />
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-20 blur-2xl" style={{ background: color }} />
+    <section className="break-inside-avoid relative overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.06)] sm:p-6">
+      <div className="absolute inset-y-0 left-0 w-1" style={{ background: color }} />
       <div className="relative flex items-center gap-3">
         {icon ? (
           <span
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-[14px] font-bold text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl text-[14px] font-bold text-white"
             style={{ background: color }}
           >
             {icon}
           </span>
         ) : null}
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color }}>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color }}>
           {title}
         </h2>
       </div>
@@ -296,10 +283,10 @@ export function BulletCards({ items, accent }: { items: string[]; accent?: strin
       {items.map((item, i) => (
         <li
           key={`${i}-${item.slice(0, 28)}`}
-          className="flex gap-3 rounded-xl border border-[#2C241E]/08 bg-[#FFFAF5]/80 px-3.5 py-3 text-[14px] leading-relaxed text-[#2C241E]/85"
+          className="flex gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/40 px-3.5 py-3 text-[14px] leading-relaxed text-brand-ink/85"
         >
           <span
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
+            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
             style={{ background: color }}
           >
             {String(i + 1).padStart(2, '0')}
@@ -308,5 +295,18 @@ export function BulletCards({ items, accent }: { items: string[]; accent?: strin
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Bloc citation / portrait — rompt la série de listes. */
+export function QuoteBlock({ text, accent }: { text: string; accent?: string }) {
+  const color = accent || '#C45D3E';
+  return (
+    <blockquote
+      className="relative overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white px-6 py-7 shadow-[0_10px_28px_rgba(0,0,0,0.06)] sm:px-8"
+      style={{ borderLeftWidth: 4, borderLeftColor: color }}
+    >
+      <p className="font-serif text-[1.25rem] italic leading-snug text-brand-ink sm:text-[1.4rem]">{text}</p>
+    </blockquote>
   );
 }

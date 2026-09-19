@@ -178,9 +178,9 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
   }),
   discReport({
     id: 'jaune',
-    letter: 'I',
+    letter: 'E',
     styleName: t('L’Enthousiaste', 'La Entusiasta'),
-    title: t('Profil Envolée', 'Perfil Impulso'),
+    title: t('Profil Enthousiaste', 'Perfil Entusiasta'),
     tagline: t(
       'Tu démarres avec du feu. Tu lâches quand ça devient gris.',
       'Empiezas con fuego. Sueltas cuando se vuelve gris.',
@@ -342,15 +342,15 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       'El horario con una coach que te ve pone vida en la constancia — sin pedirte que seas una máquina. La prueba 7 días es testear ese combustible.',
     ),
     shareLine: t(
-      'Mon profil de discipline : Envolée (I) — L’Enthousiaste.',
-      'Mi perfil de disciplina: Impulso (I) — La Entusiasta.',
+      'Mon profil de discipline : Enthousiaste (E) — L’Enthousiaste.',
+      'Mi perfil de disciplina: Entusiasta (E) — La Entusiasta.',
     ),
   }),
   discReport({
     id: 'vert',
-    letter: 'S',
+    letter: 'A',
     styleName: t('La Fidèle', 'La Fiel'),
-    title: t('Profil Ancrée', 'Perfil Anclada'),
+    title: t('Profil Assidue', 'Perfil Constante'),
     tagline: t(
       'Tu tiens par le lien. Tu disparais quand tu es seule trop longtemps.',
       'Te sostienes por el vínculo. Desapareces cuando estás sola demasiado tiempo.',
@@ -512,15 +512,15 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       'FitMangas no es « más vídeos ». Es ser esperada, corregida, vista — para no abandonar sola. La prueba 7 días testea ese vínculo, no tu voluntad.',
     ),
     shareLine: t(
-      'Mon profil de discipline : Ancrée (S) — La Fidèle.',
-      'Mi perfil de disciplina: Anclada (S) — La Fiel.',
+      'Mon profil de discipline : Assidue (A) — La Fidèle.',
+      'Mi perfil de disciplina: Constante (A) — La Fiel.',
     ),
   }),
   discReport({
     id: 'bleu',
-    letter: 'C',
+    letter: 'M',
     styleName: t('La Précise', 'La Precisa'),
-    title: t('Profil Méthode', 'Perfil Método'),
+    title: t('Profil Méthodique', 'Perfil Metódica'),
     tagline: t(
       'Tu tiens si c’est clair. Tu bloques si tu doutes de la qualité.',
       'Te sostienes si está claro. Te bloqueas si dudas de la calidad.',
@@ -682,8 +682,8 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       'La corrección en directo en visio es tu palanca: menos duda, más continuidad. La prueba 7 días te deja testear el método — no « lanzarte al feeling ».',
     ),
     shareLine: t(
-      'Mon profil de discipline : Méthode (C) — La Précise.',
-      'Mi perfil de disciplina: Método (C) — La Precisa.',
+      'Mon profil de discipline : Méthodique (M) — La Précise.',
+      'Mi perfil de disciplina: Metódica (M) — La Precisa.',
     ),
   }),
 ];
