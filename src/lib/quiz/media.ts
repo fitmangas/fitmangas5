@@ -60,6 +60,30 @@ export const QUIZ_CARD_BY_SLUG: Record<
   },
 };
 
+/** Petites images d’ambiance par section du rapport (biblio + Unsplash). */
+export const QUIZ_SECTION_IMAGES = {
+  stress: {
+    src: 'https://images.unsplash.com/photo-1541199249251-f712dc791be0?auto=format&fit=crop&w=400&q=80',
+    altFr: 'Moment de tension',
+    altEs: 'Momento de tensión',
+  },
+  forces: {
+    src: '/library/portraits/portrait-03-4x5.webp',
+    altFr: 'Force et présence',
+    altEs: 'Fuerza y presencia',
+  },
+  parler: {
+    src: '/library/coaching-visio/coaching-visio-02-4x5.webp',
+    altFr: 'Échange en cours',
+    altEs: 'Intercambio en clase',
+  },
+  develop: {
+    src: 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=400&q=80',
+    altFr: 'Progression',
+    altEs: 'Progreso',
+  },
+} as const;
+
 /** @deprecated alias */
 export const QUIZ_PROOF_IMAGES = QUIZ_TESTIMONIALS.map((t) => t.posterSrc);
 

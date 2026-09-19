@@ -20,8 +20,8 @@ export const quizProfilDiscipline: QuizDefinition = {
     es: '¿Cuál es tu perfil de disciplina?',
   },
   description: {
-    fr: '12 situations de sport / agenda. Rapport avec graphiques + texte + PDF.',
-    es: '12 situaciones de deporte / agenda. Informe con gráficos + texto + PDF.',
+    fr: '12 situations sport / agenda. Rapport : graphiques, texte et PDF.',
+    es: '12 situaciones deporte / agenda. Informe: gráficos, texto y PDF.',
   },
   durationHint: { fr: '~6 min', es: '~6 min' },
   briefing: lines(

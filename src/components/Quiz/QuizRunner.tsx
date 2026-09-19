@@ -63,27 +63,29 @@ export function QuizRunner({ quiz, locale }: Props) {
     <QuizShell locale={locale}>
       {phase === 'intro' ? (
         <section className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
-          <div className="grid overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="p-6 sm:p-8 lg:p-10">
+          <div className="grid overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="min-w-0 p-6 sm:p-8 lg:p-10">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">
                 {quiz.eyebrow[locale]} · {quiz.durationHint[locale]}
               </p>
-              <h1 className="mt-4 font-serif text-[2.1rem] italic leading-[1.1] tracking-tight text-brand-ink sm:text-[2.55rem]">
+              <h1 className="mt-4 overflow-x-auto font-serif text-[clamp(1.25rem,3.4vw,2.1rem)] italic leading-tight tracking-tight text-brand-ink [text-wrap:nowrap]">
                 {quiz.title[locale]}
               </h1>
-              <p className="mt-4 text-[15px] leading-relaxed text-brand-ink/60">{quiz.description[locale]}</p>
+              <p className="mt-3 overflow-x-auto text-[clamp(12px,1.7vw,15px)] text-brand-ink/60 [text-wrap:nowrap]">
+                {quiz.description[locale]}
+              </p>
 
               {quiz.briefing ? (
-                <ol className="mt-8 space-y-3">
+                <ol className="mt-8 space-y-2.5">
                   {quiz.briefing[locale].map((line, i) => (
                     <li
                       key={i}
-                      className="flex gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/40 px-3.5 py-3 text-[14px] leading-relaxed text-brand-ink/80"
+                      className="flex min-w-0 items-start gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/40 px-3.5 py-2.5 text-[13px] leading-snug text-brand-ink/80"
                     >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-[10px] font-bold text-white">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-[10px] font-bold text-white">
                         {String(i + 1).padStart(2, '0')}
                       </span>
-                      <span>{line}</span>
+                      <span className="min-w-0">{line}</span>
                     </li>
                   ))}
                 </ol>

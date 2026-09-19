@@ -13,7 +13,7 @@ import {
 } from '@/components/Quiz/QuizVisuals';
 import type { DiscLetter } from '@/lib/quiz/disc-palette';
 import { DISC_LETTER_COLOR, DISC_LETTER_LABEL, readMix } from '@/lib/quiz/disc-palette';
-import { QUIZ_CARD_BY_SLUG } from '@/lib/quiz/media';
+import { QUIZ_CARD_BY_SLUG, QUIZ_SECTION_IMAGES } from '@/lib/quiz/media';
 import type { QuizDefinition, QuizLocale, QuizResult, QuizScore } from '@/lib/quiz/types';
 
 type Props = {
@@ -105,11 +105,15 @@ const LABELS = {
 const terracottaCta =
   'inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_26px_rgba(196,93,62,0.28)] transition hover:brightness-110';
 
+/** Liste 01, 02, 03… empilée verticalement — jamais en grille 2 colonnes. */
 function NumberedList({ items, accent }: { items: string[]; accent: string }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="flex flex-col gap-3">
       {items.map((line, i) => (
-        <li key={`${i}-${line.slice(0, 24)}`} className="flex gap-3">
+        <li
+          key={`${i}-${line.slice(0, 24)}`}
+          className="flex gap-3 rounded-2xl border border-brand-ink/[0.05] bg-white/80 px-3.5 py-3 shadow-[0_4px_14px_rgba(0,0,0,0.03)]"
+        >
           <span
             className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
             style={{ background: accent }}
@@ -120,6 +124,20 @@ function NumberedList({ items, accent }: { items: string[]; accent: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function SectionThumb({
+  src,
+  alt,
+}: {
+  src: string;
+  alt: string;
+}) {
+  return (
+    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-brand-ink/[0.06] shadow-[0_6px_16px_rgba(0,0,0,0.08)] sm:h-20 sm:w-20">
+      <Image src={src} alt={alt} fill className="object-cover" sizes="80px" />
+    </div>
   );
 }
 
@@ -172,7 +190,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (visible?.target?.id) setActiveNav(visible.target.id);
       },
-      { rootMargin: '-25% 0px -55% 0px', threshold: [0.12, 0.35] },
+      { rootMargin: '-20% 0px -55% 0px', threshold: [0.12, 0.35] },
     );
     for (const id of ids) {
       const el = document.getElementById(id);
@@ -200,234 +218,212 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
     }
   }
 
-  const navLinkClass = (id: string) =>
-    `inline-flex items-center justify-center rounded-full px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition ${
-      activeNav === id
-        ? 'bg-[#c45d3e] text-white shadow-[0_8px_18px_rgba(196,93,62,0.28)]'
-        : 'text-brand-ink/45 hover:bg-brand-ink/[0.05] hover:text-brand-ink/70'
-    }`;
+  const imgAlt = (key: keyof typeof QUIZ_SECTION_IMAGES) =>
+    locale === 'es' ? QUIZ_SECTION_IMAGES[key].altEs : QUIZ_SECTION_IMAGES[key].altFr;
 
   return (
-    <>
-      {/* Rail fixe desktop — type LMDM, couleurs FitMangas */}
-      <nav
-        className="quiz-no-print quiz-side-nav fixed left-3 top-1/2 z-[60] hidden -translate-y-1/2 flex-col gap-1 rounded-full border border-brand-ink/[0.08] bg-white/95 p-2 shadow-[0_12px_40px_rgba(48,35,28,0.12)] backdrop-blur-md xl:flex"
-        aria-label={locale === 'es' ? 'Secciones' : 'Sections'}
-      >
-        {navItems.map((item) => (
-          <a
-            key={item.id}
-            href={`#${item.id}`}
-            onClick={() => setActiveNav(item.id)}
-            title={item.label}
-            className={`flex h-10 w-10 items-center justify-center rounded-full text-[9px] font-bold uppercase tracking-wider transition ${
-              activeNav === item.id
-                ? 'bg-[#c45d3e] text-white'
-                : 'text-brand-ink/40 hover:bg-brand-beige hover:text-brand-ink/70'
-            }`}
-          >
-            {item.label.slice(0, 3)}
-          </a>
-        ))}
+    <article className="quiz-report mx-auto max-w-5xl px-5 py-10 sm:py-14">
+      {/* Nav sticky en haut, centrée, mots complets */}
+      <nav className="quiz-no-print sticky top-[52px] z-40 mb-8">
+        <ul className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-1 rounded-full border border-brand-ink/[0.06] bg-white/95 px-2 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md">
+          {navItems.map((item) => (
+            <li key={item.id}>
+              <a
+                href={`#${item.id}`}
+                onClick={() => setActiveNav(item.id)}
+                className={`inline-flex whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition sm:px-4 ${
+                  activeNav === item.id
+                    ? 'bg-[#c45d3e] text-white shadow-[0_8px_18px_rgba(196,93,62,0.28)]'
+                    : 'text-brand-ink/45 hover:bg-brand-ink/[0.05] hover:text-brand-ink/70'
+                }`}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
       </nav>
 
-      <article className="quiz-report mx-auto max-w-5xl px-5 py-10 sm:py-14 xl:pl-8">
-        {/* Barre sticky mobile / tablette — suit le scroll */}
-        <nav className="quiz-no-print sticky top-[52px] z-40 mb-6 rounded-full border border-brand-ink/[0.06] bg-white/95 px-2 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md xl:hidden">
-          <ul className="flex gap-1 overflow-x-auto">
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  onClick={() => setActiveNav(item.id)}
-                  className={navLinkClass(item.id)}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Hero */}
-        <div className="relative grid overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] lg:grid-cols-[1.15fr_0.85fr]">
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 20% 20%, ${accent}, transparent 45%), radial-gradient(circle at 80% 80%, ${accent}, transparent 40%)`,
-            }}
-          />
-          <div className="relative p-6 sm:p-8">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">
-              {t.report} · {quiz.title[locale]}
-            </p>
-            <div className="mt-5 flex flex-wrap items-end gap-4">
-              {letter ? (
-                <span
-                  className="flex h-16 w-16 items-center justify-center rounded-[20px] text-[1.75rem] font-bold text-white"
-                  style={{ background: accent, boxShadow: `0 14px 28px -12px ${accent}` }}
-                >
-                  {letter}
-                </span>
-              ) : null}
-              <div>
-                {result.styleName ? (
-                  <p className="text-[12px] font-medium text-brand-ink/50">{result.styleName[locale]}</p>
-                ) : null}
-                <h1 className="font-serif text-[2.1rem] italic leading-[1.08] tracking-tight text-brand-ink sm:text-[2.5rem]">
-                  {result.title[locale].replace(/^Profil\s+/i, '')}
-                </h1>
-              </div>
-            </div>
-            <p className="mt-3 text-[16px] leading-snug text-brand-ink/70">{result.tagline[locale]}</p>
-            {plain ? <p className="mt-2 text-[13px] text-brand-ink/45">{plain}</p> : null}
-
-            {mixReading ? (
-              <div className="mt-5 border-l-4 pl-4" style={{ borderColor: accent }}>
-                <p className="text-[13px] font-semibold text-brand-ink">{mixReading.headline[locale]}</p>
-                <p className="mt-1 text-[12px] leading-relaxed text-brand-ink/55">{mixReading.detail[locale]}</p>
-              </div>
-            ) : null}
-
-            <div className="mt-4 flex flex-wrap gap-2">
+      {/* Hero */}
+      <div className="relative grid overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] lg:grid-cols-[1.15fr_0.85fr]">
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 20%, ${accent}, transparent 45%), radial-gradient(circle at 80% 80%, ${accent}, transparent 40%)`,
+          }}
+        />
+        <div className="relative min-w-0 p-6 sm:p-8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">{t.report}</p>
+          <div className="mt-5 flex flex-wrap items-end gap-4">
+            {letter ? (
               <span
-                className="rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white"
-                style={{ background: accent }}
+                className="flex h-16 w-16 items-center justify-center rounded-[20px] text-[1.75rem] font-bold text-white"
+                style={{ background: accent, boxShadow: `0 14px 28px -12px ${accent}` }}
               >
-                {locale === 'es' ? '1.ª' : '1re'} {primaryPct}%
+                {letter}
               </span>
-              {secondary ? (
-                <span className="rounded-full border border-brand-ink/10 bg-brand-beige/60 px-3 py-1.5 text-[10px] font-medium text-brand-ink/55">
-                  {t.secondary} · {(secondary.styleName?.[locale] ?? secondary.title[locale]).replace(/^Profil\s+/i, '')} (
-                  {secondaryPct}%)
-                </span>
+            ) : null}
+            <div className="min-w-0">
+              {result.styleName ? (
+                <p className="text-[12px] font-medium text-brand-ink/50">{result.styleName[locale]}</p>
               ) : null}
+              <h1 className="font-serif text-[2rem] italic leading-[1.08] tracking-tight text-brand-ink sm:text-[2.4rem]">
+                {result.title[locale].replace(/^Profil\s+/i, '')}
+              </h1>
             </div>
-            <p className="mt-3 text-[12px] font-medium text-[#c45d3e]">{t.not100}</p>
           </div>
-          {card ? (
-            <div className="relative hidden min-h-[280px] lg:block">
-              <Image src={card.image} alt="" fill className="object-cover" sizes="380px" />
-              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/5 to-white" />
+          <p className="mt-3 text-[16px] leading-snug text-brand-ink/70">{result.tagline[locale]}</p>
+          {plain ? <p className="mt-2 text-[13px] text-brand-ink/45">{plain}</p> : null}
+
+          {mixReading ? (
+            <div className="mt-5 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/50 px-4 py-3">
+              <p className="text-[13px] font-semibold text-brand-ink">{mixReading.headline[locale]}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-brand-ink/55">{mixReading.detail[locale]}</p>
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span
+              className="rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white"
+              style={{ background: accent }}
+            >
+              {locale === 'es' ? '1.ª' : '1re'} {primaryPct}%
+            </span>
+            {secondary ? (
+              <span className="rounded-full border border-brand-ink/10 bg-white px-3 py-1.5 text-[10px] font-medium text-brand-ink/55">
+                {t.secondary} · {(secondary.styleName?.[locale] ?? secondary.title[locale]).replace(/^Profil\s+/i, '')} (
+                {secondaryPct}%)
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-3 text-[12px] font-medium text-[#c45d3e]">{t.not100}</p>
+        </div>
+        {card ? (
+          <div className="relative hidden min-h-[280px] lg:block">
+            <Image src={card.image} alt="" fill className="object-cover" sizes="380px" />
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/5 to-white" />
+          </div>
+        ) : null}
+      </div>
+
+      {quiz.discLike ? (
+        <p className="mt-4 text-[12px] leading-relaxed text-brand-ink/40">{t.discNote}</p>
+      ) : null}
+
+      {/* MIX — graphiques dans des cartes */}
+      <section id="mix" className="scroll-mt-28 mt-10">
+        {slices.length >= 4 ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.wheel}</p>
+              <div className="mt-3">
+                <DiscWheel slices={slices} size={240} />
+              </div>
+            </div>
+            <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.radar}</p>
+              <div className="mt-3">
+                <DiscRadar slices={slices} size={260} />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/40">{t.mix}</p>
+            <div className="mt-4">
+              <MixBars slices={slices} />
+            </div>
+          </div>
+          {quiz.discLike && slices.length >= 4 ? (
+            <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)]">
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.axes}</p>
+              <p className="mt-2 text-center text-[11px] text-brand-ink/45">{t.axesHint}</p>
+              <MixAxesMap slices={slices} locale={locale} size={260} />
             </div>
           ) : null}
         </div>
 
         {quiz.discLike ? (
-          <p className="mt-5 text-[12px] leading-relaxed text-brand-ink/40">{t.discNote}</p>
+          <p className="mt-8 max-w-2xl font-serif text-[1.15rem] italic leading-snug text-brand-ink/65">{t.env}</p>
         ) : null}
+      </section>
 
-        {/* MIX */}
-        <section id="mix" className="scroll-mt-28 mt-10">
-          {slices.length >= 4 ? (
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.wheel}</p>
-                <div className="mt-3 rounded-[28px] bg-white/70 p-4">
-                  <DiscWheel slices={slices} size={240} />
-                </div>
-              </div>
-              <div>
-                <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.radar}</p>
-                <div className="mt-3 rounded-[28px] bg-white/70 p-4">
-                  <DiscRadar slices={slices} size={260} />
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-8 grid gap-8 lg:grid-cols-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/40">{t.mix}</p>
-              <div className="mt-4">
-                <MixBars slices={slices} />
-              </div>
-            </div>
-            {quiz.discLike && slices.length >= 4 ? (
-              <div>
-                <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.axes}</p>
-                <p className="mt-2 text-center text-[11px] text-brand-ink/45">{t.axesHint}</p>
-                <MixAxesMap slices={slices} locale={locale} size={260} />
-              </div>
-            ) : null}
-          </div>
-
-          {quiz.discLike ? (
-            <p className="mt-8 max-w-2xl font-serif text-[1.15rem] italic leading-snug text-brand-ink/65">{t.env}</p>
-          ) : null}
-        </section>
-
-        {/* PORTRAIT — un seul bloc, pas 3 encadrés */}
-        <section id="portrait" className="scroll-mt-28 mt-14">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.portrait}</p>
-          <blockquote
-            className="mt-4 border-l-4 pl-5 font-serif text-[1.35rem] italic leading-snug text-brand-ink sm:text-[1.5rem]"
-            style={{ borderColor: accent }}
-          >
-            {report.portrait[locale][0]}
-          </blockquote>
-          <div className="mt-6 max-w-3xl space-y-4">
-            {report.portrait[locale].slice(1).map((p) => (
-              <p key={p.slice(0, 40)} className="text-[15px] leading-[1.8] text-brand-ink/75">
-                {p}
-              </p>
-            ))}
-          </div>
-          <p className="mt-10 text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.how}</p>
+      {/* PORTRAIT — texte sur fond + un encadré pour le « comment » */}
+      <section id="portrait" className="scroll-mt-28 mt-14">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.portrait}</p>
+        <blockquote
+          className="mt-4 border-l-4 pl-5 font-serif text-[1.3rem] italic leading-snug text-brand-ink sm:text-[1.45rem]"
+          style={{ borderColor: accent }}
+        >
+          {report.portrait[locale][0]}
+        </blockquote>
+        <div className="mt-6 max-w-3xl space-y-4">
+          {report.portrait[locale].slice(1).map((p) => (
+            <p key={p.slice(0, 40)} className="text-[15px] leading-[1.8] text-brand-ink/75">
+              {p}
+            </p>
+          ))}
+        </div>
+        <div className="mt-8 rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.how}</p>
           <div className="mt-4">
             <NumberedList items={report.howYouWork[locale]} accent={accent} />
           </div>
-        </section>
-
-        {/* FORCES */}
-        <section id="forces" className="scroll-mt-28 mt-14 grid gap-10 sm:grid-cols-2">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.strengths}</p>
-            <div className="mt-4">
-              <NumberedList items={report.strengths[locale]} accent="#6B8F71" />
-            </div>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.limits}</p>
-            <div className="mt-4">
-              <NumberedList items={report.limits[locale]} accent="#5B7C8D" />
-            </div>
-          </div>
-        </section>
-
-        <div className="mt-14">
-          <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
         </div>
+      </section>
 
-        {/* STRESS — 01…N harmonisés */}
-        <section id="stress" className="scroll-mt-28 mt-14">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.stress}</p>
-          <div className="mt-5">
-            <NumberedList items={report.underStress[locale]} accent="#C45D3E" />
+      {/* FORCES / LIMITES — 2 encadrés, listes verticales */}
+      <section id="forces" className="scroll-mt-28 mt-10 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <SectionThumb src={QUIZ_SECTION_IMAGES.forces.src} alt={imgAlt('forces')} />
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.strengths}</p>
           </div>
-          <div className="mt-10 grid gap-10 sm:grid-cols-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A227]">{t.fears}</p>
-              <div className="mt-4">
-                <NumberedList items={report.fears[locale]} accent="#C9A227" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: accent }}>
-                {t.needs}
-              </p>
-              <div className="mt-4">
-                <NumberedList items={report.needs[locale]} accent={accent} />
-              </div>
-            </div>
-          </div>
-        </section>
+          <NumberedList items={report.strengths[locale]} accent="#6B8F71" />
+        </div>
+        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.limits}</p>
+          <NumberedList items={report.limits[locale]} accent="#5B7C8D" />
+        </div>
+      </section>
 
-        {/* PARLER */}
-        <section id="parler" className="scroll-mt-28 mt-14 grid gap-10 lg:grid-cols-2">
-          <div>
+      {/* STRESS + image */}
+      <section id="stress" className="scroll-mt-28 mt-10">
+        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <SectionThumb src={QUIZ_SECTION_IMAGES.stress.src} alt={imgAlt('stress')} />
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.stress}</p>
+          </div>
+          <NumberedList items={report.underStress[locale]} accent="#C45D3E" />
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A227]">{t.fears}</p>
+            <NumberedList items={report.fears[locale]} accent="#C9A227" />
+          </div>
+          <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: accent }}>
+              {t.needs}
+            </p>
+            <NumberedList items={report.needs[locale]} accent={accent} />
+          </div>
+        </div>
+      </section>
+
+      {/* PARLER */}
+      <section id="parler" className="scroll-mt-28 mt-10">
+        <div className="mb-4 flex items-center gap-3">
+          <SectionThumb src={QUIZ_SECTION_IMAGES.parler.src} alt={imgAlt('parler')} />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/50">
+            {locale === 'es' ? 'Comunicación' : 'Communication'}
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.talk}</p>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 flex flex-col gap-3">
               {report.howToTalk[locale].map((line) => (
                 <li key={line} className="border-l-2 border-[#6B8F71]/50 pl-3 text-[14px] leading-relaxed text-brand-ink/80">
                   {line}
@@ -435,9 +431,9 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
               ))}
             </ul>
           </div>
-          <div>
+          <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.notalk}</p>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 flex flex-col gap-3">
               {report.howNotToTalk[locale].map((line) => (
                 <li key={line} className="border-l-2 border-[#c45d3e]/50 pl-3 text-[14px] leading-relaxed text-brand-ink/80">
                   {line}
@@ -445,51 +441,57 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
               ))}
             </ul>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <div className="mt-10">
+      <div className="mt-10 rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <SectionThumb src={QUIZ_SECTION_IMAGES.develop.src} alt={imgAlt('develop')} />
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.develop}</p>
-          <div className="mt-4">
-            <NumberedList items={report.develop[locale]} accent="#5B7C8D" />
-          </div>
         </div>
+        <NumberedList items={report.develop[locale]} accent="#5B7C8D" />
+      </div>
 
-        {/* SUITE */}
-        <section id="suite" className="scroll-mt-28 mt-14 grid items-center gap-6 sm:grid-cols-[1fr_200px]">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.bridge}</p>
-            <p className="mt-4 text-[15px] leading-[1.75] text-brand-ink/80">{result.bridge[locale]}</p>
-          </div>
-          {card ? (
-            <div className="relative hidden aspect-[4/5] overflow-hidden rounded-[24px] sm:block">
-              <Image src={card.image} alt="" fill className="object-cover" sizes="200px" />
-            </div>
-          ) : null}
-        </section>
-
-        <div className="quiz-no-print mt-10 flex flex-wrap gap-3 pb-16">
-          <button
-            type="button"
-            onClick={savePdf}
-            className="inline-flex items-center justify-center rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
-          >
-            {t.pdf}
-          </button>
-          <button
-            type="button"
-            onClick={share}
-            className="inline-flex items-center justify-center rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
-          >
-            {t.share}
-          </button>
-          <a href={trialHref} className={terracottaCta}>
-            {quiz.cta[locale]}
-          </a>
-          <Link href={hubHref} className="inline-flex items-center px-2 py-3 text-[13px] text-brand-ink/45 hover:text-[#c45d3e]">
-            {t.other}
-          </Link>
+      {/* SUITE + témoignages juste avant CTA */}
+      <section id="suite" className="scroll-mt-28 mt-12">
+        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-6 shadow-[0_10px_28px_rgba(0,0,0,0.05)] sm:p-8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.bridge}</p>
+          <p className="mt-4 text-[15px] leading-[1.75] text-brand-ink/80">{result.bridge[locale]}</p>
         </div>
-      </article>
-    </>
+      </section>
+
+      <div className="mt-10">
+        <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
+      </div>
+
+      {card ? (
+        <div className="relative mx-auto mt-8 hidden h-44 max-w-sm overflow-hidden rounded-[24px] sm:block">
+          <Image src={card.image} alt="" fill className="object-cover" sizes="380px" />
+        </div>
+      ) : null}
+
+      <div className="quiz-no-print mt-8 flex flex-wrap justify-center gap-3 pb-16">
+        <button
+          type="button"
+          onClick={savePdf}
+          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
+        >
+          {t.pdf}
+        </button>
+        <button
+          type="button"
+          onClick={share}
+          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
+        >
+          {t.share}
+        </button>
+        <a href={trialHref} className={terracottaCta}>
+          {quiz.cta[locale]}
+        </a>
+        <Link href={hubHref} className="inline-flex items-center px-2 py-3 text-[13px] text-brand-ink/45 hover:text-[#c45d3e]">
+          {t.other}
+        </Link>
+      </div>
+    </article>
   );
 }
