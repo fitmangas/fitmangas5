@@ -120,26 +120,20 @@ export function QuizChapterShell({
   const resetScroll = useCallback(() => {
     const run = () => {
       window.scrollTo(0, 0);
-      viewportRef.current?.scrollTo(0, 0);
-      const id = steps[safeIndex]?.id;
-      if (id) stepRefs.current[id]?.scrollTo(0, 0);
+      viewportRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
     requestAnimationFrame(() => requestAnimationFrame(run));
-  }, [safeIndex, steps]);
+  }, []);
 
   useEffect(() => {
     setAnimKey((k) => k + 1);
     resetScroll();
-    const label = steps[safeIndex]?.label;
-    if (label) {
-      // Annonce discrète ; focus sur le titre de l’étape si présent.
-      const heading = document.querySelector<HTMLElement>(
-        `[data-chapter-id="${steps[safeIndex]?.id}"] [data-chapter-heading]`,
-      );
-      heading?.focus({ preventScroll: true });
-    }
+    const heading = document.querySelector<HTMLElement>(
+      `[data-chapter-id="${steps[safeIndex]?.id}"] [data-chapter-heading]`,
+    );
+    heading?.focus({ preventScroll: true });
   }, [safeIndex, steps, resetScroll]);
 
   const goTo = useCallback(
@@ -274,14 +268,6 @@ export function QuizChapterShell({
               data-active="true"
               data-anim={reducedMotion ? 'off' : 'on'}
               data-chapter-id={step.id}
-              style={{
-                display: 'block',
-                height: '100%',
-                maxHeight: '100%',
-                overflowY: 'auto',
-                overscrollBehavior: 'contain',
-                WebkitOverflowScrolling: 'touch',
-              }}
             >
               <div className="quiz-chapter-step-inner">
                 {step.hideChrome ? (
