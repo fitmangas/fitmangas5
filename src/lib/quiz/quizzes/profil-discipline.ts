@@ -16,8 +16,8 @@ export const quizProfilDiscipline: QuizDefinition = {
   discLike: true,
   eyebrow: { fr: 'Évaluation · 12 situations', es: 'Evaluación · 12 situaciones' },
   title: {
-    fr: 'Ton profil de discipline',
-    es: 'Tu perfil de disciplina',
+    fr: 'Quel est ton profil de discipline ?',
+    es: '¿Cuál es tu perfil de disciplina?',
   },
   description: {
     fr: '12 situations de sport / agenda. Rapport avec graphiques + texte + PDF.',

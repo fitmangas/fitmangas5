@@ -7,12 +7,12 @@ export const quizEnergieJournee: QuizDefinition = {
   accent: '#C9A227',
   eyebrow: { fr: 'Évaluation · 8 situations', es: 'Evaluación · 8 situaciones' },
   title: {
-    fr: 'Ton style d’énergie dans la journée',
-    es: 'Tu estilo de energía en el día',
+    fr: 'Comment tu gères ton énergie dans la journée ?',
+    es: '¿Cómo gestionas tu energía en el día?',
   },
   description: {
-    fr: 'Pas « tu te lèves tôt donc profil 1 ». Une carte de carburant : où tu décides encore, où tu négocies, où le système nerveux coupe. Rapport + PDF à la fin.',
-    es: 'No es « te levantas temprano luego perfil 1 ». Un mapa de combustible: dónde aún decides, dónde negocias, dónde el sistema nervioso corta. Informe + PDF al final.',
+    fr: 'Où tu décides encore, où tu négocies, où tu coupes. Rapport + PDF.',
+    es: 'Dónde aún decides, dónde negocias, dónde cortas. Informe + PDF.',
   },
   durationHint: { fr: '~4 min', es: '~4 min' },
   cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },

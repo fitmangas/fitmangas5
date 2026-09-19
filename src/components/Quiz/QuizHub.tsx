@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { DiscColorStrip } from '@/components/Quiz/QuizVisuals';
@@ -15,7 +16,7 @@ const COPY = {
   fr: {
     eyebrow: '5 tests courts · un rapport sur toi',
     title: 'Comment tu réagis face à l’entraînement.',
-    lead: 'Tu réponds à des situations simples. À la fin : ton mix en 4 couleurs, des graphiques, et un texte clair. Pas un sticker. Pas un test officiel.',
+    lead: 'Tu réponds à des situations simples. À la fin : ton mix en 4 couleurs, des graphiques, et un texte clair.',
     start: 'Commencer',
     questions: 'situations',
     stripTitle: 'Les 4 profils',
@@ -26,7 +27,7 @@ const COPY = {
   es: {
     eyebrow: '5 tests cortos · un informe sobre ti',
     title: 'Cómo reaccionas frente al entrenamiento.',
-    lead: 'Respondes a situaciones simples. Al final: tu mix en 4 colores, gráficos y un texto claro. No una etiqueta. No un test oficial.',
+    lead: 'Respondes a situaciones simples. Al final: tu mix en 4 colores, gráficos y un texto claro.',
     start: 'Empezar',
     questions: 'situaciones',
     stripTitle: 'Los 4 perfiles',
@@ -53,59 +54,34 @@ export function QuizHub({ locale }: Props) {
         <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-brand-ink/60">{t.lead}</p>
       </section>
 
-      <div className="border-y border-brand-ink/[0.04] bg-white/60">
-        <QuizVideoProof locale={locale} title={t.proof} subtitle={t.proofSub} />
-      </div>
+      <QuizVideoProof locale={locale} title={t.proof} subtitle={t.proofSub} />
 
       <section className="mx-auto max-w-5xl px-5 py-10">
-        <div className="rounded-[28px] border border-brand-ink/[0.06] bg-white p-5 shadow-[0_10px_28px_rgba(0,0,0,0.06)] sm:p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.stripTitle}</p>
-          <p className="mt-2 text-[14px] text-brand-ink/55">{t.stripLead}</p>
-          <div className="mt-5">
-            <DiscColorStrip locale={locale} />
-          </div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.stripTitle}</p>
+        <p className="mt-2 text-[14px] text-brand-ink/55">{t.stripLead}</p>
+        <div className="mt-5">
+          <DiscColorStrip locale={locale} />
         </div>
       </section>
 
-      <ol className="mx-auto max-w-5xl space-y-4 px-5 pb-20">
+      <ol className="mx-auto max-w-5xl space-y-5 px-5 pb-20">
         {QUIZ_CATALOG.map((quiz, i) => {
           const card = QUIZ_CARD_BY_SLUG[quiz.slug];
           return (
             <li key={quiz.slug}>
               <Link
                 href={`${quizBase}/${quiz.slug}`}
-                className="group grid overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(196,93,62,0.14)] sm:grid-cols-[150px_1fr]"
+                className="group grid items-stretch gap-0 overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/80 shadow-[0_10px_28px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(196,93,62,0.14)] sm:grid-cols-[140px_1fr]"
               >
-                <div className="relative hidden min-h-[160px] sm:block">
+                <div className="relative hidden min-h-[148px] sm:block">
                   {card ? (
-                    <>
-                      <video
-                        className="absolute inset-0 h-full w-full object-cover"
-                        poster={card.poster}
-                        src={card.video}
-                        muted
-                        playsInline
-                        loop
-                        preload="metadata"
-                        onMouseEnter={(e) => {
-                          void e.currentTarget.play().catch(() => undefined);
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.pause();
-                          e.currentTarget.currentTime = 0;
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-                      <div className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
-                        <span className="ml-0.5 text-[10px]">▶</span>
-                      </div>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <p className="text-[12px] font-semibold text-white">{card.name}</p>
-                        <p className="truncate text-[10px] text-white/75">
-                          {locale === 'es' ? card.professionEs : card.professionFr}
-                        </p>
-                      </div>
-                    </>
+                    <Image
+                      src={card.image}
+                      alt={card.captionFr}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                      sizes="140px"
+                    />
                   ) : null}
                 </div>
                 <div className="flex items-start gap-4 p-5 sm:p-6">
@@ -113,13 +89,11 @@ export function QuizHub({ locale }: Props) {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="font-serif text-[1.35rem] italic tracking-tight text-brand-ink">
-                        {quiz.title[locale]}
-                      </span>
-                      <span className="text-[12px] text-brand-ink/40">
-                        {quiz.questions.length} {t.questions} · {quiz.durationHint[locale]}
-                      </span>
+                    <span className="font-serif text-[1.25rem] italic leading-snug tracking-tight text-brand-ink sm:text-[1.4rem]">
+                      {quiz.title[locale]}
+                    </span>
+                    <span className="mt-1 block text-[12px] text-brand-ink/40">
+                      {quiz.questions.length} {t.questions} · {quiz.durationHint[locale]}
                     </span>
                     <span className="mt-2 block text-[14px] leading-relaxed text-brand-ink/60">
                       {quiz.description[locale]}

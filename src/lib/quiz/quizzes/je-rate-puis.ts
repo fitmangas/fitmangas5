@@ -6,12 +6,12 @@ export const quizJeRatePuis: QuizDefinition = {
   accent: '#C45D3E',
   eyebrow: { fr: 'Archétype · 7 questions', es: 'Arquetipo · 7 preguntas' },
   title: {
-    fr: 'Ton archétype « je rate puis… »',
-    es: 'Tu arquetipo « fallo y luego… »',
+    fr: 'Que fais-tu juste après avoir raté ?',
+    es: '¿Qué haces justo después de fallar?',
   },
   description: {
-    fr: 'Culpabilité, disparition, surcompensation… Le pattern après l’échec en dit plus long que l’échec lui-même.',
-    es: 'Culpa, desaparición, sobrecompensación… El patrón después del fallo dice más que el fallo mismo.',
+    fr: 'Culpabilité, disparition, surcompensation… Ce que tu fais après en dit plus que l’échec.',
+    es: 'Culpa, desaparición, sobrecompensación… Lo que haces después dice más que el fallo.',
   },
   durationHint: { fr: '~2 min', es: '~2 min' },
   cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },

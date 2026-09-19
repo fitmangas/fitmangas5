@@ -6,12 +6,12 @@ export const quizSeuleFaceAuTapis: QuizDefinition = {
   accent: '#8B9B7A',
   eyebrow: { fr: 'Mode relationnel · 7 questions', es: 'Modo relacional · 7 preguntas' },
   title: {
-    fr: 'Ton mode « seule face au tapis »',
-    es: 'Tu modo « sola frente al tapete »',
+    fr: 'Comment tu te comportes seule face au tapis ?',
+    es: '¿Cómo te comportas sola frente al tapete?',
   },
   description: {
-    fr: 'Comment tu te traites quand personne ne te voit. Pas un jugement — une carte pour comprendre pourquoi tu tiens… ou tu disparais.',
-    es: 'Cómo te tratas cuando nadie te ve. No es un juicio — un mapa para entender por qué te sostienes… o desapareces.',
+    fr: 'Quand personne ne te voit : pourquoi tu tiens… ou tu disparais.',
+    es: 'Cuando nadie te ve: por qué te sostienes… o desapareces.',
   },
   durationHint: { fr: '~2 min', es: '~2 min' },
   cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },

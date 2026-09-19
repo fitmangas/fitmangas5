@@ -17,7 +17,7 @@ export function QuizShell({ locale, children }: Props) {
 
   return (
     <div
-      className="quiz-doc relative min-h-screen overflow-x-hidden text-brand-ink font-sans selection:bg-[#c45d3e]/20"
+      className="quiz-doc relative min-h-screen text-brand-ink font-sans selection:bg-[#c45d3e]/20"
       style={{
         backgroundColor: '#f6f3ed',
         backgroundImage:
@@ -46,6 +46,7 @@ export function QuizShell({ locale, children }: Props) {
           .quiz-no-print { display: none !important; }
           .quiz-doc { background: #fff !important; }
           .quiz-report { max-width: none !important; padding: 0 !important; }
+          .quiz-side-nav { display: none !important; }
         }
       `}</style>
     </div>

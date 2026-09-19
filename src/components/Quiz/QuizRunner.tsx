@@ -100,12 +100,11 @@ export function QuizRunner({ quiz, locale }: Props) {
             </div>
             {card ? (
               <div className="relative hidden min-h-[320px] lg:block">
-                <Image src={card.poster} alt={card.name} fill className="object-cover" sizes="420px" priority />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+                <Image src={card.image} alt={card.captionFr} fill className="object-cover" sizes="420px" priority />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/92 px-4 py-3 backdrop-blur-sm">
-                  <p className="text-[13px] font-semibold text-brand-ink">{card.name}</p>
-                  <p className="text-[11px] text-brand-ink/50">
-                    {locale === 'es' ? card.professionEs : card.professionFr}
+                  <p className="text-[13px] font-semibold text-brand-ink">
+                    {locale === 'es' ? card.captionEs : card.captionFr}
                   </p>
                 </div>
               </div>

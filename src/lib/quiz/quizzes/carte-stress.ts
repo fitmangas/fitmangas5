@@ -6,12 +6,12 @@ export const quizCarteStress: QuizDefinition = {
   accent: '#7A9EAE',
   eyebrow: { fr: 'Corps · 7 questions', es: 'Cuerpo · 7 preguntas' },
   title: {
-    fr: 'Ta carte du stress dans le corps',
-    es: 'Tu mapa del estrés en el cuerpo',
+    fr: 'Quel est ton profil face au stress ?',
+    es: '¿Cuál es tu perfil frente al estrés?',
   },
   description: {
-    fr: 'Où ça bloque vraiment : mâchoire, ventre, dos… Pas un diagnostic médical — une lecture sensible pour savoir ce dont ton système a besoin.',
-    es: 'Dónde se bloquea de verdad: mandíbula, vientre, espalda… No es un diagnóstico médico — una lectura sensible de lo que necesita tu sistema.',
+    fr: 'Où ça bloque : mâchoire, ventre, dos… Pas un diagnostic médical.',
+    es: 'Dónde se bloquea: mandíbula, vientre, espalda… No es un diagnóstico médico.',
   },
   durationHint: { fr: '~2 min', es: '~2 min' },
   cta: { fr: 'Tester le cadre 7 jours', es: 'Probar el marco 7 días' },
