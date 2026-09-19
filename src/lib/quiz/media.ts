@@ -59,32 +59,38 @@ export const QUIZ_CARD_BY_SLUG: Record<
   },
 };
 
-/** Bannières section rapport — assez larges pour porter le sens (pas des timbres). */
+/** Bannières section rapport — biblio locale uniquement (pas d’Unsplash fragile). */
 export const QUIZ_SECTION_IMAGES = {
   stress: {
-    src: 'https://images.unsplash.com/photo-1541199249251-f712dc791be0?auto=format&fit=crop&w=1200&q=80',
+    src: '/library/renfo-core/renfo-core-07-4x5.webp',
     altFr: 'Moment de tension',
     altEs: 'Momento de tensión',
+    /** Cadrage haut : visage / buste visibles dans une bande large. */
+    objectPosition: '50% 18%',
   },
   forces: {
-    src: '/library/portraits/portrait-03-4x5.webp',
+    src: '/library/portraits/portrait-01-4x5.webp',
     altFr: 'Force et présence',
     altEs: 'Fuerza y presencia',
+    objectPosition: '50% 12%',
   },
   parler: {
-    src: '/library/coaching-visio/coaching-visio-02-4x5.webp',
+    src: '/library/coaching-visio/coaching-visio-04-4x5.webp',
     altFr: 'Échange en cours',
     altEs: 'Intercambio en clase',
+    objectPosition: '50% 22%',
   },
   develop: {
-    src: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
+    src: '/library/barre/barre-05-4x5.webp',
     altFr: 'Progression',
     altEs: 'Progreso',
+    objectPosition: '50% 20%',
   },
   how: {
-    src: '/library/pilates-mat/pilates-mat-02-4x5.webp',
+    src: '/library/pilates-mat/pilates-mat-08-4x5.webp',
     altFr: 'Comment tu fonctionnes',
     altEs: 'Cómo funcionas',
+    objectPosition: '50% 28%',
   },
 } as const;
 

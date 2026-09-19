@@ -84,7 +84,7 @@ export function scoreQuiz(quiz: QuizDefinition, answers: Record<string, string>)
   }
 
   const sum = Object.values(totals).reduce((a, b) => a + b, 0) || 1;
-  // Pourcentages exacts puis arrondi « largest remainder » → somme = 100 (pas de faux 33→100 %).
+  // Pourcentages exacts puis arrondi « largest remainder » → somme = 100.
   const raw = Object.entries(totals).map(([id, pts]) => {
     const exact = (pts / sum) * 100;
     return { id, pts, exact, floor: Math.floor(exact), frac: exact - Math.floor(exact) };
@@ -97,9 +97,28 @@ export function scoreQuiz(quiz: QuizDefinition, answers: Record<string, string>)
     bump.add(row.id);
     leftover -= 1;
   }
+
+  /** Égalité de points : la question la plus récente qui pointe un seul profil tranche (q13 en dernier). */
+  function tieRank(id: string): number {
+    for (let i = quiz.questions.length - 1; i >= 0; i--) {
+      const q = quiz.questions[i]!;
+      const opt = q.options.find((o) => o.id === answers[q.id]);
+      if (!opt) continue;
+      const scored = Object.entries(opt.scores)
+        .filter(([, pts]) => pts > 0)
+        .map(([pid]) => pid);
+      if (scored.length === 1 && scored[0] === id) return i;
+    }
+    return -1;
+  }
+
   const ranked = raw
     .map((r) => ({ id: r.id, pts: r.pts, percent: r.floor + (bump.has(r.id) ? 1 : 0) }))
-    .sort((a, b) => b.pts - a.pts || b.percent - a.percent);
+    .sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.percent !== a.percent) return b.percent - a.percent;
+      return tieRank(b.id) - tieRank(a.id);
+    });
 
   const percents: Record<string, number> = {};
   for (const row of ranked) percents[row.id] = row.percent;

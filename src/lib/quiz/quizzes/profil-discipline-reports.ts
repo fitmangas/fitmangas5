@@ -56,18 +56,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       strengths: lines(
         [
-          'Capacité à démarrer sans attendre d’être « prête ».',
-          'Goût du défi : tu montes d’un cran quand ça résiste.',
-          'Clarté : tu dis ce qui ne marche pas.',
-          'Protection du créneau comme un rendez-vous de travail.',
-          'Peu de temps perdu en doutes inutiles une fois la décision prise.',
+          'Ton vrai atout, c’est la décision. Tu démarres sans attendre d’être « prête », tu montes d’un cran quand ça résiste, et tu dis clairement ce qui ne marche pas. Une fois le cap choisi, tu perds peu de temps en doutes inutiles.',
+          'Tu protèges ton créneau comme un rendez-vous de travail. Ce n’est pas de la rigidité : c’est le respect d’un objectif. Dans un cadre exigeant et lisible, tu es une alliée rare — rapide, nette, capable d’entraîner les autres vers un résultat.',
         ],
         [
-          'Capacidad de empezar sin esperar a estar « lista ».',
-          'Gusto por el reto: subes un punto cuando algo resiste.',
-          'Claridad: dices lo que no funciona.',
-          'Proteges el horario como una cita de trabajo.',
-          'Poco tiempo perdido en dudas inútiles una vez decidido.',
+          'Tu verdadero punto fuerte es la decisión. Empiezas sin esperar a estar « lista », subes un punto cuando algo resiste, y dices con claridad lo que no funciona. Una vez elegido el rumbo, pierdes poco tiempo en dudas inútiles.',
+          'Proteges tu horario como una cita de trabajo. No es rigidez: es respeto a un objetivo. En un marco exigente y legible, eres una aliada rara — rápida, nítida, capaz de llevar a otras hacia un resultado.',
         ],
       ),
       limits: lines(
@@ -86,16 +80,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       underStress: lines(
         [
-          'Tu durcis le ton — avec toi d’abord. « Allez, on arrête de niaiser. »',
-          'Tu veux reprendre le contrôle : nouveau plan, nouvelle barre, parfois trop haute.',
-          'Tu coupes ce qui te semble inefficace, y compris un programme encore utile.',
-          'Le risque : brûler la continuité pour « rattraper ».',
+          'Sous tension, tu durcis le ton — avec toi d’abord. « Allez, on arrête de niaiser. » Tu veux reprendre le contrôle : nouveau plan, nouvelle barre, parfois trop haute. Tu coupes ce qui te semble inefficace, y compris un programme encore utile.',
+          'Le risque classique de ce profil : brûler la continuité pour « rattraper ». La Décideuse sous stress confond vitesse et progrès. Ce qu’il faut alors, ce n’est pas plus d’intensité — c’est un signal clair que tu avances encore, même à rythme normal.',
         ],
         [
-          'Endureces el tono — primero contigo. « Vamos, se acabó lo suave. »',
-          'Quieres retomar el control: plan nuevo, listón más alto, a veces demasiado.',
-          'Cortas lo que te parece ineficaz, incluso un programa todavía útil.',
-          'El riesgo: quemar la continuidad para « recuperar ».',
+          'Bajo tensión, endureces el tono — primero contigo. « Vamos, se acabó lo suave. » Quieres retomar el control: plan nuevo, listón más alto, a veces demasiado. Cortas lo que te parece ineficaz, incluso un programa todavía útil.',
+          'El riesgo clásico de este perfil: quemar la continuidad para « recuperar ». La Decidida bajo estrés confunde velocidad y progreso. Lo que hace falta entonces no es más intensidad — es una señal clara de que sigues avanzando, aunque a ritmo normal.',
         ],
       ),
       fears: lines(
@@ -114,16 +104,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       needs: lines(
         [
-          'Un objectif lisible et un rythme d’exigences réel — pas du fluff.',
-          'Du feedback utile : « ça, oui / ça, non » plutôt que « bravo ».',
-          'De l’autonomie dans un cadre, pas un carcan ni un flou.',
-          'Quelqu’un qui tient la barre avec toi, sans te ralentir pour te rassurer.',
+          'Pour tenir, tu as besoin d’un objectif lisible et d’un rythme d’exigences réel — pas du fluff. Le feedback utile (« ça, oui / ça, non ») te nourrit plus qu’un « bravo » vague. Tu veux de l’autonomie dans un cadre : ni carcan, ni flou.',
+          'Idéalement, quelqu’un tient la barre avec toi sans te ralentir « pour te rassurer ». La correction nette te calme. Le silence ou le « fais comme tu sens » t’épuisent.',
         ],
         [
-          'Un objetivo legible y un ritmo de exigencia real — no relleno.',
-          'Feedback útil: « esto sí / esto no » más que « bravo ».',
-          'Autonomía dentro de un marco, ni cárcel ni vaguedad.',
-          'Alguien que sostenga el listón contigo, sin frenarte para tranquilizarte.',
+          'Para sostenerte necesitas un objetivo legible y un ritmo de exigencia real — no relleno. El feedback útil (« esto sí / esto no ») te nutre más que un « bravo » vago. Quieres autonomía dentro de un marco: ni cárcel, ni vaguedad.',
+          'Idealmente, alguien sostiene el listón contigo sin frenarte « para tranquilizarte ». La corrección nítida te calma. El silencio o el « haz como sientas » te agotan.',
         ],
       ),
       howToTalk: lines(
@@ -142,28 +128,22 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       howNotToTalk: lines(
         [
-          'Évite les longs préambules et le « on verra bien ».',
-          'Ne tourne pas autour : elle sent l’évitement tout de suite.',
-          'Ne la infantilise pas (« tout doux », « à ton rythme » sans contenu).',
-          'Ne promets pas de magie. Elle teste la compétence.',
+          'Avec une Décideuse, les longs préambules et le « on verra bien » cassent la confiance. Elle sent l’évitement tout de suite. L’infantiliser (« tout doux », « à ton rythme » sans contenu) la met en colère plus qu’une exigence claire.',
+          'Ne promets pas de magie : elle teste la compétence. Une phrase nette, un critère, un résultat — c’est ça qui la fait rester.',
         ],
         [
-          'Evita preámbulos largos y el « ya veremos ».',
-          'No des rodeos: percibe la evitación al instante.',
-          'No la infantilices (« suave », « a tu ritmo » sin contenido).',
-          'No prometas magia. Ella prueba la competencia.',
+          'Con una Decidida, los preámbulos largos y el « ya veremos » rompen la confianza. Percibe la evitación al instante. Infantilizarla (« suave », « a tu ritmo » sin contenido) la enfada más que una exigencia clara.',
+          'No prometas magia: ella prueba la competencia. Una frase nítida, un criterio, un resultado — eso la hace quedarse.',
         ],
       ),
       develop: lines(
         [
-          'Apprendre à rester quand le progrès est lent mais réel — sans tout casser pour « plus fort ».',
-          'Accepter qu’être vue n’est pas une faiblesse : c’est un capteur de qualité.',
-          'Laisser un cadre durer assez longtemps pour qu’il compte, avant de le juger inefficace.',
+          'Ton axe de développement : rester quand le progrès est lent mais réel — sans tout casser pour « plus fort ». Accepter qu’être vue n’est pas une faiblesse : c’est un capteur de qualité.',
+          'Laisser un cadre durer assez longtemps pour qu’il compte, avant de le juger inefficace. Tout jeter pour un plan plus agressif, c’est souvent exactement ce qui t’empêche d’arriver aux 8 semaines.',
         ],
         [
-          'Aprender a quedarte cuando el progreso es lento pero real — sin romperlo todo por « más fuerte ».',
-          'Aceptar que ser vista no es debilidad: es un sensor de calidad.',
-          'Dejar que un marco dure lo suficiente para que cuente, antes de juzgarlo ineficaz.',
+          'Tu eje de desarrollo: quedarte cuando el progreso es lento pero real — sin romperlo todo por « más fuerte ». Aceptar que ser vista no es debilidad: es un sensor de calidad.',
+          'Dejar que un marco dure lo suficiente para que cuente, antes de juzgarlo ineficaz. Tirarlo todo por un plan más agresivo suele ser exactamente lo que te impide llegar a las 8 semanas.',
         ],
       ),
     },
@@ -226,18 +206,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       strengths: lines(
         [
-          'Capacité à démarrer, à entraîner les autres, à rendre un cadre vivant.',
-          'Souplesse : tu t’adaptes, tu improvises, tu ne te fige pas.',
-          'Lecture des ambiances : tu sens quand ça coince chez toi et chez les autres.',
-          'Optimisme utile — tu trouves une porte quand d’autres voient un mur.',
-          'Le plaisir n’est pas un luxe chez toi : c’est un levier de continuité.',
+          'L’Enthousiaste a un vrai moteur : démarrer, entraîner les autres, rendre un cadre vivant. Tu t’adaptes, tu improvises, tu ne te figes pas. Tu lis les ambiances — chez toi et chez les autres — et tu trouves une porte quand d’autres voient un mur.',
+          'Chez toi, le plaisir n’est pas un luxe : c’est un levier de continuité. Quand l’énergie est là, tu tiens. Le défi n’est pas de « devenir plus sérieuse ». C’est de garder ce feu dans un contenant qui dure.',
         ],
         [
-          'Capacidad de arrancar, de contagiar, de hacer vivo un marco.',
-          'Flexibilidad: te adaptas, improvisas, no te rigidizas.',
-          'Lectura de ambientes: sientes cuando algo se traba en ti y en las demás.',
-          'Optimismo útil — encuentras una puerta cuando otras ven un muro.',
-          'El gusto no es un lujo: es una palanca de continuidad.',
+          'La Entusiasta tiene un motor real: arrancar, contagiar, hacer vivo un marco. Te adaptas, improvisas, no te rigidizas. Lees ambientes — en ti y en las demás — y encuentras una puerta cuando otras ven un muro.',
+          'Para ti el gusto no es un lujo: es una palanca de continuidad. Cuando hay energía, te sostienes. El reto no es « volverte más seria ». Es guardar ese fuego en un contenedor que dure.',
         ],
       ),
       limits: lines(
@@ -256,16 +230,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       underStress: lines(
         [
-          'Tu parles plus, tu expliques, tu cherches de l’air.',
-          'Tu changes de plan pour retrouver une étincelle — parfois trop souvent.',
-          'Tu minimises le creux (« ça va aller ») jusqu’à ce qu’il soit trop tard.',
-          'Le risque : collectionner les départs, jamais les 8 semaines.',
+          'Sous tension, tu parles plus, tu expliques, tu cherches de l’air. Tu changes de plan pour retrouver une étincelle — parfois trop souvent. Tu minimises le creux (« ça va aller ») jusqu’à ce qu’il soit trop tard.',
+          'Le risque de ce profil : collectionner les départs, jamais les 8 semaines. Ce n’est pas que tu manques de feu. C’est que tu cherches un nouveau feu au lieu de protéger celui qui est déjà allumé.',
         ],
         [
-          'Hablas más, explicas, buscas aire.',
-          'Cambias de plan para recuperar una chispa — a veces demasiado.',
-          'Minimizas el bajón (« ya pasará ») hasta que es tarde.',
-          'El riesgo: coleccionar arranques, nunca las 8 semanas.',
+          'Bajo tensión, hablas más, explicas, buscas aire. Cambias de plan para recuperar una chispa — a veces demasiado. Minimizas el bajón (« ya pasará ») hasta que es tarde.',
+          'El riesgo de este perfil: coleccionar arranques, nunca las 8 semanas. No es que te falte fuego. Es que buscas un fuego nuevo en vez de proteger el que ya está encendido.',
         ],
       ),
       fears: lines(
@@ -284,16 +254,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       needs: lines(
         [
-          'Un cadre vivant : quelqu’un là, une voix, une correction, pas un PDF.',
-          'De la variété à l’intérieur d’une constance — pas l’inverse.',
-          'Être vue. Un regard suffit. Le silence tue plus que la difficulté.',
-          'Un rendez-vous qui te tire, pas une liste de tâches.',
+          'Pour tenir, tu as besoin d’un cadre vivant : quelqu’un là, une voix, une correction — pas un PDF. De la variété à l’intérieur d’une constance, pas l’inverse. Être vue compte : un regard suffit ; le silence tue plus que la difficulté.',
+          'Un rendez-vous qui te tire vaut mieux qu’une liste de tâches. Le créneau fixe n’est pas une prison pour toi : c’est le contenant qui empêche l’élan de s’évaporer.',
         ],
         [
-          'Un marco vivo: alguien ahí, una voz, una corrección, no un PDF.',
-          'Variedad dentro de una constancia — no al revés.',
-          'Ser vista. Una mirada basta. El silencio mata más que la dificultad.',
-          'Una cita que te tire, no una lista de tareas.',
+          'Para sostenerte necesitas un marco vivo: alguien ahí, una voz, una corrección — no un PDF. Variedad dentro de una constancia, no al revés. Ser vista cuenta: una mirada basta; el silencio mata más que la dificultad.',
+          'Una cita que te tire vale más que una lista de tareas. El horario fijo no es una cárcel para ti: es el contenedor que evita que el impulso se evapore.',
         ],
       ),
       howToTalk: lines(
@@ -312,28 +278,22 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       howNotToTalk: lines(
         [
-          'N’en fais pas un règlement militaire sans vie.',
-          'Ne la réduis pas à « elle n’est pas constante » — tu rates le moteur.',
-          'Évite le froid, le silence, le « débrouille-toi avec la vidéo ».',
-          'Ne surcharge pas de règles le premier jour : tu éteins l’élan.',
+          'Avec une Enthousiaste, un règlement militaire sans vie éteint le moteur. La réduire à « elle n’est pas constante », c’est rater ce qui la fait avancer. Le froid, le silence, le « débrouille-toi avec la vidéo » la font disparaître sans drame.',
+          'Ne surcharge pas de règles le premier jour : tu éteins l’élan. Pose d’abord le lien et le sens — la structure tient ensuite.',
         ],
         [
-          'No lo conviertas en un reglamento militar sin vida.',
-          'No la reduzcas a « no es constante » — te pierdes el motor.',
-          'Evita el frío, el silencio, el « apáñatelas con el vídeo ».',
-          'No sobrecargues de reglas el primer día: apagas el impulso.',
+          'Con una Entusiasta, un reglamento militar sin vida apaga el motor. Reducirla a « no es constante » es perderte lo que la hace avanzar. El frío, el silencio, el « apáñatelas con el vídeo » la hacen desaparecer sin drama.',
+          'No sobrecargues de reglas el primer día: apagas el impulso. Primero el vínculo y el sentido — la estructura aguanta después.',
         ],
       ),
       develop: lines(
         [
-          'Garder l’élan… et lui donner un contenant qui dure (créneau, visio, quelqu’un).',
-          'Rester une semaine de plus quand c’est « moins fun » — c’est là que ça compte.',
-          'Distinguer ennui et vrai mauvais cadre, pour ne plus tout jeter.',
+          'Ton axe : garder l’élan… et lui donner un contenant qui dure (créneau, visio, quelqu’un). Rester une semaine de plus quand c’est « moins fun » — c’est exactement là que ça compte pour ce profil.',
+          'Apprendre à distinguer l’ennui passager et un vrai mauvais cadre. Tout jeter dès que ça grise, c’est souvent le piège. Varier à l’intérieur du même rendez-vous, pas changer de rendez-vous chaque mois.',
         ],
         [
-          'Conservar el impulso… y darle un contenedor que dure (horario, visio, alguien).',
-          'Quedarte una semana más cuando es « menos divertido » — ahí cuenta.',
-          'Distinguir aburrimiento y marco de verdad malo, para no tirarlo todo.',
+          'Tu eje: conservar el impulso… y darle un contenedor que dure (horario, visio, alguien). Quedarte una semana más cuando es « menos divertido » — ahí es exactamente donde cuenta este perfil.',
+          'Aprender a distinguir aburrimiento pasajero y un marco de verdad malo. Tirarlo todo en cuanto se pone gris suele ser la trampa. Variar dentro de la misma cita, no cambiar de cita cada mes.',
         ],
       ),
     },
@@ -396,18 +356,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       strengths: lines(
         [
-          'Fidélité : une fois engagée pour de vrai, tu ne zappes pas pour le fun.',
-          'Écoute : tu reçois une correction et tu l’intègres.',
-          'Patience avec le processus — tu n’as pas besoin de tout tout de suite.',
-          'Soutien aux autres : tu fais tenir un groupe.',
-          'Sens du rythme : tu sais ce qu’est une habitude, pas un exploit.',
+          'La Fidèle a une force rare : une fois engagée pour de vrai, tu ne zappes pas pour le fun. Tu écoutes une correction et tu l’intègres. Tu as de la patience avec le processus — tu n’as pas besoin de tout tout de suite.',
+          'Tu soutiens les autres et tu fais tenir un groupe. Tu sais ce qu’est une habitude, pas un exploit. Dans un cadre stable et humain, ta régularité devient presque invisible — et c’est précisément ça qui marche.',
         ],
         [
-          'Fidelidad: una vez comprometida de verdad, no saltas por diversión.',
-          'Escucha: recibes una corrección y la integras.',
-          'Paciencia con el proceso — no necesitas todo ya.',
-          'Sostén a las demás: haces que un grupo aguante.',
-          'Sentido del ritmo: sabes lo que es un hábito, no una hazaña.',
+          'La Fiel tiene una fuerza rara: una vez comprometida de verdad, no saltas por diversión. Escuchas una corrección y la integras. Tienes paciencia con el proceso — no necesitas todo ya.',
+          'Sostienes a las demás y haces que un grupo aguante. Sabes lo que es un hábito, no una hazaña. En un marco estable y humano, tu regularidad se vuelve casi invisible — y es exactamente lo que funciona.',
         ],
       ),
       limits: lines(
@@ -426,16 +380,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       underStress: lines(
         [
-          'Tu t’effaces. Tu dis que ça va. Tu ranges le sujet.',
-          'Tu te charges de culpabilité plutôt que de demander un ajustement.',
-          'Tu cherches l’harmonie… en te sacrifiant.',
-          'Le risque : un abandon silencieux, lu de l’extérieur comme de l’indifférence.',
+          'Sous tension, tu t’effaces. Tu dis que ça va. Tu ranges le sujet. Tu te charges de culpabilité plutôt que de demander un ajustement. Tu cherches l’harmonie… en te sacrifiant.',
+          'Le risque de ce profil : un abandon silencieux, lu de l’extérieur comme de l’indifférence. Ce n’est pas que tu n’en as plus envie. C’est que tu te protèges — souvent sans expliquer, et trop tard pour que le lien te rattrape.',
         ],
         [
-          'Te borras. Dices que estás bien. Guardas el tema.',
-          'Cargas culpa en vez de pedir un ajuste.',
-          'Buscas armonía… sacrificándote.',
-          'El riesgo: un abandono silencioso, leído desde fuera como indiferencia.',
+          'Bajo tensión, te borras. Dices que estás bien. Guardas el tema. Cargas culpa en vez de pedir un ajuste. Buscas armonía… sacrificándote.',
+          'El riesgo de este perfil: un abandono silencioso, leído desde fuera como indiferencia. No es que ya no te apetezca. Es que te proteges — a menudo sin explicar, y demasiado tarde para que el vínculo te alcance.',
         ],
       ),
       fears: lines(
@@ -454,16 +404,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       needs: lines(
         [
-          'Un rendez-vous humain : être attendue, pas surveillée.',
-          'De la prévisibilité : mêmes jours, même voix, même lieu (même en visio).',
-          'Une correction douce et claire — jamais une humiliation.',
-          'Le droit de rater sans que le lien se casse.',
+          'Pour tenir, tu as besoin d’un rendez-vous humain : être attendue, pas surveillée. De la prévisibilité — mêmes jours, même voix, même lieu (même en visio). Une correction douce et claire, jamais une humiliation.',
+          'Le droit de rater sans que le lien se casse, c’est non négociable pour ce profil. Sans ça, tu disparais pour te protéger — et on croit à tort que tu « n’es pas motivée ».',
         ],
         [
-          'Una cita humana: que te esperen, no que te vigilen.',
-          'Previsibilidad: mismos días, misma voz, mismo lugar (aunque sea visio).',
-          'Una corrección suave y clara — nunca una humillación.',
-          'El derecho a fallar sin que se rompa el vínculo.',
+          'Para sostenerte necesitas una cita humana: que te esperen, no que te vigilen. Previsibilidad — mismos días, misma voz, mismo lugar (aunque sea visio). Una corrección suave y clara, nunca una humillación.',
+          'El derecho a fallar sin que se rompa el vínculo es innegociable para este perfil. Sin eso, desapareces para protegerte — y creen por error que « no estás motivada ».',
         ],
       ),
       howToTalk: lines(
@@ -482,28 +428,22 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       howNotToTalk: lines(
         [
-          'Ne la mets pas en compétition, ni en lumière forcée.',
-          'N’utilise pas la pression ni le « si tu ne viens pas, tant pis ».',
-          'Évite les changements de dernière minute sans explication.',
-          'Ne la traite pas de « trop sensible » : tu casses le contrat.',
+          'Avec une Fidèle, la compétition forcée et la lumière trop brusque cassent le contrat. La pression (« si tu ne viens pas, tant pis ») la fait se retirer sans bruit. Les changements de dernière minute sans explication sont lus comme une trahison du cadre.',
+          'La traiter de « trop sensible », c’est nier son levier. Ce n’est pas de la fragilité : c’est un système qui avance quand le sol est stable.',
         ],
         [
-          'No la pongas en competición ni en un foco forzado.',
-          'No uses presión ni el « si no vienes, da igual ».',
-          'Evita cambios de última hora sin explicación.',
-          'No la trates de « demasiado sensible »: rompes el contrato.',
+          'Con una Fiel, la competición forzada y el foco demasiado brusco rompen el contrato. La presión (« si no vienes, da igual ») la hace retirarse sin ruido. Los cambios de última hora sin explicación se leen como una traición al marco.',
+          'Tratarla de « demasiado sensible » es negar su palanca. No es fragilidad: es un sistema que avanza cuando el suelo es estable.',
         ],
       ),
       develop: lines(
         [
-          'Oser demander (un créneau, une correction, de l’aide) avant de disparaitre.',
-          'Protéger ton rendez-vous comme tu protèges celui des autres.',
-          'Comprendre que le lien n’est pas une faiblesse : c’est ton levier — à condition qu’il soit réel.',
+          'Ton axe : oser demander (un créneau, une correction, de l’aide) avant de disparaitre. Protéger ton rendez-vous comme tu protèges celui des autres.',
+          'Comprendre que le lien n’est pas une faiblesse : c’est ton levier — à condition qu’il soit réel. Un cours où personne ne te voit ne te « discipline » pas. Il t’éteint.',
         ],
         [
-          'Atreverte a pedir (un horario, una corrección, ayuda) antes de desaparecer.',
-          'Proteger tu cita como proteges la de las demás.',
-          'Entender que el vínculo no es debilidad: es tu palanca — si es real.',
+          'Tu eje: atreverte a pedir (un horario, una corrección, ayuda) antes de desaparecer. Proteger tu cita como proteges la de las demás.',
+          'Entender que el vínculo no es debilidad: es tu palanca — si es real. Una clase donde nadie te ve no te « disciplina ». Te apaga.',
         ],
       ),
     },
@@ -566,18 +506,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       strengths: lines(
         [
-          'Rigueur : tu ne bricoles pas un geste au hasard.',
-          'Capacité d’analyse : tu vois ce qui casse dans un système.',
-          'Qualité de l’exécution une fois le « comment » posé.',
-          'Peu de relâchement sale : tu aimes bien faire.',
-          'Questions utiles — tu fais monter le niveau d’un cours.',
+          'La Précise a un moteur de qualité : tu ne bricoles pas un geste au hasard. Tu vois ce qui casse dans un système. Une fois le « comment » posé, ton exécution est nette. Tu aimes bien faire — et tes questions font monter le niveau d’un cours.',
+          'Ce n’est pas de la lenteur. C’est de l’exigence. Dans un cadre clair, avec des critères et une correction fiable, tu tiens avec une régularité presque chirurgicale.',
         ],
         [
-          'Rigor: no improvisas un gesto al azar.',
-          'Capacidad de análisis: ves lo que rompe un sistema.',
-          'Calidad de ejecución una vez claro el « cómo ».',
-          'Poco descuido: te gusta hacerlo bien.',
-          'Preguntas útiles — subes el nivel de una clase.',
+          'La Precisa tiene un motor de calidad: no improvisas un gesto al azar. Ves lo que rompe un sistema. Una vez claro el « cómo », tu ejecución es nítida. Te gusta hacerlo bien — y tus preguntas suben el nivel de una clase.',
+          'No es lentitud. Es exigencia. En un marco claro, con criterios y una corrección fiable, te sostienes con una regularidad casi quirúrgica.',
         ],
       ),
       limits: lines(
@@ -596,16 +530,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       underStress: lines(
         [
-          'Tu te retires dans la tête. Tu analyses. Tu contrôles encore plus.',
-          'Tu cherches la faille du cadre — parfois pour ne pas t’exposer.',
-          'Tu peux devenir froide, distante, « trop dans les détails ».',
-          'Le risque : ne plus bouger tant que ce n’est pas parfait.',
+          'Sous tension, tu te retires dans la tête. Tu analyses. Tu contrôles encore plus. Tu cherches la faille du cadre — parfois pour ne pas t’exposer. Tu peux devenir froide, distante, « trop dans les détails ».',
+          'Le risque de ce profil : ne plus bouger tant que ce n’est pas parfait. Ce n’est pas de la paresse. C’est une alarme anti-erreur qui, sans filet, bloque le corps entier.',
         ],
         [
-          'Te retiras a la cabeza. Analizas. Controlas aún más.',
-          'Buscas la falla del marco — a veces para no exponerte.',
-          'Puedes volverte fría, distante, « demasiado en los detalles ».',
-          'El riesgo: no moverte hasta que sea perfecto.',
+          'Bajo tensión, te retiras a la cabeza. Analizas. Controlas aún más. Buscas la falla del marco — a veces para no exponerte. Puedes volverte fría, distante, « demasiado en los detalles ».',
+          'El riesgo de este perfil: no moverte hasta que sea perfecto. No es pereza. Es una alarma anti-error que, sin red, bloquea el cuerpo entero.',
         ],
       ),
       fears: lines(
@@ -624,16 +554,12 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       needs: lines(
         [
-          'Une méthode stable + des critères (placement, respiration, tempo).',
-          'Une correction qui dit « oui, comme ça » — pas « fais-toi confiance ».',
-          'Du temps pour intégrer, sans spectacle.',
-          'Un cadre prévisible : horaires, format, règles du jeu.',
+          'Pour tenir, tu as besoin d’une méthode stable et de critères (placement, respiration, tempo). Une correction qui dit « oui, comme ça » — pas « fais-toi confiance ». Du temps pour intégrer, sans spectacle.',
+          'Un cadre prévisible (horaires, format, règles du jeu) te libère. Le flou te coûte plus d’énergie que l’effort lui-même.',
         ],
         [
-          'Un método estable + criterios (colocación, respiración, tempo).',
-          'Una corrección que diga « sí, así » — no « confía en ti ».',
-          'Tiempo para integrar, sin espectáculo.',
-          'Un marco predecible: horarios, formato, reglas del juego.',
+          'Para sostenerte necesitas un método estable y criterios (colocación, respiración, tempo). Una corrección que diga « sí, así » — no « confía en ti ». Tiempo para integrar, sin espectáculo.',
+          'Un marco predecible (horarios, formato, reglas del juego) te libera. La vaguedad te cuesta más energía que el esfuerzo en sí.',
         ],
       ),
       howToTalk: lines(
@@ -652,28 +578,22 @@ export const DISC_DISCIPLINE_RESULTS: QuizResult[] = [
       ),
       howNotToTalk: lines(
         [
-          'Évite le « fais comme tu sens » sans critère.',
-          'Ne la bouscule pas : « allez, on n’est pas là pour réfléchir ».',
-          'Ne vends pas du vague. Elle teste la cohérence.',
-          'Ne ridiculise pas ses questions : tu perds sa confiance tout de suite.',
+          'Avec une Précise, le « fais comme tu sens » sans critère est une porte fermée. La bousculer (« allez, on n’est pas là pour réfléchir ») casse la confiance. Vendre du vague, c’est échouer le test de cohérence qu’elle fait en silence.',
+          'Ridiculiser ses questions, c’est la perdre tout de suite. Ses questions ne sont pas de la résistance : c’est son mode d’engagement.',
         ],
         [
-          'Evita el « haz como sientas » sin criterio.',
-          'No la empujes: « vamos, no estamos para pensar ».',
-          'No vendas vaguedad. Ella prueba la coherencia.',
-          'No ridiculices sus preguntas: pierdes su confianza al instante.',
+          'Con una Precisa, el « haz como sientas » sin criterio es una puerta cerrada. Empujarla (« vamos, no estamos para pensar ») rompe la confianza. Vender vaguedad es fallar el test de coherencia que hace en silencio.',
+          'Ridiculizar sus preguntas es perderla al instante. Sus preguntas no son resistencia: es su modo de compromiso.',
         ],
       ),
       develop: lines(
         [
-          'Commencer imparfaitement avec un filet (une coach) plutôt que d’attendre le protocole idéal.',
-          'Traiter la correction comme une donnée, pas comme un verdict sur toi.',
-          'Accepter qu’un cadre bon à 80 % tenu vaut mieux qu’un cadre parfait jamais commencé.',
+          'Ton axe : commencer imparfaitement avec un filet (une coach) plutôt que d’attendre le protocole idéal. Traiter la correction comme une donnée, pas comme un verdict sur toi.',
+          'Accepter qu’un cadre bon à 80 % tenu vaut mieux qu’un cadre parfait jamais commencé. La qualité que tu cherches naît en bougeant — pas en préparant encore.',
         ],
         [
-          'Empezar imperfecta con una red (una coach) en vez de esperar el protocolo ideal.',
-          'Tratar la corrección como un dato, no como un veredicto sobre ti.',
-          'Aceptar que un marco bueno al 80 % sostenido vale más que uno perfecto nunca empezado.',
+          'Tu eje: empezar imperfecta con una red (una coach) en vez de esperar el protocolo ideal. Tratar la corrección como un dato, no como un veredicto sobre ti.',
+          'Aceptar que un marco bueno al 80 % sostenido vale más que uno perfecto nunca empezado. La calidad que buscas nace moviéndote — no preparando más.',
         ],
       ),
     },

@@ -14,16 +14,16 @@ export const quizProfilDiscipline: QuizDefinition = {
   order: 1,
   accent: '#C45D3E',
   discLike: true,
-  eyebrow: { fr: 'Évaluation · 12 situations', es: 'Evaluación · 12 situaciones' },
+  eyebrow: { fr: 'Évaluation · 13 situations', es: 'Evaluación · 13 situaciones' },
   title: {
     fr: 'Quel est ton profil de discipline ?',
     es: '¿Cuál es tu perfil de disciplina?',
   },
   description: {
-    fr: '12 situations sport / agenda. Rapport : graphiques, texte et PDF.',
-    es: '12 situaciones deporte / agenda. Informe: gráficos, texto y PDF.',
+    fr: '13 situations sport / agenda. Rapport : graphiques, texte et PDF.',
+    es: '13 situaciones deporte / agenda. Informe: gráficos, texto y PDF.',
   },
-  durationHint: { fr: '~6 min', es: '~6 min' },
+  durationHint: { fr: '~7 min', es: '~7 min' },
   briefing: lines(
     [
       'Des situations concrètes. Choisis celle qui te ressemble le plus.',
@@ -168,6 +168,18 @@ export const quizProfilDiscipline: QuizDefinition = {
         opt('b', 'Que ça devienne une corvée sans joie.', 'Que se vuelva una obligación sin alegría.', E),
         opt('c', 'Être seule à nouveau — et tout faire tomber.', 'Volver a estar sola — y dejarlo todo.', A),
         opt('d', 'Perdre du temps sans progresser.', 'Perder tiempo sin progresar.', D),
+      ],
+    ),
+    /** Question 13 : tranche les égalités (orientation claire d’un profil). */
+    q(
+      'q13',
+      'Dernière : si tu ne pouvais garder qu’UNE chose pour tenir 8 semaines…',
+      'Última: si solo pudieras quedarte con UNA cosa para aguantar 8 semanas…',
+      [
+        opt('a', 'Un objectif mesurable et une date. Le reste suit.', 'Un objetivo medible y una fecha. El resto viene.', D),
+        opt('b', 'De l’élan et du lien — une énergie qui me tire.', 'Impulso y vínculo — una energía que me tire.', E),
+        opt('c', 'Quelqu’un qui m’attend, un rendez-vous fixe.', 'Alguien que me espera, una cita fija.', A),
+        opt('d', 'Une méthode claire, des critères, pas d’à-peu-près.', 'Un método claro, criterios, nada a medias.', M),
       ],
     ),
   ],

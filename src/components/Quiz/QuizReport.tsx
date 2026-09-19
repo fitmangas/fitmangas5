@@ -103,7 +103,7 @@ const LABELS = {
 const terracottaCta =
   'inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_26px_rgba(196,93,62,0.28)] transition hover:brightness-110';
 
-/** Points empilés, sans boîte dans la boîte. */
+/** Points empilés — pour les sections « tu fais / tu sens » concrètes. */
 function NumberedList({ items, accent }: { items: string[]; accent: string }) {
   return (
     <ul className="flex flex-col">
@@ -125,20 +125,42 @@ function NumberedList({ items, accent }: { items: string[]; accent: string }) {
   );
 }
 
+/** Texte fluide — pour expliquer le profil sans menu 01 / 02 / 03. */
+function ProseBlock({ items }: { items: string[] }) {
+  return (
+    <div className="space-y-4">
+      {items.map((p) => (
+        <p key={p.slice(0, 48)} className="text-[15px] leading-[1.8] text-brand-ink/75">
+          {p}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function SectionBanner({
   src,
   alt,
   title,
   accent,
+  objectPosition = '50% 20%',
 }: {
   src: string;
   alt: string;
   title: string;
   accent: string;
+  objectPosition?: string;
 }) {
   return (
-    <div className="relative mb-6 h-36 overflow-hidden rounded-[28px] sm:h-44">
-      <Image src={src} alt={alt} fill className="object-cover" sizes="(max-width:768px) 100vw, 900px" />
+    <div className="relative mb-6 h-44 overflow-hidden rounded-[28px] sm:h-52">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-cover"
+        style={{ objectPosition }}
+        sizes="(max-width:768px) 100vw, 900px"
+      />
       <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
       <p
         className="absolute bottom-4 left-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white"
@@ -380,12 +402,13 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
             alt={imgAlt('how')}
             title={t.how}
             accent={accent}
+            objectPosition={QUIZ_SECTION_IMAGES.how.objectPosition}
           />
           <NumberedList items={report.howYouWork[locale]} accent={accent} />
         </div>
       </section>
 
-      {/* FORCES puis LIMITES — vertical, pas côte à côte */}
+      {/* FORCES (texte) puis LIMITES (liste) */}
       <section id="forces" className="scroll-mt-28 mt-14 space-y-12">
         <div>
           <SectionBanner
@@ -393,8 +416,9 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
             alt={imgAlt('forces')}
             title={t.strengths}
             accent="#6B8F71"
+            objectPosition={QUIZ_SECTION_IMAGES.forces.objectPosition}
           />
-          <NumberedList items={report.strengths[locale]} accent="#6B8F71" />
+          <ProseBlock items={report.strengths[locale]} />
         </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.limits}</p>
@@ -404,7 +428,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
         </div>
       </section>
 
-      {/* STRESS — bannière + listes verticales */}
+      {/* STRESS (texte) · peurs (liste) · besoins (texte) */}
       <section id="stress" className="scroll-mt-28 mt-14 space-y-10">
         <div>
           <SectionBanner
@@ -412,8 +436,9 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
             alt={imgAlt('stress')}
             title={t.stress}
             accent="#C45D3E"
+            objectPosition={QUIZ_SECTION_IMAGES.stress.objectPosition}
           />
-          <NumberedList items={report.underStress[locale]} accent="#C45D3E" />
+          <ProseBlock items={report.underStress[locale]} />
         </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A227]">{t.fears}</p>
@@ -426,44 +451,31 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
             {t.needs}
           </p>
           <div className="mt-3">
-            <NumberedList items={report.needs[locale]} accent={accent} />
+            <ProseBlock items={report.needs[locale]} />
           </div>
         </div>
       </section>
 
-      {/* PARLER — vertical */}
+      {/* PARLER — liste pour « comment », texte pour « à éviter » */}
       <section id="parler" className="scroll-mt-28 mt-14 space-y-10">
         <SectionBanner
           src={QUIZ_SECTION_IMAGES.parler.src}
           alt={imgAlt('parler')}
           title={locale === 'es' ? 'Comunicación' : 'Communication'}
           accent="#6B8F71"
+          objectPosition={QUIZ_SECTION_IMAGES.parler.objectPosition}
         />
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.talk}</p>
-          <ul className="mt-3 flex flex-col">
-            {report.howToTalk[locale].map((line) => (
-              <li
-                key={line}
-                className="border-b border-brand-ink/[0.06] py-3.5 text-[15px] leading-relaxed text-brand-ink/80 last:border-b-0"
-              >
-                {line}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-3">
+            <NumberedList items={report.howToTalk[locale]} accent="#6B8F71" />
+          </div>
         </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.notalk}</p>
-          <ul className="mt-3 flex flex-col">
-            {report.howNotToTalk[locale].map((line) => (
-              <li
-                key={line}
-                className="border-b border-brand-ink/[0.06] py-3.5 text-[15px] leading-relaxed text-brand-ink/80 last:border-b-0"
-              >
-                {line}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-3">
+            <ProseBlock items={report.howNotToTalk[locale]} />
+          </div>
         </div>
       </section>
 
@@ -473,8 +485,9 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref }: 
           alt={imgAlt('develop')}
           title={t.develop}
           accent="#5B7C8D"
+          objectPosition={QUIZ_SECTION_IMAGES.develop.objectPosition}
         />
-        <NumberedList items={report.develop[locale]} accent="#5B7C8D" />
+        <ProseBlock items={report.develop[locale]} />
       </section>
 
       {/* SUITE courte + témoignages + CTA — sans photo gym en trop */}
