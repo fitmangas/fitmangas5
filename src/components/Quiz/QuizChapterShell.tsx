@@ -106,14 +106,21 @@ export function QuizChapterShell({
     setBreathe(false);
   }, [hideChrome, safeIndex, reducedMotion]);
 
-  /** Lenis (smooth scroll site) capture la molette : on l’arrête sur le quiz. */
+  /** Filet de sécurité : SmoothScroll détruit Lenis sur /quiz ; on nettoie aussi ici. */
   useEffect(() => {
-    document.documentElement.dataset.quizNativeScroll = '1';
-    window.__fitmangasLenis?.stop?.();
-    return () => {
-      delete document.documentElement.dataset.quizNativeScroll;
-      window.__fitmangasLenis?.start?.();
-    };
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.removeProperty('overflow');
+    html.style.removeProperty('height');
+    body.style.removeProperty('overflow');
+    body.style.removeProperty('height');
+    html.classList.remove(
+      'lenis',
+      'lenis-smooth',
+      'lenis-stopped',
+      'lenis-scrolling',
+      'lenis-smooth-touch',
+    );
   }, []);
 
   const rootRef = useRef<HTMLDivElement>(null);
