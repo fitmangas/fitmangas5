@@ -178,7 +178,7 @@ export function QuizChapterShell({
       step.onNext();
       return;
     }
-    if (!canGoNext(safeIndex, total, step.allowsNext !== false)) return;
+    if (!canGoNext(safeIndex, total)) return;
     goTo(safeIndex + 1);
   }, [goTo, safeIndex, steps, total]);
 
