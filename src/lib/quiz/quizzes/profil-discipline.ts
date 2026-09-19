@@ -20,19 +20,19 @@ export const quizProfilDiscipline: QuizDefinition = {
     es: 'Tu perfil de disciplina',
   },
   description: {
-    fr: '12 situations concrètes. À la fin : un rapport clair (forces, stress, peurs, comment te parler) + PDF. Quatre profils simples — pas un test officiel.',
-    es: '12 situaciones concretas. Al final: un informe claro (fuerzas, estrés, miedos, cómo hablarte) + PDF. Cuatro perfiles simples — no es un test oficial.',
+    fr: '12 situations de sport / agenda. Rapport avec graphiques + texte + PDF.',
+    es: '12 situaciones de deporte / agenda. Informe con gráficos + texto + PDF.',
   },
   durationHint: { fr: '~6 min', es: '~6 min' },
   briefing: lines(
     [
-      'Ce n’est pas un test de personnalité. C’est comment tu réagis quand il s’agit de bouger, de tenir un créneau, de te faire corriger.',
-      'Il n’y a pas de bonne réponse. Choisis celle qui te ressemble le plus.',
+      'Des situations concrètes. Choisis celle qui te ressemble le plus.',
+      'Il n’y a pas de bonne réponse.',
       'Les scores restent cachés jusqu’au rapport.',
     ],
     [
-      'No es un test de personalidad. Es cómo reaccionas cuando se trata de moverte, sostener un horario, dejarte corregir.',
-      'No hay respuesta correcta. Elige la que más se te parece.',
+      'Situaciones concretas. Elige la que más se te parece.',
+      'No hay respuesta correcta.',
       'Las puntuaciones se ocultan hasta el informe.',
     ],
   ),

@@ -84,9 +84,22 @@ export function scoreQuiz(quiz: QuizDefinition, answers: Record<string, string>)
   }
 
   const sum = Object.values(totals).reduce((a, b) => a + b, 0) || 1;
-  const ranked = Object.entries(totals)
-    .map(([id, pts]) => ({ id, pts, percent: Math.round((pts / sum) * 100) }))
-    .sort((a, b) => b.pts - a.pts);
+  // Pourcentages exacts puis arrondi « largest remainder » → somme = 100 (pas de faux 33→100 %).
+  const raw = Object.entries(totals).map(([id, pts]) => {
+    const exact = (pts / sum) * 100;
+    return { id, pts, exact, floor: Math.floor(exact), frac: exact - Math.floor(exact) };
+  });
+  let leftover = 100 - raw.reduce((a, r) => a + r.floor, 0);
+  const byFrac = [...raw].sort((a, b) => b.frac - a.frac);
+  const bump = new Set<string>();
+  for (const row of byFrac) {
+    if (leftover <= 0) break;
+    bump.add(row.id);
+    leftover -= 1;
+  }
+  const ranked = raw
+    .map((r) => ({ id: r.id, pts: r.pts, percent: r.floor + (bump.has(r.id) ? 1 : 0) }))
+    .sort((a, b) => b.pts - a.pts || b.percent - a.percent);
 
   const percents: Record<string, number> = {};
   for (const row of ranked) percents[row.id] = row.percent;
