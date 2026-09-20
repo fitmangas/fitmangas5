@@ -21,6 +21,7 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 supabase/.temp/
 .vercel
+tmp/
 
 # Script local OAuth GA (ne pas versionner)
 scripts/add-sa-to-ga.mjs

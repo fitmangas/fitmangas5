@@ -28,9 +28,13 @@ const COPY = {
     download: 'Télécharger',
     more: 'Autre',
     close: 'Fermer',
-    igHint: 'Image enregistrée dans tes téléchargements. Ouvre Instagram → Nouvelle story / publication → choisis la photo.',
-    fbHint: 'Image enregistrée. Ouvre Facebook → créer une publication → ajoute la photo depuis ta galerie.',
-    waHint: 'Image enregistrée. Dans WhatsApp, joins la photo au message (ou envoie le texte prérempli).',
+    igHint: 'Choisis Story ou publication dans le menu Instagram qui s’ouvre.',
+    igDesktop:
+      'Sur ordinateur, Instagram n’autorise pas l’envoi direct depuis un site. Sur téléphone, le bouton ouvre le partage Instagram (Story / publication). Tu peux aussi télécharger l’image.',
+    igOpen: 'Ouvrir Instagram…',
+    igStory: 'Story / publication',
+    fbHint: 'Image prête. Si Facebook ne propose pas la photo, ajoute-la depuis ta galerie.',
+    waHint: 'Si WhatsApp ne joint pas la photo, joins le fichier téléchargé au message.',
     preparing: 'Préparation de l’image…',
     error: 'Impossible de créer l’image. Réessaie.',
   },
@@ -43,9 +47,13 @@ const COPY = {
     download: 'Descargar',
     more: 'Otro',
     close: 'Cerrar',
-    igHint: 'Imagen guardada. Abre Instagram → Nueva story / publicación → elige la foto.',
-    fbHint: 'Imagen guardada. Abre Facebook → crear publicación → añade la foto.',
-    waHint: 'Imagen guardada. En WhatsApp, adjunta la foto al mensaje.',
+    igHint: 'Elige Story o publicación en el menú de Instagram que se abre.',
+    igDesktop:
+      'En ordenador, Instagram no permite enviar directo desde un sitio. En el móvil, el botón abre Instagram (Story / publicación). También puedes descargar la imagen.',
+    igOpen: 'Abrir Instagram…',
+    igStory: 'Story / publicación',
+    fbHint: 'Imagen lista. Si Facebook no propone la foto, añádela desde tu galería.',
+    waHint: 'Si WhatsApp no adjunta la foto, une el archivo descargado al mensaje.',
     preparing: 'Preparando la imagen…',
     error: 'No se pudo crear la imagen. Inténtalo de nuevo.',
   },
@@ -172,10 +180,33 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
   async function onInstagram() {
     setHint(null);
     if (!blob) return;
-    downloadShareBlob(blob, filename);
+    const file = new File([blob], filename, { type: 'image/png' });
+
+    // Seule voie officielle vers Story / publication du compte perso :
+    // le partage système (Web Share API) — Instagram apparaît dans la feuille.
+    try {
+      const shared = await shareFileNative(file, shareText, profileTitle);
+      if (shared) {
+        setHint(t.igHint);
+        return;
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+    }
+
+    // Mobile sans canShare fichiers : tenter le deep link Stories
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) window.location.href = 'instagram://story-camera';
-    window.setTimeout(() => setHint(t.igHint), isMobile ? 600 : 0);
+    if (isMobile) {
+      downloadShareBlob(blob, filename);
+      window.setTimeout(() => {
+        window.location.href = 'instagram://story-camera';
+      }, 200);
+      setHint(t.igHint);
+      return;
+    }
+
+    // Desktop : Instagram bloque tout envoi direct depuis un site tiers
+    setHint(t.igDesktop);
   }
 
   async function onFacebook() {
