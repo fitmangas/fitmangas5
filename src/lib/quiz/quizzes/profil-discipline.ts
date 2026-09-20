@@ -7,6 +7,11 @@ const D = { rouge: 2 };
 const E = { jaune: 2 };
 const A = { vert: 2 };
 const M = { bleu: 2 };
+/** q13 tranche : poids ×2 pour qu’un rattrapage depuis −2 ne crée plus d’égalité 31/31. */
+const D13 = { rouge: 4 };
+const E13 = { jaune: 4 };
+const A13 = { vert: 4 };
+const M13 = { bleu: 4 };
 
 /** Options mélangées à chaque question — A n’est jamais toujours « Directe ». */
 export const quizProfilDiscipline: QuizDefinition = {
@@ -170,16 +175,16 @@ export const quizProfilDiscipline: QuizDefinition = {
         opt('d', 'Perdre du temps sans progresser.', 'Perder tiempo sin progresar.', D),
       ],
     ),
-    /** Question 13 : tranche les égalités (orientation claire d’un profil). */
+    /** Question 13 : tranche (poids 4) — empêche l’égalité de points / % entre n°1 et n°2. */
     q(
       'q13',
       'Dernière : si tu ne pouvais garder qu’UNE chose pour tenir 8 semaines…',
       'Última: si solo pudieras quedarte con UNA cosa para aguantar 8 semanas…',
       [
-        opt('a', 'Un objectif mesurable et une date. Le reste suit.', 'Un objetivo medible y una fecha. El resto viene.', D),
-        opt('b', 'De l’élan et du lien — une énergie qui me tire.', 'Impulso y vínculo — una energía que me tire.', E),
-        opt('c', 'Quelqu’un qui m’attend, un rendez-vous fixe.', 'Alguien que me espera, una cita fija.', A),
-        opt('d', 'Une méthode claire, des critères, pas d’à-peu-près.', 'Un método claro, criterios, nada a medias.', M),
+        opt('a', 'Un objectif mesurable et une date. Le reste suit.', 'Un objetivo medible y una fecha. El resto viene.', D13),
+        opt('b', 'De l’élan et du lien — une énergie qui me tire.', 'Impulso y vínculo — una energía que me tire.', E13),
+        opt('c', 'Quelqu’un qui m’attend, un rendez-vous fixe.', 'Alguien que me espera, una cita fija.', A13),
+        opt('d', 'Une méthode claire, des critères, pas d’à-peu-près.', 'Un método claro, criterios, nada a medias.', M13),
       ],
     ),
   ],
