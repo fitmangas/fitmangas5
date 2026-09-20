@@ -40,6 +40,8 @@ export type AcqContact = {
   channel: AcquisitionChannel;
   handle: string | null;
   email: string | null;
+  phone?: string | null;
+  displayName?: string | null;
   optIn: boolean;
   lifecycleStage: LifecycleStage;
   tags: string[];
