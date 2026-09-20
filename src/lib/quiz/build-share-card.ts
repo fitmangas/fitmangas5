@@ -1,10 +1,15 @@
 import { DISC_LETTER_COLOR, DISC_LETTER_LABEL, type DiscLetter } from '@/lib/quiz/disc-palette';
 import type { QuizDefinition, QuizLocale, QuizResult, QuizScore } from '@/lib/quiz/types';
 
-const W = 1080;
-const H = 1350; // 4:5 — Stories crop + posts IG
+/** Canvas total : marge pour ombre + coins arrondis visibles. */
+const OUTER_W = 1080;
+const OUTER_H = 1350;
+const PAD = 48;
+const CARD_R = 48;
+const INNER_W = OUTER_W - PAD * 2;
+const INNER_H = OUTER_H - PAD * 2;
 
-type ShareCardArgs = {
+export type ShareCardArgs = {
   quiz: QuizDefinition;
   result: QuizResult;
   score: QuizScore;
@@ -80,102 +85,159 @@ export async function buildShareCardPng(args: ShareCardArgs): Promise<Blob> {
   const secondaryPct = secondary ? score.percents[secondary.id] ?? 0 : 0;
 
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = OUTER_W;
+  canvas.height = OUTER_H;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
 
-  // Fond crème
-  ctx.fillStyle = '#FFFAF5';
-  ctx.fillRect(0, 0, W, H);
+  // Fond transparent doux (zone hors carte)
+  ctx.clearRect(0, 0, OUTER_W, OUTER_H);
+  ctx.fillStyle = '#F3EDE6';
+  ctx.fillRect(0, 0, OUTER_W, OUTER_H);
 
-  // Bande accent haut
+  const ix = PAD;
+  const iy = PAD;
+
+  // Ombre portée
+  ctx.save();
+  ctx.shadowColor = 'rgba(28, 24, 20, 0.28)';
+  ctx.shadowBlur = 48;
+  ctx.shadowOffsetY = 22;
+  roundRect(ctx, ix, iy, INNER_W, INNER_H, CARD_R);
+  ctx.fillStyle = '#FFFAF5';
+  ctx.fill();
+  ctx.restore();
+
+  // Clip carte
+  ctx.save();
+  roundRect(ctx, ix, iy, INNER_W, INNER_H, CARD_R);
+  ctx.clip();
+
+  // Fond crème carte
+  ctx.fillStyle = '#FFFAF5';
+  ctx.fillRect(ix, iy, INNER_W, INNER_H);
+
+  // Bande accent haut (arrondie via clip)
   ctx.fillStyle = accent;
-  ctx.fillRect(0, 0, W, 16);
+  ctx.fillRect(ix, iy, INNER_W, 14);
+
+  const contentX = ix + 56;
+  const contentW = INNER_W - 112;
 
   // Logo
   const logo = await loadImage('/logo.png');
   if (logo) {
-    ctx.drawImage(logo, 64, 56, 72, 72);
+    ctx.drawImage(logo, contentX, iy + 44, 64, 64);
   }
   ctx.fillStyle = '#C45D3E';
-  ctx.font = '700 36px Inter, system-ui, sans-serif';
-  ctx.fillText('FitMangas', logo ? 152 : 64, 104);
+  ctx.font = '700 34px Inter, system-ui, sans-serif';
+  ctx.fillText('FitMangas', logo ? contentX + 80 : contentX, iy + 88);
 
   // Kicker
   ctx.fillStyle = '#C45D3E';
-  ctx.font = '700 22px Inter, system-ui, sans-serif';
+  ctx.font = '700 20px Inter, system-ui, sans-serif';
   const kicker = locale === 'es' ? 'MI PERFIL DE DISCIPLINA' : 'MON PROFIL DE DISCIPLINE';
-  ctx.fillText(kicker, 64, 200);
+  ctx.fillText(kicker, contentX, iy + 160);
 
-  // Carte profil
-  roundRect(ctx, 64, 240, W - 128, 320, 36);
+  // Carte profil (ombre interne légère)
+  const profileY = iy + 190;
+  const profileH = 280;
+  ctx.save();
+  ctx.shadowColor = 'rgba(28, 24, 20, 0.18)';
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 12;
+  roundRect(ctx, contentX, profileY, contentW, profileH, 32);
   ctx.fillStyle = accent;
+  ctx.fill();
+  ctx.restore();
+
+  // Reflet translucide
+  roundRect(ctx, contentX, profileY, contentW, profileH, 32);
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '700 28px Inter, system-ui, sans-serif';
-  ctx.fillText(`${colorLabel}  ·  ${letter}`, 100, 310);
+  ctx.font = '700 26px Inter, system-ui, sans-serif';
+  ctx.fillText(`${colorLabel}  ·  ${letter}`, contentX + 36, profileY + 56);
 
-  ctx.font = '700 64px Inter, system-ui, sans-serif';
-  const nameLines = wrapCanvas(ctx, styleName, W - 220, 2);
-  let nameY = 390;
+  ctx.font = '700 58px Inter, system-ui, sans-serif';
+  const nameLines = wrapCanvas(ctx, styleName, contentW - 80, 2);
+  let nameY = profileY + 130;
   for (const line of nameLines) {
-    ctx.fillText(line, 100, nameY);
-    nameY += 72;
+    ctx.fillText(line, contentX + 36, nameY);
+    nameY += 64;
   }
 
-  ctx.font = '600 42px Inter, system-ui, sans-serif';
-  ctx.fillText(`${primaryPct} %`, 100, 520);
+  ctx.font = '600 40px Inter, system-ui, sans-serif';
+  ctx.fillText(`${primaryPct} %`, contentX + 36, profileY + 240);
 
   // Tagline
   ctx.fillStyle = '#1D1D1F';
-  ctx.font = '400 32px Inter, system-ui, sans-serif';
-  const tagLines = wrapCanvas(ctx, result.tagline[locale], W - 128, 3);
-  let tagY = 620;
+  ctx.font = '400 28px Inter, system-ui, sans-serif';
+  const tagLines = wrapCanvas(ctx, result.tagline[locale], contentW, 3);
+  let tagY = profileY + profileH + 48;
   for (const line of tagLines) {
-    ctx.fillText(line, 64, tagY);
-    tagY += 44;
+    ctx.fillText(line, contentX, tagY);
+    tagY += 38;
   }
 
-  // Mix mini-bars
-  let barY = 780;
-  ctx.font = '600 22px Inter, system-ui, sans-serif';
+  // Mix bars
+  let barY = tagY + 36;
+  ctx.font = '600 20px Inter, system-ui, sans-serif';
   for (const row of score.ranked.slice(0, 4)) {
     const profile = args.quiz.results.find((r) => r.id === row.id);
     if (!profile?.letter) continue;
     const L = profile.letter as DiscLetter;
     const c = DISC_LETTER_COLOR[L];
     ctx.fillStyle = '#1D1D1F';
-    ctx.fillText(`${DISC_LETTER_LABEL[locale][L].short}  ${row.percent}%`, 64, barY);
-    ctx.fillStyle = '#E8DFD6';
-    roundRect(ctx, 64, barY + 12, W - 128, 18, 9);
+    ctx.fillText(`${DISC_LETTER_LABEL[locale][L].short}  ${row.percent}%`, contentX, barY);
+
+    roundRect(ctx, contentX, barY + 14, contentW, 16, 8);
+    ctx.fillStyle = '#EDE4DA';
     ctx.fill();
-    ctx.fillStyle = c;
-    const bw = Math.max(18, ((W - 128) * row.percent) / 100);
-    roundRect(ctx, 64, barY + 12, bw, 18, 9);
-    ctx.fill();
-    barY += 70;
+
+    const bw = row.percent <= 0 ? 0 : Math.max(16, (contentW * row.percent) / 100);
+    if (bw > 0) {
+      roundRect(ctx, contentX, barY + 14, bw, 16, 8);
+      ctx.fillStyle = c;
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(contentX + 8, barY + 22, 7, 0, Math.PI * 2);
+      ctx.fillStyle = c;
+      ctx.fill();
+    }
+    barY += 62;
   }
 
   if (secondary && secondaryLetter) {
-    ctx.fillStyle = '#5A5550';
-    ctx.font = '400 24px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#6B6560';
+    ctx.font = '400 22px Inter, system-ui, sans-serif';
     const secLabel =
       locale === 'es'
         ? `2.ª : ${DISC_LETTER_LABEL[locale][secondaryLetter].short} · ${secondaryPct}%`
         : `2e : ${DISC_LETTER_LABEL[locale][secondaryLetter].short} · ${secondaryPct}%`;
-    ctx.fillText(secLabel, 64, barY + 10);
+    ctx.fillText(secLabel, contentX, barY + 8);
   }
 
   // Pied
+  const footH = 100;
   ctx.fillStyle = accent;
-  ctx.fillRect(0, H - 120, W, 120);
+  ctx.fillRect(ix, iy + INNER_H - footH, INNER_W, footH);
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '700 28px Inter, system-ui, sans-serif';
-  ctx.fillText('fitmangas.com', 64, H - 55);
-  ctx.font = '400 22px Inter, system-ui, sans-serif';
-  ctx.fillText(locale === 'es' ? 'Pilates & Barre en visio' : 'Pilates & Barre en visio', 64, H - 28);
+  ctx.font = '700 26px Inter, system-ui, sans-serif';
+  ctx.fillText('fitmangas.com', contentX, iy + INNER_H - 48);
+  ctx.font = '400 20px Inter, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText('Pilates & Barre en visio', contentX, iy + INNER_H - 22);
+
+  ctx.restore();
+
+  // Contour subtil carte
+  roundRect(ctx, ix, iy, INNER_W, INNER_H, CARD_R);
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
   return await new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -185,25 +247,7 @@ export async function buildShareCardPng(args: ShareCardArgs): Promise<Blob> {
   });
 }
 
-export async function shareOrDownloadCard(args: ShareCardArgs & { shareText: string }) {
-  const blob = await buildShareCardPng(args);
-  const filename = `fitmangas-profil-${args.result.letter ?? 'x'}.png`;
-  const file = new File([blob], filename, { type: 'image/png' });
-
-  try {
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: args.result.styleName?.[args.locale] ?? args.result.title[args.locale],
-        text: args.shareText,
-      });
-      return 'shared' as const;
-    }
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') return 'cancelled' as const;
-  }
-
-  // Fallback : télécharger l’image + copier le texte
+export function downloadShareBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -211,12 +255,13 @@ export async function shareOrDownloadCard(args: ShareCardArgs & { shareText: str
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
 
-  try {
-    await navigator.clipboard.writeText(`${args.shareText}\nhttps://fitmangas.com`);
-  } catch {
-    /* ignore */
+export async function shareFileNative(file: File, text: string, title: string) {
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title, text });
+    return true;
   }
-  return 'downloaded' as const;
+  return false;
 }

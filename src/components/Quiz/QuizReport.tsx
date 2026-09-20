@@ -12,7 +12,7 @@ import {
   MixBars,
 } from '@/components/Quiz/QuizVisuals';
 import { buildDisciplineReportPdf, downloadBlob } from '@/lib/quiz/build-report-pdf';
-import { shareOrDownloadCard } from '@/lib/quiz/build-share-card';
+import { QuizShareModal } from '@/components/Quiz/QuizShareModal';
 import type { DiscLetter } from '@/lib/quiz/disc-palette';
 import { DISC_LETTER_COLOR, DISC_LETTER_LABEL, readMix } from '@/lib/quiz/disc-palette';
 import { QUIZ_CARD_BY_SLUG, QUIZ_SECTION_IMAGES } from '@/lib/quiz/media';
@@ -52,7 +52,6 @@ const LABELS = {
     pdf: 'Enregistrer en PDF',
     pdfBusy: 'Préparation du PDF…',
     share: 'Partager l’image',
-    shareBusy: 'Création de l’image…',
     other: 'Autre évaluation',
     human: 'Elles aussi ont un profil — et un rendez-vous',
     humanSub: 'Vidéos d’adhérentes.',
@@ -60,7 +59,6 @@ const LABELS = {
     env: 'Quand le cadre te convient, ce style te porte. Quand il est flou ou seule, il se retourne — souvent là que tu lâches.',
     not100: 'Tu n’es pas 100 % d’une seule couleur.',
     pdfError: 'Impossible de créer le PDF. Réessaie.',
-    shareError: 'Impossible de créer l’image. Réessaie.',
     nav: {
       mix: 'Mix',
       portrait: 'Portrait',
@@ -92,7 +90,6 @@ const LABELS = {
     pdf: 'Guardar en PDF',
     pdfBusy: 'Preparando el PDF…',
     share: 'Compartir imagen',
-    shareBusy: 'Creando la imagen…',
     other: 'Otra evaluación',
     human: 'Ellas también tienen un perfil — y una cita',
     humanSub: 'Vídeos de alumnas.',
@@ -100,7 +97,6 @@ const LABELS = {
     env: 'Cuando el marco te conviene, este estilo te sostiene. Cuando es vago o sola, se vuelve en contra.',
     not100: 'No eres 100 % de un solo color.',
     pdfError: 'No se pudo crear el PDF. Inténtalo de nuevo.',
-    shareError: 'No se pudo crear la imagen. Inténtalo de nuevo.',
     nav: {
       mix: 'Mix',
       portrait: 'Retrato',
@@ -164,12 +160,12 @@ function SectionBanner({
   objectPosition?: string;
 }) {
   return (
-    <div className="relative mb-6 h-44 overflow-hidden rounded-[28px] sm:h-52">
+    <div className="glass-card relative mb-6 h-44 overflow-hidden rounded-[28px] border border-white/50 bg-white/70 transition duration-200 hover:-translate-y-0.5 sm:h-52">
       <Image
         src={src}
         alt={alt}
         fill
-        className="object-cover"
+        className="object-cover transition duration-500 hover:scale-[1.03]"
         style={{ objectPosition }}
         sizes="(max-width:768px) 100vw, 900px"
       />
@@ -203,7 +199,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
   const card = QUIZ_CARD_BY_SLUG[quiz.slug];
   const [activeNav, setActiveNav] = useState('mix');
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [shareBusy, setShareBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const heroTitle = result.styleName?.[locale] ?? cleanProfileTitle(result.title[locale]);
@@ -274,22 +270,8 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
   }
 
   async function share() {
-    if (shareBusy) return;
     setActionError(null);
-    setShareBusy(true);
-    try {
-      await shareOrDownloadCard({
-        quiz,
-        result,
-        score,
-        locale,
-        shareText: result.shareLine[locale],
-      });
-    } catch {
-      setActionError(t.shareError);
-    } finally {
-      setShareBusy(false);
-    }
+    setShareOpen(true);
   }
 
   const imgAlt = (key: keyof typeof QUIZ_SECTION_IMAGES) =>
@@ -298,7 +280,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
   return (
     <article className={`quiz-report mx-auto max-w-3xl px-5 py-10 sm:max-w-4xl sm:py-14${embeddedInChapter ? ' quiz-report--chapter pb-8' : ''}`}>
       <nav className={`quiz-no-print sticky z-40 mb-8 ${embeddedInChapter ? 'top-0' : 'top-[52px]'}`}>
-        <ul className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1 rounded-full border border-brand-ink/[0.06] bg-white/95 px-2 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md">
+        <ul className="glass-card mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1 rounded-full border border-white/60 bg-white/75 px-2 py-2 backdrop-blur-xl">
           {navItems.map((item) => (
             <li key={item.id}>
               <a
@@ -318,7 +300,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
       </nav>
 
       {/* Hero — un seul nom, pas de doublon */}
-      <header className="relative overflow-hidden rounded-[32px] border border-brand-ink/[0.06] bg-white shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
+      <header className="glass-card group relative overflow-hidden rounded-[32px] border border-white/55 bg-white/80 transition duration-200 hover:-translate-y-0.5">
         <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
           <div className="relative p-6 sm:p-8">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">{t.report}</p>
@@ -369,7 +351,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
           </div>
           {card ? (
             <div className="relative hidden min-h-[300px] lg:block">
-              <Image src={card.image} alt="" fill className="object-cover" sizes="420px" />
+              <Image src={card.image} alt="" fill className="object-cover transition duration-500 group-hover:scale-[1.03]" sizes="420px" />
               <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-white/80" />
             </div>
           ) : null}
@@ -382,11 +364,11 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
       <section id="mix" className="scroll-mt-28 mt-10 space-y-8">
         {slices.length >= 4 ? (
           <div className="grid gap-5 sm:grid-cols-2">
-            <div className="rounded-[28px] bg-white/90 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="glass-card rounded-[28px] border border-white/55 bg-white/80 p-4 transition duration-200 hover:-translate-y-0.5">
               <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.wheel}</p>
               <DiscWheel slices={slices} size={220} />
             </div>
-            <div className="rounded-[28px] bg-white/90 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="glass-card rounded-[28px] border border-white/55 bg-white/80 p-4 transition duration-200 hover:-translate-y-0.5">
               <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.radar}</p>
               <DiscRadar slices={slices} size={240} />
             </div>
@@ -542,17 +524,16 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
             type="button"
             onClick={() => void savePdf()}
             disabled={pdfBusy}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e] disabled:opacity-50"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white/80 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(28,24,20,0.06)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#c45d3e] hover:text-[#c45d3e] hover:shadow-[0_14px_32px_rgba(28,24,20,0.12)] disabled:opacity-50"
           >
             {pdfBusy ? t.pdfBusy : t.pdf}
           </button>
           <button
             type="button"
             onClick={() => void share()}
-            disabled={shareBusy}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e] disabled:opacity-50"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white/80 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(28,24,20,0.06)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#c45d3e] hover:text-[#c45d3e] hover:shadow-[0_14px_32px_rgba(28,24,20,0.12)]"
           >
-            {shareBusy ? t.shareBusy : t.share}
+            {t.share}
           </button>
           <a href={trialHref} className={terracottaCta}>
             {quiz.cta[locale]}
@@ -567,6 +548,16 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
           </p>
         ) : null}
       </div>
+
+      <QuizShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        quiz={quiz}
+        result={result}
+        score={score}
+        locale={locale}
+        shareText={result.shareLine[locale]}
+      />
     </article>
   );
 }

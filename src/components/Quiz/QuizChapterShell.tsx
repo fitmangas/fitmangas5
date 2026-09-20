@@ -49,6 +49,11 @@ type Props = {
   openingCta: string;
   brandTitle?: string;
   brandSub?: string;
+  /**
+   * Index max atteint (inclus). Les onglets au-delà sont verrouillés.
+   * Si omis : dérivé de activeIndex (ne permet pas de revenir en arrière après un saut — préférer le passer).
+   */
+  maxReachedIndex?: number;
 };
 
 function isTypingTarget(el: EventTarget | null): boolean {
@@ -74,6 +79,7 @@ export function QuizChapterShell({
   openingCta,
   brandTitle = 'FitMangas',
   brandSub,
+  maxReachedIndex,
 }: Props) {
   const liveId = useId();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -83,6 +89,13 @@ export function QuizChapterShell({
   const [breathe, setBreathe] = useState(false);
   const [animKey, setAnimKey] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [internalMax, setInternalMax] = useState(activeIndex);
+
+  useEffect(() => {
+    setInternalMax((prev) => Math.max(prev, activeIndex));
+  }, [activeIndex]);
+
+  const unlockedIndex = Math.max(maxReachedIndex ?? internalMax, activeIndex);
 
   const total = steps.length;
   const safeIndex = clampChapterIndex(activeIndex, total);
@@ -150,6 +163,15 @@ export function QuizChapterShell({
       onActiveIndexChange(clampChapterIndex(index, total));
     },
     [onActiveIndexChange, total],
+  );
+
+  const goToTab = useCallback(
+    (index: number) => {
+      const clamped = clampChapterIndex(index, total);
+      if (clamped > unlockedIndex) return;
+      onActiveIndexChange(clamped);
+    },
+    [onActiveIndexChange, total, unlockedIndex],
   );
 
   const handleEnter = useCallback(() => {
@@ -233,17 +255,22 @@ export function QuizChapterShell({
           </Link>
 
           <nav className="quiz-chapter-tabs" aria-label={locale === 'es' ? 'Sumario' : 'Sommaire'}>
-            {steps.map((step, i) => (
-              <button
-                key={step.id}
-                type="button"
-                className="quiz-chapter-tab"
-                aria-current={i === safeIndex ? 'page' : undefined}
-                onClick={() => goTo(i)}
-              >
-                {step.shortLabel}
-              </button>
-            ))}
+            {steps.map((step, i) => {
+              const locked = i > unlockedIndex;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  className="quiz-chapter-tab"
+                  aria-current={i === safeIndex ? 'page' : undefined}
+                  aria-disabled={locked || undefined}
+                  disabled={locked}
+                  onClick={() => goToTab(i)}
+                >
+                  {step.shortLabel}
+                </button>
+              );
+            })}
           </nav>
 
           <div className="shrink-0">
