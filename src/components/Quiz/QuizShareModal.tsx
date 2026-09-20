@@ -129,9 +129,11 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
     setHint(null);
     if (!blob) return;
     downloadShareBlob(blob, filename);
-    // Deep link Stories (mobile) — fallback galerie
-    window.location.href = 'instagram://story-camera';
-    window.setTimeout(() => setHint(t.igHint), 600);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'instagram://story-camera';
+    }
+    window.setTimeout(() => setHint(t.igHint), isMobile ? 600 : 0);
   }
 
   async function onFacebook() {
