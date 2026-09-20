@@ -11,6 +11,8 @@ import {
   MixAxesMap,
   MixBars,
 } from '@/components/Quiz/QuizVisuals';
+import { buildDisciplineReportPdf, downloadBlob } from '@/lib/quiz/build-report-pdf';
+import { shareOrDownloadCard } from '@/lib/quiz/build-share-card';
 import type { DiscLetter } from '@/lib/quiz/disc-palette';
 import { DISC_LETTER_COLOR, DISC_LETTER_LABEL, readMix } from '@/lib/quiz/disc-palette';
 import { QUIZ_CARD_BY_SLUG, QUIZ_SECTION_IMAGES } from '@/lib/quiz/media';
@@ -48,13 +50,17 @@ const LABELS = {
     develop: 'Axes de développement',
     bridge: 'Et maintenant',
     pdf: 'Enregistrer en PDF',
-    share: 'Partager',
+    pdfBusy: 'Préparation du PDF…',
+    share: 'Partager l’image',
+    shareBusy: 'Création de l’image…',
     other: 'Autre évaluation',
     human: 'Elles aussi ont un profil — et un rendez-vous',
     humanSub: 'Vidéos d’adhérentes.',
     discNote: 'Quatre profils FitMangas (D · E · A · M) — pas un test officiel Everything DiSC®.',
     env: 'Quand le cadre te convient, ce style te porte. Quand il est flou ou seule, il se retourne — souvent là que tu lâches.',
     not100: 'Tu n’es pas 100 % d’une seule couleur.',
+    pdfError: 'Impossible de créer le PDF. Réessaie.',
+    shareError: 'Impossible de créer l’image. Réessaie.',
     nav: {
       mix: 'Mix',
       portrait: 'Portrait',
@@ -84,13 +90,17 @@ const LABELS = {
     develop: 'Ejes de desarrollo',
     bridge: 'Y ahora',
     pdf: 'Guardar en PDF',
-    share: 'Compartir',
+    pdfBusy: 'Preparando el PDF…',
+    share: 'Compartir imagen',
+    shareBusy: 'Creando la imagen…',
     other: 'Otra evaluación',
     human: 'Ellas también tienen un perfil — y una cita',
     humanSub: 'Vídeos de alumnas.',
     discNote: 'Cuatro perfiles FitMangas (D · E · A · M) — no es un test oficial Everything DiSC®.',
     env: 'Cuando el marco te conviene, este estilo te sostiene. Cuando es vago o sola, se vuelve en contra.',
     not100: 'No eres 100 % de un solo color.',
+    pdfError: 'No se pudo crear el PDF. Inténtalo de nuevo.',
+    shareError: 'No se pudo crear la imagen. Inténtalo de nuevo.',
     nav: {
       mix: 'Mix',
       portrait: 'Retrato',
@@ -192,6 +202,9 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
   const secondaryPct = secondary ? score.percents[secondary.id] ?? 0 : 0;
   const card = QUIZ_CARD_BY_SLUG[quiz.slug];
   const [activeNav, setActiveNav] = useState('mix');
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const heroTitle = result.styleName?.[locale] ?? cleanProfileTitle(result.title[locale]);
   const colorLabel = letter ? DISC_LETTER_LABEL[locale][letter].short : cleanProfileTitle(result.title[locale]);
@@ -240,21 +253,42 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  function savePdf() {
-    window.print();
+  async function savePdf() {
+    if (pdfBusy) return;
+    setActionError(null);
+    setPdfBusy(true);
+    try {
+      const blob = await buildDisciplineReportPdf({ quiz, result, score, locale });
+      const slug = (result.styleName?.[locale] ?? result.title[locale])
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      downloadBlob(blob, `fitmangas-profil-${slug || 'discipline'}.pdf`);
+    } catch {
+      setActionError(t.pdfError);
+    } finally {
+      setPdfBusy(false);
+    }
   }
 
   async function share() {
-    const text = result.shareLine[locale];
-    const url = window.location.href;
+    if (shareBusy) return;
+    setActionError(null);
+    setShareBusy(true);
     try {
-      if (navigator.share) {
-        await navigator.share({ title: result.title[locale], text, url });
-        return;
-      }
-      await navigator.clipboard.writeText(`${text}\n${url}`);
+      await shareOrDownloadCard({
+        quiz,
+        result,
+        score,
+        locale,
+        shareText: result.shareLine[locale],
+      });
     } catch {
-      /* cancel */
+      setActionError(t.shareError);
+    } finally {
+      setShareBusy(false);
     }
   }
 
@@ -502,27 +536,36 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
         <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
       </div>
 
-      <div className="quiz-no-print mt-10 flex flex-wrap justify-center gap-3 pb-16">
-        <button
-          type="button"
-          onClick={savePdf}
-          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
-        >
-          {t.pdf}
-        </button>
-        <button
-          type="button"
-          onClick={share}
-          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e]"
-        >
-          {t.share}
-        </button>
-        <a href={trialHref} className={terracottaCta}>
-          {quiz.cta[locale]}
-        </a>
-        <Link href={hubHref} className="inline-flex items-center px-2 py-3 text-[13px] text-brand-ink/45 hover:text-[#c45d3e]">
-          {t.other}
-        </Link>
+      <div className="quiz-no-print mt-10 flex flex-col items-center gap-3 pb-16">
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => void savePdf()}
+            disabled={pdfBusy}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e] disabled:opacity-50"
+          >
+            {pdfBusy ? t.pdfBusy : t.pdf}
+          </button>
+          <button
+            type="button"
+            onClick={() => void share()}
+            disabled={shareBusy}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 transition hover:border-[#c45d3e] hover:text-[#c45d3e] disabled:opacity-50"
+          >
+            {shareBusy ? t.shareBusy : t.share}
+          </button>
+          <a href={trialHref} className={terracottaCta}>
+            {quiz.cta[locale]}
+          </a>
+          <Link href={hubHref} className="inline-flex items-center px-2 py-3 text-[13px] text-brand-ink/45 hover:text-[#c45d3e]">
+            {t.other}
+          </Link>
+        </div>
+        {actionError ? (
+          <p className="text-center text-[13px] text-[#c45d3e]" role="alert">
+            {actionError}
+          </p>
+        ) : null}
       </div>
     </article>
   );
