@@ -6,7 +6,7 @@ export const quizSeuleFaceAuTapis: QuizDefinition = {
   accent: '#8B9B7A',
   eyebrow: { fr: 'Mode relationnel · 7 questions', es: 'Modo relacional · 7 preguntas' },
   title: {
-    fr: 'Comment tu te comportes seule face au tapis ?',
+    fr: 'Comment tu te comportes seule face au tapis\u00A0?',
     es: '¿Cómo te comportas sola frente al tapete?',
   },
   description: {

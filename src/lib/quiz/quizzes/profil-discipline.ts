@@ -21,7 +21,7 @@ export const quizProfilDiscipline: QuizDefinition = {
   discLike: true,
   eyebrow: { fr: 'Évaluation · 13 situations', es: 'Evaluación · 13 situaciones' },
   title: {
-    fr: 'Quel est ton profil de discipline ?',
+    fr: 'Quel est ton profil de discipline\u00A0?',
     es: '¿Cuál es tu perfil de disciplina?',
   },
   description: {

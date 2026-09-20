@@ -7,7 +7,7 @@ export const quizEnergieJournee: QuizDefinition = {
   accent: '#C9A227',
   eyebrow: { fr: 'Évaluation · 8 situations', es: 'Evaluación · 8 situaciones' },
   title: {
-    fr: 'Comment tu gères ton énergie dans la journée ?',
+    fr: 'Comment tu gères ton énergie dans la journée\u00A0?',
     es: '¿Cómo gestionas tu energía en el día?',
   },
   description: {

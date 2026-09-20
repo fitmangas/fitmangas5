@@ -6,7 +6,7 @@ export const quizJeRatePuis: QuizDefinition = {
   accent: '#C45D3E',
   eyebrow: { fr: 'Archétype · 7 questions', es: 'Arquetipo · 7 preguntas' },
   title: {
-    fr: 'Que fais-tu juste après avoir raté ?',
+    fr: 'Que fais-tu juste après avoir raté\u00A0?',
     es: '¿Qué haces justo después de fallar?',
   },
   description: {

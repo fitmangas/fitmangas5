@@ -6,7 +6,7 @@ export const quizCarteStress: QuizDefinition = {
   accent: '#7A9EAE',
   eyebrow: { fr: 'Corps · 7 questions', es: 'Cuerpo · 7 preguntas' },
   title: {
-    fr: 'Quel est ton profil face au stress ?',
+    fr: 'Quel est ton profil face au stress\u00A0?',
     es: '¿Cuál es tu perfil frente al estrés?',
   },
   description: {
