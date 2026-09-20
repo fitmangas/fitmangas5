@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { QuizChapterShell, type QuizChapterStep } from '@/components/Quiz/QuizChapterShell';
+import { QuizLeadCapture, type QuizLeadPayload } from '@/components/Quiz/QuizLeadCapture';
 import { QuizReport } from '@/components/Quiz/QuizReport';
 import { DiscColorStrip } from '@/components/Quiz/QuizVisuals';
 import { clampChapterIndex, resolveChapterSteps } from '@/lib/quiz/chapter-steps';
@@ -31,9 +32,12 @@ function trialUrl(locale: QuizLocale, slug: string) {
 export function QuizRunner({ quiz, locale }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [leadDone, setLeadDone] = useState(false);
   const [pickingOptionId, setPickingOptionId] = useState<string | null>(null);
-  const wasSubmitted = useRef(false);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadError, setLeadError] = useState<string | null>(null);
+  const jumpToLead = useRef(false);
+  const wasLeadDone = useRef(false);
   const advanceTimer = useRef<number | null>(null);
 
   const hubHref = locale === 'es' ? '/es/quiz' : '/quiz';
@@ -41,11 +45,12 @@ export function QuizRunner({ quiz, locale }: Props) {
   const card = QUIZ_CARD_BY_SLUG[quiz.slug];
   const score = useMemo(() => scoreQuiz(quiz, answers), [quiz, answers]);
   const result = useMemo(() => {
-    if (!submitted) return null;
+    if (!leadDone) return null;
     return quiz.results.find((r) => r.id === score.resultId) ?? quiz.results[0]!;
-  }, [submitted, quiz, score.resultId]);
+  }, [leadDone, quiz, score.resultId]);
 
   const allAnswered = quiz.questions.every((q) => Boolean(answers[q.id]));
+  const showLead = allAnswered && !leadDone;
 
   useEffect(() => {
     return () => {
@@ -53,7 +58,12 @@ export function QuizRunner({ quiz, locale }: Props) {
     };
   }, []);
 
-  /** Choix = flash soft + avance (ou rapport si dernière). */
+  const goToLeadStep = useCallback(() => {
+    jumpToLead.current = true;
+    setLeadError(null);
+  }, []);
+
+  /** Choix = flash soft + avance (ou étape lead si dernière). */
   const pickAndAdvance = useCallback(
     (questionId: string, optionId: string) => {
       if (pickingOptionId) return;
@@ -66,27 +76,71 @@ export function QuizRunner({ quiz, locale }: Props) {
       const isLast = qi >= 0 && qi === quiz.questions.length - 1;
 
       if (isLast) {
-        const complete = quiz.questions.every((q) => Boolean(nextAnswers[q.id]));
         advanceTimer.current = window.setTimeout(() => {
           setPickingOptionId(null);
-          setSubmitted(complete);
+          goToLeadStep();
         }, 360);
         return;
       }
 
-      setSubmitted(false);
       advanceTimer.current = window.setTimeout(() => {
         setPickingOptionId(null);
         setActiveIndex((i) => i + 1);
       }, 360);
     },
-    [answers, pickingOptionId, quiz.questions],
+    [answers, goToLeadStep, pickingOptionId, quiz.questions],
   );
 
-  const submitReport = useCallback(() => {
-    if (!allAnswered) return;
-    setSubmitted(true);
-  }, [allAnswered]);
+  const submitLead = useCallback(
+    async (payload: QuizLeadPayload) => {
+      if (!allAnswered || leadSubmitting) return;
+      setLeadSubmitting(true);
+      setLeadError(null);
+      try {
+        const res = await fetch('/api/quiz/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            locale,
+            quizSlug: quiz.slug,
+            firstName: payload.firstName,
+            email: payload.email,
+            phone: payload.phone,
+            consent: true,
+            resultId: score.resultId,
+            secondaryId: score.secondaryId,
+            percents: score.percents,
+            answers,
+            source: {
+              utm_source: 'quiz',
+              utm_medium: 'web',
+              utm_campaign: quiz.slug,
+            },
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setLeadError(
+            data.error ??
+              (locale === 'es'
+                ? 'No se pudo guardar. Inténtalo de nuevo.'
+                : 'Enregistrement impossible. Réessaie.'),
+          );
+          return;
+        }
+        setLeadDone(true);
+      } catch {
+        setLeadError(
+          locale === 'es'
+            ? 'Error de red. Comprueba tu conexión.'
+            : 'Erreur réseau. Vérifie ta connexion.',
+        );
+      } finally {
+        setLeadSubmitting(false);
+      }
+    },
+    [allAnswered, answers, leadSubmitting, locale, quiz.slug, score.percents, score.resultId, score.secondaryId],
+  );
 
   const steps: QuizChapterStep[] = useMemo(() => {
     const opening: QuizChapterStep = {
@@ -185,13 +239,13 @@ export function QuizRunner({ quiz, locale }: Props) {
         id: q.id,
         shortLabel: String(qi + 1),
         label: locale === 'es' ? `Situación ${qi + 1}` : `Situation ${qi + 1}`,
-        allowsNext: Boolean(selected) && (!isLast || allAnswered),
+        allowsNext: Boolean(selected),
         nextLabel: isLast
           ? locale === 'es'
-            ? 'Ver mi informe →'
-            : 'Voir mon rapport →'
+            ? 'Recibir mi informe →'
+            : 'Recevoir mon rapport →'
           : undefined,
-        onNext: isLast ? () => submitReport() : undefined,
+        onNext: isLast ? () => goToLeadStep() : undefined,
         content: (
           <div className="quiz-chapter-panel">
             <span className="quiz-chapter-giant" aria-hidden>
@@ -238,8 +292,26 @@ export function QuizRunner({ quiz, locale }: Props) {
       };
     });
 
+    const leadStep: QuizChapterStep | null = showLead
+      ? {
+          id: 'lead',
+          shortLabel: locale === 'es' ? 'Datos' : 'Coord.',
+          label: locale === 'es' ? 'Tus datos' : 'Tes coordonnées',
+          allowsNext: false,
+          content: (
+            <QuizLeadCapture
+              locale={locale}
+              quizTitle={quiz.title[locale]}
+              submitting={leadSubmitting}
+              error={leadError}
+              onSubmit={submitLead}
+            />
+          ),
+        }
+      : null;
+
     const resultStep: QuizChapterStep | null =
-      submitted && result
+      leadDone && result
         ? {
             id: 'result',
             shortLabel: locale === 'es' ? 'Informe' : 'Rapport',
@@ -259,7 +331,13 @@ export function QuizRunner({ quiz, locale }: Props) {
           }
         : null;
 
-    const all = [opening, brief, ...questionSteps, ...(resultStep ? [resultStep] : [])];
+    const all = [
+      opening,
+      brief,
+      ...questionSteps,
+      ...(leadStep ? [leadStep] : []),
+      ...(resultStep ? [resultStep] : []),
+    ];
     const resolved = resolveChapterSteps(
       all.map((s) => ({
         id: s.id,
@@ -272,29 +350,41 @@ export function QuizRunner({ quiz, locale }: Props) {
     return resolved.map((r) => byId.get(r.id)!).filter(Boolean);
   }, [
     answers,
-    allAnswered,
     card,
+    goToLeadStep,
     hubHref,
+    leadDone,
+    leadError,
+    leadSubmitting,
     locale,
     pickAndAdvance,
     pickingOptionId,
     quiz,
     result,
     score,
-    submitReport,
-    submitted,
+    showLead,
+    submitLead,
   ]);
 
-  // Première soumission → chapitre Rapport. Retour arrière ensuite autorisé.
+  // Après la dernière question → chapitre lead.
   useEffect(() => {
-    if (submitted && !wasSubmitted.current) {
+    if (!jumpToLead.current || !showLead) return;
+    const leadIdx = steps.findIndex((s) => s.id === 'lead');
+    if (leadIdx >= 0) {
+      setActiveIndex(leadIdx);
+      jumpToLead.current = false;
+    }
+  }, [showLead, steps]);
+
+  // Lead validé → chapitre rapport.
+  useEffect(() => {
+    if (leadDone && !wasLeadDone.current) {
       const resultIdx = steps.findIndex((s) => s.id === 'result');
       if (resultIdx >= 0) setActiveIndex(resultIdx);
     }
-    wasSubmitted.current = submitted;
-  }, [submitted, steps]);
+    wasLeadDone.current = leadDone;
+  }, [leadDone, steps]);
 
-  // Si le total baisse (rapport retiré), rester dans les bornes.
   useEffect(() => {
     setActiveIndex((i) => clampChapterIndex(i, steps.length));
   }, [steps.length]);
