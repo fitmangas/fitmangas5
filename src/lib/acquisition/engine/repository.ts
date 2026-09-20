@@ -29,6 +29,8 @@ function mapContact(row: Record<string, unknown>): AcqContact {
     channel: row.channel as AcquisitionChannel,
     handle: row.handle ? String(row.handle) : null,
     email: row.email ? String(row.email) : null,
+    phone: row.phone ? String(row.phone) : null,
+    displayName: row.display_name ? String(row.display_name) : null,
     optIn: Boolean(row.opt_in),
     lifecycleStage: (row.lifecycle_stage as LifecycleStage) ?? 'new',
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
