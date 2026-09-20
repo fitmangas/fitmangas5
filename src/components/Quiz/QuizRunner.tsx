@@ -32,7 +32,9 @@ export function QuizRunner({ quiz, locale }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [pickingOptionId, setPickingOptionId] = useState<string | null>(null);
   const wasSubmitted = useRef(false);
+  const advanceTimer = useRef<number | null>(null);
 
   const hubHref = locale === 'es' ? '/es/quiz' : '/quiz';
   const homeHref = locale === 'es' ? '/es' : '/';
@@ -45,28 +47,40 @@ export function QuizRunner({ quiz, locale }: Props) {
 
   const allAnswered = quiz.questions.every((q) => Boolean(answers[q.id]));
 
-  /** Choix = enregistre + passe à la question suivante (ou rapport si dernière). */
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+    };
+  }, []);
+
+  /** Choix = flash soft + avance (ou rapport si dernière). */
   const pickAndAdvance = useCallback(
     (questionId: string, optionId: string) => {
+      if (pickingOptionId) return;
+
       const nextAnswers = { ...answers, [questionId]: optionId };
       setAnswers(nextAnswers);
+      setPickingOptionId(optionId);
 
       const qi = quiz.questions.findIndex((q) => q.id === questionId);
       const isLast = qi >= 0 && qi === quiz.questions.length - 1;
 
       if (isLast) {
         const complete = quiz.questions.every((q) => Boolean(nextAnswers[q.id]));
-        setSubmitted(complete);
+        advanceTimer.current = window.setTimeout(() => {
+          setPickingOptionId(null);
+          setSubmitted(complete);
+        }, 360);
         return;
       }
 
       setSubmitted(false);
-      // Petite pause pour voir la sélection avant le fondu d’étape
-      window.setTimeout(() => {
+      advanceTimer.current = window.setTimeout(() => {
+        setPickingOptionId(null);
         setActiveIndex((i) => i + 1);
-      }, 180);
+      }, 360);
     },
-    [answers, quiz.questions],
+    [answers, pickingOptionId, quiz.questions],
   );
 
   const submitReport = useCallback(() => {
@@ -145,7 +159,7 @@ export function QuizRunner({ quiz, locale }: Props) {
           ) : null}
 
           {quiz.discLike ? (
-            <div className="quiz-chapter-card">
+            <div className="mt-8">
               <p className="quiz-chapter-eyebrow">
                 {locale === 'es' ? 'Los 4 perfiles' : 'Les 4 profils'}
               </p>
@@ -194,7 +208,12 @@ export function QuizRunner({ quiz, locale }: Props) {
                 ? 'Elige la que más se te parece — pasas a la siguiente al instante.'
                 : 'Choisis celle qui te ressemble le plus — tu passes tout de suite à la suivante.'}
             </p>
-            <div className="quiz-chapter-card" role="radiogroup" aria-label={q.prompt[locale]}>
+            <div
+              className="quiz-chapter-card"
+              role="radiogroup"
+              aria-label={q.prompt[locale]}
+              data-advancing={pickingOptionId ? 'true' : 'false'}
+            >
               {q.options.map((opt, oi) => (
                 <button
                   key={opt.id}
@@ -202,7 +221,9 @@ export function QuizRunner({ quiz, locale }: Props) {
                   role="radio"
                   aria-checked={selected === opt.id}
                   data-selected={selected === opt.id ? 'true' : 'false'}
+                  data-picking={pickingOptionId === opt.id ? 'true' : 'false'}
                   className="quiz-chapter-option"
+                  disabled={Boolean(pickingOptionId)}
                   onClick={() => pickAndAdvance(q.id, opt.id)}
                 >
                   <span className="quiz-chapter-option-letter">{String.fromCharCode(65 + oi)}</span>
@@ -249,7 +270,20 @@ export function QuizRunner({ quiz, locale }: Props) {
     );
     const byId = new Map(all.map((s) => [s.id, s]));
     return resolved.map((r) => byId.get(r.id)!).filter(Boolean);
-  }, [answers, allAnswered, card, hubHref, locale, pickAndAdvance, quiz, result, score, submitReport, submitted]);
+  }, [
+    answers,
+    allAnswered,
+    card,
+    hubHref,
+    locale,
+    pickAndAdvance,
+    pickingOptionId,
+    quiz,
+    result,
+    score,
+    submitReport,
+    submitted,
+  ]);
 
   // Première soumission → chapitre Rapport. Retour arrière ensuite autorisé.
   useEffect(() => {
