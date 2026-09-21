@@ -34,6 +34,7 @@ export type SelfTestResultRow = {
   consent_at: string | null;
   first_name: string | null;
   source_attribution: Record<string, unknown> | string | null;
+  test_version?: string | null;
   created_at: string;
 };
 
@@ -161,11 +162,17 @@ export async function savePublicSelfTestResult(
       analysis_mode: input.analysis.mode,
       analysis_strengths: input.analysis.strengths ?? [],
       acq_contact_id: contactId,
-      test_version: input.slug === 'big-five' ? 'ipip-50-v2-official' : 'ecr-s-v2-official',
+      test_version:
+        input.analysis.instrumentVersion ??
+        (input.slug === 'big-five' ? 'ipip-50' : 'ecr-s'),
       consent: true,
       consent_at: now,
       first_name: firstName,
-      source_attribution: sourceAttribution,
+      source_attribution: {
+        ...sourceAttribution,
+        format: input.analysis.instrumentVersion ?? null,
+        portrait: input.analysis.portrait?.name ?? null,
+      },
     })
     .select('id')
     .maybeSingle();
@@ -209,11 +216,18 @@ export async function saveMemberSelfTestResult(
       analysis_full: input.analysis.full,
       analysis_mode: input.analysis.mode,
       analysis_strengths: input.analysis.strengths ?? [],
-      test_version: input.slug === 'big-five' ? 'ipip-50-v2-official' : 'ecr-s-v2-official',
+      test_version:
+        input.analysis.instrumentVersion ??
+        (input.slug === 'big-five' ? 'ipip-50' : 'ecr-s'),
       consent: true,
       consent_at: now,
       first_name: input.firstName,
-      source_attribution: { channel: 'compte', slug: input.slug },
+      source_attribution: {
+        channel: 'compte',
+        slug: input.slug,
+        format: input.analysis.instrumentVersion ?? null,
+        portrait: input.analysis.portrait?.name ?? null,
+      },
     })
     .select('id')
     .maybeSingle();
@@ -275,7 +289,7 @@ export async function listResultsForProfile(profileId: string): Promise<SelfTest
   const { data, error } = await admin
     .from('self_test_results')
     .select(
-      'id, test_slug, locale, email, profile_id, answers, scores, analysis_teaser, analysis_full, analysis_mode, consent, consent_at, first_name, source_attribution, created_at',
+      'id, test_slug, locale, email, profile_id, answers, scores, analysis_teaser, analysis_full, analysis_mode, consent, consent_at, first_name, source_attribution, test_version, created_at',
     )
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false });

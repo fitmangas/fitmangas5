@@ -1,5 +1,6 @@
 export * from './types';
 export * from './scoring';
+export * from './assemble-report';
 export * from './analyze';
 export * from './health-scores';
 export * from './store';

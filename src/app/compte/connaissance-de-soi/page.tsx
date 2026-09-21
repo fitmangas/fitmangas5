@@ -93,6 +93,46 @@ export default async function ConnaissanceDeSoiPage() {
           {SELF_TEST_SLUGS.map((slug) => {
             const test = getSelfTest(slug);
             if (!test) return null;
+            if (slug === 'big-five') {
+              const rapid = getSelfTest('big-five', 'ipip-50');
+              const deep = getSelfTest('big-five', 'ipip-120');
+              return (
+                <GlassCard key={slug} className="flex flex-col p-5 md:p-6 md:col-span-2">
+                  <h3 className="text-lg font-semibold text-luxury-ink">{test.title[locale]}</h3>
+                  <p className="mt-2 text-sm text-luxury-muted">
+                    {locale === 'es'
+                      ? 'Elige formato: rápido (50) o en profundidad (120 + facetas). El historial guarda ambos.'
+                      : 'Choisis le format : rapide (50) ou approfondi (120 + facettes). L’historique conserve les deux.'}
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <Link
+                      href="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
+                      className="rounded-2xl border border-luxury-ink/10 bg-white/50 p-4 transition hover:border-[#c45d3e]/40"
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c45d3e]">
+                        {locale === 'es' ? 'Rápido' : 'Rapide'}
+                      </p>
+                      <p className="mt-1 text-sm text-luxury-ink">
+                        IPIP-50 · ~{rapid?.durationMin ?? 8} min · {rapid?.items.length ?? 50}{' '}
+                        {locale === 'es' ? 'preg.' : 'quest.'}
+                      </p>
+                    </Link>
+                    <Link
+                      href="/compte/connaissance-de-soi/tests/big-five?format=ipip-120"
+                      className="rounded-2xl border border-luxury-ink/10 bg-white/50 p-4 transition hover:border-[#c45d3e]/40"
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c45d3e]">
+                        {locale === 'es' ? 'En profundidad' : 'Approfondie'}
+                      </p>
+                      <p className="mt-1 text-sm text-luxury-ink">
+                        IPIP-NEO-120 · ~{deep?.durationMin ?? 20} min · {deep?.items.length ?? 120}{' '}
+                        {locale === 'es' ? 'preg.' : 'quest.'}
+                      </p>
+                    </Link>
+                  </div>
+                </GlassCard>
+              );
+            }
             return (
               <GlassCard key={slug} className="flex flex-col p-5 md:p-6">
                 <h3 className="text-lg font-semibold text-luxury-ink">{test.title[locale]}</h3>
@@ -119,12 +159,30 @@ export default async function ConnaissanceDeSoiPage() {
         ) : (
           <div className="mt-4 space-y-3">
             {results.slice(0, 8).map((row) => {
-              const test = getSelfTest(row.test_slug);
+              const version = row.test_version ?? '';
+              const is120 = version.includes('120');
+              const test = getSelfTest(
+                row.test_slug,
+                row.test_slug === 'big-five' ? (is120 ? 'ipip-120' : 'ipip-50') : undefined,
+              );
+              const formatLabel =
+                row.test_slug === 'big-five'
+                  ? is120
+                    ? locale === 'es'
+                      ? ' · IPIP-120'
+                      : ' · IPIP-120'
+                    : ' · IPIP-50'
+                  : '';
+              const retryHref =
+                row.test_slug === 'big-five'
+                  ? `/compte/connaissance-de-soi/tests/big-five?format=${is120 ? 'ipip-120' : 'ipip-50'}`
+                  : `/compte/connaissance-de-soi/tests/${row.test_slug}`;
               return (
                 <GlassCard key={row.id} className="p-4 md:p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium text-luxury-ink">
                       {test?.title[locale] ?? row.test_slug}
+                      <span className="font-normal text-luxury-soft">{formatLabel}</span>
                     </p>
                     <span className="text-[11px] text-luxury-soft">{dateFmt.format(new Date(row.created_at))}</span>
                   </div>
@@ -132,7 +190,7 @@ export default async function ConnaissanceDeSoiPage() {
                     <p className="mt-2 line-clamp-2 text-sm text-luxury-muted">{row.analysis_teaser}</p>
                   ) : null}
                   <Link
-                    href={`/compte/connaissance-de-soi/tests/${row.test_slug}`}
+                    href={retryHref}
                     className="mt-3 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted underline underline-offset-2"
                   >
                     {t.open}

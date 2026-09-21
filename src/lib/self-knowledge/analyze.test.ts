@@ -11,7 +11,8 @@ describe('analyse template (sans Claude)', () => {
     expect(analysis.teaser.length).toBeGreaterThan(40);
     expect(analysis.full.length).toBeGreaterThan(80);
     expect(analysis.strengths.length).toBeGreaterThanOrEqual(1);
-    expect(analysis.full).toMatch(/indicatif|FitMangas|Ouverture|Stabilité|Conscience/i);
+    expect(analysis.full).toMatch(/Portrait|Ouverture|Stabilité|Conscience/i);
+    expect(analysis.sourceBadge).toMatch(/Banque|Banco/);
   });
 
   it('produit analyse attachement ES', () => {
@@ -53,7 +54,9 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     expect(analysis.mode).toBe('template');
   });
 
-  it('si Claude répond JSON valide → mode claude', async () => {
+  it('si Claude répond JSON valide dans la banque → mode claude', async () => {
+    const scores = { O: 40, C: 30, E: 30, A: 30, ES: 20 };
+    const assembled = buildTemplateAnalysis(BIG_FIVE_TEST, scores, 'fr');
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-fake');
     vi.stubGlobal(
       'fetch',
@@ -63,22 +66,18 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
             {
               type: 'text',
               text: JSON.stringify({
-                teaser: 'Teaser Claude test.',
-                full: 'Analyse complète Claude pour les tests.',
-                strengths: ['Force A', 'Force B'],
+                teaser: `${assembled.portrait!.name} — ${assembled.teaser.slice(0, 120)}`,
+                full: assembled.full,
+                strengths: assembled.strengths.slice(0, 2),
               }),
             },
           ],
         }),
       ),
     );
-    const analysis = await generateSelfTestAnalysis(
-      BIG_FIVE_TEST,
-      { O: 40, C: 30, E: 30, A: 30, ES: 20 },
-      'fr',
-    );
+    const analysis = await generateSelfTestAnalysis(BIG_FIVE_TEST, scores, 'fr');
     expect(analysis.mode).toBe('claude');
-    expect(analysis.teaser).toContain('Teaser Claude');
-    expect(analysis.strengths).toEqual(['Force A', 'Force B']);
+    expect(analysis.teaser).toContain(assembled.portrait!.name);
+    expect(analysis.sourceBadge).toMatch(/Claude/);
   });
 });

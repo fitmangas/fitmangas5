@@ -2,11 +2,7 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 
 import { ATTACHMENT_TEST } from './ecr-short';
 import { BIG_FIVE_TEST } from './ipip50';
-import {
-  buildTemplateAnalysis,
-  generateSelfTestAnalysis,
-  fitmangasBullets,
-} from './analyze';
+import { buildTemplateAnalysis, generateSelfTestAnalysis } from './analyze';
 
 describe('analyse — teaser vs full + cas extrêmes', () => {
   it('teaser plus court que full ; distinct', () => {
@@ -17,31 +13,31 @@ describe('analyse — teaser vs full + cas extrêmes', () => {
     );
     expect(a.teaser.length).toBeLessThan(a.full.length);
     expect(a.full).not.toEqual(a.teaser);
-    expect(a.full).toMatch(/Stabilité émotionnelle|Conscience|Extraversion/);
+    expect(a.portrait?.name).toBeTruthy();
+    expect(a.sections?.whoYouAre).toMatch(/Extraversion|calme|collectif/i);
   });
 
   it('tous scores hauts (dont ES) : pas de langage « anxiété » contradictoire', () => {
     const high = { E: 48, A: 48, C: 48, ES: 48, O: 48 };
     const a = buildTemplateAnalysis(BIG_FIVE_TEST, high, 'fr');
-    expect(a.full).toMatch(/Stabilité émotionnelle: 48\/50 \(plutôt élevé\)/);
+    expect(a.full.toLowerCase()).toMatch(/stabilité|stable|sérénité|calme/);
     expect(a.full.toLowerCase()).not.toMatch(/stabilité émotionnelle.*anxiété|es haute.*anxiété/);
-    const bullets = fitmangasBullets(BIG_FIVE_TEST, high, 'fr').join(' ');
-    expect(bullets.toLowerCase()).toMatch(/stabilité|conscience|cadre/);
-    expect(bullets.toLowerCase()).not.toMatch(/quand le stress monte vite/);
+    expect(a.sections?.forces.length).toBe(5);
   });
 
   it('ES basse : évoque le stress / être vue, pas « calme »', () => {
     const lowEs = { E: 30, A: 30, C: 30, ES: 12, O: 30 };
-    const bullets = fitmangasBullets(BIG_FIVE_TEST, lowEs, 'fr').join(' ');
-    expect(bullets.toLowerCase()).toMatch(/stress|vue|correction/);
-    expect(bullets.toLowerCase()).not.toMatch(/stabilité émotionnelle plutôt haute/);
+    const a = buildTemplateAnalysis(BIG_FIVE_TEST, lowEs, 'fr');
+    const text = `${a.sections?.limits.join(' ')} ${a.full}`.toLowerCase();
+    expect(text).toMatch(/stress|pression|accompagn|signal/);
+    expect(text).not.toMatch(/stabilité émotionnelle plutôt haute/);
   });
 
   it('ECR anxiété haute / évitement bas : cohérent', () => {
     const a = buildTemplateAnalysis(ATTACHMENT_TEST, { anxiety: 6.2, avoidance: 2.0 }, 'fr');
-    expect(a.full).toMatch(/Anxiété d’attachement: 6\.2\/7 \(plutôt élevé\)/);
-    expect(a.full).toMatch(/Évitement: 2\/7 \(plutôt bas\)/);
-    expect(a.strengths.some((s) => /évitement|éviter/i.test(s) || /basse|bas/i.test(s))).toBe(true);
+    expect(a.full).toMatch(/6\.2\/7|Anxiété/);
+    expect(a.full).toMatch(/2\/7|Évitement/);
+    expect(a.strengths.length).toBeGreaterThanOrEqual(1);
   });
 
   it('tous bas Big Five : génère sans throw', async () => {

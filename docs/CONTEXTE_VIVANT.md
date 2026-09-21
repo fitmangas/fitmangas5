@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Refonte résultats connaissance de soi (niveau profil-discipline)
+- Banques déterministes FR/ES : 5 traits × 3 niveaux + 8 combos ; 30 facettes × 3 ; attachement anxiété/évitement + 4 styles ; portraits nommés dérivés des scores.
+- Analyse : `assemble-report.ts` = source de vérité ; Claude ne fait que fluidifier (garde `assertAnalysisWithinBank`) ; sans clé = analyse **complète** (badge « Banque FitMangas »).
+- Big Five au choix : IPIP-50 (~8 min) ou IPIP-NEO-120 (~20 min, 30 facettes) — écran choose + historique `test_version`.
+- UI : `SelfTestReport` + `OceanRadar` (hero portrait, radar, sections, teaser public désirable, preuve sociale, export texte).
+- Fichiers clés : `src/lib/self-knowledge/banks/*`, `ipip120.ts`, `assemble-report.ts`, `analyze.ts`, `SelfTestReport.tsx`, `SelfTestRunner.tsx`.
+- Tests : 71 self-knowledge verts ; build prod vert. profil-discipline / Stripe / pont conversion inchangés.
+
 ### 2026-09-22 — Vérif approfondie connaissance de soi
 - Pont conversion : `normalizeSelfTestEmail` + attach eq/ilike + filet `checkout-success` ; test E2E logique `conversion-bridge.test.ts` vert.
 - Traductions FR/ES peaufinées (sens EN intact) — liste `docs/archive-produit/SELF_KNOWLEDGE_TRADUCTIONS.md`.

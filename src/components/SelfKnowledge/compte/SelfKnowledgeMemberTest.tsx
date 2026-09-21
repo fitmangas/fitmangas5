@@ -8,7 +8,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { getSelfTest } from '@/lib/self-knowledge/scoring';
 import type { SelfTestResultRow } from '@/lib/self-knowledge/store';
 import type { ClientLang } from '@/lib/compte/i18n';
-import type { SelfTestSlug } from '@/lib/self-knowledge/types';
+import type { BigFiveFormat, SelfTestSlug } from '@/lib/self-knowledge/types';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
 
@@ -18,6 +18,7 @@ type Props = {
   email: string;
   firstName: string | null;
   history: SelfTestResultRow[];
+  initialFormat?: BigFiveFormat;
 };
 
 function formatDate(iso: string, lang: ClientLang): string {
@@ -25,7 +26,14 @@ function formatDate(iso: string, lang: ClientLang): string {
   return new Date(iso).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export function SelfKnowledgeMemberTest({ lang, slug, email, firstName, history }: Props) {
+export function SelfKnowledgeMemberTest({
+  lang,
+  slug,
+  email,
+  firstName,
+  history,
+  initialFormat,
+}: Props) {
   const test = getSelfTest(slug);
   const locale = lang === 'es' ? 'es' : 'fr';
   const [mode, setMode] = useState<'history' | 'take'>('history');
@@ -68,6 +76,7 @@ export function SelfKnowledgeMemberTest({ lang, slug, email, firstName, history 
         mode="member"
         memberEmail={email}
         memberFirstName={firstName}
+        initialFormat={slug === 'big-five' ? initialFormat : undefined}
       />
     );
   }

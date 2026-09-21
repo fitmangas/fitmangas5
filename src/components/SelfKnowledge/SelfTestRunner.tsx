@@ -6,8 +6,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { SelfTestLeadCapture, type SelfTestLeadPayload } from '@/components/SelfKnowledge/SelfTestLeadCapture';
 import { SelfTestShell } from '@/components/SelfKnowledge/SelfTestShell';
 import { SelfTestTeaser } from '@/components/SelfKnowledge/SelfTestTeaser';
+import { BIG_FIVE_120_TEST } from '@/lib/self-knowledge/ipip120';
+import { BIG_FIVE_TEST } from '@/lib/self-knowledge/ipip50';
 import { scoreSelfTest, validateAnswers } from '@/lib/self-knowledge/scoring';
 import type {
+  BigFiveFormat,
   LikertValue,
   SelfTestAnalysis,
   SelfTestAnswers,
@@ -22,9 +25,11 @@ type Props = {
   mode?: 'public' | 'member';
   memberEmail?: string;
   memberFirstName?: string | null;
+  /** Deep link membre : saute la phase choose */
+  initialFormat?: BigFiveFormat;
 };
 
-type Phase = 'intro' | 'questions' | 'lead' | 'result';
+type Phase = 'choose' | 'intro' | 'questions' | 'lead' | 'result';
 
 const BATCH_SIZE = 5;
 
@@ -47,19 +52,34 @@ function chunkItems<T>(items: T[], size: number): T[][] {
 }
 
 export function SelfTestRunner({
-  test,
+  test: initialTest,
   locale,
   mode = 'public',
   memberEmail,
   memberFirstName,
+  initialFormat,
 }: Props) {
-  const [phase, setPhase] = useState<Phase>('intro');
+  const isBigFive = initialTest.slug === 'big-five';
+  const [format, setFormat] = useState<BigFiveFormat | null>(
+    isBigFive ? (initialFormat ?? null) : null,
+  );
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (isBigFive && !initialFormat) return 'choose';
+    return 'intro';
+  });
   const [batchIndex, setBatchIndex] = useState(0);
   const [answers, setAnswers] = useState<SelfTestAnswers>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<SelfTestAnalysis | null>(null);
   const [scores, setScores] = useState<SelfTestScores | null>(null);
+
+  const test = useMemo(() => {
+    if (!isBigFive) return initialTest;
+    if (format === 'ipip-120') return BIG_FIVE_120_TEST;
+    if (format === 'ipip-50') return BIG_FIVE_TEST;
+    return initialTest;
+  }, [format, initialTest, isBigFive]);
 
   const hubHref = locale === 'es' ? '/es/quiz' : '/quiz';
   const batches = useMemo(() => chunkItems(test.items, BATCH_SIZE), [test.items]);
@@ -70,6 +90,12 @@ export function SelfTestRunner({
   const copy =
     locale === 'es'
       ? {
+          chooseTitle: 'Elige la profundidad del test',
+          chooseSub: 'Mismo modelo Big Five — más preguntas = más matices.',
+          quickTitle: 'Rápida IPIP-50',
+          quickMeta: '50 preguntas · ~8 min · 5 rasgos',
+          deepTitle: 'Profunda IPIP-NEO-120',
+          deepMeta: '120 preguntas · ~20 min · 30 facetas',
           introCta: 'Empezar el test',
           back: 'Volver',
           next: 'Continuar',
@@ -78,9 +104,20 @@ export function SelfTestRunner({
           of: 'de',
           source: 'Fuente',
           progress: 'Progreso',
-          pick: 'Elige de 1 (muy en desacuerdo) a 7 (muy de acuerdo) según el test.',
+          pick: 'Elige de 1 (muy en desacuerdo) a 5 (muy de acuerdo) según el test.',
+          introWhat: 'Qué obtienes',
+          introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
+          introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
+          introBullet3: 'Un puente hacia cursos colectivos a horarios fijos (no es un diagnóstico).',
+          disclaimer: 'Resultado indicativo, no médico. Basado en ítems IPIP de dominio público.',
         }
       : {
+          chooseTitle: 'Choisis la profondeur du test',
+          chooseSub: 'Même modèle Big Five — plus de questions = plus de nuances.',
+          quickTitle: 'Rapide IPIP-50',
+          quickMeta: '50 questions · ~8 min · 5 traits',
+          deepTitle: 'Approfondie IPIP-NEO-120',
+          deepMeta: '120 questions · ~20 min · 30 facettes',
           introCta: 'Commencer le test',
           back: 'Retour',
           next: 'Continuer',
@@ -89,7 +126,12 @@ export function SelfTestRunner({
           of: 'sur',
           source: 'Source',
           progress: 'Progression',
-          pick: 'Choisis selon l’échelle indiquée sous chaque question.',
+          pick: 'Choisis de 1 (très inexact) à 5 (très exact) selon l’échelle indiquée.',
+          introWhat: 'Ce que tu obtiens',
+          introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
+          introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
+          introBullet3: 'Un pont vers les cours collectifs à horaires fixes (pas un diagnostic).',
+          disclaimer: 'Résultat indicatif, pas médical. Basé sur les items IPIP domaine public.',
         };
 
   const batchComplete = currentBatch.every((item) => answers[item.id] != null);
@@ -107,12 +149,14 @@ export function SelfTestRunner({
       try {
         const computedScores = scoreSelfTest(test, answers);
         const endpoint = mode === 'member' ? '/api/self-knowledge/member-submit' : '/api/self-knowledge/submit';
+        const resolvedFormat = test.format ?? format ?? 'ipip-50';
         const body =
           mode === 'member'
             ? {
                 slug: test.slug,
                 locale,
                 answers,
+                format: test.slug === 'big-five' ? resolvedFormat : undefined,
               }
             : {
                 slug: test.slug,
@@ -121,6 +165,7 @@ export function SelfTestRunner({
                 email: lead!.email,
                 consent: true,
                 answers,
+                format: test.slug === 'big-five' ? resolvedFormat : undefined,
                 source: {
                   utm_source: 'self-test',
                   utm_campaign: test.slug,
@@ -155,7 +200,7 @@ export function SelfTestRunner({
         setSubmitting(false);
       }
     },
-    [allComplete, answers, locale, mode, submitting, test],
+    [allComplete, answers, format, locale, mode, submitting, test],
   );
 
   const handleLeadSubmit = useCallback(
@@ -168,6 +213,13 @@ export function SelfTestRunner({
   const handleMemberFinish = useCallback(() => {
     void submitAnswers();
   }, [submitAnswers]);
+
+  const pickFormat = useCallback((picked: BigFiveFormat) => {
+    setFormat(picked);
+    setAnswers({});
+    setBatchIndex(0);
+    setPhase('intro');
+  }, []);
 
   if (phase === 'result' && analysis && scores) {
     return (
@@ -202,7 +254,37 @@ export function SelfTestRunner({
   return (
     <SelfTestShell locale={locale}>
       <div className="mx-auto max-w-2xl px-5 py-8 pb-20">
-        {phase === 'intro' ? (
+        {phase === 'choose' ? (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">Big Five</p>
+            <h1 className="mt-4 font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
+              {copy.chooseTitle}
+            </h1>
+            <p className="mt-3 text-[15px] text-brand-ink/55">{copy.chooseSub}</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => pickFormat('ipip-50')}
+                className="glass-card rounded-[24px] border border-white/55 bg-white/85 p-6 text-left transition hover:-translate-y-0.5 hover:border-[#c45d3e]/40"
+              >
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
+                  {copy.quickTitle}
+                </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.quickMeta}</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => pickFormat('ipip-120')}
+                className="glass-card rounded-[24px] border border-white/55 bg-white/85 p-6 text-left transition hover:-translate-y-0.5 hover:border-[#c45d3e]/40"
+              >
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
+                  {copy.deepTitle}
+                </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.deepMeta}</p>
+              </button>
+            </div>
+          </div>
+        ) : phase === 'intro' ? (
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">
               {test.durationMin} min · {test.items.length} {locale === 'es' ? 'preguntas' : 'questions'}
@@ -211,7 +293,18 @@ export function SelfTestRunner({
               {test.title[locale]}
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-brand-ink/60">{test.description[locale]}</p>
-            <p className="mt-3 text-[12px] text-brand-ink/45">
+
+            <div className="mt-6 rounded-[20px] border border-brand-ink/[0.06] bg-white/70 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/45">{copy.introWhat}</p>
+              <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-brand-ink/65">
+                <li>· {copy.introBullet1}</li>
+                <li>· {copy.introBullet2}</li>
+                <li>· {copy.introBullet3}</li>
+              </ul>
+              <p className="mt-4 text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
+            </div>
+
+            <p className="mt-4 text-[12px] text-brand-ink/45">
               {copy.source} :{' '}
               <a href={test.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
                 {test.source}
@@ -222,13 +315,28 @@ export function SelfTestRunner({
                 {locale === 'es' ? 'Conectada como' : 'Connectée en tant que'} {memberFirstName ?? memberEmail}
               </p>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setPhase('questions')}
-              className="mt-8 rounded-full bg-[#c45d3e] px-8 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338]"
-            >
-              {copy.introCta} →
-            </button>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {isBigFive && !initialFormat ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAnswers({});
+                    setBatchIndex(0);
+                    setPhase('choose');
+                  }}
+                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                >
+                  ← {copy.back}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setPhase('questions')}
+                className="rounded-full bg-[#c45d3e] px-8 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338]"
+              >
+                {copy.introCta} →
+              </button>
+            </div>
           </div>
         ) : (
           <div>
