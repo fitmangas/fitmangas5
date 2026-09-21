@@ -12,6 +12,11 @@ import {
   tiktokAppConfigured,
   tiktokConnectorStatusMessage,
 } from '@/lib/admin/tiktok-social';
+import {
+  getYouTubeSocialConnection,
+  youtubeAppConfigured,
+  youtubeConnectorStatusMessage,
+} from '@/lib/admin/youtube-social';
 import { loadPillarHistory, recentThemeLabels } from '@/lib/admin/social-pillars';
 
 export async function loadCommunityBoardProps() {
@@ -28,9 +33,10 @@ export async function loadCommunityBoardProps() {
           : 'Board CM indisponible.';
   }
 
-  const [meta, tiktok, metaLiveAck, alejandraDouble, pillarHistory] = await Promise.all([
+  const [meta, tiktok, youtube, metaLiveAck, alejandraDouble, pillarHistory] = await Promise.all([
     getMetaSocialConnection(),
     getTikTokSocialConnection(),
+    getYouTubeSocialConnection(),
     getMetaAppLiveAck(),
     getAlejandraDoubleProfile(),
     loadPillarHistory(),
@@ -47,6 +53,9 @@ export async function loadCommunityBoardProps() {
     tiktok,
     tiktokAppReady: tiktokAppConfigured(),
     tiktokStatusMessage: tiktokConnectorStatusMessage(tiktok),
+    youtube,
+    youtubeAppReady: youtubeAppConfigured(),
+    youtubeStatusMessage: youtubeConnectorStatusMessage(youtube),
     alejandraDouble,
     doubleUiEnabled: isAlejandraDoubleEnabled(),
     pillarHistoryLabels: recentThemeLabels(pillarHistory, 8),
