@@ -157,5 +157,21 @@ export async function saveQuizLead(input: QuizLeadBody): Promise<SaveQuizLeadRes
     return { ok: false, error: leadErr?.message ?? 'Impossible d’enregistrer le lead.', status: 500 };
   }
 
+  // Nurture : email immédiat (profil + essai) + planifie J+2 / J+5 — non bloquant
+  try {
+    const { scheduleAndSendQuizWelcome } = await import('@/lib/quiz/lead-nurture');
+    await scheduleAndSendQuizWelcome({
+      leadId: lead.id,
+      locale: input.locale,
+      firstName,
+      email,
+      phone,
+      resultId: input.resultId,
+      quizSlug: input.quizSlug,
+    });
+  } catch (e) {
+    console.error('[quiz-lead] nurture welcome', e);
+  }
+
   return { ok: true, leadId: lead.id, contactId };
 }

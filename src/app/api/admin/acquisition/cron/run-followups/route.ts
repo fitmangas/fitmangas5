@@ -7,6 +7,7 @@ import {
 } from '@/lib/acquisition/engine/repository';
 import { isAcquisitionModuleEnabled } from '@/lib/acquisition/feature-flag';
 import { pollInstagramInbox } from '@/lib/acquisition/providers/instagram-poll';
+import { processDueQuizNurture } from '@/lib/quiz/lead-nurture';
 
 export async function GET(request: Request) {
   return handle(request);
@@ -30,7 +31,8 @@ async function handle(request: Request) {
     const igPoll = await pollInstagramInbox({ conversationLimit: 12, messagesPerThread: 25 });
     const result = await runDueFollowups(40);
     const stripeSync = await syncAcqLifecycleFromSubscriptions();
-    return NextResponse.json({ success: true, igPoll, ...result, stripeSync });
+    const quizNurture = await processDueQuizNurture(40);
+    return NextResponse.json({ success: true, igPoll, ...result, stripeSync, quizNurture });
   } catch (error) {
     console.error('[acquisition run-followups]', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
