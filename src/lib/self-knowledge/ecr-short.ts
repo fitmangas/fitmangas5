@@ -36,72 +36,72 @@ const ITEM = (
 
 export const ECR_SHORT_ITEMS: SelfTestItem[] = [
   // 1 — Avoidance, reverse
-  // EN: It helps to turn to my romantic partner in times of need. — traduction littérale, non validée
+  // EN: It helps to turn to my romantic partner in times of need. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR1r',
     'avoidance',
     'It helps to turn to my romantic partner in times of need.',
-    'Cela m’aide de me tourner vers mon partenaire amoureux en cas de besoin.',
-    'Me ayuda recurrir a mi pareja romántica en momentos de necesidad.',
+    'En cas de besoin, je me tourne volontiers vers mon partenaire amoureux.',
+    'En momentos de necesidad, recurrir a mi pareja romántica me ayuda.',
     true
   ),
   // 2 — Anxiety
-  // EN: I need a lot of reassurance that I am loved by my partner. — traduction littérale, non validée
+  // EN: I need a lot of reassurance that I am loved by my partner. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR2',
     'anxiety',
     'I need a lot of reassurance that I am loved by my partner.',
-    'J’ai besoin de beaucoup de réassurance que mon partenaire m’aime.',
-    'Necesito mucha reafirmación de que mi pareja me ama.'
+    'J’ai besoin qu’on me rassure beaucoup sur le fait que mon partenaire m’aime.',
+    'Necesito que me reafirmen mucho que mi pareja me ama.'
   ),
   // 3 — Avoidance
-  // EN: I want to get close to my partner, but I keep pulling back. — traduction littérale, non validée
+  // EN: I want to get close to my partner, but I keep pulling back. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR3',
     'avoidance',
     'I want to get close to my partner, but I keep pulling back.',
-    'Je veux me rapprocher de mon partenaire, mais je n’arrête pas de me retirer.',
-    'Quiero acercarme a mi pareja, pero sigo alejándome.'
+    'Je veux me rapprocher de mon partenaire, mais je me retire sans cesse.',
+    'Quiero acercarme a mi pareja, pero no dejo de alejarme.'
   ),
   // 4 — Anxiety
-  // EN: I find that my partner(s) don't want to get as close as I would like. — traduction littérale, non validée
+  // EN: I find that my partner(s) don't want to get as close as I would like. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR4',
     'anxiety',
     "I find that my partner(s) don't want to get as close as I would like.",
-    'Je trouve que mon / mes partenaire(s) ne veulent pas se rapprocher autant que je le voudrais.',
-    'Encuentro que mi(s) pareja(s) no quiere(n) acercarse tanto como a mí me gustaría.'
+    'J’ai l’impression que mon partenaire ne veut pas se rapprocher autant que je le voudrais.',
+    'Siento que mi pareja no quiere acercarse tanto como a mí me gustaría.'
   ),
   // 5 — Avoidance, reverse
-  // EN: I turn to my partner for many things, including comfort and reassurance. — traduction littérale, non validée
+  // EN: I turn to my partner for many things, including comfort and reassurance. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR5r',
     'avoidance',
     'I turn to my partner for many things, including comfort and reassurance.',
-    'Je me tourne vers mon partenaire pour beaucoup de choses, y compris le réconfort et la réassurance.',
-    'Recurro a mi pareja para muchas cosas, incluido el consuelo y la reafirmación.',
+    'Je compte sur mon partenaire pour beaucoup de choses, y compris le réconfort et la rassurance.',
+    'Recurro a mi pareja para muchas cosas, incluido el consuelo y la seguridad emocional.',
     true
   ),
   // 6 — Anxiety
-  // EN: My desire to be very close sometimes scares people away. — traduction littérale, non validée
+  // EN: My desire to be very close sometimes scares people away. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR6',
     'anxiety',
     'My desire to be very close sometimes scares people away.',
-    'Mon désir d’être très proche fait parfois fuir les gens.',
-    'Mi deseo de estar muy cerca a veces ahuyenta a la gente.'
+    'Mon envie d’être très proche fait parfois fuir les gens.',
+    'Mi deseo de estar muy cerca a veces espanta a la gente.'
   ),
   // 7 — Avoidance
-  // EN: I try to avoid getting too close to my partner. — traduction littérale, non validée
+  // EN: I try to avoid getting too close to my partner. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR7',
     'avoidance',
     'I try to avoid getting too close to my partner.',
-    'J’essaie d’éviter de me rapprocher trop de mon partenaire.',
-    'Intento evitar acercarme demasiado a mi pareja.'
+    'J’essaie d’éviter de trop me rapprocher de mon partenaire.',
+    'Intento no acercarme demasiado a mi pareja.'
   ),
   // 8 — Anxiety, reverse
-  // EN: I do not often worry about being abandoned. — traduction littérale, non validée
+  // EN: I do not often worry about being abandoned. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR8r',
     'anxiety',
@@ -111,41 +111,41 @@ export const ECR_SHORT_ITEMS: SelfTestItem[] = [
     true
   ),
   // 9 — Avoidance, reverse
-  // EN: I usually discuss my problems and concerns with my partner. — traduction littérale, non validée
+  // EN: I usually discuss my problems and concerns with my partner. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR9r',
     'avoidance',
     'I usually discuss my problems and concerns with my partner.',
-    'Je discute en général de mes problèmes et préoccupations avec mon partenaire.',
-    'Suelo hablar de mis problemas y preocupaciones con mi pareja.',
+    'En général, je parle de mes problèmes et de mes soucis avec mon partenaire.',
+    'Suelo hablar con mi pareja de mis problemas y preocupaciones.',
     true
   ),
   // 10 — Anxiety
-  // EN: I get frustrated if romantic partners are not available when I need them. — traduction littérale, non validée
+  // EN: I get frustrated if romantic partners are not available when I need them. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR10',
     'anxiety',
     'I get frustrated if romantic partners are not available when I need them.',
-    'Je suis frustrée si les partenaires amoureux ne sont pas disponibles quand j’en ai besoin.',
-    'Me frustro si las parejas románticas no están disponibles cuando las necesito.'
+    'Je suis frustrée quand mon partenaire n’est pas disponible quand j’en ai besoin.',
+    'Me frustro si mi pareja no está disponible cuando la necesito.'
   ),
   // 11 — Avoidance
-  // EN: I am nervous when partners get too close to me. — traduction littérale, non validée
+  // EN: I am nervous when partners get too close to me. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR11',
     'avoidance',
     'I am nervous when partners get too close to me.',
-    'Je suis nerveuse quand les partenaires se rapprochent trop de moi.',
-    'Me pongo nerviosa cuando las parejas se acercan demasiado a mí.'
+    'Je suis nerveuse quand mon partenaire se rapproche trop de moi.',
+    'Me pongo nerviosa cuando mi pareja se acerca demasiado a mí.'
   ),
   // 12 — Anxiety
-  // EN: I worry that romantic partners won't care about me as much as I care about them. — traduction littérale, non validée
+  // EN: I worry that romantic partners won't care about me as much as I care about them. — traduction naturelle, sens fidèle à l’EN officiel
   ITEM(
     'ECR12',
     'anxiety',
     "I worry that romantic partners won't care about me as much as I care about them.",
-    'Je m’inquiète que les partenaires amoureux ne se soucient pas de moi autant que je me soucie d’eux.',
-    'Me preocupa que las parejas románticas no se preocupen por mí tanto como yo por ellas.'
+    'J’ai peur que mon partenaire ne tienne pas autant à moi que moi à lui.',
+    'Me preocupa que mi pareja no se preocupe por mí tanto como yo por ella.'
   ),
 ];
 

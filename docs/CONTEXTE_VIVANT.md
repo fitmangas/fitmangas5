@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Vérif approfondie connaissance de soi
+- Pont conversion : `normalizeSelfTestEmail` + attach eq/ilike + filet `checkout-success` ; test E2E logique `conversion-bridge.test.ts` vert.
+- Traductions FR/ES peaufinées (sens EN intact) — liste `docs/archive-produit/SELF_KNOWLEDGE_TRADUCTIONS.md`.
+- Analyse template/Claude : cohérence ES haute ≠ anxiété ; teaser ≠ full ; cas extrêmes couverts.
+- CTA teaser « Récupère ton analyse complète » → `/?offer=v-coll`.
+
 ### 2026-09-22 — Items officiels IPIP-50 + ECR-S
 - Remplacé reformulations par items EN officiels + traductions FR/ES littérales (non validées).
 - IPIP-50 : keying `newBigFive5broadKey.htm` (E 5− / A 4− / C 4− / ES 8− / O 3−). Facteur IV = ES (pas N).

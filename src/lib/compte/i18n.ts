@@ -120,6 +120,6 @@ export const compteNavLabels: Record<
     preferences: 'Preferencias',
     referral: 'Referidos',
     notifications: 'Notificaciones',
-    selfKnowledge: 'Conocimiento de uno mismo',
+    selfKnowledge: 'Autoconocimiento',
   },
 };

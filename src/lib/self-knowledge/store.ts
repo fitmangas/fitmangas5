@@ -14,6 +14,11 @@ import type {
 
 export const HEALTH_CONSENT_VERSION = 'health-v1';
 
+/** Normalise email lead/compte pour rattachement fiable (trim + lower). */
+export function normalizeSelfTestEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 export type SelfTestResultRow = {
   id: string;
   test_slug: string;
@@ -68,7 +73,7 @@ export type SavePublicSelfTestResult =
 export async function savePublicSelfTestResult(
   input: SavePublicSelfTestInput,
 ): Promise<SavePublicSelfTestResult> {
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeSelfTestEmail(input.email);
   const firstName = input.firstName.trim();
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -189,7 +194,7 @@ export async function saveMemberSelfTestResult(
 ): Promise<{ ok: true; resultId: string } | { ok: false; error: string; status: number }> {
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeSelfTestEmail(input.email);
 
   const { data: row, error } = await admin
     .from('self_test_results')
@@ -221,26 +226,48 @@ export async function saveMemberSelfTestResult(
   return { ok: true, resultId: row.id };
 }
 
+/**
+ * Rattache les résultats publics (profile_id null) au compte nouvellement créé.
+ * Email normalisé en lower — même logique que le sync Stripe.
+ * Idempotent : ne touche pas aux lignes déjà liées.
+ */
 export async function attachSelfTestResultsToProfile(
   email: string | null | undefined,
   profileId: string,
 ): Promise<number> {
-  const normalized = email?.trim().toLowerCase();
-  if (!normalized) return 0;
+  if (!email?.trim() || !profileId) return 0;
+  const normalized = normalizeSelfTestEmail(email);
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  // eq sur email déjà stocké en lower ; filet ilike si ancienne casse résiduelle
+  const { data: byExact, error: errExact } = await admin
     .from('self_test_results')
-    .update({ profile_id: profileId })
+    .update({ profile_id: profileId, updated_at: new Date().toISOString() })
+    .eq('email', normalized)
+    .is('profile_id', null)
+    .select('id');
+
+  if (errExact) {
+    console.error('[self-test] attach to profile (eq)', errExact);
+  }
+
+  let attached = byExact?.length ?? 0;
+
+  // Filet : emails à casse différente encore orphelins
+  const { data: byIlike, error: errIlike } = await admin
+    .from('self_test_results')
+    .update({ profile_id: profileId, updated_at: new Date().toISOString() })
     .ilike('email', normalized)
     .is('profile_id', null)
     .select('id');
 
-  if (error) {
-    console.error('[self-test] attach to profile', error);
-    return 0;
+  if (errIlike) {
+    console.error('[self-test] attach to profile (ilike)', errIlike);
+  } else {
+    attached += byIlike?.length ?? 0;
   }
-  return data?.length ?? 0;
+
+  return attached;
 }
 
 export async function listResultsForProfile(profileId: string): Promise<SelfTestResultRow[]> {
