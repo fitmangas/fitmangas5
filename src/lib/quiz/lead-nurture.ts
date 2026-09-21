@@ -277,6 +277,7 @@ async function trySendQuizWhatsApp(params: {
       utmCampaign: 'quiz_nurture_welcome',
     });
     const result = await whatsappProvider.sendMessage({
+      conversationExternalId: `quiz_wa_${to}`,
       recipientId: to,
       body,
       buttons: [{ title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW', url: trialUrl }],
