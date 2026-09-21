@@ -177,7 +177,7 @@ export async function pollInstagramInbox(params?: {
         }
         if (!conversationId) continue;
 
-        await admin.from('acq_messages').insert({
+        const { error: insertErr } = await admin.from('acq_messages').insert({
           conversation_id: conversationId,
           direction,
           body: text,
@@ -186,6 +186,14 @@ export async function pollInstagramInbox(params?: {
           sandbox: false,
           ...(m.created_time ? { created_at: m.created_time } : {}),
         });
+        if (insertErr) {
+          // Race webhook/poll : mid déjà stocké → ne pas re-déclencher
+          if (String(insertErr.code) === '23505' || /duplicate|unique/i.test(insertErr.message ?? '')) {
+            continue;
+          }
+          console.error('[ig-poll] insert message', insertErr);
+          continue;
+        }
         imported += 1;
 
         if (m.created_time && (!newestAt || Date.parse(m.created_time) >= Date.parse(newestAt))) {

@@ -199,7 +199,7 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
   let waPlain =
     'Le numéro 07… du site sert à discuter à la main. Le robot WhatsApp a besoin d’un branchement Meta séparé (pas encore fait).';
   if (waRobotReady) {
-    waPlain = `Robot WhatsApp branché (n° ${displayPhone}).`;
+    waPlain = `Robot WhatsApp branché (n° ${displayPhone}). Aucun template marketing approuvé → cold outreach hors 24h impossible tant qu’un modèle n’est pas créé dans Meta Business Manager.`;
   } else if (phoneNumberId && !waToken) {
     waPlain = `ID technique WhatsApp OK (${phoneNumberId}). Manque un token Facebook Cloud API (pas le token Instagram IGAA) — générer via Utilisateur système Meta.`;
   } else if (displayPhone && !phoneNumberId) {
