@@ -41,6 +41,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 - Diagnostic WA live : WABA APPROVED/verified mais **`can_send_message: BLOCKED`** — erreur **141006** « payment method ». UI : « Aucun moyen de paiement ajouté ». Formulaire carte ouvert (France / EUR), en attente des coords carte Kevin.
 - Push code acquisition déjà sur `main` (`4f69330` via PR #2 MCP `fitmangas`). CLI `support811` = pull only.
 
+### 2026-09-21 — Quiz reformulations + YouTube miroir CM
+- Quiz `profil-discipline` : retours cliente appliqués (Q1b/c, Q2d, Q3 libellé, Q4, Q7a/c, Q8b, Q9, Q10) — FR+ES.
+- CM : miroir **YouTube Shorts** sur Reels (`youtube-social.ts`, OAuth callback, toggle UI, publish now + cron) — même modèle que TikTok.
+- YouTube ≠ canal DM : **pas** de workflows acquisition type IG/Messenger/WA (adaptation : publication seulement).
+- OAuth Google Cloud : compte `info@casamangas.com` bloqué temporairement (« trop de tentatives ») depuis l’automate — **YOUTUBE_CLIENT_ID/SECRET** à coller dès que OAuth client Web créé (redirect `/api/admin/community/youtube/callback`).
+- Dossier canonique figé : `Projets/fitmangas5` (pas la copie iCloud). Routine journal = **auto agent**.
+- WA carte Meta : Kevin demain (carte bancaire).
+
 ### À faire (bloquants externes)
-- [ ] **Ajouter carte** Meta Billing Hub (WABA Alejandra Mangas) → puis créer template `quiz_essai_fitmangas` (corps sans variables) → brancher envoi dans `lead-nurture.ts`
-- [ ] Brancher PAT `fitmangas` en CLI git pour push sans MCP (optionnel : MCP marche)
+- [ ] **Demain** : carte Meta Billing Hub → template `quiz_essai_fitmangas` → brancher nurture WA
+- [ ] Créer OAuth client Google (YouTube Data API v3) → `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` (local + Vercel) → bouton OAuth CM
+- [ ] Brancher PAT `fitmangas` en CLI git (optionnel : MCP marche)
