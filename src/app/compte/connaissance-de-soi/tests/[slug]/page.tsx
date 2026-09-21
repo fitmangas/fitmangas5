@@ -9,14 +9,23 @@ import { listResultsForProfile } from '@/lib/self-knowledge/store';
 import type { SelfTestSlug } from '@/lib/self-knowledge/types';
 import { createClient } from '@/lib/supabase/server';
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ format?: string }>;
+};
 
 function isSelfTestSlug(slug: string): slug is SelfTestSlug {
   return (SELF_TEST_SLUGS as string[]).includes(slug);
 }
 
-export default async function CompteSelfTestSlugPage({ params }: Props) {
-  const { slug } = await params;
+function parseBigFiveFormat(raw?: string): 'ipip-50' | 'ipip-120' | undefined {
+  if (raw === 'ipip-120' || raw === 'ipip-50') return raw;
+  return undefined;
+}
+
+export default async function CompteSelfTestSlugPage({ params, searchParams }: Props) {
+  const [{ slug }, { format: formatParam }] = await Promise.all([params, searchParams]);
+  const initialFormat = parseBigFiveFormat(formatParam);
   if (!isSelfTestSlug(slug) || !getSelfTest(slug)) notFound();
 
   const supabase = await createClient();
@@ -52,6 +61,7 @@ export default async function CompteSelfTestSlugPage({ params }: Props) {
         email={user.email ?? ''}
         firstName={firstName}
         history={history}
+        initialFormat={initialFormat}
       />
     </VisioLock>
   );

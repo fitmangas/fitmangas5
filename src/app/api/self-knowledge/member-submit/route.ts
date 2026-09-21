@@ -11,6 +11,7 @@ import type { SelfTestAnswers } from '@/lib/self-knowledge/types';
 const bodySchema = z.object({
   slug: z.enum(['big-five', 'attachement']),
   locale: z.enum(['fr', 'es']),
+  format: z.enum(['ipip-50', 'ipip-120']).optional(),
   answers: z.record(z.string(), z.number().int().min(1).max(7)),
 });
 
@@ -36,7 +37,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email du compte requis.' }, { status: 400 });
   }
 
-  const def = getSelfTest(parsed.data.slug);
+  const def = getSelfTest(
+    parsed.data.slug,
+    parsed.data.slug === 'big-five' ? parsed.data.format ?? 'ipip-50' : undefined,
+  );
   if (!def) {
     return NextResponse.json({ error: 'Test inconnu.' }, { status: 400 });
   }

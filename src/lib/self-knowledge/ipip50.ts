@@ -255,6 +255,7 @@ export const IPIP50_ITEMS: SelfTestItem[] = [
 export const BIG_FIVE_TEST: SelfTestDefinition = {
   slug: 'big-five',
   version: 'ipip-50-v2-official',
+  format: 'ipip-50',
   source:
     'IPIP-50 Big-Five Factor Markers (Goldberg, 1992) — domaine public — keying https://ipip.ori.org/newBigFive5broadKey.htm',
   sourceUrl: 'https://ipip.ori.org/New_IPIP-50-item-scale.htm',

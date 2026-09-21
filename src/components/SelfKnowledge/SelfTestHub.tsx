@@ -12,7 +12,7 @@ const COPY = {
   fr: {
     eyebrow: 'Tests validés · lecture claire',
     title: 'Mieux te connaître pour tenir ta pratique.',
-    lead: 'Deux questionnaires publics (Big Five et attachement). À la fin : un aperçu de tes forces et un lien vers l’essai gratuit si tu veux ne plus t’entraîner seule.',
+    lead: 'Big Five (rapide 50 ou approfondi 120) et attachement. Portrait nommé, radar, forces et limites — puis essai gratuit si tu veux ne plus t’entraîner seule.',
     start: 'Commencer',
     questions: 'questions',
     min: 'min',
@@ -21,7 +21,7 @@ const COPY = {
   es: {
     eyebrow: 'Tests validados · lectura clara',
     title: 'Conocerte mejor para sostener tu práctica.',
-    lead: 'Dos cuestionarios públicos (Big Five y apego). Al final: un vistazo a tus fortalezas y un enlace a la prueba gratuita si quieres dejar de entrenar sola.',
+    lead: 'Big Five (rápido 50 o en profundidad 120) y apego. Retrato nombrado, radar, fuerzas y límites — luego prueba gratuita si quieres dejar de entrenar sola.',
     start: 'Empezar',
     questions: 'preguntas',
     min: 'min',
