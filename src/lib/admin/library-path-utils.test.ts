@@ -7,7 +7,12 @@ import {
   libraryPathAliases,
   libraryPathIsBlocked,
 } from '@/lib/admin/library-path-utils';
-import { collectUsedLibraryPaths, type SocialPost } from '@/lib/admin/social-comms';
+import {
+  collectUsedCarouselCoverPaths,
+  collectUsedFeedLibraryPaths,
+  collectUsedLibraryPaths,
+  type SocialPost,
+} from '@/lib/admin/social-comms';
 
 function stubPost(partial: Partial<SocialPost> & Pick<SocialPost, 'id' | 'imagePath' | 'carouselPaths'>): SocialPost {
   return {
@@ -70,23 +75,73 @@ describe('library-path-utils', () => {
   });
 });
 
-describe('collectUsedLibraryPaths', () => {
-  it('compte tous les /library/ pas seulement SOCIAL_LIBRARY_IMAGES', () => {
-    const used = collectUsedLibraryPaths([
+describe('collectUsedCarouselCoverPaths / feed', () => {
+  it('ban uniquement la cover carousel (pas les autres usages)', () => {
+    const covers = collectUsedCarouselCoverPaths([
       stubPost({
         id: '1',
+        format: 'feed',
+        status: 'published',
         imagePath: '/library/portraits/portrait-07-4x5.webp',
         carouselPaths: [],
       }),
       stubPost({
         id: '2',
         format: 'carousel',
+        status: 'ready',
+        imagePath: '/library/portraits/portrait-02-4x5.webp',
+        carouselPaths: [
+          '/library/portraits/portrait-02-4x5.webp',
+          '/library/social/ai-slide.webp',
+          '',
+          '',
+          '',
+          '',
+        ],
+      }),
+    ]);
+    expect(covers.has('/library/portraits/portrait-02.webp')).toBe(true);
+    expect(covers.has('/library/portraits/portrait-07.webp')).toBe(false);
+  });
+
+  it('feed : ban seulement si publié', () => {
+    const feeds = collectUsedFeedLibraryPaths([
+      stubPost({
+        id: '1',
+        format: 'feed',
+        status: 'ready',
+        imagePath: '/library/pilates-mat/pilates-mat-01-4x5.webp',
+        carouselPaths: [],
+      }),
+      stubPost({
+        id: '2',
+        format: 'feed',
+        status: 'published',
+        imagePath: '/library/portraits/portrait-07-4x5.webp',
+        carouselPaths: [],
+      }),
+    ]);
+    expect(feeds.has('/library/portraits/portrait-07.webp')).toBe(true);
+    expect(feeds.has('/library/pilates-mat/pilates-mat-01.webp')).toBe(false);
+  });
+
+  it('legacy collectUsedLibraryPaths = covers + feeds publiés (plus de ban global)', () => {
+    const used = collectUsedLibraryPaths([
+      stubPost({
+        id: '1',
+        format: 'carousel',
         imagePath: '/library/portraits/portrait-02-4x5.webp',
         carouselPaths: ['/library/portraits/portrait-02-4x5.webp', '', '', '', '', ''],
       }),
+      stubPost({
+        id: '2',
+        format: 'feed',
+        status: 'published',
+        imagePath: '/library/portraits/portrait-07-4x5.webp',
+        carouselPaths: [],
+      }),
     ]);
-    expect(used.has('/library/portraits/portrait-07-4x5.webp')).toBe(true);
-    expect(used.has('/library/portraits/portrait-07.webp')).toBe(true);
     expect(used.has('/library/portraits/portrait-02.webp')).toBe(true);
+    expect(used.has('/library/portraits/portrait-07.webp')).toBe(true);
   });
 });
