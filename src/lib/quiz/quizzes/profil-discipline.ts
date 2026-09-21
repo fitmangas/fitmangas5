@@ -49,26 +49,26 @@ export const quizProfilDiscipline: QuizDefinition = {
       'Un imprevisto te obliga a cancelar el horario que tenías. ¿Qué haces\u00A0?',
       [
         opt('a', 'Tu improvises autre chose, plus léger, pour bouger quand même.', 'Improvisas otra cosa, más ligera, para moverte igual.', E),
-        opt('b', 'Tu le remets tout de suite, même plus tôt. Le créneau reste.', 'Lo recolocas ya, aunque sea más temprano. El horario se mantiene.', D),
-        opt('c', 'Tu regardes si tu peux vraiment le décaler (fatigue, sommeil). Sinon tu attends.', 'Miras si de verdad puedes moverlo (cansancio, sueño). Si no, esperas.', M),
+        opt('b', 'Tu reprogrammes un nouveau créneau dans la journée — tu ne laisses pas le trou.', 'Reprogramas un nuevo hueco en el día — no dejas el vacío.', D),
+        opt('c', 'Tu écoutes ton corps : si tu es trop fatiguée, tu reportes ; sinon tu décales.', 'Escuchas tu cuerpo: si estás muy cansada, aplazas; si no, lo mueves.', M),
         opt('d', 'Tu laisses tomber pour cette fois. Tu n’as pas envie de te battre avec l’agenda.', 'Lo dejas pasar esta vez. No quieres pelearte con la agenda.', A),
       ],
     ),
     q(
       'q2',
-      'En cours, la coach change l’exercice en plein milieu. Toi\u00A0?',
-      'En clase, la coach cambia el ejercicio a mitad. ¿Tú\u00A0?',
+      'En cours, la coach change l’exercice en plein milieu. Comment tu réagis\u00A0?',
+      'En clase, la coach cambia el ejercicio a mitad. ¿Cómo reaccionas\u00A0?',
       [
         opt('a', 'Tu te sens perdue : tu venais juste de comprendre. Tu as besoin d’aide.', 'Te sientes perdida: justo lo habías entendido. Necesitas ayuda.', A),
         opt('b', 'Tu veux savoir pourquoi. Sans explication, tu décroches.', 'Quieres saber por qué. Sin explicación, te desconectas.', M),
         opt('c', 'Tu suis. Le changement te va s’il reste vivant.', 'Sigues. El cambio te va si sigue vivo.', E),
-        opt('d', 'Tu t’adaptes vite si le but est clair. Sinon tu t’impatientes.', 'Te adaptas rápido si el objetivo es claro. Si no, te impacientas.', D),
+        opt('d', 'Tu suis si tu comprends où on va. Sinon tu demandes une précision.', 'Sigues si entiendes hacia dónde vamos. Si no, pides una precisión.', D),
       ],
     ),
     q(
       'q3',
-      'On te corrige devant le groupe (même en visio). Tu ressens\u00A0?',
-      'Te corrigen delante del grupo (aunque sea en visio). ¿Qué sientes\u00A0?',
+      'On te corrige devant le groupe (même en visio). Comment tu le vis\u00A0?',
+      'Te corrigen delante del grupo (aunque sea en visio). ¿Cómo lo vives\u00A0?',
       [
         opt('a', 'OK si c’est utile et court. Pas besoin d’adoucir.', 'OK si es útil y corto. No hace falta endulzarlo.', D),
         opt('b', 'Tu écoutes le détail. Tu te soucies plus de bien faire que du regard des autres.', 'Escuchas el detalle. Te importa más hacerlo bien que la mirada de las demás.', M),
@@ -78,11 +78,11 @@ export const quizProfilDiscipline: QuizDefinition = {
     ),
     q(
       'q4',
-      'On te demande : plus vite, ou mieux fait\u00A0?',
-      'Te piden: ¿más rápido, o mejor hecho\u00A0?',
+      'Dans un cours, tu préfères plutôt\u00A0:',
+      'En una clase, prefieres más bien:',
       [
-        opt('a', 'Ce qui reste agréable. Si ça devient une corvée, tu arrêtes.', 'Lo que siga siendo agradable. Si se vuelve una obligación, paras.', E),
-        opt('b', 'Ce qui ne dérange personne et garde le rythme du groupe.', 'Lo que no moleste a nadie y mantenga el ritmo del grupo.', A),
+        opt('a', 'Garder le plaisir : si ça devient une corvée, tu décroches.', 'Mantener el gusto: si se vuelve una obligación, te desconectas.', E),
+        opt('b', 'Rester au rythme du groupe, sans te faire remarquer.', 'Seguir el ritmo del grupo, sin llamar la atención.', A),
         opt('c', 'Le résultat d’abord. Tu vas vite, tu corriges après.', 'El resultado primero. Vas rápido, corriges después.', D),
         opt('d', 'Mieux fait. Aller vite sans qualité, ça ne compte pas.', 'Mejor hecho. Ir rápido sin calidad no cuenta.', M),
       ],
@@ -114,9 +114,9 @@ export const quizProfilDiscipline: QuizDefinition = {
       'Tu rates une semaine entière. Premier réflexe\u00A0?',
       'Fallaste una semana entera. ¿Primer reflejo\u00A0?',
       [
-        opt('a', 'Tu cherches pourquoi ça a loupé, avant de reprendre.', 'Buscas por qué falló, antes de retomar.', M),
+        opt('a', 'Tu identifies ce qui a fait basculer la semaine, puis tu reprends.', 'Identificas qué hizo caer la semana, y luego retomas.', M),
         opt('b', 'Tu te fixes une barre plus haute pour « rattraper ».', 'Te pones el listón más alto para « recuperar ».', D),
-        opt('c', 'Tu te sens coupable… et tu n’en parles à personne.', 'Te sientes culpable… y no se lo cuentas a nadie.', A),
+        opt('c', 'Tu digères seule. Tu n’en parles pas — même si ça te pèse.', 'Lo digieres sola. No se lo cuentas a nadie — aunque te pese.', A),
         opt('d', 'Tu te dis que ce n’est pas grave — et tu remets à plus tard.', 'Te dices que no pasa nada — y lo dejas para luego.', E),
       ],
     ),
@@ -126,15 +126,15 @@ export const quizProfilDiscipline: QuizDefinition = {
       'Bajo presión (trabajo, casa, cabeza llena), tu cuerpo quiere:',
       [
         opt('a', 'Bouger pour se vider la tête — pas pour « performer ».', 'Moverse para vaciar la cabeza — no para « rendir ».', E),
-        opt('b', 'Du connu. Un rituel simple, pas quelque chose de nouveau.', 'Lo conocido. Un ritual simple, nada nuevo.', A),
+        opt('b', 'Retrouver le même petit rituel habituel — rien de nouveau.', 'Volver al mismo ritual de siempre — nada nuevo.', A),
         opt('c', 'Un effort court et net, pour en finir.', 'Un esfuerzo corto y claro, para terminar.', D),
         opt('d', 'Moins, mais bien fait. Ou rien si c’est bâclé.', 'Menos, pero bien hecho. O nada si sale chapucero.', M),
       ],
     ),
     q(
       'q9',
-      'Une partenaire de cours arrive en retard / est désorganisée. Toi\u00A0?',
-      'Una compañera llega tarde / desordenada. ¿Tú\u00A0?',
+      'Une partenaire de cours arrive en retard ou désorganisée. Comment tu réagis\u00A0?',
+      'Una compañera llega tarde o desordenada. ¿Cómo reaccionas\u00A0?',
       [
         opt('a', 'Tu te dis que le cadre n’est pas tenu. Ça te fait douter.', 'Piensas que el marco no se sostiene. Te hace dudar.', M),
         opt('b', 'Tu t’adaptes pour éviter la tension.', 'Te adaptas para evitar tensión.', A),
@@ -144,8 +144,8 @@ export const quizProfilDiscipline: QuizDefinition = {
     ),
     q(
       'q10',
-      'Pour tenir 3 mois, tu as vraiment besoin de\u00A0:',
-      'Para sostener 3 meses, de verdad necesitas:',
+      'Pour tenir 3 mois, le plus important pour toi c’est\u00A0:',
+      'Para sostener 3 meses, lo más importante para ti es:',
       [
         opt('a', 'De la variété et une énergie qui te tire — pas une liste ennuyeuse.', 'Variedad y una energía que te tire — no una lista aburrida.', E),
         opt('b', 'Une méthode stable et des corrections qui lèvent le doute.', 'Un método estable y correcciones que quiten la duda.', M),
