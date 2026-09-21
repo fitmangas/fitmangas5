@@ -17,7 +17,8 @@ Dernière MAJ : 2026-09-21.
 - Pas de skip dans le runner
 - WhatsApp cold hors 24h : **template Meta requis** ; sinon `awaiting_optin` + lien wa.me dans l’email
 - Template cible : `quiz_essai_fitmangas` (FR, Marketing, corps **sans variables**)
+- **21/09/2026** : reformulations clarté (Q1–Q4, Q7–Q10) suite retour cliente — options DiSC inchangées (poids).
 
 ## Bloquant Meta (21/09/2026)
 WABA `1427605062481966` : **aucun moyen de paiement** → `can_send_message: BLOCKED` (erreur 141006).  
-Tant que la carte n’est pas ajoutée dans Billing Hub → pas de création / envoi de templates marketing.
+Carte Kevin = demain. Puis template marketing.
