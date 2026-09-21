@@ -47,7 +47,13 @@ alwaysApply: true
 - Page ID ≠ IG User ID OK ; tokens CM + IGAA valides
 - WhatsApp robot branché ; templates marketing = 0
 - **Bloquant WA réel** : WABA `1427605062481966` sans moyen de paiement → `health_status.can_send_message = BLOCKED` (code 141006). Pas de template / cold send tant que carte absente dans Billing Hub. Email + wa.me = filet OK.
-- Template cible une fois paiement OK : `quiz_essai_fitmangas` (FR, MARKETING, corps **statique sans {{vars}}**)
+- Template cible une fois paiement OK : `quiz_essai_fitmangas` (FR, MARKETING, corps **statique sans {{vars}}`)
+- **Carte Meta** : Kevin débloque demain (carte bancaire temporairement bloquée) — reprendre alors paiement + template.
+
+## CM / Programmation & publication
+- Miroirs Reels IG : Facebook + TikTok + **YouTube Shorts** (`alsoPublishYouTube`, `src/lib/admin/youtube-social.ts`)
+- YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET`.
+- Compte cible chaîne : `info@casamangas.com` (OAuth Google Cloud — pas le mot de passe dans le repo).
 
 ## Git push
 - Compte CLI `support811` = **pull only**
@@ -55,6 +61,7 @@ alwaysApply: true
 - Code acquisition/quiz 21/09 déjà sur `main` (`4f69330`)
 
 ## Contexte Cursor (anti « je réinvente »)
+- **Dossier canonique** : `/Users/kevinpicard/Projets/fitmangas5` (≈120 transcripts). Ignorer la copie iCloud (vide).
 - Toujours lire : source-de-verite + inventaire-fige + `docs/CONTEXTE_VIVANT.md` + `docs/archive-produit/`
-- Fin de chantier validé → journal dans CONTEXTE_VIVANT + archive si nouvelle surface
+- Fin de chantier validé → **l’agent** journalise dans CONTEXTE_VIVANT + archive (jamais demander à Kevin)
 - Copie hors-repo : store perso Cursor `fitmangas-archive-produit`
