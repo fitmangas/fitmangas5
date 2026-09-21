@@ -14,9 +14,10 @@ function bandBigFive(score: number): 'low' | 'mid' | 'high' {
   return 'high';
 }
 
+/** Seuils sur échelle ECR-S 1–7 */
 function bandAttachment(mean: number): 'low' | 'mid' | 'high' {
-  if (mean <= 2.2) return 'low';
-  if (mean <= 3.4) return 'mid';
+  if (mean <= 2.5) return 'low';
+  if (mean <= 4.5) return 'mid';
   return 'high';
 }
 
@@ -26,7 +27,7 @@ function topStrengths(
   lang: SelfTestLang
 ): string[] {
   if (def.slug === 'big-five') {
-    const ranked = (['O', 'C', 'E', 'A'] as const)
+    const ranked = (['O', 'C', 'E', 'A', 'ES'] as const)
       .map((k) => ({ k, v: scores[k] ?? 0 }))
       .sort((a, b) => b.v - a.v)
       .slice(0, 2);
@@ -40,14 +41,14 @@ function topStrengths(
   const anxiety = scores.anxiety ?? 0;
   const avoidance = scores.avoidance ?? 0;
   const out: string[] = [];
-  if (anxiety <= 2.5) {
+  if (anxiety <= 3) {
     out.push(
       lang === 'fr'
         ? 'Anxiété d’attachement plutôt basse — tu te sens souvent en sécurité dans le lien'
         : 'Ansiedad de apego más bien baja — sueles sentirte segura en el vínculo'
     );
   }
-  if (avoidance <= 2.5) {
+  if (avoidance <= 3) {
     out.push(
       lang === 'fr'
         ? 'Évitement plutôt bas — tu peux te rapprocher sans trop te protéger'
@@ -108,7 +109,7 @@ export function buildTemplateAnalysis(
             : band === 'mid'
               ? 'moderado'
               : 'más bien alto';
-      lines.push(`${label}: ${v}/5 (${bandText}).`);
+      lines.push(`${label}: ${v}/7 (${bandText}).`);
     }
   }
 

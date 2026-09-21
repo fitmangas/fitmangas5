@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Items officiels IPIP-50 + ECR-S
+- Remplacé reformulations par items EN officiels + traductions FR/ES littérales (non validées).
+- IPIP-50 : keying `newBigFive5broadKey.htm` (E 5− / A 4− / C 4− / ES 8− / O 3−). Facteur IV = ES (pas N).
+- ECR-S : 12 items Wei 2007, Likert **1–7**, DOI `10.1080/00223890701268041`.
+- Tests self-knowledge 45 + suite 283 verts.
+
 ### 2026-09-21 — Moteur connaissance de soi (remplace quiz public)
 - Archive code legacy : `_archive/quiz-legacy-2026-09-21/` (inerte, non importée). `quiz_leads` **intact**.
 - Moteur neuf : IPIP-50 Big Five + ECR-S attachement (`src/lib/self-knowledge/`), scoring serveur + tests.

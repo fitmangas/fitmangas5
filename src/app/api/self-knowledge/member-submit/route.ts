@@ -11,7 +11,7 @@ import type { SelfTestAnswers } from '@/lib/self-knowledge/types';
 const bodySchema = z.object({
   slug: z.enum(['big-five', 'attachement']),
   locale: z.enum(['fr', 'es']),
-  answers: z.record(z.string(), z.number().int().min(1).max(5)),
+  answers: z.record(z.string(), z.number().int().min(1).max(7)),
 });
 
 export async function POST(request: Request) {

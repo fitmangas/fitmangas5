@@ -30,9 +30,9 @@ function formatScoreLabel(test: SelfTestDefinition, key: string, locale: SelfTes
   return ATTACHMENT_LABELS[key]?.[locale] ?? key;
 }
 
-function formatScoreValue(test: SelfTestDefinition, key: string, value: number): string {
+function formatScoreValue(test: SelfTestDefinition, _key: string, value: number): string {
   if (test.slug === 'big-five') return `${value}/50`;
-  return `${value}/5`;
+  return `${value}/7`;
 }
 
 function modeBadge(mode: AnalysisMode, locale: SelfTestLang): string {
