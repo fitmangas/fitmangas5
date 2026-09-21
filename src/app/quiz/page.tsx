@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { QuizHub } from '@/components/Quiz/QuizHub';
+import { SelfTestHub } from '@/components/SelfKnowledge/SelfTestHub';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(
   /\/$/,
@@ -8,16 +8,16 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 );
 
 export const metadata: Metadata = {
-  title: 'Évaluations FitMangas — rapport de profil, pas un sticker',
+  title: 'Tests de personnalité FitMangas — Big Five et attachement',
   description:
-    'Lecture type DISC (discipline), énergie, seule face au tapis, carte du stress, archétype après un raté. Un compte-rendu à lire et enregistrer en PDF.',
+    'Questionnaires validés (IPIP-50 Big Five, ECR attachement). Aperçu de tes forces et lien vers l’essai gratuit des cours collectifs en visio.',
   alternates: {
     canonical: '/quiz',
     languages: { fr: '/quiz', es: '/es/quiz' },
   },
   openGraph: {
-    title: 'Évaluations FitMangas — un rapport, pas un sticker',
-    description: 'Comprendre comment tu tiens — rapport lisible, pas quatre lignes.',
+    title: 'Tests de personnalité FitMangas',
+    description: 'Mieux te connaître pour tenir ta pratique — Big Five et attachement.',
     url: `${APP_URL}/quiz`,
     type: 'website',
     images: ['/og-default.jpg'],
@@ -25,5 +25,5 @@ export const metadata: Metadata = {
 };
 
 export default function QuizHubPage() {
-  return <QuizHub locale="fr" />;
+  return <SelfTestHub locale="fr" />;
 }

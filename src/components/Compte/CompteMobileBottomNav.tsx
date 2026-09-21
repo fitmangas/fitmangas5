@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Bell, BookOpen, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, Brain, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -12,6 +12,7 @@ import { compteNavLabels } from '@/lib/compte/i18n';
 const links = [
   { href: '/compte/planning', key: 'planning', icon: CalendarDays },
   { href: '/compte/blog', key: 'blog', icon: BookOpen },
+  { href: '/compte/connaissance-de-soi', key: 'selfKnowledge', icon: Brain },
   { href: '/compte/replays', key: 'videos', icon: Video },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag },
   { href: '/compte/notifications', key: 'notifications', icon: Bell },
@@ -47,7 +48,7 @@ export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0 }: 
       aria-label="Navigation mobile"
     >
       <div
-        className={`grid grid-cols-8 gap-0.5 rounded-full border border-white/40 bg-white/55 px-1.5 py-2 backdrop-blur-md transition-[box-shadow] duration-300 ${
+        className={`grid grid-cols-9 gap-0.5 rounded-full border border-white/40 bg-white/55 px-1.5 py-2 backdrop-blur-md transition-[box-shadow] duration-300 ${
           scrolled
             ? 'shadow-[0_12px_32px_rgba(15,23,42,0.14),0_4px_12px_rgba(15,23,42,0.08)]'
             : 'shadow-[0_10px_28px_rgba(15,23,42,0.12),0_4px_12px_rgba(15,23,42,0.06)]'

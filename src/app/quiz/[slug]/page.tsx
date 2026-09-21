@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { QuizRunner } from '@/components/Quiz/QuizRunner';
-import { getQuizBySlug, QUIZ_SLUGS } from '@/lib/quiz/catalog';
+import { SelfTestRunner } from '@/components/SelfKnowledge/SelfTestRunner';
+import { getSelfTest, SELF_TEST_SLUGS } from '@/lib/self-knowledge/scoring';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(
   /\/$/,
@@ -12,23 +12,23 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
-  return QUIZ_SLUGS.map((slug) => ({ slug }));
+  return SELF_TEST_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const quiz = getQuizBySlug(slug);
-  if (!quiz) return { title: 'Quiz' };
+  const test = getSelfTest(slug);
+  if (!test) return { title: 'Test' };
   return {
-    title: quiz.title.fr,
-    description: quiz.description.fr,
+    title: test.title.fr,
+    description: test.description.fr,
     alternates: {
       canonical: `/quiz/${slug}`,
       languages: { fr: `/quiz/${slug}`, es: `/es/quiz/${slug}` },
     },
     openGraph: {
-      title: quiz.title.fr,
-      description: quiz.description.fr,
+      title: test.title.fr,
+      description: test.description.fr,
       url: `${APP_URL}/quiz/${slug}`,
       type: 'website',
       images: ['/og-default.jpg'],
@@ -36,9 +36,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function QuizPage({ params }: Props) {
+export default async function QuizSlugPage({ params }: Props) {
   const { slug } = await params;
-  const quiz = getQuizBySlug(slug);
-  if (!quiz) notFound();
-  return <QuizRunner quiz={quiz} locale="fr" />;
+  const test = getSelfTest(slug);
+  if (!test) notFound();
+  return <SelfTestRunner test={test} locale="fr" mode="public" />;
 }

@@ -215,6 +215,16 @@ export async function POST(request: Request) {
 
         await confirmUserEmailIfNeeded(admin, userId);
 
+        try {
+          const { attachSelfTestResultsToProfile } = await import('@/lib/self-knowledge/store');
+          const attached = await attachSelfTestResultsToProfile(customerEmail, userId);
+          if (attached > 0) {
+            console.info('[stripe webhook] self-test results attached', { userId, count: attached });
+          }
+        } catch (attachErr) {
+          console.error('[stripe webhook] self-test attach failed', attachErr);
+        }
+
         const checkoutPhone = session.customer_details?.phone?.trim();
         if (checkoutPhone) {
           try {

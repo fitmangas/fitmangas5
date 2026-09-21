@@ -45,6 +45,20 @@ export default function PrivacyPage() {
           à info@casamangas.fr.
         </p>
 
+        <h2 className="pt-2 text-base font-semibold text-luxury-ink">Données bien-être (connaissance de soi)</h2>
+        <p>
+          Si tu utilises l’espace « Connaissance de soi », tu peux, en optant explicitement, enregistrer des
+          indicateurs indicatifs (séances par semaine, sommeil, fréquence cardiaque au repos, variabilité cardiaque,
+          minutes actives). Ces données servent uniquement à afficher des scores orientatifs dans ton compte — elles ne
+          constituent pas un avis médical et ne remplacent pas un suivi professionnel.
+        </p>
+        <p>
+          Ce consentement bien-être est <strong>distinct</strong> de l’acceptation d’être recontactée à des fins
+          marketing (email ou WhatsApp) lors d’un test public ou d’une inscription newsletter. Tu peux retirer ton
+          consentement bien-être en nous écrivant à info@casamangas.fr ; les entrées déjà enregistrées peuvent être
+          supprimées sur demande.
+        </p>
+
         <h2 className="pt-2 text-base font-semibold text-luxury-ink">Cookies</h2>
         <p>
           Des cookies strictement nécessaires peuvent être utilisés pour l’authentification, la sécurité et le fonctionnement

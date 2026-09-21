@@ -1,0 +1,342 @@
+'use client';
+
+import Link from 'next/link';
+import { useCallback, useMemo, useState } from 'react';
+
+import { SelfTestLeadCapture, type SelfTestLeadPayload } from '@/components/SelfKnowledge/SelfTestLeadCapture';
+import { SelfTestShell } from '@/components/SelfKnowledge/SelfTestShell';
+import { SelfTestTeaser } from '@/components/SelfKnowledge/SelfTestTeaser';
+import { scoreSelfTest, validateAnswers } from '@/lib/self-knowledge/scoring';
+import type {
+  LikertValue,
+  SelfTestAnalysis,
+  SelfTestAnswers,
+  SelfTestDefinition,
+  SelfTestLang,
+  SelfTestScores,
+} from '@/lib/self-knowledge/types';
+
+type Props = {
+  test: SelfTestDefinition;
+  locale: SelfTestLang;
+  mode?: 'public' | 'member';
+  memberEmail?: string;
+  memberFirstName?: string | null;
+};
+
+type Phase = 'intro' | 'questions' | 'lead' | 'result';
+
+const BATCH_SIZE = 5;
+
+function trialUrl(locale: SelfTestLang, slug: string) {
+  const path = locale === 'es' ? '/es' : '';
+  const params = new URLSearchParams({
+    offer: 'v-coll',
+    utm_source: 'self-test',
+    utm_campaign: slug,
+  });
+  return `${path}/?${params.toString()}`;
+}
+
+function chunkItems<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+export function SelfTestRunner({
+  test,
+  locale,
+  mode = 'public',
+  memberEmail,
+  memberFirstName,
+}: Props) {
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [batchIndex, setBatchIndex] = useState(0);
+  const [answers, setAnswers] = useState<SelfTestAnswers>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<SelfTestAnalysis | null>(null);
+  const [scores, setScores] = useState<SelfTestScores | null>(null);
+
+  const hubHref = locale === 'es' ? '/es/quiz' : '/quiz';
+  const batches = useMemo(() => chunkItems(test.items, BATCH_SIZE), [test.items]);
+  const currentBatch = batches[batchIndex] ?? [];
+  const answeredCount = test.items.filter((item) => answers[item.id] != null).length;
+  const progressPct = Math.round((answeredCount / test.items.length) * 100);
+
+  const copy =
+    locale === 'es'
+      ? {
+          introCta: 'Empezar el test',
+          back: 'Volver',
+          next: 'Continuar',
+          finish: 'Ver mi resultado',
+          batch: 'Bloque',
+          of: 'de',
+          source: 'Fuente',
+          progress: 'Progreso',
+          pick: 'Elige de 1 (nada de acuerdo) a 5 (totalmente de acuerdo).',
+        }
+      : {
+          introCta: 'Commencer le test',
+          back: 'Retour',
+          next: 'Continuer',
+          finish: 'Voir mon résultat',
+          batch: 'Bloc',
+          of: 'sur',
+          source: 'Source',
+          progress: 'Progression',
+          pick: 'Choisis de 1 (pas du tout d’accord) à 5 (tout à fait d’accord).',
+        };
+
+  const batchComplete = currentBatch.every((item) => answers[item.id] != null);
+  const allComplete = validateAnswers(test, answers).ok;
+
+  const pickAnswer = useCallback((itemId: string, value: LikertValue) => {
+    setAnswers((prev) => ({ ...prev, [itemId]: value }));
+  }, []);
+
+  const submitAnswers = useCallback(
+    async (lead?: SelfTestLeadPayload) => {
+      if (!allComplete || submitting) return;
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const computedScores = scoreSelfTest(test, answers);
+        const endpoint = mode === 'member' ? '/api/self-knowledge/member-submit' : '/api/self-knowledge/submit';
+        const body =
+          mode === 'member'
+            ? {
+                slug: test.slug,
+                locale,
+                answers,
+              }
+            : {
+                slug: test.slug,
+                locale,
+                firstName: lead!.firstName,
+                email: lead!.email,
+                consent: true,
+                answers,
+                source: {
+                  utm_source: 'self-test',
+                  utm_campaign: test.slug,
+                },
+              };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          analysis?: SelfTestAnalysis;
+          scores?: SelfTestScores;
+        };
+        if (!res.ok) {
+          setSubmitError(
+            data.error ??
+              (locale === 'es' ? 'No se pudo guardar. Inténtalo de nuevo.' : 'Enregistrement impossible. Réessaie.'),
+          );
+          return;
+        }
+        setScores(data.scores ?? computedScores);
+        setAnalysis(data.analysis ?? null);
+        setPhase('result');
+      } catch {
+        setSubmitError(
+          locale === 'es' ? 'Error de red. Comprueba tu conexión.' : 'Erreur réseau. Vérifie ta connexion.',
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [allComplete, answers, locale, mode, submitting, test],
+  );
+
+  const handleLeadSubmit = useCallback(
+    (payload: SelfTestLeadPayload) => {
+      void submitAnswers(payload);
+    },
+    [submitAnswers],
+  );
+
+  const handleMemberFinish = useCallback(() => {
+    void submitAnswers();
+  }, [submitAnswers]);
+
+  if (phase === 'result' && analysis && scores) {
+    return (
+      <SelfTestShell locale={locale}>
+        <SelfTestTeaser
+          locale={locale}
+          test={test}
+          scores={scores}
+          analysis={analysis}
+          trialHref={trialUrl(locale, test.slug)}
+          hubHref={hubHref}
+          showFull={mode === 'member'}
+        />
+      </SelfTestShell>
+    );
+  }
+
+  if (phase === 'lead') {
+    return (
+      <SelfTestShell locale={locale}>
+        <SelfTestLeadCapture
+          locale={locale}
+          testTitle={test.title[locale]}
+          submitting={submitting}
+          error={submitError}
+          onSubmit={handleLeadSubmit}
+        />
+      </SelfTestShell>
+    );
+  }
+
+  return (
+    <SelfTestShell locale={locale}>
+      <div className="mx-auto max-w-2xl px-5 py-8 pb-20">
+        {phase === 'intro' ? (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">
+              {test.durationMin} min · {test.items.length} {locale === 'es' ? 'preguntas' : 'questions'}
+            </p>
+            <h1 className="mt-4 font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
+              {test.title[locale]}
+            </h1>
+            <p className="mt-4 text-[15px] leading-relaxed text-brand-ink/60">{test.description[locale]}</p>
+            <p className="mt-3 text-[12px] text-brand-ink/45">
+              {copy.source} :{' '}
+              <a href={test.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                {test.source}
+              </a>
+            </p>
+            {mode === 'member' && memberEmail ? (
+              <p className="mt-4 text-[13px] text-brand-ink/50">
+                {locale === 'es' ? 'Conectada como' : 'Connectée en tant que'} {memberFirstName ?? memberEmail}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setPhase('questions')}
+              className="mt-8 rounded-full bg-[#c45d3e] px-8 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338]"
+            >
+              {copy.introCta} →
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-6">
+              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45">
+                <span>
+                  {copy.batch} {batchIndex + 1} {copy.of} {batches.length}
+                </span>
+                <span>
+                  {copy.progress} {progressPct}%
+                </span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-ink/8">
+                <div
+                  className="h-full rounded-full bg-[#c45d3e] transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+
+            <p className="mb-6 text-[14px] text-brand-ink/55">{copy.pick}</p>
+
+            <div className="space-y-8">
+              {currentBatch.map((item) => (
+                <fieldset key={item.id} className="rounded-[20px] border border-brand-ink/[0.06] bg-white/85 p-5 shadow-sm">
+                  <legend className="text-[15px] font-medium leading-snug text-brand-ink">{item.text[locale]}</legend>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {([1, 2, 3, 4, 5] as LikertValue[]).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        aria-pressed={answers[item.id] === v}
+                        onClick={() => pickAnswer(item.id, v)}
+                        className={`min-w-[2.75rem] rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
+                          answers[item.id] === v
+                            ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
+                            : 'border-brand-ink/10 bg-white text-brand-ink/70 hover:border-[#c45d3e]/40'
+                        }`}
+                        title={test.likertLabels[locale][v - 1]}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-brand-ink/40">
+                    1 = {test.likertLabels[locale][0]} · 5 = {test.likertLabels[locale][4]}
+                  </p>
+                </fieldset>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              {batchIndex > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setBatchIndex((i) => i - 1)}
+                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                >
+                  ← {copy.back}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPhase('intro')}
+                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                >
+                  ← {copy.back}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={!batchComplete || submitting}
+                onClick={() => {
+                  if (batchIndex < batches.length - 1) {
+                    setBatchIndex((i) => i + 1);
+                  } else if (mode === 'member') {
+                    handleMemberFinish();
+                  } else {
+                    setPhase('lead');
+                  }
+                }}
+                className="flex-1 rounded-full bg-[#c45d3e] px-6 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-md transition hover:bg-[#b35338] disabled:opacity-50 sm:flex-none"
+              >
+                {batchIndex < batches.length - 1
+                  ? `${copy.next} →`
+                  : mode === 'member'
+                    ? submitting
+                      ? '…'
+                      : `${copy.finish} →`
+                    : `${copy.finish} →`}
+              </button>
+            </div>
+
+            {submitError ? (
+              <p className="mt-4 text-[13px] text-red-600" role="alert">
+                {submitError}
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        <Link
+          href={hubHref}
+          className="mt-10 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/40 underline underline-offset-4 hover:text-[#c45d3e]"
+        >
+          {locale === 'es' ? 'Todos los tests' : 'Tous les tests'}
+        </Link>
+      </div>
+    </SelfTestShell>
+  );
+}
