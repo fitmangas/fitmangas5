@@ -83,6 +83,7 @@ export const compteNavLabels: Record<
     preferences: string;
     referral: string;
     notifications: string;
+    selfKnowledge: string;
   }
 > = {
   fr: {
@@ -95,6 +96,7 @@ export const compteNavLabels: Record<
     preferences: 'Préférences',
     referral: 'Parrainage',
     notifications: 'Notifications',
+    selfKnowledge: 'Connaissance de soi',
   },
   en: {
     dashboard: 'Dashboard',
@@ -106,6 +108,7 @@ export const compteNavLabels: Record<
     preferences: 'Preferences',
     referral: 'Referrals',
     notifications: 'Notifications',
+    selfKnowledge: 'Self-knowledge',
   },
   es: {
     dashboard: 'Panel',
@@ -117,5 +120,6 @@ export const compteNavLabels: Record<
     preferences: 'Preferencias',
     referral: 'Referidos',
     notifications: 'Notificaciones',
+    selfKnowledge: 'Conocimiento de uno mismo',
   },
 };

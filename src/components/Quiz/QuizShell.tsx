@@ -34,7 +34,7 @@ export function QuizShell({ locale, children }: Props) {
             href={hub}
             className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/55 transition hover:text-[#c45d3e]"
           >
-            {locale === 'es' ? 'Las 5 evaluaciones' : 'Les 5 évaluations'}
+            {locale === 'es' ? 'Los tests' : 'Les tests'}
           </Link>
         </div>
       </header>

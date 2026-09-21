@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-21 — Moteur connaissance de soi (remplace quiz public)
+- Archive code legacy : `_archive/quiz-legacy-2026-09-21/` (inerte, non importée). `quiz_leads` **intact**.
+- Moteur neuf : IPIP-50 Big Five + ECR-S attachement (`src/lib/self-knowledge/`), scoring serveur + tests.
+- Public `/quiz` : teaser + lead → `self_test_results` + tags `test:big-five` / `test:attachement` sur `acq_contacts`.
+- Analyse Claude si `ANTHROPIC_API_KEY`, sinon template (badge mode). Pont Stripe `checkout.session.completed` → `attachSelfTestResultsToProfile`.
+- Compte `/compte/connaissance-de-soi` (+ santé + club lecture) : VisioLock active/trialing. Nav sidebar/bottom + i18n.
+- Tables additives : `self_test_results`, `health_consents`, `health_score_entries`, `reading_resources`. Wearables v2 flag OFF.
+- Tests : 39 self-knowledge + suite complète 277 verts.
+
 ### 2026-09-21 — Acquisition + quiz nurture
 - PDF quiz : logo PNG transparent, mix page 2, anti-orphelin titres
 - Nurture quiz : email immédiat + J+2/J+5 ; stop si trial/paid Stripe

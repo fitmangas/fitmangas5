@@ -37,10 +37,12 @@ alwaysApply: true
 - Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + J+2/J+5 + WA)
 - Cron : `/api/admin/acquisition/cron/run-followups`
 
-### Quiz
-- Définition : `src/lib/quiz/quizzes/profil-discipline*.ts`
-- PDF : `src/lib/quiz/build-report-pdf.ts`
-- Lead gate : `src/lib/quiz/lead.ts` → `quiz_leads` + `acq_contacts`
+### Quiz / Connaissance de soi
+- Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
+- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 + ECR-S ; pages `/quiz` ; compte `/compte/connaissance-de-soi`
+- Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`
+- PDF legacy : `src/lib/quiz/build-report-pdf.ts`
+- Lead gate legacy : `src/lib/quiz/lead.ts` → `quiz_leads` + `acq_contacts`
 
 ## Meta (re-vérifié 21/09/2026 — ne pas re-dire « expiré » sans test)
 - Script : `npx tsx scripts/check-meta-tokens.ts`
@@ -52,7 +54,7 @@ alwaysApply: true
 
 ## CM / Programmation & publication
 - Miroirs Reels IG : Facebook + TikTok + **YouTube Shorts** (`alsoPublishYouTube`, `src/lib/admin/youtube-social.ts`)
-- YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET`.
+- YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` — **connecté 21/09/2026** (`youtube_social_connection`, chaîne Alejandra Mangas `UCHkmseevG7-gcLcQZS5xVkQ`).
 - Compte cible chaîne : `info@casamangas.com` (OAuth Google Cloud — pas le mot de passe dans le repo).
 
 ## Git push

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, BookOpen, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, Brain, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
@@ -12,6 +12,7 @@ import { compteNavLabels } from '@/lib/compte/i18n';
 const links = [
   { href: '/compte/planning', key: 'planning', icon: CalendarDays, exact: true },
   { href: '/compte/blog', key: 'blog', icon: BookOpen, exact: true },
+  { href: '/compte/connaissance-de-soi', key: 'selfKnowledge', icon: Brain, exact: false },
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag, exact: true },
   { href: '/compte/notifications', key: 'notifications', icon: Bell, exact: true },
