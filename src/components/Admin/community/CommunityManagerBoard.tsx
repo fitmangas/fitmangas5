@@ -29,6 +29,7 @@ import {
   diagnoseMetaFacebookVisibilityAction,
   disconnectMetaAction,
   disconnectTikTokAction,
+  disconnectYouTubeAction,
   finalizeWeekPlanAction,
   generateConseilSeriesPostAction,
   generateNextPostAction,
@@ -37,6 +38,7 @@ import {
   initWeekPlanAction,
   getMetaConnectUrlAction,
   getTikTokConnectUrlAction,
+  getYouTubeConnectUrlAction,
   markAllSocialPostsReadyAction,
   polishExistingSocialPostsAction,
   publishFacebookMirrorNowAction,
@@ -56,6 +58,7 @@ import {
   updateSocialPostCaptionAction,
   updateSocialPostFacebookMirrorAction,
   updateSocialPostTikTokMirrorAction,
+  updateSocialPostYouTubeMirrorAction,
   updateSocialPostImageAction,
   updateSocialPostImageFeedbackAction,
   updateSocialPostOverlayAction,
@@ -97,6 +100,7 @@ import {
   type SocialPost,
 } from '@/lib/admin/social-comms';
 import type { TikTokSocialConnection } from '@/lib/admin/tiktok-social';
+import type { YouTubeSocialConnection } from '@/lib/admin/youtube-social';
 import { META_APP_LIVE_WARNING } from '@/lib/admin/social-comms';
 import {
   ACTIVE_CONTENT_THEMES,
@@ -109,18 +113,21 @@ import { ADMIN_FIELD_CLASS } from '@/components/Admin/adminSurfaceClasses';
 const STRATEGY_NETWORKS: SocialNetwork[] = ['instagram', 'facebook', 'whatsapp', 'linkedin', 'tiktok'];
 
 function calendarChipStyle(post: SocialPost): { bg: string; text: string; border: string; label: string } {
-  if (post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok)) {
+  if (
+    post.network === 'instagram' &&
+    (post.alsoPublishFacebook || post.alsoPublishTikTok || post.alsoPublishYouTube)
+  ) {
     const ig = SOCIAL_NETWORK_COLORS.instagram;
-    const label =
-      post.alsoPublishFacebook && post.alsoPublishTikTok
-        ? 'IG+FB+TT'
-        : post.alsoPublishFacebook
-          ? 'IG+FB'
-          : 'IG+TT';
+    const parts = ['IG'];
+    if (post.alsoPublishFacebook) parts.push('FB');
+    if (post.alsoPublishTikTok) parts.push('TT');
+    if (post.alsoPublishYouTube) parts.push('YT');
     const border = post.alsoPublishFacebook
       ? SOCIAL_NETWORK_COLORS.facebook.border
-      : SOCIAL_NETWORK_COLORS.tiktok.border;
-    return { bg: ig.bg, text: ig.text, border, label };
+      : post.alsoPublishYouTube
+        ? '#cc0000'
+        : SOCIAL_NETWORK_COLORS.tiktok.border;
+    return { bg: ig.bg, text: ig.text, border, label: parts.join('+') };
   }
   const c = SOCIAL_NETWORK_COLORS[post.network];
   return { bg: c.bg, text: c.text, border: c.border, label: c.short };
@@ -188,6 +195,9 @@ type Props = {
   tiktok: TikTokSocialConnection;
   tiktokAppReady: boolean;
   tiktokStatusMessage: string;
+  youtube: YouTubeSocialConnection;
+  youtubeAppReady: boolean;
+  youtubeStatusMessage: string;
   alejandraDouble: AlejandraDoubleProfile;
   /** Flag serveur ALEJANDRA_DOUBLE_ENABLED — masque le panneau si false. */
   doubleUiEnabled?: boolean;
@@ -203,6 +213,9 @@ export function CommunityManagerBoard({
   tiktok,
   tiktokAppReady,
   tiktokStatusMessage,
+  youtube,
+  youtubeAppReady,
+  youtubeStatusMessage,
   alejandraDouble,
   doubleUiEnabled = false,
   pillarHistoryLabels = [],
@@ -617,6 +630,7 @@ export function CommunityManagerBoard({
                     : '· Meta OK (token Page sans expiration)'
               : '· Meta non connecté'}
             {tiktok.connected ? ' · TikTok OK' : ' · TikTok à connecter'}
+            {youtube.connected ? ' · YouTube OK' : ' · YouTube à connecter'}
             <button type="button" className="ml-1 underline decoration-[#C45D3E]/40" onClick={() => setShowMetaPanel((v) => !v)}>
               {showMetaPanel ? 'masquer' : 'régler'}
             </button>
@@ -779,7 +793,7 @@ export function CommunityManagerBoard({
           <div className="mt-3 max-w-xl rounded-2xl border border-[#E8D9C8]/80 bg-white/80 p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Canaux de publication</p>
             <p className="mt-1 text-[11px] text-luxury-muted">
-              Instagram = source. Facebook & TikTok = miroirs automatiques des Reels.
+              Instagram = source. Facebook, TikTok & YouTube Shorts = miroirs automatiques des Reels.
             </p>
             <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</p>
             <p className="mt-1 text-[11px] text-luxury-muted">
@@ -905,6 +919,41 @@ export function CommunityManagerBoard({
                       onClick={() => run(() => disconnectTikTokAction(), 'TikTok déconnecté.')}
                     >
                       Déconnecter TikTok
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-3 border-t border-[#E8D9C8]/80 pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">YouTube (miroir Reels → Shorts)</p>
+                <p className="mt-1 text-[11px] text-luxury-muted">{youtubeStatusMessage}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {youtubeAppReady ? (
+                    <button
+                      type="button"
+                      className="btn-luxury-primary px-3 py-2 text-[10px]"
+                      onClick={() =>
+                        void getYouTubeConnectUrlAction().then((res) => {
+                          if (res.ok && res.url) window.location.href = res.url;
+                          else setMessage(res.error || 'OAuth YouTube indisponible.');
+                        })
+                      }
+                    >
+                      {youtube.connected ? 'Reconnecter YouTube' : 'OAuth YouTube'}
+                    </button>
+                  ) : (
+                    <p className="text-[10px] text-luxury-muted">
+                      Ajoute <code>YOUTUBE_CLIENT_ID</code> + <code>YOUTUBE_CLIENT_SECRET</code> (Vercel + .env.local),
+                      Google Cloud → YouTube Data API v3 + OAuth Web, redirect{' '}
+                      <code>/api/admin/community/youtube/callback</code>.
+                    </p>
+                  )}
+                  {youtube.connected ? (
+                    <button
+                      type="button"
+                      className="btn-luxury-ghost px-3 py-2 text-[10px] text-red-800"
+                      onClick={() => run(() => disconnectYouTubeAction(), 'YouTube déconnecté.')}
+                    >
+                      Déconnecter YouTube
                     </button>
                   ) : null}
                 </div>
@@ -1842,6 +1891,11 @@ function PostCard({
                 TikTok
               </span>
             ) : null}
+            {post.alsoPublishYouTube ? (
+              <span className="rounded-full bg-[#ffeaea] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#cc0000]">
+                YouTube
+              </span>
+            ) : null}
             <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">
               {post.format}
             </span>
@@ -1982,6 +2036,22 @@ function PostCard({
                     }
                   />
                   Aussi TikTok (même Reel)
+                </label>
+              ) : null}
+              {post.network === 'instagram' && post.format === 'reel' ? (
+                <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">
+                  <input
+                    type="checkbox"
+                    checked={post.alsoPublishYouTube}
+                    disabled={pending}
+                    onChange={(e) =>
+                      run(
+                        () => updateSocialPostYouTubeMirrorAction(post.id, e.target.checked),
+                        e.target.checked ? 'Miroir YouTube activé.' : 'Miroir YouTube désactivé.',
+                      )
+                    }
+                  />
+                  Aussi YouTube Shorts (même Reel)
                 </label>
               ) : null}
               <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">
@@ -2548,8 +2618,8 @@ function PostCard({
                       }, 150);
                     }
                     return result;
-                  }, post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok)
-                    ? `Publié sur Instagram${post.alsoPublishFacebook ? ' (+ FB)' : ''}${post.alsoPublishTikTok ? ' (+ TT)' : ''}.`
+                  }, post.network === 'instagram' && (post.alsoPublishFacebook || post.alsoPublishTikTok || post.alsoPublishYouTube)
+                    ? `Publié sur Instagram${post.alsoPublishFacebook ? ' (+ FB)' : ''}${post.alsoPublishTikTok ? ' (+ TT)' : ''}${post.alsoPublishYouTube ? ' (+ YT)' : ''}.`
                     : 'Publié sur Meta.')
                 }
                 className={`inline-flex min-h-[40px] items-center gap-2 px-4 text-[11px] disabled:opacity-60 ${
@@ -2561,13 +2631,11 @@ function PostCard({
                   ? 'Publié ✓'
                   : post.status === 'published'
                     ? 'Publié'
-                    : post.network === 'instagram' && post.alsoPublishFacebook && post.alsoPublishTikTok
-                      ? 'Publier IG + FB + TT'
+                    : post.network === 'instagram' && post.format === 'reel'
+                      ? `Publier IG${post.alsoPublishFacebook ? ' + FB' : ''}${post.alsoPublishTikTok ? ' + TT' : ''}${post.alsoPublishYouTube ? ' + YT' : ''}`
                       : post.network === 'instagram' && post.alsoPublishFacebook
                         ? 'Publier IG + FB'
-                        : post.network === 'instagram' && post.alsoPublishTikTok
-                          ? 'Publier IG + TT'
-                          : 'Publier'}
+                        : 'Publier'}
               </button>
             ) : null}
             {canPublishMeta && post.status === 'published' && post.alsoPublishFacebook ? (
@@ -2609,6 +2677,16 @@ function PostCard({
               <span className="inline-flex min-h-[40px] items-center rounded-full border border-black/20 bg-zinc-100 px-4 text-[11px] font-semibold text-zinc-800">
                 TikTok OK · {post.tiktokExternalId.slice(0, 18)}…
               </span>
+            ) : null}
+            {post.youtubeExternalId ? (
+              <a
+                href={`https://www.youtube.com/watch?v=${post.youtubeExternalId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-[40px] items-center rounded-full border border-[#cc0000]/30 bg-[#ffeaea] px-4 text-[11px] font-semibold text-[#cc0000]"
+              >
+                YouTube OK · {post.youtubeExternalId.slice(0, 11)}…
+              </a>
             ) : null}
             {isManualNetwork ? (
               <button
