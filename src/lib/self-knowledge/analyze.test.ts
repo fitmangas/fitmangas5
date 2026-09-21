@@ -6,7 +6,7 @@ import { ATTACHMENT_TEST } from './ecr-short';
 
 describe('analyse template (sans Claude)', () => {
   it('produit teaser + full + strengths en FR', () => {
-    const analysis = buildTemplateAnalysis(BIG_FIVE_TEST, { O: 40, C: 35, E: 28, A: 32, N: 22 }, 'fr');
+    const analysis = buildTemplateAnalysis(BIG_FIVE_TEST, { O: 40, C: 35, E: 28, A: 32, ES: 22 }, 'fr');
     expect(analysis.mode).toBe('template');
     expect(analysis.teaser.length).toBeGreaterThan(40);
     expect(analysis.full.length).toBeGreaterThan(80);
@@ -32,7 +32,7 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '');
     const analysis = await generateSelfTestAnalysis(
       BIG_FIVE_TEST,
-      { O: 30, C: 30, E: 30, A: 30, N: 30 },
+      { O: 30, C: 30, E: 30, A: 30, ES: 30 },
       'fr',
     );
     expect(analysis.mode).toBe('template');
@@ -47,7 +47,7 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     );
     const analysis = await generateSelfTestAnalysis(
       BIG_FIVE_TEST,
-      { O: 30, C: 30, E: 30, A: 30, N: 30 },
+      { O: 30, C: 30, E: 30, A: 30, ES: 30 },
       'fr',
     );
     expect(analysis.mode).toBe('template');
@@ -74,7 +74,7 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     );
     const analysis = await generateSelfTestAnalysis(
       BIG_FIVE_TEST,
-      { O: 40, C: 30, E: 30, A: 30, N: 20 },
+      { O: 40, C: 30, E: 30, A: 30, ES: 20 },
       'fr',
     );
     expect(analysis.mode).toBe('claude');

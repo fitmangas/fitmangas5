@@ -12,7 +12,7 @@ const bodySchema = z.object({
   firstName: z.string().trim().min(1).max(60),
   email: z.string().trim().email().max(120),
   consent: z.literal(true),
-  answers: z.record(z.string(), z.number().int().min(1).max(5)),
+  answers: z.record(z.string(), z.number().int().min(1).max(7)),
   source: z
     .object({
       utm_source: z.string().max(80).optional(),

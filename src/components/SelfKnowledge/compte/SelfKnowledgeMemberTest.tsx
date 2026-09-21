@@ -130,7 +130,7 @@ export function SelfKnowledgeMemberTest({ lang, slug, email, firstName, history 
                     slug === 'big-five'
                       ? BIG_FIVE_LABELS[key]?.[locale] ?? key
                       : ATTACHMENT_LABELS[key]?.[locale] ?? key;
-                  const formatted = slug === 'big-five' ? `${val}/50` : `${val}/5`;
+                  const formatted = slug === 'big-five' ? `${val}/50` : `${val}/7`;
                   return (
                     <div key={key} className="flex justify-between rounded-xl bg-white/40 px-3 py-2 text-sm">
                       <dt className="text-luxury-muted">{label}</dt>
@@ -147,4 +147,3 @@ export function SelfKnowledgeMemberTest({ lang, slug, email, firstName, history 
   );
 }
 
-// useState import fix - I forgot to import useState!

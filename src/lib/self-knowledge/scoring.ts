@@ -20,24 +20,29 @@ export function getSelfTest(slug: string): SelfTestDefinition | null {
   return null;
 }
 
-/** Invert Likert 1–5 → 6 − value */
-export function invertLikert(value: LikertValue): LikertValue {
-  return (6 - value) as LikertValue;
+/**
+ * Inverse Likert : max+1 − value.
+ * IPIP 1–5 → 6−v ; ECR-S 1–7 → 8−v.
+ */
+export function invertLikert(value: LikertValue, likertMax: 5 | 7 = 5): number {
+  return likertMax + 1 - value;
 }
 
 export function scoredItemValue(
   raw: LikertValue,
-  reverse: boolean | undefined
+  reverse: boolean | undefined,
+  likertMax: 5 | 7 = 5
 ): number {
-  if (raw < 1 || raw > 5) {
-    throw new Error(`Réponse Likert hors bornes: ${raw}`);
+  if (raw < 1 || raw > likertMax) {
+    throw new Error(`Réponse Likert hors bornes: ${raw} (max ${likertMax})`);
   }
-  return reverse ? invertLikert(raw) : raw;
+  return reverse ? invertLikert(raw, likertMax) : raw;
 }
 
 /**
- * Sum scores per key. Big Five → totals 10–50.
- * Attachment → mean 1–5 per subscale (rounded 2 decimals).
+ * Agrège les scores.
+ * Big Five → sommes 10–50.
+ * Attachment ECR-S → moyennes 1–7 (2 décimales).
  */
 export function scoreSelfTest(
   def: SelfTestDefinition,
@@ -55,7 +60,7 @@ export function scoreSelfTest(
 
   for (const item of def.items) {
     const raw = answers[item.id]!;
-    const v = scoredItemValue(raw, item.reverse);
+    const v = scoredItemValue(raw, item.reverse, def.likertMax);
     buckets[item.key]!.push(v);
   }
 
@@ -78,10 +83,11 @@ export function validateAnswers(
   def: SelfTestDefinition,
   answers: SelfTestAnswers
 ): { ok: true } | { ok: false; error: string } {
+  const max = def.likertMax;
   for (const item of def.items) {
     const v = answers[item.id];
     if (v == null) return { ok: false, error: `Réponse manquante: ${item.id}` };
-    if (![1, 2, 3, 4, 5].includes(v)) {
+    if (!Number.isInteger(v) || v < 1 || v > max) {
       return { ok: false, error: `Valeur invalide pour ${item.id}` };
     }
   }

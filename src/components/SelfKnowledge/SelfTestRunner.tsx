@@ -78,7 +78,7 @@ export function SelfTestRunner({
           of: 'de',
           source: 'Fuente',
           progress: 'Progreso',
-          pick: 'Elige de 1 (nada de acuerdo) a 5 (totalmente de acuerdo).',
+          pick: 'Elige de 1 (muy en desacuerdo) a 7 (muy de acuerdo) según el test.',
         }
       : {
           introCta: 'Commencer le test',
@@ -89,7 +89,7 @@ export function SelfTestRunner({
           of: 'sur',
           source: 'Source',
           progress: 'Progression',
-          pick: 'Choisis de 1 (pas du tout d’accord) à 5 (tout à fait d’accord).',
+          pick: 'Choisis selon l’échelle indiquée sous chaque question.',
         };
 
   const batchComplete = currentBatch.every((item) => answers[item.id] != null);
@@ -256,7 +256,7 @@ export function SelfTestRunner({
                 <fieldset key={item.id} className="rounded-[20px] border border-brand-ink/[0.06] bg-white/85 p-5 shadow-sm">
                   <legend className="text-[15px] font-medium leading-snug text-brand-ink">{item.text[locale]}</legend>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {([1, 2, 3, 4, 5] as LikertValue[]).map((v) => (
+                    {(Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue)).map((v) => (
                       <button
                         key={v}
                         type="button"
@@ -274,7 +274,8 @@ export function SelfTestRunner({
                     ))}
                   </div>
                   <p className="mt-2 text-[10px] text-brand-ink/40">
-                    1 = {test.likertLabels[locale][0]} · 5 = {test.likertLabels[locale][4]}
+                    1 = {test.likertLabels[locale][0]} · {test.likertMax} ={' '}
+                    {test.likertLabels[locale][test.likertMax - 1]}
                   </p>
                 </fieldset>
               ))}
