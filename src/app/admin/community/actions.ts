@@ -76,7 +76,8 @@ import { parisScheduleToIso } from '@/lib/admin/social-paris-time';
 import { markSpanishVariantsStale, whyItWorksNeedsReviewForLocale } from '@/lib/admin/social-copy-quality';
 import { adaptCaptionToLinkedInViaLlm } from '@/lib/admin/social-linkedin-adapt';
 import {
-  collectUsedLibraryPaths,
+  collectUsedCarouselCoverPaths,
+  collectUsedFeedLibraryPaths,
   createSocialPostId,
   emptyMetaConnection,
   getMetaAppLiveAck,
@@ -798,7 +799,10 @@ export async function generateSocialImageAction(postId: string, feedbackOverride
   }
 
   const double = await getAlejandraDoubleProfile();
-  const usedLibrary = collectUsedLibraryPaths(board.posts);
+  const usedLibrary =
+    post.format === 'carousel'
+      ? collectUsedCarouselCoverPaths(board.posts)
+      : collectUsedFeedLibraryPaths(board.posts);
   const isLibrarySlot = post.format === 'feed' || (isCarousel && idx === 0);
   const slideHint = isCarousel
     ? post.carouselSlideTitles?.[idx] || post.imageHint || post.title
@@ -1868,8 +1872,11 @@ export async function publishSocialPostNowAction(postId: string) {
       }
 
       if (post.alsoPublishYouTube) {
-        if (post.format !== 'reel' || !post.editedVideoPath) {
-          notes.push('YouTube ignoré (Reel MP4 requis)');
+        if (post.youtubeExternalId) {
+          youtubeExternalId = post.youtubeExternalId;
+          notes.push('YouTube (déjà publié)');
+        } else if (post.format !== 'reel' || !post.editedVideoPath) {
+          notes.push('YouTube ignoré (Reel MP4 requis — carousel/feed = IG+FB seulement)');
         } else {
           try {
             let ytConn = await getYouTubeSocialConnection();
@@ -1986,6 +1993,8 @@ export async function scheduleSocialPostAction(postId: string) {
               ...item,
               status: 'scheduled',
               facebookExternalId: null,
+              tiktokExternalId: null,
+              youtubeExternalId: null,
               igContainerId: null,
               publishError: null,
               publishAttemptAt: null,
@@ -2152,6 +2161,7 @@ export async function processDueSocialPostsAction() {
       let facebookExternalId = post.facebookExternalId;
       let tiktokExternalId = post.tiktokExternalId;
       let youtubeExternalId = post.youtubeExternalId;
+      const mirrorErrors: string[] = [];
       if (post.alsoPublishFacebook) {
         if (!facebookMirrorMediaReady(post)) {
           console.error('[processDueSocialPostsAction] FB mirror skipped — média manquant', post.id);
@@ -2185,21 +2195,32 @@ export async function processDueSocialPostsAction() {
         }
       }
       if (post.alsoPublishYouTube && post.format === 'reel' && post.editedVideoPath) {
-        try {
-          let ytConn = await getYouTubeSocialConnection();
-          if (ytConn.connected && ytConn.accessToken) {
-            const ytPublished = await publishYouTubeReel(ytConn, post, {
-              onTokenRefreshed: async (next) => {
-                await saveYouTubeSocialConnection(next);
-                ytConn = next;
-              },
-            });
-            youtubeExternalId = ytPublished.videoId;
-            await saveYouTubeSocialConnection(ytPublished.connection);
+        if (post.youtubeExternalId) {
+          youtubeExternalId = post.youtubeExternalId;
+        } else {
+          try {
+            let ytConn = await getYouTubeSocialConnection();
+            if (ytConn.connected && ytConn.accessToken) {
+              const ytPublished = await publishYouTubeReel(ytConn, post, {
+                onTokenRefreshed: async (next) => {
+                  await saveYouTubeSocialConnection(next);
+                  ytConn = next;
+                },
+              });
+              youtubeExternalId = ytPublished.videoId;
+              await saveYouTubeSocialConnection(ytPublished.connection);
+            } else {
+              mirrorErrors.push(`YouTube non connecté — ${youtubeConnectorStatusMessage(ytConn)}`);
+            }
+          } catch (ytError) {
+            console.error('[processDueSocialPostsAction] YT mirror', post.id, ytError);
+            mirrorErrors.push(
+              `YouTube: ${ytError instanceof Error ? ytError.message : 'échec miroir'}`,
+            );
           }
-        } catch (ytError) {
-          console.error('[processDueSocialPostsAction] YT mirror', post.id, ytError);
         }
+      } else if (post.alsoPublishYouTube && (post.format !== 'reel' || !post.editedVideoPath)) {
+        mirrorErrors.push('YouTube ignoré (Reel MP4 requis)');
       }
 
       nextPosts = nextPosts.map((item) =>
@@ -2212,7 +2233,7 @@ export async function processDueSocialPostsAction() {
               tiktokExternalId,
               youtubeExternalId,
               igContainerId: null,
-              publishError: null,
+              publishError: mirrorErrors.length ? mirrorErrors.join(' · ') : null,
               publishAttemptAt: attemptAt,
               updatedAt: attemptAt,
             }
@@ -2822,7 +2843,8 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
         '@/lib/admin/social-ai-image'
       );
       const latestBoard = await getSocialCommsBoard();
-      const usedLibrary = collectUsedLibraryPaths(latestBoard.posts);
+      const usedCarouselCovers = collectUsedCarouselCoverPaths(latestBoard.posts);
+      const usedFeedPhotos = collectUsedFeedLibraryPaths(latestBoard.posts);
       const usedUnsplash = collectUsedUnsplashIdsFromPosts(latestBoard.posts);
 
       if (slot.mediaKind === 'carousel') {
@@ -2850,7 +2872,7 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
         tasks.push(async () => {
           const r = await generateSocialPhotoForPost(target, {
             variationSeed: hashVariationSeed(target.id, 'carousel-cover', target.generationSlot),
-            usedLibraryPaths: usedLibrary,
+            usedLibraryPaths: usedCarouselCovers,
             usedUnsplashIds: usedUnsplash,
             preferLibrary: true,
             forceNanoBanana: false,
@@ -2862,7 +2884,7 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
             paths[0] = r.imagePath;
             imageSource = imageSourceFromProviderName(r.provider);
             aiImagePrompt = r.prompt;
-            addLibraryPathAliases(usedLibrary, r.imagePath);
+            addLibraryPathAliases(usedCarouselCovers, r.imagePath);
           }
         });
 
@@ -2881,7 +2903,7 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
               },
               {
                 variationSeed: hashVariationSeed(target.id, 'carousel-ai', c, target.generationSlot),
-                usedLibraryPaths: usedLibrary,
+                usedLibraryPaths: usedCarouselCovers,
                 usedUnsplashIds: usedUnsplash,
                 preferLibrary: false,
                 forceNanoBanana: true,
@@ -2949,7 +2971,7 @@ export async function generateNextPostAction(runId: string, mode: 'pending' | 'f
             target.generationSlot,
             normalized.imageHint || normalized.title,
           ),
-          usedLibraryPaths: usedLibrary,
+          usedLibraryPaths: usedFeedPhotos,
           usedUnsplashIds: usedUnsplash,
           preferLibrary: true,
           forceNanoBanana: false,

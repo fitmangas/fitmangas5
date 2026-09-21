@@ -793,7 +793,9 @@ export function CommunityManagerBoard({
           <div className="mt-3 max-w-xl rounded-2xl border border-[#E8D9C8]/80 bg-white/80 p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Canaux de publication</p>
             <p className="mt-1 text-[11px] text-luxury-muted">
-              Instagram = source. Facebook, TikTok & YouTube Shorts = miroirs automatiques des Reels.
+              Instagram = source. Facebook = miroir tous formats. TikTok & YouTube Shorts = miroirs
+              automatiques des Reels (pas de carousel/feed sur YT/TT — format vidéo only). YouTube :
+              description avec lien essai 7j (pas de DM).
             </p>
             <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">Meta IG/FB</p>
             <p className="mt-1 text-[11px] text-luxury-muted">
@@ -2051,7 +2053,7 @@ function PostCard({
                       )
                     }
                   />
-                  Aussi YouTube Shorts (même Reel)
+                  Aussi YouTube Shorts (auto au cron — même Reel + CTA essai 7j)
                 </label>
               ) : null}
               <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">

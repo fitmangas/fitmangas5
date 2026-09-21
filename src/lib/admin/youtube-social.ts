@@ -196,6 +196,26 @@ async function ensureFreshToken(
   return next;
 }
 
+/**
+ * Description Shorts orientée conversion (pas de DM YouTube).
+ * Lien essai 7j en haut (visible avant « plus ») + légende + hashtags.
+ */
+export function youtubeShortsDescription(post: SocialPost): string {
+  const trialUrl = `${(process.env.NEXT_PUBLIC_APP_URL || 'https://fitmangas.com').replace(/\/$/, '')}/?utm_source=youtube&utm_medium=shorts&utm_campaign=cm_mirror`;
+  const caption = captionForPublish(post);
+  const hook = (post.hookTitle || post.title || '').trim();
+  const lines = [
+    hook && hook !== caption.slice(0, hook.length) ? hook : null,
+    'Essai gratuit 7 jours — cours collectifs en visio, je te vois et je te corrige.',
+    `Démarre ici → ${trialUrl}`,
+    '',
+    caption,
+    '',
+    '#Shorts #FitMangas #Pilates #Barre #CoursEnLigne',
+  ].filter((line): line is string => line !== null);
+  return lines.join('\n').slice(0, 4900);
+}
+
 /** Publie un Reel FitMangas sur YouTube (Shorts si vertical). */
 export async function publishYouTubeReel(
   connection: YouTubeSocialConnection,
@@ -219,9 +239,8 @@ export async function publishYouTubeReel(
   const fileBuffer = Buffer.from(await sourceRes.arrayBuffer());
   if (fileBuffer.byteLength < 10_000) throw new Error('MP4 trop petit / invalide pour YouTube.');
 
-  const caption = captionForPublish(post);
   const title = (post.hookTitle || post.title || 'FitMangas').slice(0, 90);
-  const description = `${caption}\n\n#Shorts #FitMangas #Pilates`.slice(0, 4900);
+  const description = youtubeShortsDescription(post);
 
   const metadata = {
     snippet: {

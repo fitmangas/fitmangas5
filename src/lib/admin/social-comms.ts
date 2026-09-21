@@ -244,18 +244,41 @@ export function pickUnusedLibraryImage(
 }
 
 /**
- * Chemins biblio déjà pris sur le board (tous les /library/…, pas seulement
- * la petite liste legacy SOCIAL_LIBRARY_IMAGES — sinon Feed/cover = toujours la même).
+ * Cover (slide 1) des carousels déjà sur le board.
+ * Une cover passée ne peut pas redevenir cover — mais peut servir en slide 2–5 plus tard.
  */
-export function collectUsedLibraryPaths(posts: SocialPost[]): Set<string> {
+export function collectUsedCarouselCoverPaths(posts: SocialPost[]): Set<string> {
   const used = new Set<string>();
   for (const post of posts) {
     if (post.status === 'skipped') continue;
-    addLibraryPathAliases(used, post.imagePath);
-    for (const path of post.carouselPaths ?? []) {
-      if (isBoardLibraryPath(path)) addLibraryPathAliases(used, path);
-    }
+    if (post.format !== 'carousel') continue;
+    const cover = (post.carouselPaths?.[0] || post.imagePath || '').trim();
+    addLibraryPathAliases(used, cover || null);
   }
+  return used;
+}
+
+/**
+ * Photos déjà publiées en feed (une seule image) — interdites pour un futur feed.
+ * Une photo feed publiée peut encore servir ailleurs (ex. cover carousel) si les règles le permettent.
+ */
+export function collectUsedFeedLibraryPaths(posts: SocialPost[]): Set<string> {
+  const used = new Set<string>();
+  for (const post of posts) {
+    if (post.format !== 'feed') continue;
+    if (post.status !== 'published') continue;
+    addLibraryPathAliases(used, post.imagePath);
+  }
+  return used;
+}
+
+/**
+ * @deprecated Préférer `collectUsedCarouselCoverPaths` / `collectUsedFeedLibraryPaths`.
+ * Conservé pour compat : union covers carousel + feeds publiés (plus de ban global toutes slides).
+ */
+export function collectUsedLibraryPaths(posts: SocialPost[]): Set<string> {
+  const used = collectUsedCarouselCoverPaths(posts);
+  for (const path of collectUsedFeedLibraryPaths(posts)) used.add(path);
   return used;
 }
 

@@ -1144,8 +1144,8 @@
     },
     "produit-captures": {
       "theme": "produit-captures",
-      "target": 3,
-      "count": 6,
+      "target": 9,
+      "count": 9,
       "missing": 0,
       "files": [
         {
@@ -1207,6 +1207,36 @@
           },
           "dims": "1999x1097",
           "bytes": 69322
+        },
+        {
+          "file": "library/produit-captures/produit-mobile-01.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "unknown",
+          "bytes": 46486
+        },
+        {
+          "file": "library/produit-captures/produit-mobile-07.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "unknown",
+          "bytes": 60712
+        },
+        {
+          "file": "library/produit-captures/produit-mobile-08.webp",
+          "ratios": {
+            "web": true,
+            "4x5": true,
+            "1x1": true
+          },
+          "dims": "unknown",
+          "bytes": 54732
         }
       ]
     }
