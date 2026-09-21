@@ -1,0 +1,17 @@
+---
+description: Routine fin de chantier — journal + archive pour garder le contexte Cursor.
+alwaysApply: true
+---
+
+# Routine contexte (chaque chantier réussi)
+
+Sans ça, le prochain chat réinvente et casse ce qui marche.
+
+1. **Journal** : 3–8 lignes dans `docs/CONTEXTE_VIVANT.md` (date, quoi, fichiers clés, bloquants).
+2. **Archive** : si nouvelle surface admin/cliente/quiz → fiche dans `docs/archive-produit/`.
+3. **Acquis durable** : une ligne dans `fitmangas-source-de-verite.mdc` ou `fitmangas-inventaire-fige.mdc`.
+4. **Copie store** : sync vers store perso `fitmangas-archive-produit` (hors git).
+5. **Build** : `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
+6. **Push** : compte GitHub **`fitmangas`** (MCP) si CLI `support811` → 403.
+
+Ne pas refondre une surface listée dans l’inventaire sans demande explicite.
