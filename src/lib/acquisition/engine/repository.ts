@@ -959,6 +959,11 @@ export async function runDueFollowups(limit = 40): Promise<{
       details.push(`${id}: annulé — opt-out`);
       continue;
     }
+    if (contact && (contact.lifecycleStage === 'trial' || contact.lifecycleStage === 'paid' || contact.lifecycleStage === 'member')) {
+      await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+      details.push(`${id}: annulé — déjà ${contact.lifecycleStage}`);
+      continue;
+    }
 
     const lastInbound =
       [...detail.messages].reverse().find((m) => m.direction === 'inbound')?.body ??
@@ -1106,6 +1111,16 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
         .from('acq_conversations')
         .update({ lifecycle_stage: next, updated_at: new Date().toISOString() })
         .eq('contact_id', c.id);
+      // Stoppe relances DM + nurture quiz dès qu’elle convertit
+      await admin
+        .from('acq_followups')
+        .update({ status: 'cancelled' })
+        .eq('contact_id', c.id)
+        .eq('status', 'scheduled');
+      if (email && (next === 'trial' || next === 'paid')) {
+        const { cancelQuizNurtureForEmail } = await import('@/lib/quiz/lead-nurture');
+        await cancelQuizNurtureForEmail(email, next === 'paid' ? 'paid' : 'trial');
+      }
       updated += 1;
       details.push(`${email || userId}: ${current} → ${next}`);
     }

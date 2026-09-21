@@ -21,7 +21,7 @@ const LINE_H = 5;
 type Slice = { letter: DiscLetter; percent: number; label: string; color: string };
 
 /** Image déjà croppée, ratio exact = wPx/hPx. */
-type PdfImg = { dataUrl: string; wPx: number; hPx: number };
+type PdfImg = { dataUrl: string; wPx: number; hPx: number; format: 'JPEG' | 'PNG' };
 
 type PdfCtx = {
   doc: jsPDF;
@@ -114,7 +114,34 @@ export async function loadCroppedJpeg(
     }
     c.drawImage(bmp, sx, sy, sw, sh, 0, 0, wPx, hPx);
     bmp.close();
-    return { dataUrl: canvas.toDataURL('image/jpeg', 0.86), wPx, hPx };
+    return { dataUrl: canvas.toDataURL('image/jpeg', 0.86), wPx, hPx, format: 'JPEG' };
+  } catch {
+    return null;
+  }
+}
+
+/** Logo PNG avec transparence (pas de JPEG = pas de fond noir). */
+export async function loadTransparentPng(path: string, maxEdge = 400): Promise<PdfImg | null> {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const bmp = await createImageBitmap(blob);
+    const scale = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
+    const wPx = Math.max(1, Math.round(bmp.width * scale));
+    const hPx = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = wPx;
+    canvas.height = hPx;
+    const c = canvas.getContext('2d');
+    if (!c) {
+      bmp.close();
+      return null;
+    }
+    // Pas de fillRect : on garde l’alpha
+    c.drawImage(bmp, 0, 0, wPx, hPx);
+    bmp.close();
+    return { dataUrl: canvas.toDataURL('image/png'), wPx, hPx, format: 'PNG' };
   } catch {
     return null;
   }
@@ -136,7 +163,7 @@ export function placeImage(
     h = maxH;
     w = h * aspect;
   }
-  doc.addImage(img.dataUrl, 'JPEG', x, y, w, h);
+  doc.addImage(img.dataUrl, img.format, x, y, w, h);
   return { w, h };
 }
 
@@ -169,8 +196,17 @@ function writeLines(
   }
 }
 
-function sectionTitle(ctx: PdfCtx, title: string, color: [number, number, number] = TERRACOTTA) {
-  ensure(ctx, 16);
+/**
+ * Titre de section. `keepWithMm` = hauteur du contenu qui doit rester
+ * sur la même page (bannière + début de liste) — sinon page suivante avant le titre.
+ */
+function sectionTitle(
+  ctx: PdfCtx,
+  title: string,
+  color: [number, number, number] = TERRACOTTA,
+  keepWithMm = 0,
+) {
+  ensure(ctx, 16 + Math.max(0, keepWithMm));
   ctx.doc.setFillColor(...color);
   ctx.doc.rect(MARGIN, ctx.y, 20, 1.4, 'F');
   ctx.y += 6;
@@ -179,6 +215,11 @@ function sectionTitle(ctx: PdfCtx, title: string, color: [number, number, number
   ctx.doc.setTextColor(...color);
   ctx.doc.text(title.toUpperCase(), MARGIN, ctx.y);
   ctx.y += 7;
+}
+
+function bannerHeightMm(img: PdfImg | null): number {
+  if (!img) return 0;
+  return CONTENT_W / (img.wPx / img.hPx);
 }
 
 function addParagraphs(ctx: PdfCtx, items: string[]) {
@@ -217,8 +258,8 @@ function addWebBanner(
   const aspect = img.wPx / img.hPx;
   const w = CONTENT_W;
   const h = w / aspect; // ~70 mm pour aspect 2.55
-  ensure(ctx, h + 6);
-  ctx.doc.addImage(img.dataUrl, 'JPEG', MARGIN, ctx.y, w, h);
+  // Pas de newPage ici : le caller a déjà réservé titre + bannière via keepWithMm
+  ctx.doc.addImage(img.dataUrl, img.format, MARGIN, ctx.y, w, h);
   ctx.doc.setFillColor(...accent);
   const pillW = Math.min(72, CONTENT_W * 0.48);
   ctx.doc.roundedRect(MARGIN + 4, ctx.y + h - 12, pillW, 8, 2, 2, 'F');
@@ -263,7 +304,7 @@ function renderDonutJpeg(slices: Slice[]): PdfImg {
   c.beginPath();
   c.arc(cx, cy, rIn - 2, 0, Math.PI * 2);
   c.fill();
-  return { dataUrl: canvas.toDataURL('image/jpeg', 0.92), wPx: size, hPx: size };
+  return { dataUrl: canvas.toDataURL('image/jpeg', 0.92), wPx: size, hPx: size, format: 'JPEG' };
 }
 
 function renderRadarJpeg(slices: Slice[]): PdfImg {
@@ -330,7 +371,7 @@ function renderRadarJpeg(slices: Slice[]): PdfImg {
   c.lineWidth = 5;
   c.stroke();
 
-  return { dataUrl: canvas.toDataURL('image/jpeg', 0.92), wPx: size, hPx: size };
+  return { dataUrl: canvas.toDataURL('image/jpeg', 0.92), wPx: size, hPx: size, format: 'JPEG' };
 }
 
 export async function buildDisciplineReportPdf(args: {
@@ -373,7 +414,7 @@ export async function buildDisciplineReportPdf(args: {
   const BANNER_ASPECT = 2.55;
 
   const [logo, hero, howImg, forcesImg, stressImg, parlerImg, developImg] = await Promise.all([
-    loadCroppedJpeg('/logo.png', 1, 0.5, 400),
+    loadTransparentPng('/logo.png', 400),
     card ? loadCroppedJpeg(card.image, 4 / 5, 0.15, 1000) : Promise.resolve(null),
     loadCroppedJpeg(QUIZ_SECTION_IMAGES.how.src, BANNER_ASPECT, parseFocusY(QUIZ_SECTION_IMAGES.how.objectPosition)),
     loadCroppedJpeg(QUIZ_SECTION_IMAGES.forces.src, BANNER_ASPECT, parseFocusY(QUIZ_SECTION_IMAGES.forces.objectPosition)),
@@ -461,7 +502,7 @@ export async function buildDisciplineReportPdf(args: {
   const heroW = 68;
   const heroH = heroW / (4 / 5); // 85 mm — ratio exact, jamais compressé
   if (hero) {
-    ctx.doc.addImage(hero.dataUrl, 'JPEG', MARGIN, heroTop, heroW, heroH);
+    ctx.doc.addImage(hero.dataUrl, hero.format, MARGIN, heroTop, heroW, heroH);
   }
   const cardX = MARGIN + (hero ? heroW + 6 : 0);
   const cardW = CONTENT_W - (hero ? heroW + 6 : 0);
@@ -510,12 +551,12 @@ export async function buildDisciplineReportPdf(args: {
   doc.setFontSize(7);
   doc.setTextColor(...MUTED);
   doc.text(L.note, MARGIN, ctx.y);
-  ctx.y += 10;
 
-  // ——— MIX ———
-  sectionTitle(ctx, L.mix);
+  // ——— PAGE 2 : mix (part de chaque couleur + barres) ———
+  newPage(ctx);
   const chartSize = 62;
-  ensure(ctx, chartSize + 14);
+  const barsBlock = slices.length * 12 + 8;
+  sectionTitle(ctx, L.mix, TERRACOTTA, chartSize + 14 + barsBlock);
   placeImage(doc, donut, MARGIN, ctx.y, chartSize, chartSize);
   placeImage(doc, radar, MARGIN + chartSize + 10, ctx.y, chartSize, chartSize);
   doc.setFont('helvetica', 'bold');
@@ -548,10 +589,9 @@ export async function buildDisciplineReportPdf(args: {
   }
 
   // ——— PORTRAIT (comme web : citation + suite) ———
-  sectionTitle(ctx, L.portrait);
   const quote = report.portrait[locale][0] ?? '';
   const quoteLines = wrap(doc, quote, CONTENT_W - 8);
-  ensure(ctx, quoteLines.length * 6 + 8);
+  sectionTitle(ctx, L.portrait, TERRACOTTA, quoteLines.length * 6 + 16);
   doc.setDrawColor(...accent);
   doc.setLineWidth(1.2);
   doc.line(MARGIN, ctx.y - 2, MARGIN, ctx.y + quoteLines.length * 6);
@@ -566,38 +606,38 @@ export async function buildDisciplineReportPdf(args: {
   addParagraphs(ctx, report.portrait[locale].slice(1));
 
   // ——— HOW ———
-  sectionTitle(ctx, L.how);
+  sectionTitle(ctx, L.how, TERRACOTTA, bannerHeightMm(howImg) + 28);
   addWebBanner(ctx, howImg, L.how, accent);
   addBullets(ctx, report.howYouWork[locale], accent);
 
   // ——— FORCES / LIMITES ———
-  sectionTitle(ctx, L.strengths, [107, 143, 113]);
+  sectionTitle(ctx, L.strengths, [107, 143, 113], bannerHeightMm(forcesImg) + 28);
   addWebBanner(ctx, forcesImg, L.strengths, [107, 143, 113]);
   addParagraphs(ctx, report.strengths[locale]);
-  sectionTitle(ctx, L.limits, [91, 124, 141]);
+  sectionTitle(ctx, L.limits, [91, 124, 141], 32);
   addBullets(ctx, report.limits[locale], [91, 124, 141]);
 
   // ——— STRESS / PEURS / BESOINS ———
-  sectionTitle(ctx, L.stress);
+  sectionTitle(ctx, L.stress, TERRACOTTA, bannerHeightMm(stressImg) + 28);
   addWebBanner(ctx, stressImg, L.stress, accent);
   addParagraphs(ctx, report.underStress[locale]);
-  sectionTitle(ctx, L.fears);
+  sectionTitle(ctx, L.fears, TERRACOTTA, 32);
   addBullets(ctx, report.fears[locale], accent);
-  sectionTitle(ctx, L.needs);
+  sectionTitle(ctx, L.needs, TERRACOTTA, 28);
   addParagraphs(ctx, report.needs[locale]);
 
   // ——— PARLER ———
-  sectionTitle(ctx, L.talk);
+  sectionTitle(ctx, L.talk, TERRACOTTA, bannerHeightMm(parlerImg) + 28);
   addWebBanner(ctx, parlerImg, L.talk, accent);
   addBullets(ctx, report.howToTalk[locale], accent);
-  sectionTitle(ctx, L.notalk);
+  sectionTitle(ctx, L.notalk, TERRACOTTA, 28);
   addParagraphs(ctx, report.howNotToTalk[locale]);
 
   // ——— DEVELOP / BRIDGE ———
-  sectionTitle(ctx, L.develop);
+  sectionTitle(ctx, L.develop, TERRACOTTA, bannerHeightMm(developImg) + 28);
   addWebBanner(ctx, developImg, L.develop, accent);
   addParagraphs(ctx, report.develop[locale]);
-  sectionTitle(ctx, L.bridge);
+  sectionTitle(ctx, L.bridge, TERRACOTTA, 28);
   addParagraphs(ctx, [result.bridge[locale]]);
   ensure(ctx, 12);
   doc.setFont('helvetica', 'bold');

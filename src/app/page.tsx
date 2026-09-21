@@ -7,9 +7,9 @@ import { loadLandingHomeData } from '@/lib/landing/home-data';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
 
-const HOME_TITLE = 'FitMangas — Pilates & Barre en visio : rendez-vous fixe avec Alejandra';
+const HOME_TITLE = 'FitMangas — Pilates & Barre en visio : cours collectifs avec Alejandra';
 const HOME_DESCRIPTION =
-  'Pilates & Barre en visio : un rendez-vous fixe, la correction en direct et le fait d’être vue. Essai gratuit 7 jours avec Alejandra.';
+  'Pilates & Barre en visio : des cours collectifs à horaires fixes, la correction en direct et le fait d’être vue. Essai gratuit 7 jours avec Alejandra.';
 
 function landingLangFromAcceptLanguage(value: string | null): 'FR' | 'ES' {
   const firstSupported = (value ?? '')

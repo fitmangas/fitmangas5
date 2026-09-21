@@ -12,11 +12,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: 'FitMangas — Pilates & Barre en visio : rendez-vous fixe avec Alejandra',
+    default: 'FitMangas — Pilates & Barre en visio : cours collectifs avec Alejandra',
     template: '%s | FitMangas',
   },
   description:
-    'Pilates & Barre en visio : un rendez-vous fixe, la correction en direct et le fait d’être vue. Essai gratuit 7 jours avec Alejandra.',
+    'Pilates & Barre en visio : des cours collectifs à horaires fixes, la correction en direct et le fait d’être vue. Essai gratuit 7 jours avec Alejandra.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

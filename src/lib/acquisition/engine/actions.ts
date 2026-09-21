@@ -12,11 +12,13 @@ import {
   followGateThanksEs,
   followGateThanksFr,
   lines,
+  priceGroupBodyEs,
+  priceGroupBodyFr,
   QR_ACCUEIL,
   QR_FOLLOW_DONE,
   QR_FOLLOW_GATE,
-  QR_PRICE_CHOICE,
   QR_RESOURCE,
+  QR_TRIAL_GROUP,
   trialFollowupSequence,
 } from '@/lib/acquisition/copy-bilingual';
 import { getPublicTrialSignupUrl, getTrialDmMessage } from '@/lib/acquisition/trial-url';
@@ -517,26 +519,7 @@ function resumeConfigForIntent(
   switch (intent) {
     case 'price':
       return {
-        send: bilingualSend(
-          lines(
-            'Tu as raison de demander 💛',
-            '',
-            'Tu ne paies pas « du Pilates YouTube ».',
-            'Tu paies un créneau avec moi + ma correction en direct.',
-            '',
-            'Quelle formule tu veux voir ?',
-          ),
-          lines(
-            'Tienes razón en preguntar 💛',
-            '',
-            'No pagas « Pilates de YouTube ».',
-            'Pagas una cita conmigo + mi corrección en directo.',
-            '',
-            '¿Qué fórmula quieres ver?',
-          ),
-          false,
-          QR_PRICE_CHOICE,
-        ),
+        send: bilingualSend(priceGroupBodyFr(), priceGroupBodyEs(), false, QR_TRIAL_GROUP),
       };
     case 'trial':
       return {
@@ -545,7 +528,7 @@ function resumeConfigForIntent(
             'Voici ton accès 💛',
             '',
             'Moi, je ne te laisse pas seule devant une vidéo.',
-            'Rendez-vous fixe, je te corrige en direct, je te vois.',
+            'Cours collectifs à horaires fixes, je te corrige en direct, je te vois.',
             '',
             'Essai 7 jours gratuits ✨',
             '',

@@ -27,8 +27,12 @@ alwaysApply: true
 ### Clés & connexions — état confirmé
 - `GEMINI_API_KEY` : **présente** local + Vercel. **Texte = 200 OK** (`gemini-2.5-flash`, utiliser `thinkingBudget:0`). NE PLUS DEMANDER si Gemini est connecté : OUI.
 - `ANTHROPIC_API_KEY` : à ajouter (décision : basculer le texte sur Claude en primaire). Absent = démarrer à Gemini sans erreur bloquante.
-- `META_APP_ID` / `META_APP_SECRET` : absents. Meta tourne en **token manuel** stocké en `admin_settings`.
-- Meta token : **expiré le 21/07/2026** (`OAuthException` 190 / subcode 463). ⚠️ Page ID et IG User ID contiennent **le même numéro** (`104974608387991`) — anormal, l’un des deux est faux. Régénérer via Graph API Explorer → permissions `pages_show_list`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish` → puis `/me/accounts` pour séparer Page ID ≠ IG Business User ID.
+- `META_APP_ID` / `META_APP_SECRET` : **présents** (local + usage debug_token). Tokens Meta aussi en `admin_settings` (manuel / OAuth).
+- **Meta — état vérifié live le 21/09/2026** (ne plus dire « expiré » sans retester) :
+  - `meta_social_connection` (CM / pub) : token EAA **valide**, `expires_at: 0` (Page token), `data_access_expires_at` ≈ **17/12/2026**. Page ID `104974608387991` ≠ IG User ID `17841419052253666` ✅.
+  - `acquisition_meta_connection` (DM) : token IGAA **valide** (Graph IG `/me` → 200, `@fit.mangas`). Même Page/IG IDs distincts ✅.
+  - WhatsApp robot : `WHATSAPP_PHONE_NUMBER_ID` + token EAA **présents**. **Aucun message template** approuvé sur le WABA → envoi cold hors fenêtre 24h impossible tant qu’un template n’est pas créé dans Meta Business Manager.
+  - Script de re-check : `npx tsx scripts/check-meta-tokens.ts`
 - Supabase, Stripe (live), Vimeo, Resend, GA4, Printful, Mistral, Groq, Unsplash : OK.
 - **Abonnements grand public (Claude Pro, Google AI Pro) ≠ accès API.** Aucune image/texte programmatique via ces abonnements. Seule une clé API + facturation API compte.
 
@@ -320,7 +324,8 @@ Sans ça, le système génère à l'aveugle et la semaine 12 est identique à la
 - [x] Voie image gratuite API ? → **NON** (Flash aussi limit:0). Imagen/Vertex/Cloudflare = mortes.
 - [ ] **Créditer Gemini** (~2–5 $/mois pour ~40 images) — seule action qui débloque Nano Banana.
 - [ ] Claude API pour le texte : clé à créer (`ANTHROPIC_API_KEY`).
-- [ ] Meta : renouveler token + corriger Page ID ≠ IG User ID.
+- [x] Meta tokens / Page ID ≠ IG User ID → **OK au 21/09/2026** (retester via `scripts/check-meta-tokens.ts` si doute).
+- [ ] WhatsApp : créer un template marketing `quiz_essai_fitmangas` dans Meta Business Manager (API refuse la création depuis ce WABA).
 
 ## 12. Leçons dures
 

@@ -10,6 +10,7 @@ export type TrialCourseId = 'v-coll' | 'v-ind';
 export function getPublicTrialSignupUrl(options?: {
   courseId?: TrialCourseId;
   utmSource?: string;
+  utmMedium?: string;
   utmCampaign?: string;
   /** Page d’accueil FR `/` ou ES `/es`. */
   locale?: 'fr' | 'es';
@@ -20,7 +21,7 @@ export function getPublicTrialSignupUrl(options?: {
   const params = new URLSearchParams({
     offer: courseId,
     utm_source: options?.utmSource ?? 'acquisition',
-    utm_medium: 'dm',
+    utm_medium: options?.utmMedium ?? 'dm',
   });
   if (options?.utmCampaign) params.set('utm_campaign', options.utmCampaign);
   return `${base}${path}/?${params.toString()}`;
@@ -68,7 +69,7 @@ export function getTrialDmMessage(options?: {
         'Solo un recordatorio 💛',
         '',
         'El enlace de la prueba sigue disponible.',
-        'Una cita fija conmigo, corrección en directo — ya no estás sola.',
+        'Clases grupales con horarios fijos, corrección en directo — ya no estás sola.',
         '',
         `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
         '',
@@ -80,7 +81,7 @@ export function getTrialDmMessage(options?: {
       'Juste un rappel 💛',
       '',
       'Le lien de l’essai est toujours là.',
-      'Un rendez-vous fixe avec moi, correction en direct — tu n’es plus seule.',
+      'Des cours collectifs à horaires fixes, correction en direct — tu n’es plus seule.',
       '',
       `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
       '',
@@ -92,11 +93,11 @@ export function getTrialDmMessage(options?: {
   if (style === 'social_proof') {
     if (locale === 'es') {
       return [
-        'Una cosa que oigo mucho de mis Mangitas 💛',
+        'Una cosa que oigo mucho de mis alumnas 💛',
         '',
         '« Lo que me retenía no era el ejercicio — era hacerlo sola. »',
         '',
-        'Conmigo en visio: cita fija, te corrijo, te veo.',
+        'Conmigo en visio: clases grupales con horarios fijos, te corrijo, te veo.',
         '',
         `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
         '',
@@ -105,11 +106,11 @@ export function getTrialDmMessage(options?: {
       ].join('\n');
     }
     return [
-      'Un truc que j’entends souvent de mes Mangitas 💛',
+      'Un truc que j’entends souvent de mes élèves 💛',
       '',
       '« Ce qui me retenait, ce n’était pas l’exo — c’était de le faire seule. »',
       '',
-      'Avec moi en visio : rendez-vous fixe, je te corrige, je te vois.',
+      'Avec moi en visio : cours collectifs à horaires fixes, je te corrige, je te vois.',
       '',
       `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
       '',
@@ -124,7 +125,7 @@ export function getTrialDmMessage(options?: {
         'Último mensaje de mi parte 💛',
         '',
         'Si aún te lo estás pensando: la prueba es sin compromiso de permanecer.',
-        'Vienes a una cita conmigo y decides.',
+        'Vienes a una clase grupal conmigo y decides.',
         '',
         `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
         '',
@@ -136,7 +137,7 @@ export function getTrialDmMessage(options?: {
       'Dernier message de mon côté 💛',
       '',
       'Si tu hésites encore : l’essai, c’est sans engagement de rester.',
-      'Tu viens à un rendez-vous avec moi, et tu décides.',
+      'Tu viens à un cours en groupe avec moi, et tu décides.',
       '',
       `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
       '',
@@ -159,7 +160,7 @@ export function getTrialDmMessage(options?: {
 
   return [
     'Moi, je ne te laisse pas seule devant une vidéo.',
-    'Rendez-vous fixe avec moi, je te corrige en direct, je te vois.',
+    'Cours collectifs à horaires fixes, je te corrige en direct, je te vois.',
     '',
     `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
     '',
@@ -191,7 +192,7 @@ export function getNaturalTrialInviteMessage(options?: {
     return [
       opener,
       '',
-      'Conmigo: cita fija + corrección en directo + te veo de verdad.',
+      'Conmigo: clases grupales con horarios fijos + corrección en directo + te veo de verdad.',
       '',
       `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`,
       '',
@@ -203,7 +204,7 @@ export function getNaturalTrialInviteMessage(options?: {
   return [
     opener,
     '',
-    'Avec moi : rendez-vous fixe + correction en direct + je te vois vraiment.',
+    'Avec moi : cours collectifs à horaires fixes + correction en direct + je te vois vraiment.',
     '',
     `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits ✨`,
     '',

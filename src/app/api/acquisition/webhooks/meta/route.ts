@@ -113,12 +113,25 @@ async function ingestInbound(params: {
   handleOverride?: string | null;
   triggerType?: WorkflowTriggerType;
   commentId?: string | null;
-}): Promise<{ stored: boolean; workflowsRun: number }> {
+}): Promise<{ stored: boolean; workflowsRun: number; skippedDuplicate?: boolean }> {
   const admin = createAdminClient();
   const { channel, senderId, text } = params;
   const handle =
     params.handleOverride?.trim() ||
     (channel === 'whatsapp' ? `wa_${senderId.slice(-10)}` : `@meta_${senderId.slice(-8)}`);
+
+  // Anti-doublon Meta : même mid déjà traité (webhook retry / poll + webhook)
+  if (params.externalMessageId) {
+    const { data: dupMid } = await admin
+      .from('acq_messages')
+      .select('id')
+      .eq('external_message_id', params.externalMessageId)
+      .limit(1)
+      .maybeSingle();
+    if (dupMid?.id) {
+      return { stored: false, workflowsRun: 0, skippedDuplicate: true };
+    }
+  }
 
   let contactId: string | undefined;
   const { data: byHandle } = await admin
@@ -197,7 +210,22 @@ async function ingestInbound(params: {
   }
   if (!conversationId) return { stored: false, workflowsRun: 0 };
 
-  await admin.from('acq_messages').insert({
+  // Même texte entrant dans les 2 min → pas de 2e déclenchement workflow (bonjour ×2, etc.)
+  const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { data: recentSameBody } = await admin
+    .from('acq_messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('direction', 'inbound')
+    .eq('body', text)
+    .gte('created_at', twoMinAgo)
+    .limit(1)
+    .maybeSingle();
+  if (recentSameBody?.id) {
+    return { stored: false, workflowsRun: 0, skippedDuplicate: true };
+  }
+
+  const { error: msgErr } = await admin.from('acq_messages').insert({
     conversation_id: conversationId,
     direction: 'inbound',
     body: text,
@@ -205,6 +233,14 @@ async function ingestInbound(params: {
     external_message_id: params.externalMessageId ?? null,
     sandbox: false,
   });
+  // Conflit UNIQUE mid (webhook + poll en parallèle) → ignorer
+  if (msgErr) {
+    if (String(msgErr.code) === '23505' || /duplicate|unique/i.test(msgErr.message ?? '')) {
+      return { stored: false, workflowsRun: 0, skippedDuplicate: true };
+    }
+    console.error('[acquisition meta] insert message', msgErr);
+    return { stored: false, workflowsRun: 0 };
+  }
 
   await admin
     .from('acq_conversations')
@@ -220,6 +256,16 @@ async function ingestInbound(params: {
   const emailInText = extractEmailFromText(text);
   if (emailInText) {
     await updateContactEmail(contactId, emailInText, true);
+  }
+
+  // Quiz nurture WA en attente d’opt-in (fenêtre 24h ouverte par son message)
+  if (channel === 'whatsapp') {
+    try {
+      const { tryFulfillPendingQuizWhatsApp } = await import('@/lib/quiz/lead-nurture');
+      await tryFulfillPendingQuizWhatsApp(senderId);
+    } catch (e) {
+      console.error('[acquisition meta] quiz wa fulfill', e);
+    }
   }
 
   const wfRes = await listWorkflows();

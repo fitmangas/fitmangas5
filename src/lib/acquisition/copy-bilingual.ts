@@ -18,18 +18,19 @@ export function lines(...rows: string[]): string {
 }
 
 /**
- * Séquence relances conversion (standard ManyChat / GHL) :
- * J+1 rappel · J+3 preuve sociale · J+7 dernier message.
+ * Séquence relances conversion :
+ * J+2 rappel · J+5 preuve sociale · J+7 dernier message.
+ * Aligné avec la nurture email quiz (J+2 / J+5).
  */
 export function trialFollowupSequence(): WorkflowActionSpec[] {
   return [
     {
       type: 'schedule_followup',
-      config: { delayHours: 24, actionType: 'send_trial_link', style: 'reminder_j1' },
+      config: { delayHours: 48, actionType: 'send_trial_link', style: 'reminder_j1' },
     },
     {
       type: 'schedule_followup',
-      config: { delayHours: 72, actionType: 'send_trial_link', style: 'social_proof' },
+      config: { delayHours: 120, actionType: 'send_trial_link', style: 'social_proof' },
     },
     {
       type: 'schedule_followup',
@@ -76,10 +77,10 @@ export const QR_ACCUEIL = [
   { title: 'Horaires', payload: 'SCHEDULE' },
 ];
 
-/** Après « Prix / info » — choix formule (≤20 car., jamais « basique »). */
+/** Après « Prix / info » — offre phare seule (visio groupe 39€). Solo = mot-clé dédié. */
 export const QR_PRICE_CHOICE = [
-  { title: 'En groupe', payload: 'PRICE_GROUP' },
-  { title: 'Juste toi & moi', payload: 'PRICE_SOLO' },
+  { title: 'Voir le tarif', payload: 'PRICE_GROUP' },
+  { title: 'Essai 7 jours ✨', payload: 'TRIAL_NOW', url: trialButtonUrl('v-coll') },
 ];
 
 /** CTA essai après détail prix groupe. */
