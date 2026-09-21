@@ -1,0 +1,60 @@
+---
+description: Inventaire figé FitMangas — surfaces app, acquis, anti-régression. Toujours appliquer.
+alwaysApply: true
+---
+
+# FitMangas — Inventaire figé (ne pas casser / réécrire à l’aveugle)
+
+> Complète `fitmangas-source-de-verite.mdc`.  
+> **Avant toute modif** d’une surface listée : lire ce fichier + le dossier `docs/archive-produit/`.  
+> Quand une étape est **validée en prod**, mettre à jour `docs/CONTEXTE_VIVANT.md` (section du jour) **dans le même commit**.
+
+## Règle d’or anti-régression
+1. Ne pas « refondre » une feature qui marche sans demande explicite.
+2. Ne pas renommer / supprimer des workflows acquisition, tables `quiz_*` / `acq_*`, ou libellés produit sans GO.
+3. Copy acquisition : jamais « Mangitas » ; pas « rendez-vous fixe » (→ cours collectifs à horaires fixes) ; prix = offre groupe 39€ d’abord.
+4. Quiz PDF : logo PNG transparent ; mix couleurs page 2 ; titres collés aux bannières.
+
+## Surfaces produit (carte mentale)
+
+### Public
+- Landing `/` + `/es` — essai 7j, Stripe Checkout
+- Quiz hub `/quiz` + `/es/quiz` + `/quiz/[slug]` (profil-discipline = DiSC FitMangas)
+- Blog, boutique Printful, pages SEO Pilates
+- Live visio (`live.fitmangas.com` / Jitsi)
+
+### Espace cliente (`/compte`, `/connexion`)
+- Dashboard, replays, abonnement Stripe, profil, notifications
+
+### Admin (`/admin`)
+- `acquisition` — inbox DM, workflows, followups, Meta live
+- `community` / `marketing` — CM Instagram (génération posts)
+- `blog`, `clients`, `courses`, `replays`, `promos`, `inbox`, `support`, `boutique`, `videos`, `vimeo`, `attendance`, `croissance`, `notifications`
+
+### Acquisition (code clé)
+- Catalog workflows : `src/lib/acquisition/engine/workflow-catalog.ts` (sync DB via `ensureWorkflowCatalog`)
+- Webhook Meta : `src/app/api/acquisition/webhooks/meta/route.ts` (anti-doublon mid + texte 2 min)
+- Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + J+2/J+5 + WA)
+- Cron : `/api/admin/acquisition/cron/run-followups`
+
+### Quiz
+- Définition : `src/lib/quiz/quizzes/profil-discipline*.ts`
+- PDF : `src/lib/quiz/build-report-pdf.ts`
+- Lead gate : `src/lib/quiz/lead.ts` → `quiz_leads` + `acq_contacts`
+
+## Meta (re-vérifié 21/09/2026 — ne pas re-dire « expiré » sans test)
+- Script : `npx tsx scripts/check-meta-tokens.ts`
+- Page ID ≠ IG User ID OK ; tokens CM + IGAA valides
+- WhatsApp robot branché ; templates marketing = 0
+- **Bloquant WA réel** : WABA `1427605062481966` sans moyen de paiement → `health_status.can_send_message = BLOCKED` (code 141006). Pas de template / cold send tant que carte absente dans Billing Hub. Email + wa.me = filet OK.
+- Template cible une fois paiement OK : `quiz_essai_fitmangas` (FR, MARKETING, corps **statique sans {{vars}}**)
+
+## Git push
+- Compte CLI `support811` = **pull only**
+- Push via MCP GitHub authentifié **`fitmangas`** (PR/merge) ou PAT propriétaire
+- Code acquisition/quiz 21/09 déjà sur `main` (`4f69330`)
+
+## Contexte Cursor (anti « je réinvente »)
+- Toujours lire : source-de-verite + inventaire-fige + `docs/CONTEXTE_VIVANT.md` + `docs/archive-produit/`
+- Fin de chantier validé → journal dans CONTEXTE_VIVANT + archive si nouvelle surface
+- Copie hors-repo : store perso Cursor `fitmangas-archive-produit`
