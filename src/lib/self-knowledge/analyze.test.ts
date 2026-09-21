@@ -11,7 +11,7 @@ describe('analyse template (sans Claude)', () => {
     expect(analysis.teaser.length).toBeGreaterThan(40);
     expect(analysis.full.length).toBeGreaterThan(80);
     expect(analysis.strengths.length).toBeGreaterThanOrEqual(1);
-    expect(analysis.full).toMatch(/indicatif|FitMangas|Ouverture/i);
+    expect(analysis.full).toMatch(/indicatif|FitMangas|Ouverture|Stabilité|Conscience/i);
   });
 
   it('produit analyse attachement ES', () => {

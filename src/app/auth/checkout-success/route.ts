@@ -88,6 +88,22 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   await confirmUserEmailIfNeeded(admin, userId);
 
+  // Pont connaissance de soi : rattache résultats publics (même email) — filet si webhook Stripe a raté
+  try {
+    const customerEmail =
+      session.customer_email ??
+      session.customer_details?.email ??
+      (await admin.auth.admin.getUserById(userId)).data.user?.email ??
+      null;
+    const { attachSelfTestResultsToProfile } = await import('@/lib/self-knowledge/store');
+    const attached = await attachSelfTestResultsToProfile(customerEmail, userId);
+    if (attached > 0) {
+      console.info('[checkout-success] self-test results attached', { userId, count: attached });
+    }
+  } catch (attachErr) {
+    console.error('[checkout-success] self-test attach failed', attachErr);
+  }
+
   const stripeCustomerId = await resolveStripeCustomerIdFromSession(stripe, session);
   if (stripeCustomerId) {
     const courseId = session.metadata?.course_id ?? null;
