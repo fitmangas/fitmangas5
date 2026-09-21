@@ -95,7 +95,8 @@ export function buildWeeklySlots(networks: SocialNetwork[]): WeekSlot[] {
     }
   }
 
-  // TikTok n'a plus de slots dédiés : miroir Instagram Reels (alsoPublishTikTok).
+  // TikTok / YouTube : plus de slots dédiés — miroir Instagram Reels
+  // (alsoPublishTikTok / alsoPublishYouTube).
 
   return slots.map((slot) => ({
     ...slot,

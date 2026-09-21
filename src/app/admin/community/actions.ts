@@ -27,6 +27,16 @@ import {
   EMPTY_TIKTOK_CONNECTION,
 } from '@/lib/admin/tiktok-social';
 import {
+  buildYouTubeOAuthUrl,
+  exchangeYouTubeCodeForConnection,
+  getYouTubeSocialConnection,
+  publishYouTubeReel,
+  saveYouTubeSocialConnection,
+  youtubeAppConfigured,
+  youtubeConnectorStatusMessage,
+  EMPTY_YOUTUBE_CONNECTION,
+} from '@/lib/admin/youtube-social';
+import {
   emptyAlejandraDouble,
   getAlejandraDoubleProfile,
   refreshAlejandraPhotaStatus,
@@ -1187,6 +1197,7 @@ export async function generateSpanishVariantAction(postId: string) {
     metaExternalId: null,
     facebookExternalId: null,
     tiktokExternalId: null,
+    youtubeExternalId: null,
     status: 'idea',
   };
   const esPostFresh: SocialPost = { ...esPost, esStale: false };
@@ -1335,6 +1346,29 @@ export async function updateSocialPostTikTokMirrorAction(postId: string, alsoPub
   return { ok: true as const };
 }
 
+export async function updateSocialPostYouTubeMirrorAction(postId: string, alsoPublishYouTube: boolean) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.network !== 'instagram') {
+    return { ok: false as const, error: 'Le miroir YouTube ne s’applique qu’aux posts Instagram.' };
+  }
+  if (alsoPublishYouTube && post.format !== 'reel') {
+    return { ok: false as const, error: 'YouTube auto : uniquement les Reels (MP4).' };
+  }
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? { ...item, alsoPublishYouTube, updatedAt: new Date().toISOString() }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
 /** Crée ou retire une adaptation LinkedIn à partir d’un post (souvent Instagram). */
 export async function toggleLinkedInAdaptationAction(postId: string, enabled: boolean) {
   await requireAdmin();
@@ -1403,9 +1437,11 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     metaExternalId: null,
     alsoPublishFacebook: false,
     alsoPublishTikTok: false,
+    alsoPublishYouTube: false,
     adaptedFromId: source.id,
     facebookExternalId: null,
     tiktokExternalId: null,
+    youtubeExternalId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -1646,6 +1682,37 @@ export async function completeTikTokOAuthAction(code: string) {
   }
 }
 
+export async function getYouTubeConnectUrlAction() {
+  await requireAdmin();
+  if (!youtubeAppConfigured()) {
+    return {
+      ok: false as const,
+      error: youtubeConnectorStatusMessage(EMPTY_YOUTUBE_CONNECTION),
+    };
+  }
+  const state = `yt_${Date.now().toString(36)}`;
+  return { ok: true as const, url: buildYouTubeOAuthUrl(state) };
+}
+
+export async function disconnectYouTubeAction() {
+  await requireAdmin();
+  await saveYouTubeSocialConnection(EMPTY_YOUTUBE_CONNECTION);
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function completeYouTubeOAuthAction(code: string) {
+  await requireAdmin();
+  try {
+    const connection = await exchangeYouTubeCodeForConnection(code);
+    await saveYouTubeSocialConnection(connection);
+    revalidateCommunity();
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : 'Connexion YouTube échouée.' };
+  }
+}
+
 export async function completeMetaOAuthAction(code: string) {
   await requireAdmin();
   try {
@@ -1721,6 +1788,7 @@ export async function publishSocialPostNowAction(postId: string) {
     let externalId: string;
     let facebookExternalId: string | null = post.facebookExternalId;
     let tiktokExternalId: string | null = post.tiktokExternalId;
+    let youtubeExternalId: string | null = post.youtubeExternalId;
     const notes: string[] = [];
 
     if (post.network === 'instagram') {
@@ -1798,6 +1866,34 @@ export async function publishSocialPostNowAction(postId: string) {
           }
         }
       }
+
+      if (post.alsoPublishYouTube) {
+        if (post.format !== 'reel' || !post.editedVideoPath) {
+          notes.push('YouTube ignoré (Reel MP4 requis)');
+        } else {
+          try {
+            let ytConn = await getYouTubeSocialConnection();
+            if (!ytConn.connected || !ytConn.accessToken) {
+              notes.push(`YouTube non connecté — ${youtubeConnectorStatusMessage(ytConn)}`);
+            } else {
+              const published = await publishYouTubeReel(ytConn, post, {
+                onTokenRefreshed: async (next) => {
+                  await saveYouTubeSocialConnection(next);
+                  ytConn = next;
+                },
+              });
+              youtubeExternalId = published.videoId;
+              if (published.connection.accessToken !== ytConn.accessToken) {
+                await saveYouTubeSocialConnection(published.connection);
+              }
+              notes.push('YouTube');
+            }
+          } catch (ytError) {
+            console.error('[publishSocialPostNowAction] YT mirror', post.id, ytError);
+            notes.push(`YouTube échoué: ${ytError instanceof Error ? ytError.message : 'erreur'}`);
+          }
+        }
+      }
     } else {
       externalId = await publishFacebookPost(connection, post, { schedule: false });
       notes.push('Facebook');
@@ -1813,6 +1909,7 @@ export async function publishSocialPostNowAction(postId: string) {
               metaExternalId: externalId,
               facebookExternalId,
               tiktokExternalId,
+              youtubeExternalId,
               igContainerId: null,
               publishError: null,
               publishAttemptAt: new Date().toISOString(),
@@ -1829,6 +1926,7 @@ export async function publishSocialPostNowAction(postId: string) {
       externalId,
       facebookExternalId,
       tiktokExternalId,
+      youtubeExternalId,
       message:
         post.network === 'instagram' && post.alsoPublishFacebook && !fbOk
           ? `${baseMessage} Miroir Facebook manquant — utilise « Publier miroir FB ».${liveHint}`
@@ -1901,9 +1999,9 @@ export async function scheduleSocialPostAction(postId: string) {
       ok: true as const,
       mode: 'instagram_queue' as const,
       message: post.alsoPublishFacebook
-        ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook${post.alsoPublishTikTok ? ' + TikTok' : ''} (même visuel que la preview).`
-        : post.alsoPublishTikTok
-          ? 'Instagram en file FitMangas. À l’heure prévue : publication IG + miroir TikTok.'
+        ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook${post.alsoPublishTikTok ? ' + TikTok' : ''}${post.alsoPublishYouTube ? ' + YouTube' : ''} (même visuel que la preview).`
+        : post.alsoPublishTikTok || post.alsoPublishYouTube
+          ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir ${[post.alsoPublishTikTok && 'TikTok', post.alsoPublishYouTube && 'YouTube'].filter(Boolean).join(' + ')}.`
           : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
     };
   }
@@ -2053,6 +2151,7 @@ export async function processDueSocialPostsAction() {
 
       let facebookExternalId = post.facebookExternalId;
       let tiktokExternalId = post.tiktokExternalId;
+      let youtubeExternalId = post.youtubeExternalId;
       if (post.alsoPublishFacebook) {
         if (!facebookMirrorMediaReady(post)) {
           console.error('[processDueSocialPostsAction] FB mirror skipped — média manquant', post.id);
@@ -2085,6 +2184,23 @@ export async function processDueSocialPostsAction() {
           console.error('[processDueSocialPostsAction] TT mirror', post.id, ttError);
         }
       }
+      if (post.alsoPublishYouTube && post.format === 'reel' && post.editedVideoPath) {
+        try {
+          let ytConn = await getYouTubeSocialConnection();
+          if (ytConn.connected && ytConn.accessToken) {
+            const ytPublished = await publishYouTubeReel(ytConn, post, {
+              onTokenRefreshed: async (next) => {
+                await saveYouTubeSocialConnection(next);
+                ytConn = next;
+              },
+            });
+            youtubeExternalId = ytPublished.videoId;
+            await saveYouTubeSocialConnection(ytPublished.connection);
+          }
+        } catch (ytError) {
+          console.error('[processDueSocialPostsAction] YT mirror', post.id, ytError);
+        }
+      }
 
       nextPosts = nextPosts.map((item) =>
         item.id === post.id
@@ -2094,6 +2210,7 @@ export async function processDueSocialPostsAction() {
               metaExternalId: progress.mediaId,
               facebookExternalId,
               tiktokExternalId,
+              youtubeExternalId,
               igContainerId: null,
               publishError: null,
               publishAttemptAt: attemptAt,
@@ -2246,9 +2363,11 @@ export async function createManualSocialPostAction(input: {
     metaExternalId: null,
     alsoPublishFacebook: true,
     alsoPublishTikTok: isReel,
+    alsoPublishYouTube: isReel,
     adaptedFromId: null,
     facebookExternalId: null,
     tiktokExternalId: null,
+    youtubeExternalId: null,
     generationStatus: 'done',
     createdAt: now,
     updatedAt: now,
@@ -2559,9 +2678,11 @@ export async function initWeekPlanAction(
         contentFamily: spec.contentFamily,
         alsoPublishFacebook: slot.network === 'instagram',
         alsoPublishTikTok: slot.network === 'instagram' && slot.format === 'reel',
+        alsoPublishYouTube: slot.network === 'instagram' && slot.format === 'reel',
         adaptedFromId: null,
         facebookExternalId: null,
         tiktokExternalId: null,
+        youtubeExternalId: null,
         generationStatus: 'pending',
         generationError: null,
         generationRunId: runId,
@@ -3019,9 +3140,11 @@ Pas de gabarit figé. Une idée concrète, langage plat, CTA essai 7 jours fitma
     contentFamily: 'portee',
     alsoPublishFacebook: true,
     alsoPublishTikTok: true,
+    alsoPublishYouTube: true,
     adaptedFromId: null,
     facebookExternalId: null,
     tiktokExternalId: null,
+    youtubeExternalId: null,
     generationStatus: 'done',
     generationError: null,
     createdAt: now,
