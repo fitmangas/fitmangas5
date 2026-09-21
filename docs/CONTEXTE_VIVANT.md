@@ -45,11 +45,23 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 - Quiz `profil-discipline` : retours cliente appliqués (Q1b/c, Q2d, Q3 libellé, Q4, Q7a/c, Q8b, Q9, Q10) — FR+ES.
 - CM : miroir **YouTube Shorts** sur Reels (`youtube-social.ts`, OAuth callback, toggle UI, publish now + cron) — même modèle que TikTok.
 - YouTube ≠ canal DM : **pas** de workflows acquisition type IG/Messenger/WA (adaptation : publication seulement).
-- OAuth Google Cloud : compte `info@casamangas.com` bloqué temporairement (« trop de tentatives ») depuis l’automate — **YOUTUBE_CLIENT_ID/SECRET** à coller dès que OAuth client Web créé (redirect `/api/admin/community/youtube/callback`).
 - Dossier canonique figé : `Projets/fitmangas5` (pas la copie iCloud). Routine journal = **auto agent**.
 - WA carte Meta : Kevin demain (carte bancaire).
 
+### 2026-09-21 — OAuth YouTube Google Cloud OK
+- Projet GCP `fitmangas-509316` : YouTube Data API v3 + écran consent FitMangas + client Web **FitMangas YouTube**.
+- Redirects : `https://fitmangas.com/.../youtube/callback` + `http://localhost:3000/.../youtube/callback`.
+- `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` écrits dans `.env.local` **et** Vercel (prod/preview/dev).
+- **OAuth terminé** : chaîne `Alejandra Mangas` (`UCHkmseevG7-gcLcQZS5xVkQ`) → `admin_settings.youtube_social_connection` (access + refresh token).
+- Deploy prod : bloqué puis corrigé (TS `conversationExternalId` dans `lead-nurture.ts`).
+
+### 2026-09-21 — Audit YouTube + biblio CM
+- YouTube : Reels only auto (défaut `alsoPublishYouTube`), description Shorts avec CTA essai 7j + UTM ; idempotence + erreurs miroir visibles au cron ; carousel/feed = pas YT (format vidéo).
+- Biblio : plus de ban global « une fois utilisée = jamais ». Cover carousel ≠ future cover ; feed publié ≠ futur feed ; cover peut servir en slide 2–5.
+- Manifest : +3 `produit-mobile` (pool 116). Cover reste `portraits` (identité Alejandra).
+- Tests : `library-path-utils.test.ts`, `youtube-social.test.ts`.
+
 ### À faire (bloquants externes)
 - [ ] **Demain** : carte Meta Billing Hub → template `quiz_essai_fitmangas` → brancher nurture WA
-- [ ] Créer OAuth client Google (YouTube Data API v3) → `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` (local + Vercel) → bouton OAuth CM
+- [x] OAuth client Google YouTube → secrets + connexion chaîne OK
 - [ ] Brancher PAT `fitmangas` en CLI git (optionnel : MCP marche)
