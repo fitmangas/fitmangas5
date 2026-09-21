@@ -70,12 +70,16 @@ export type SocialPost = {
   alsoPublishFacebook: boolean;
   /** Instagram → aussi publier sur TikTok (Reels MP4 uniquement). */
   alsoPublishTikTok: boolean;
+  /** Instagram → aussi publier sur YouTube Shorts (Reels MP4 uniquement). */
+  alsoPublishYouTube: boolean;
   /** Post LinkedIn créé depuis un autre post (id source). */
   adaptedFromId: string | null;
   /** Id Meta Facebook si miroir IG→FB publié. */
   facebookExternalId: string | null;
   /** Id TikTok (publish_id) si miroir IG→TT publié. */
   tiktokExternalId: string | null;
+  /** Id YouTube (video id) si miroir IG→YT publié. */
+  youtubeExternalId: string | null;
   /** Conteneur IG Graph en cours (Reel) — reprise cron sans re-upload. */
   igContainerId?: string | null;
   /** Dernière erreur de publication auto (cron) — visible UI, pas de silence. */
@@ -371,9 +375,14 @@ function normalizePost(raw: unknown, _index = 0): SocialPost | null {
       row.alsoPublishTikTok === undefined
         ? row.network === 'instagram' && row.format === 'reel'
         : Boolean(row.alsoPublishTikTok),
+    alsoPublishYouTube:
+      row.alsoPublishYouTube === undefined
+        ? row.network === 'instagram' && row.format === 'reel'
+        : Boolean(row.alsoPublishYouTube),
     adaptedFromId: typeof row.adaptedFromId === 'string' ? row.adaptedFromId : null,
     facebookExternalId: typeof row.facebookExternalId === 'string' ? row.facebookExternalId : null,
     tiktokExternalId: typeof row.tiktokExternalId === 'string' ? row.tiktokExternalId : null,
+    youtubeExternalId: typeof row.youtubeExternalId === 'string' ? row.youtubeExternalId : null,
     igContainerId: typeof row.igContainerId === 'string' ? row.igContainerId : null,
     publishError: typeof row.publishError === 'string' ? row.publishError : null,
     publishAttemptAt: typeof row.publishAttemptAt === 'string' ? row.publishAttemptAt : null,
