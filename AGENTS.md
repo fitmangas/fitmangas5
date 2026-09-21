@@ -7,7 +7,9 @@ Ce repo est piloté surtout via Cursor. Lis dans l’ordre :
 3. `docs/CONTEXTE_VIVANT.md` — journal des validations récentes
 4. `docs/archive-produit/` — copie descriptive admin / cliente / quiz
 
-## Fin de tâche réussie
+**Dossier canonique** : `/Users/kevinpicard/Projets/fitmangas5` (pas la copie iCloud).
+
+## Fin de tâche réussie (AUTOMATIQUE — ne pas demander à Kevin)
 - Mettre à jour `docs/CONTEXTE_VIVANT.md`
 - `NODE_OPTIONS=--max-old-space-size=4096 npm run build`
 - Commit + push : si `support811` → 403, pousser via MCP GitHub compte **`fitmangas`** (PR + merge)
