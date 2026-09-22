@@ -23,6 +23,10 @@ type Props = {
   locale: SelfTestLang;
   /** Fixture : profil équilibré (tous traits mid) */
   balanced?: boolean;
+  /** Scores fournis (print PDF / API) — sinon fixture */
+  scoresOverride?: SelfTestScores;
+  /** Mode impression : masque CTA / vidéo / nav sticky */
+  printMode?: boolean;
 };
 
 function fixtureScores(
@@ -51,8 +55,10 @@ export function SelfTestCaptureClient({
   showFull,
   locale,
   balanced,
+  scoresOverride,
+  printMode = false,
 }: Props) {
-  const scores = fixtureScores(slug, format, balanced);
+  const scores = scoresOverride ?? fixtureScores(slug, format, balanced);
   const test =
     slug === 'attachement'
       ? ATTACHMENT_TEST
@@ -65,7 +71,7 @@ export function SelfTestCaptureClient({
       : assembleBigFiveReport(scores, locale, format);
 
   return (
-    <SelfTestShell locale={locale}>
+    <SelfTestShell locale={locale} printBleed={printMode}>
       <SelfTestReport
         locale={locale}
         test={test}
@@ -76,6 +82,7 @@ export function SelfTestCaptureClient({
         showFull={showFull}
         firstName="Camille"
         inviterEmail="camille@fitmangas.test"
+        printMode={printMode}
       />
     </SelfTestShell>
   );

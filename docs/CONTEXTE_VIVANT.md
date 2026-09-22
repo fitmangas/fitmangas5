@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge : hub aéré + PDF serveur full-bleed + fond questions
+- Hub : respiration V1 (nuage dispersé, titres/cartes espacés, portraits plus hauts).
+- PDF unifié : `/quiz/print-report` + `/api/self-knowledge/pdf` (Playwright local / Sparticuz Vercel) — fond crème full-bleed `@page margin:0` ; bouton client = même moteur.
+- Fond questions : `public/tests/questions-bg.jpg` (101 710 o) + voile cream ~36 % sur toute la page.
+- Label Extraversion radar décalé ; capture `14-pdf-print-report-preview` + `rapport-client-api-ipip50.pdf`.
+
 ### 2026-09-22 — Self-knowledge : PDF print + questions 5/écran + fond
 - PDF = print headless / html2canvas de la **vraie page rapport** (plus de jspdf texte) ; 3 fichiers `_captures/tests-ux/rapport-*.pdf`.
 - Hub : cartes verticales V1 élancées côte à côte ; carrousel sous le fold.

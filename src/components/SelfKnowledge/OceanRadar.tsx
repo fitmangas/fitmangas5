@@ -16,9 +16,11 @@ type Props = {
 
 /** Radar 5 axes — même langage visuel que DiscRadar (QuizVisuals). */
 export function OceanRadar({ slices, size = 260 }: Props) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = size * 0.36;
+  const pad = 28;
+  const vb = size + pad * 2;
+  const cx = vb / 2;
+  const cy = vb / 2;
+  const maxR = size * 0.34;
   const n = slices.length;
   const step = 360 / Math.max(n, 1);
 
@@ -41,7 +43,13 @@ export function OceanRadar({ slices, size = 260 }: Props) {
   const gradientId = `ocean-radar-${size}`;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto block" role="img">
+    <svg
+      width={size + pad}
+      height={size + pad}
+      viewBox={`0 0 ${vb} ${vb}`}
+      className="mx-auto block"
+      role="img"
+    >
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor={stroke} stopOpacity="0.35" />
@@ -64,7 +72,9 @@ export function OceanRadar({ slices, size = 260 }: Props) {
       ))}
       {slices.map((slice, i) => {
         const outer = pt(i, 1);
-        const label = pt(i, 1.18);
+        // Labels un peu plus loin du sommet (Extraversion en haut)
+        const labelR = i === 0 ? 1.38 : 1.28;
+        const label = pt(i, labelR);
         return (
           <g key={slice.key}>
             <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(44,36,30,0.1)" />

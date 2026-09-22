@@ -294,7 +294,11 @@ export function SelfTestRunner({
   }
 
   return (
-    <SelfTestShell locale={locale}>
+    <SelfTestShell
+      locale={locale}
+      pageBackgroundUrl={phase === 'questions' ? '/tests/questions-bg.jpg' : undefined}
+      veilOpacity={0.36}
+    >
       <div
         className={`mx-auto px-5 py-8 pb-20 ${phase === 'choose' ? 'max-w-4xl' : 'max-w-3xl'}`}
         data-testid={`self-test-phase-${phase}`}
@@ -447,13 +451,7 @@ export function SelfTestRunner({
         ) : (
           <div
             data-testid="self-test-questions"
-            className="relative mx-auto flex min-h-[calc(100dvh-7.5rem)] max-w-2xl flex-col justify-center overflow-hidden rounded-[28px] border border-white/50 py-3 sm:py-4"
-            style={{
-              backgroundImage:
-                "linear-gradient(180deg, rgba(255,250,245,0.92) 0%, rgba(255,250,245,0.88) 100%), url('/tests/questions-bg.jpg')",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
+            className="relative mx-auto flex min-h-[calc(100dvh-7.5rem)] max-w-2xl flex-col justify-center py-3 sm:py-4"
           >
             <div className="relative z-10 mb-3 shrink-0 px-4 sm:px-5">
               <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45 sm:text-[11px]">
