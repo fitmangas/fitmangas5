@@ -39,7 +39,7 @@ alwaysApply: true
 
 ### Quiz / Connaissance de soi
 - Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
-- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; analyse Claude bornée à la banque ; DA type profil-discipline (`SelfTestReport`, radar OCEAN)
+- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; analyse Claude bornée à la banque ; DA type profil-discipline (`SelfTestReport`, radar OCEAN) ; hub `/quiz` = grille côte à côte (`SelfTestCardGrid`) + portraits coach biblio + crédibilité IPIP ; carrousel 3D gardé hors hub
 - Pages `/quiz` ; compte `/compte/connaissance-de-soi` (historique conserve formats 50 et 120)
 - Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`
 - PDF legacy DiSC : `src/lib/quiz/build-report-pdf.ts`

@@ -24,8 +24,11 @@ Choix avant le test (`SelfTestRunner` phase `choose`). Historique : `test_versio
 3. Sans clé : analyse complète, badge discret « Banque FitMangas »
 
 ## UI (niveau profil-discipline)
-- `SelfTestReport` : hero portrait, radar OCEAN, Qui tu es / Comment tu fonctionnes / Forces / Limites, teaser public verrouillé + CTA, `QuizVideoProof`, export `.txt`
+- Hub `/quiz` : `SelfTestCardGrid` (cartes côte à côte) + 3 indicateurs crédibilité IPIP + portraits coach biblio (`portrait-05` / `portrait-01`) ; `SelfTestDepthCarousel` conservé hors hub
+- `SelfTestReport` : hero portrait, radar OCEAN, Qui tu es / Comment tu fonctionnes / Forces / Limites (dédoublonnés), teaser public + CTA, `QuizVideoProof`, export `.txt`
+- Variante **La Polyvalente** si tous traits mid (~50) — banque FR/ES
 - Intro éditoriale enrichie ; attachement même richesse (barres anxiété/évitement)
+- Captures UX : `_captures/tests-ux/` (13 PNG)
 
 ## Non-régression
 profil-discipline, checkout Stripe, pont conversion self-test → compte, 3 opt-in email distincts.

@@ -4,6 +4,7 @@ import { assertAnalysisWithinBank, buildTemplateAnalysis } from './analyze';
 import {
   assembleAttachmentReport,
   assembleBigFiveReport,
+  normalizePhrase,
   selectTraitBundle,
 } from './assemble-report';
 import { BIG_FIVE_TRAIT_BANK, bandFromTraitScore } from './banks/big-five-traits';
@@ -85,6 +86,30 @@ describe('assembleBigFiveReport', () => {
     expect(report.strengths.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('profil équilibré = La Polyvalente + force', () => {
+    const report = assembleBigFiveReport(allMid50(), 'fr', 'ipip-50');
+    expect(report.portrait!.name).toMatch(/Polyvalente/i);
+    expect(report.sections!.whoYouAre).toMatch(/polyvalence/i);
+    expect(report.sections!.howYouWork).not.toBe(report.sections!.whoYouAre);
+  });
+
+  it('aucune phrase dupliquée entre who / how / combinations', () => {
+    const report = assembleBigFiveReport(highCLowEs(), 'fr', 'ipip-50');
+    const chunks = [
+      report.sections!.whoYouAre,
+      report.sections!.howYouWork,
+      ...report.sections!.combinations,
+    ];
+    const norms = chunks.map(normalizePhrase).filter(Boolean);
+    const seen = new Set<string>();
+    for (const n of norms) {
+      for (const s of seen) {
+        expect(s === n || s.includes(n) || n.includes(s)).toBe(false);
+      }
+      seen.add(n);
+    }
+  });
+
   it('ipip-120 ajoute facettes quand scores présents', () => {
     const scores: SelfTestScores = { ...highCLowEs() };
     for (const id of FACET_IDS) scores[id] = 12;
@@ -131,7 +156,7 @@ describe('fallback sans clé = analyse complète', () => {
     const a = buildTemplateAnalysis(BIG_FIVE_TEST, highCLowEs(), 'fr');
     expect(a.full.length).toBeGreaterThan(a.teaser.length);
     expect(a.sections?.whoYouAre).toBeTruthy();
-    expect(a.portrait?.disclaimer).toMatch(/pas un diagnostic/i);
+    expect(a.portrait?.disclaimer).toMatch(/600\s*000|0[,.]94|NEO-PI-R/i);
   });
 
   it('buildTemplateAnalysis attachement complet', () => {

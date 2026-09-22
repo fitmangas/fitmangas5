@@ -108,8 +108,11 @@ export function SelfTestRunner({
           introWhat: 'Qué obtienes',
           introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
           introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
-          introBullet3: 'Un puente hacia cursos colectivos a horarios fijos (no es un diagnóstico).',
-          disclaimer: 'Resultado indicativo, no médico. Basado en los ítems oficiales del cuestionario (dominio público).',
+          introBullet3: 'Un puente hacia cursos colectivos a horarios fijos.',
+          disclaimer:
+            'Test de referencia — validado en más de 600 000 personas, correlación 0,94 con el NEO-PI-R. Ítems IPIP, dominio público.',
+          disclaimerAttach:
+            'Escala ECR-S (Wei et al., 2007) — referencia internacional sobre el apego adulto. Ítems oficiales, dominio público.',
         }
       : {
           chooseTitle: 'Choisis la profondeur du test',
@@ -130,9 +133,14 @@ export function SelfTestRunner({
           introWhat: 'Ce que tu obtiens',
           introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
           introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
-          introBullet3: 'Un pont vers les cours collectifs à horaires fixes (pas un diagnostic).',
-          disclaimer: 'Résultat indicatif, pas médical. Basé sur les items officiels du questionnaire (domaine public).',
+          introBullet3: 'Un pont vers les cours collectifs à horaires fixes.',
+          disclaimer:
+            'Test de référence — validé sur plus de 600 000 personnes, corrélation 0,94 avec le NEO-PI-R. Items IPIP, domaine public.',
+          disclaimerAttach:
+            'Échelle ECR-S (Wei et al., 2007) — référence internationale sur l’attachement adulte. Items officiels, domaine public.',
         };
+
+  const credibilityLine = isBigFive ? copy.disclaimer : copy.disclaimerAttach;
 
   const batchComplete = currentBatch.every((item) => answers[item.id] != null);
   const allComplete = validateAnswers(test, answers).ok;
@@ -261,7 +269,7 @@ export function SelfTestRunner({
                 className="relative h-36 bg-cover bg-center sm:h-44"
                 style={{
                   backgroundImage:
-                    "linear-gradient(120deg, rgba(26,20,16,0.45), rgba(196,93,62,0.25)), url('/library/portraits/portrait-08-4x5.webp')",
+                    "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.2)), url('/library/portraits/portrait-05-4x5.webp')",
                 }}
               >
                 <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
@@ -303,7 +311,7 @@ export function SelfTestRunner({
                     </p>
                   </button>
                 </div>
-                <p className="mt-6 text-center text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
+                <p className="mt-6 text-center text-[12px] text-brand-ink/45">{credibilityLine}</p>
               </div>
             </div>
           </div>
@@ -314,8 +322,8 @@ export function SelfTestRunner({
                 className="relative h-40 bg-cover bg-center sm:h-48"
                 style={{
                   backgroundImage: isBigFive
-                    ? "linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.2)), url('/library/portraits/portrait-01-4x5.webp')"
-                    : "linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.2)), url('/library/lifestyle-coulisses/lifestyle-04-4x5.webp')",
+                    ? "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.18)), url('/library/portraits/portrait-05-4x5.webp')"
+                    : "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.18)), url('/library/portraits/portrait-01-4x5.webp')",
                 }}
               >
                 <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
@@ -347,7 +355,7 @@ export function SelfTestRunner({
                       <span>{copy.introBullet3}</span>
                     </li>
                   </ul>
-                  <p className="mt-4 text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
+                  <p className="mt-4 text-[12px] text-brand-ink/45">{credibilityLine}</p>
                 </div>
 
                 <p className="mt-4 text-[12px] text-brand-ink/45">

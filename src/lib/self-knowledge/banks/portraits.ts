@@ -22,8 +22,13 @@ export type DerivedPortrait = {
 };
 
 const DISCLAIMER: Record<SelfTestLang, string> = {
-  fr: 'Portrait indicatif basé sur tes réponses — pas un diagnostic, pas une étiquette. Ton profil évolue avec le temps, le contexte et ta pratique.',
-  es: 'Retrato orientativo basado en tus respuestas — no es un diagnóstico ni una etiqueta. Tu perfil evoluciona con el tiempo, el contexto y tu práctica.',
+  fr: 'Test de référence IPIP — validé sur plus de 600 000 personnes, corrélation 0,94 avec le NEO-PI-R. Un portrait pour t’orienter, qui évolue avec ta pratique.',
+  es: 'Test de referencia IPIP — validado en más de 600 000 personas, correlación 0,94 con el NEO-PI-R. Un retrato para orientarte, que evoluciona con tu práctica.',
+};
+
+const ATTACHMENT_DISCLAIMER: Record<SelfTestLang, string> = {
+  fr: 'Échelle ECR-S (Wei et al., 2007) — référence internationale sur l’attachement adulte. Un portrait relationnel pour t’orienter, qui évolue avec ta pratique.',
+  es: 'Escala ECR-S (Wei et al., 2007) — referencia internacional sobre el apego adulto. Un retrato relacional para orientarte, que evoluciona con tu práctica.',
 };
 
 type PortraitRule = {
@@ -200,12 +205,37 @@ function pickDominantHigh(bands: BigFiveBands): BigFiveTraitKey | undefined {
 const GENERIC_PORTRAIT: PortraitRule = {
   id: 'balanced',
   when: {},
-  name: { fr: 'Le profil équilibré', es: 'El perfil equilibrado' },
+  name: { fr: 'La Polyvalente', es: 'La Polivalente' },
   tagline: {
-    fr: 'Aucun trait ne domine — tu t’adaptes au cadre du cours collectif.',
-    es: 'Ningún rasgo domina — te adaptas al marco del curso colectivo.',
+    fr: 'Tes traits sont proches — cette polyvalence est une force : tu t’adaptes au cadre collectif sans te figer.',
+    es: 'Tus rasgos están cerca — esa polivalencia es una fuerza: te adaptas al marco colectivo sin rigidizarte.',
   },
 };
+
+/** Tous les traits en « mid » (profil équilibré ~50/50). */
+export function isBalancedBands(bands: BigFiveBands): boolean {
+  return (['E', 'A', 'C', 'ES', 'O'] as const).every((k) => bands[k] === 'mid');
+}
+
+/** Textes banque — variante équilibrée (FR/ES). */
+export const BALANCED_PROFILE_COPY = {
+  whoYouAre: {
+    fr: 'Aucun trait ne tire fort d’un côté : tu as une palette large. Cette polyvalence te laisse entrer dans un cours collectif sans te forcer dans une case — tu trouves ta place en bougeant avec les autres.',
+    es: 'Ningún rasgo tira fuerte de un lado: tienes una paleta amplia. Esa polivalencia te deja entrar en un curso colectivo sin forzarte en una casilla — encuentras tu lugar moviéndote con las demás.',
+  },
+  howYouWork: {
+    fr: 'Tu fonctionnes surtout par adaptation : un créneau fixe, une coach qui te voit, un groupe régulier — et tu ajustes ton énergie au jour. Moins de « tout ou rien », plus de continuité.',
+    es: 'Funcionas sobre todo por adaptación: un horario fijo, una coach que te ve, un grupo regular — y ajustas tu energía al día. Menos « todo o nada », más continuidad.',
+  },
+  force: {
+    fr: 'Tu t’adaptes au cadre collectif sans te rigidifier — une vraie force pour tenir dans la durée.',
+    es: 'Te adaptas al marco colectivo sin rigidizarte — una verdadera fuerza para sostener a largo plazo.',
+  },
+  limit: {
+    fr: 'Sans ancrage extérieur, tu peux hésiter entre trop d’options et finir par ne rien choisir.',
+    es: 'Sin anclaje exterior, puedes dudar entre demasiadas opciones y acabar sin elegir nada.',
+  },
+} as const;
 
 /**
  * Dérive un portrait nommé à partir des bandes Big Five.
@@ -254,7 +284,7 @@ export function deriveAttachmentPortrait(
   return {
     name: style.portraitName[lang],
     tagline: style.tagline[lang],
-    disclaimer: DISCLAIMER[lang],
+    disclaimer: ATTACHMENT_DISCLAIMER[lang],
     styleId: style.id,
   };
 }

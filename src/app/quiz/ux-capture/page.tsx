@@ -11,6 +11,7 @@ type Props = {
     slug?: string;
     format?: string;
     full?: string;
+    balanced?: string;
   }>;
 };
 
@@ -22,8 +23,15 @@ export default async function UxCapturePage({ searchParams }: Props) {
   const slug = sp.slug === 'attachement' ? 'attachement' : 'big-five';
   const format = sp.format === 'ipip-120' ? 'ipip-120' : 'ipip-50';
   const showFull = sp.full === '1';
+  const balanced = sp.balanced === '1';
 
   return (
-    <SelfTestCaptureClient slug={slug} format={format} showFull={showFull} locale="fr" />
+    <SelfTestCaptureClient
+      slug={slug}
+      format={format}
+      showFull={showFull}
+      locale="fr"
+      balanced={balanced}
+    />
   );
 }

@@ -111,11 +111,12 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await page.goto('/quiz');
     await dismissCookies(page);
     await expect(page.getByTestId('faces-cloud-hero')).toBeVisible();
-    await expect(page.getByTestId('self-test-depth-carousel')).toBeVisible();
+    await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
+    await expect(page.getByTestId('hub-credibility-stats')).toBeVisible();
     await expect(page.getByTestId('hub-video-proof')).toBeVisible();
     await shot(page, '01-hub-hero-carousel');
 
-    await page.getByTestId('depth-cta-big-five').click({ force: true });
+    await page.getByTestId('grid-cta-big-five').click({ force: true });
     await expect(page.getByTestId('self-test-choose')).toBeVisible();
     await shot(page, '02-big-five-choix');
 
@@ -166,12 +167,23 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
     await shot(page, '11-rapport-full-attachement');
 
+    // Profil équilibré + rapport sans répétition (full 50)
+    await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1&balanced=1');
+    await dismissCookies(page);
+    await expect(page.getByTestId('self-test-report')).toBeVisible();
+    await expect(page.getByText(/Polyvalente/i)).toBeVisible();
+    await shot(page, '12-rapport-full-profil-equilibre');
+
+    await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
+    await dismissCookies(page);
+    await shot(page, '13-rapport-full-sans-repetition');
+
     const files = fs
       .readdirSync(CAPTURE_DIR)
       .filter((f) => f.endsWith('.png'))
       .sort()
       .map((f) => path.join('_captures/tests-ux', f));
     fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
-    expect(files.length).toBeGreaterThanOrEqual(11);
+    expect(files.length).toBeGreaterThanOrEqual(13);
   });
 });
