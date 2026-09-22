@@ -33,7 +33,9 @@ type Props = {
 export function TrendLineChart({ data, series, height = 220, yDomain = ['auto', 'auto'] }: Props) {
   if (!data.length) {
     return (
-      <p className="py-8 text-center text-sm text-luxury-muted">Pas encore assez de points pour une courbe.</p>
+      <p className="py-8 text-center font-serif text-base italic text-brand-ink/60">
+        Encore un peu de pratique — ta courbe apparaîtra ici.
+      </p>
     );
   }
 

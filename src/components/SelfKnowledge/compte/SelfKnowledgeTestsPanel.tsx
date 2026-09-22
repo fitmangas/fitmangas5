@@ -1,16 +1,17 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { OceanRadar, buildOceanSlices } from '@/components/SelfKnowledge/OceanRadar';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { HubEmptyState, HubSectionHero } from '@/components/SelfKnowledge/compte/HubVisuals';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
 import type { SelfTestResultRow } from '@/lib/self-knowledge/store';
 import type { ClientLang } from '@/lib/compte/i18n';
 import { getSelfTest } from '@/lib/self-knowledge/scoring';
 import type { SelfTestSlug } from '@/lib/self-knowledge/types';
-import Link from 'next/link';
 
 type Props = {
   lang: ClientLang;
@@ -25,11 +26,15 @@ function formatLabel(version: string | null | undefined, locale: 'fr' | 'es'): s
   return locale === 'es' ? 'Formato' : 'Format';
 }
 
-/** Score domaine Big Five = échelle 10–50 (IPIP-50 et domaines IPIP-120). */
 function formatDomainScore(slug: string, val: number): string {
   if (slug === 'big-five') return `${val}/50`;
   return `${Number(val).toFixed(1)}/7`;
 }
+
+const CARD_IMG: Record<string, string> = {
+  'big-five': '/library/portraits/portrait-05-4x5.webp',
+  attachement: '/library/portraits/portrait-01-4x5.webp',
+};
 
 export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
   const locale = lang === 'es' ? 'es' : 'fr';
@@ -40,37 +45,50 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
   const t =
     locale === 'es'
       ? {
-          available: 'Tests disponibles',
+          eyebrow: 'Mis tests',
+          title: 'Tu retrato, en el tiempo',
+          lead: 'Haz, rehace y compárate contigo misma — nunca con las demás.',
+          available: 'Elige un test',
           history: 'Historial',
           compare: 'Comparar dos pasaciones',
           pickA: 'Más reciente',
           pickB: 'Anterior',
-          sameFormat: 'Mismo formato obligatorio (IPIP-50 vs IPIP-50, etc.).',
-          mismatch: 'Formatos distintos — elige dos pasaciones del mismo instrumento.',
-          empty: 'Aún no hay tests.',
+          sameFormat: 'Mismo formato obligatorio.',
+          mismatch: 'Formatos distintos — elige el mismo instrumento.',
+          emptyTitle: 'Haz tu primer test — tu retrato aparecerá aquí',
+          emptyLead: 'Big Five o apego: unos minutos para verte con claridad.',
+          emptyCta: 'Empezar el Big Five',
           start: 'Empezar',
           retake: 'Repetir',
           radarNow: 'Ahora',
-          radarThen: 'Antes (línea discontinua)',
+          radarThen: 'Antes',
+          rapid: 'Rápido',
+          deep: 'En profundidad',
         }
       : {
-          available: 'Tests disponibles',
+          eyebrow: 'Mes tests',
+          title: 'Ton portrait, dans le temps',
+          lead: 'Passe, refais et compare-toi à toi-même — jamais aux autres.',
+          available: 'Choisis un test',
           history: 'Historique',
           compare: 'Comparer deux passations',
           pickA: 'Plus récente',
           pickB: 'Antérieure',
-          sameFormat: 'Même format obligatoire (IPIP-50 vs IPIP-50, etc.).',
-          mismatch: 'Formats différents — choisis deux passations du même instrument.',
-          empty: 'Pas encore de tests.',
+          sameFormat: 'Même format obligatoire.',
+          mismatch: 'Formats différents — choisis le même instrument.',
+          emptyTitle: 'Fais ton premier test — ton portrait apparaîtra ici',
+          emptyLead: 'Big Five ou attachement : quelques minutes pour te voir clairement.',
+          emptyCta: 'Commencer le Big Five',
           start: 'Commencer',
           retake: 'Refaire',
           radarNow: 'Maintenant',
-          radarThen: 'Avant (trait pointillé)',
+          radarThen: 'Avant',
+          rapid: 'Rapide',
+          deep: 'Approfondie',
         };
 
   const filtered = useMemo(() => {
-    const rows = slugFilter === 'all' ? history : history.filter((r) => r.test_slug === slugFilter);
-    return rows;
+    return slugFilter === 'all' ? history : history.filter((r) => r.test_slug === slugFilter);
   }, [history, slugFilter]);
 
   const rowA = history.find((r) => r.id === idA);
@@ -103,46 +121,72 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
   });
 
   return (
-    <div className="mt-8 space-y-10">
+    <div className="mt-2 space-y-10">
+      <HubSectionHero
+        imageSrc="/library/portraits/portrait-05-4x5.webp"
+        imageAlt=""
+        eyebrow={t.eyebrow}
+        title={t.title}
+        lead={t.lead}
+      />
+
       <section>
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.available}</h2>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c45d3e]">{t.available}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <GlassCard className="p-5">
-            <h3 className="font-serif text-lg italic text-luxury-ink">
-              {getSelfTest('big-five')?.title[locale]}
-            </h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
-                className="btn-luxury-primary px-4 py-2 text-[10px] tracking-[0.12em]"
+          {(['big-five', 'attachement'] as const).map((slug) => {
+            const test = getSelfTest(slug);
+            if (!test) return null;
+            return (
+              <article
+                key={slug}
+                className="group overflow-hidden rounded-[26px] border border-white/70 bg-[#FFFAF5] shadow-[0_16px_42px_rgba(60,40,30,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(196,93,62,0.16)]"
               >
-                IPIP-50 · {t.start}
-              </Link>
-              <Link
-                href="/compte/connaissance-de-soi/tests/big-five?format=ipip-120"
-                className="rounded-full border border-[#c45d3e]/35 bg-white/70 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]"
-              >
-                IPIP-120 · {t.start}
-              </Link>
-            </div>
-          </GlassCard>
-          <GlassCard className="p-5">
-            <h3 className="font-serif text-lg italic text-luxury-ink">
-              {getSelfTest('attachement')?.title[locale]}
-            </h3>
-            <Link
-              href="/compte/connaissance-de-soi/tests/attachement"
-              className="btn-luxury-primary mt-3 inline-flex px-4 py-2 text-[10px] tracking-[0.12em]"
-            >
-              {t.start}
-            </Link>
-          </GlassCard>
+                <div className="relative h-[140px] w-full sm:h-[160px]">
+                  <Image
+                    src={CARD_IMG[slug]!}
+                    alt=""
+                    fill
+                    className="object-cover object-[center_12%] transition duration-500 group-hover:scale-[1.03]"
+                    sizes="(max-width:640px) 100vw, 320px"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1410]/55 via-transparent to-transparent" />
+                </div>
+                <div className="p-5">
+                  <h3 className="font-serif text-lg italic text-brand-ink">{test.title[locale]}</h3>
+                  <p className="mt-2 line-clamp-2 text-sm text-brand-ink/60">{test.description[locale]}</p>
+                  {slug === 'big-five' ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
+                        className="rounded-full bg-[#c45d3e] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(196,93,62,0.28)]"
+                      >
+                        {t.rapid} · IPIP-50
+                      </Link>
+                      <Link
+                        href="/compte/connaissance-de-soi/tests/big-five?format=ipip-120"
+                        className="rounded-full border border-[#c45d3e]/40 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]"
+                      >
+                        {t.deep} · 120
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link
+                      href="/compte/connaissance-de-soi/tests/attachement"
+                      className="mt-4 inline-flex rounded-full bg-[#c45d3e] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(196,93,62,0.28)]"
+                    >
+                      {t.start}
+                    </Link>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
       <section>
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.history}</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.24em] text-brand-ink/45">{t.history}</h2>
           <div className="flex gap-1">
             {(['all', 'big-five', 'attachement'] as const).map((s) => (
               <button
@@ -150,7 +194,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                 type="button"
                 onClick={() => setSlugFilter(s)}
                 className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${
-                  slugFilter === s ? 'bg-[#c45d3e] text-white' : 'bg-white/70 text-luxury-muted'
+                  slugFilter === s ? 'bg-[#c45d3e] text-white' : 'bg-white/80 text-brand-ink/50'
                 }`}
               >
                 {s === 'all' ? (locale === 'es' ? 'Todos' : 'Tous') : s}
@@ -158,8 +202,19 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
             ))}
           </div>
         </div>
+
         {filtered.length === 0 ? (
-          <p className="mt-4 text-sm text-luxury-muted">{t.empty}</p>
+          <div className="mt-4">
+            <HubEmptyState
+              imageSrc="/library/portraits/portrait-02-4x5.webp"
+              imageAlt=""
+              title={t.emptyTitle}
+              lead={t.emptyLead}
+              ctaLabel={t.emptyCta}
+              ctaHref="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
+              testId="tests-empty"
+            />
+          </div>
         ) : (
           <div className="mt-4 space-y-3">
             {filtered.map((row) => {
@@ -172,20 +227,23 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                   : undefined,
               );
               return (
-                <GlassCard key={row.id} className="p-4 md:p-5">
+                <article
+                  key={row.id}
+                  className="rounded-[22px] border border-white/70 bg-[#FFFAF5] p-4 shadow-[0_12px_32px_rgba(60,40,30,0.09)] md:p-5"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium text-luxury-ink">
+                    <p className="font-medium text-brand-ink">
                       {test?.title[locale] ?? row.test_slug}
-                      <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#c45d3e]">
+                      <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]">
                         {formatLabel(row.test_version, locale)}
                       </span>
                     </p>
-                    <span className="text-[11px] text-luxury-soft">
+                    <span className="text-[11px] text-brand-ink/45">
                       {dateFmt.format(new Date(row.created_at))}
                     </span>
                   </div>
                   {row.analysis_teaser ? (
-                    <p className="mt-2 line-clamp-2 text-sm text-luxury-muted">{row.analysis_teaser}</p>
+                    <p className="mt-2 line-clamp-2 text-sm text-brand-ink/60">{row.analysis_teaser}</p>
                   ) : null}
                   <dl className="mt-3 grid gap-1.5 sm:grid-cols-2">
                     {(test?.scoreKeys ?? Object.keys(row.scores)).map((key) => {
@@ -195,9 +253,12 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                           ? BIG_FIVE_LABELS[key]?.[locale] ?? key
                           : ATTACHMENT_LABELS[key]?.[locale] ?? key;
                       return (
-                        <div key={key} className="flex justify-between rounded-lg bg-white/50 px-2.5 py-1.5 text-xs">
-                          <dt className="text-luxury-muted">{label}</dt>
-                          <dd className="font-semibold text-luxury-ink">
+                        <div
+                          key={key}
+                          className="flex justify-between rounded-xl bg-white/70 px-2.5 py-1.5 text-xs"
+                        >
+                          <dt className="text-brand-ink/55">{label}</dt>
+                          <dd className="font-semibold text-brand-ink">
                             {formatDomainScore(row.test_slug, val)}
                           </dd>
                         </div>
@@ -216,7 +277,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                   >
                     {t.retake} →
                   </Link>
-                </GlassCard>
+                </article>
               );
             })}
           </div>
@@ -225,13 +286,13 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
 
       {history.filter((r) => r.test_slug === 'big-five').length >= 2 ? (
         <section data-testid="test-compare">
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.compare}</h2>
-          <p className="mt-2 text-sm text-luxury-muted">{t.sameFormat}</p>
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.24em] text-brand-ink/45">{t.compare}</h2>
+          <p className="mt-2 text-sm text-brand-ink/55">{t.sameFormat}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-xs text-luxury-muted">
+            <label className="text-xs text-brand-ink/55">
               {t.pickA}
               <select
-                className="mt-1 w-full rounded-xl border border-luxury-ink/10 bg-white/80 px-3 py-2 text-sm text-luxury-ink"
+                className="mt-1 w-full rounded-xl border border-brand-ink/10 bg-white/90 px-3 py-2 text-sm text-brand-ink"
                 value={idA}
                 onChange={(e) => setIdA(e.target.value)}
                 data-testid="compare-a"
@@ -246,10 +307,10 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                   ))}
               </select>
             </label>
-            <label className="text-xs text-luxury-muted">
+            <label className="text-xs text-brand-ink/55">
               {t.pickB}
               <select
-                className="mt-1 w-full rounded-xl border border-luxury-ink/10 bg-white/80 px-3 py-2 text-sm text-luxury-ink"
+                className="mt-1 w-full rounded-xl border border-brand-ink/10 bg-white/90 px-3 py-2 text-sm text-brand-ink"
                 value={idB}
                 onChange={(e) => setIdB(e.target.value)}
                 data-testid="compare-b"
@@ -269,14 +330,14 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
             <p className="mt-3 text-sm text-[#c45d3e]">{t.mismatch}</p>
           ) : null}
           {canCompare && slicesA.length >= 3 ? (
-            <GlassCard className="mt-5 p-4 md:p-6">
+            <div className="mt-5 rounded-[26px] border border-white/70 bg-[#FFFAF5] p-4 shadow-[0_14px_40px_rgba(60,40,30,0.1)] md:p-6">
               <OceanRadar
                 slices={slicesA}
                 compareSlices={slicesB}
                 compareLabel={`${t.radarThen} · ${t.radarNow}`}
                 size={280}
               />
-              <div className="mt-3 flex justify-center gap-4 text-[11px] text-luxury-muted">
+              <div className="mt-3 flex justify-center gap-4 text-[11px] text-brand-ink/55">
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#c45d3e]" />
                   {t.radarNow}
@@ -286,7 +347,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                   {t.radarThen}
                 </span>
               </div>
-            </GlassCard>
+            </div>
           ) : null}
         </section>
       ) : null}

@@ -10,13 +10,17 @@ Ancien hub quiz DiSC / 5 évaluations (code archivé dans `_archive/quiz-legacy-
 - Lead email → `self_test_results` + `acq_contacts` (INSERT daté)
 - Teaser + CTA `/?offer=v-coll`
 
-## Compte — hub cerveau 5 onglets
-- `/compte/connaissance-de-soi` — **Mon évolution**
-- `/compte/connaissance-de-soi/progression` — courbe + streak (+ `/compte/progression` aligné DA)
-- `/compte/connaissance-de-soi/tests` — historique + compare radar T0/T1
+## Compte — hub cerveau 5 onglets (DA immersive 2026-09-23)
+- `/compte/connaissance-de-soi` — **Mon évolution** (hero photo + micro-victoire + chaîne)
+- `/compte/connaissance-de-soi/progression` — courbe + streak visuel + jalons (`/compte/progression` **redirige** ici)
+- Dashboard KPI « Progression mensuelle » → hub progression (pas l’ancienne page isolée)
+- `/compte/connaissance-de-soi/tests` — historique + compare radar T0/T1 + empty engageant
 - `/compte/connaissance-de-soi/corps` — santé + historique scores (`/sante` → redirect)
-- `/compte/connaissance-de-soi/developpement` — journal · défis · lecture affiliée
+- `/compte/connaissance-de-soi/developpement` — journal · défis · lecture (badge **Lien affilié** obligatoire)
+- Visuels partagés : `HubVisuals.tsx` (`HubSectionHero`, `HubEmptyState`, `ConsistencyChain`, `HubMilestones`)
+- Captures Playwright : `/quiz/hub-membre-capture?section=&filled=` (public, flag UX_CAPTURE)
 - Accès = `hasVisioClientAccess` ; nav Brain inchangée
+- Affiliation Kevin : `docs/AFFILIATION_DEMARCHE.md`
 
 ## Santé / wearables
 - Consentement `health_consents` ; entrées `health_score_entries` (+ `source`)

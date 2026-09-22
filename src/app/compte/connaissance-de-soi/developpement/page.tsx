@@ -55,19 +55,6 @@ export default async function DeveloppementPage() {
     completed: done.has(c.id),
   }));
 
-  const t =
-    locale === 'es'
-      ? {
-          title: 'Desarrollo personal',
-          dashboard: 'Panel',
-          lead: 'Diario, reflexiones suaves y club de lectura — sin juicio.',
-        }
-      : {
-          title: 'Développement personnel',
-          dashboard: 'Dashboard',
-          lead: 'Journal, réflexions douces et club de lecture — sans jugement.',
-        };
-
   return (
     <VisioLock
       hasAccess={hasVisioAccess}
@@ -76,11 +63,10 @@ export default async function DeveloppementPage() {
       featureDescription_es="El desarrollo personal es para miembros active o en prueba."
     >
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-        <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-        <header>
-          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-3 max-w-xl text-sm text-luxury-muted">{t.lead}</p>
-        </header>
+        <CompteDashboardBackLink
+          label={locale === 'es' ? 'Panel' : 'Dashboard'}
+          className="mb-4"
+        />
         <SelfKnowledgeHubNav lang={lang} active="developpement" />
         <DeveloppementPersoView
           lang={lang}

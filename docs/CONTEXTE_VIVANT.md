@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-23 — Hub membre : passe design (DA quiz + empty engageants)
+
+- Dashboard « Progression mensuelle » → `/compte/connaissance-de-soi/progression` (page `/compte/progression` redirige).
+- DA immersive type `/quiz` : `HubSectionHero`, `HubEmptyState`, `ConsistencyChain`, `HubMilestones` ; portraits `public/library/`.
+- États vides engageants (tests / progression / corps / journal / lecture) + micro-victoire / jalons.
+- Affiliation : badge « Lien affilié » + tracking ; doc `docs/AFFILIATION_DEMARCHE.md` (Amazon/Fnac/Decathlon à faire côté Kevin).
+- Captures UX hub membre : `/quiz/hub-membre-capture` (flag `NEXT_PUBLIC_UX_CAPTURE`, hors layout auth `/compte`).
+- Logique inchangée : VisioLock, INSERT daté, banque, wearable OFF.
+
 ### 2026-09-23 — Hub membre cerveau 5 sections + progression DA + wearable stub + journal
 
 - Hub `/compte/connaissance-de-soi` : 5 onglets (évolution · progression · tests · corps · développement). Sidebar Brain inchangé.

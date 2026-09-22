@@ -238,6 +238,90 @@ test.describe('Self-knowledge UX — desktop', () => {
   });
 });
 
+test.describe('Hub membre — captures DA', () => {
+  test.beforeAll(() => {
+    ensureDir();
+  });
+
+  test('5 sections empty + filled desktop', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'desktop only');
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fm_cookie_consent', 'accepted');
+      } catch {
+        /* ignore */
+      }
+    });
+
+    const memberSections = [
+      'evolution',
+      'progression',
+      'tests',
+      'corps',
+      'developpement',
+    ] as const;
+    let n = 21;
+    for (const section of memberSections) {
+      await page.goto(`/quiz/hub-membre-capture?section=${section}`, { waitUntil: 'domcontentloaded' });
+      await dismissCookies(page);
+      await expect(page.getByTestId('hub-ux-capture')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('hub-ux-capture')).toHaveAttribute('data-section', section);
+      await page.waitForTimeout(400);
+      await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-empty`);
+      n += 1;
+      await page.goto(`/quiz/hub-membre-capture?section=${section}&filled=1`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await expect(page.getByTestId('hub-ux-capture')).toHaveAttribute('data-filled', '1');
+      if (section === 'developpement') {
+        await expect(page.getByTestId('affiliate-disclosure')).toBeVisible();
+      }
+      await page.waitForTimeout(400);
+      await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-filled`);
+      n += 1;
+    }
+
+    const files = fs
+      .readdirSync(CAPTURE_DIR)
+      .filter((f) => f.endsWith('.png') || f.endsWith('.pdf'))
+      .sort()
+      .map((f) => path.join('_captures/tests-ux', f));
+    fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
+    expect(files.some((f) => f.includes('21-membre-evolution-empty'))).toBeTruthy();
+    expect(files.some((f) => f.includes('30-membre-developpement-filled'))).toBeTruthy();
+  });
+
+  test('5 sections empty + filled mobile', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile only');
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fm_cookie_consent', 'accepted');
+      } catch {
+        /* ignore */
+      }
+    });
+
+    for (const section of ['evolution', 'progression', 'tests', 'corps', 'developpement'] as const) {
+      await page.goto(`/quiz/hub-membre-capture?section=${section}`, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId('hub-ux-capture')).toBeVisible({ timeout: 30_000 });
+      await page.waitForTimeout(300);
+      await shot(page, `m-${section}-empty`, true);
+      await page.goto(`/quiz/hub-membre-capture?section=${section}&filled=1`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForTimeout(300);
+      await shot(page, `m-${section}-filled`, true);
+    }
+
+    const files = fs
+      .readdirSync(CAPTURE_DIR)
+      .filter((f) => f.endsWith('.png') || f.endsWith('.pdf'))
+      .sort()
+      .map((f) => path.join('_captures/tests-ux', f));
+    fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
+  });
+});
+
 test.describe('Self-knowledge UX — mobile', () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'mobile only');
