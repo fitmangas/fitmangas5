@@ -71,18 +71,24 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
   const shownError = localError ?? error;
 
   return (
-    <div className="mx-auto max-w-xl px-5 py-10">
+    <div className="mx-auto max-w-xl px-5 py-10" data-testid="self-test-lead">
       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.eyebrow}</p>
       <h2 className="mt-3 font-serif text-[1.75rem] italic leading-tight text-brand-ink">{t.title}</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-brand-ink/60">{t.lead}</p>
       <p className="mt-2 text-[13px] font-medium text-[#c45d3e]">{testTitle}</p>
 
-      <form className="mt-8 space-y-4 rounded-[24px] border border-brand-ink/[0.06] bg-white/85 p-6 shadow-sm" onSubmit={handleSubmit} noValidate>
+      <form
+        className="mt-8 space-y-4 rounded-[24px] border border-brand-ink/[0.06] bg-white/85 p-6 shadow-sm"
+        onSubmit={handleSubmit}
+        noValidate
+        data-testid="self-test-lead-form"
+      >
         <label className="block space-y-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/55">{t.firstName}</span>
           <input
             type="text"
             name="firstName"
+            data-testid="lead-firstname"
             autoComplete="given-name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
@@ -97,6 +103,7 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
           <input
             type="email"
             name="email"
+            data-testid="lead-email"
             autoComplete="email"
             inputMode="email"
             value={email}
@@ -111,6 +118,7 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
         <label className="flex items-start gap-3 text-[13px] leading-relaxed text-brand-ink/70">
           <input
             type="checkbox"
+            data-testid="lead-consent"
             className="mt-1"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
@@ -127,6 +135,7 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
 
         <button
           type="submit"
+          data-testid="lead-submit"
           disabled={submitting}
           className="w-full rounded-full bg-[#c45d3e] px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338] disabled:opacity-60"
         >

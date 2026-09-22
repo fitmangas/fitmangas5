@@ -1,0 +1,11 @@
+_captures/tests-ux/01-hub-hero-carousel.png
+_captures/tests-ux/02-big-five-choix.png
+_captures/tests-ux/03-intro-ipip-50.png
+_captures/tests-ux/04-rapport-teaser-ipip-50.png
+_captures/tests-ux/05-intro-ipip-120.png
+_captures/tests-ux/06-rapport-teaser-ipip-120.png
+_captures/tests-ux/07-intro-attachement.png
+_captures/tests-ux/08-rapport-teaser-attachement.png
+_captures/tests-ux/09-rapport-full-ipip-50.png
+_captures/tests-ux/10-rapport-full-ipip-120-facettes.png
+_captures/tests-ux/11-rapport-full-attachement.png
