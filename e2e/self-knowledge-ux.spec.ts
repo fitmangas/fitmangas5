@@ -42,11 +42,6 @@ async function answerCurrentBatch(page: Page) {
   });
 }
 
-async function startQuestions(page: Page) {
-  await page.getByTestId('intro-start').click({ force: true });
-  await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
-}
-
 async function completeQuestionnaire(page: Page) {
   for (let guard = 0; guard < 50; guard++) {
     if (await page.getByTestId('self-test-lead').isVisible().catch(() => false)) return;
@@ -64,6 +59,8 @@ async function fillLead(page: Page) {
   await page.getByTestId('lead-firstname').fill('Camille');
   await page.getByTestId('lead-email').fill(`e2e-ux-${Date.now()}@fitmangas.test`);
   await page.getByTestId('lead-consent').check({ force: true });
+  // Opt-in blog explicite (case décochée par défaut)
+  await page.getByTestId('lead-blog-optin').check({ force: true });
   await page.getByTestId('lead-submit').click({ force: true });
   await expect(page.getByTestId('self-test-report')).toBeVisible({ timeout: 60_000 });
 }
@@ -75,6 +72,7 @@ async function mockSubmitWithBank(page: Page) {
       format?: string;
       locale?: string;
       answers: Record<string, number>;
+      blogOptIn?: boolean;
     };
     const res = await page.request.post('/api/self-knowledge/ux-fixture', {
       data: {
@@ -98,7 +96,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     ensureDir();
   });
 
-  test('hub + choix + intros + 3 parcours + rapports full', async ({ page }) => {
+  test('hub + choix fusionné + questions + 3 parcours + rapports full', async ({ page }) => {
     await page.addInitScript(() => {
       try {
         localStorage.setItem('fm_cookie_consent', 'accepted');
@@ -120,11 +118,11 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('self-test-choose')).toBeVisible();
     await shot(page, '02-big-five-choix');
 
+    // Choix = lancement immédiat (plus de page intro)
     await page.getByTestId('choose-ipip-50').click({ force: true });
-    await expect(page.getByTestId('self-test-intro')).toBeVisible();
-    await shot(page, '03-intro-ipip-50');
+    await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
+    await shot(page, '03-questions-redesign');
 
-    await startQuestions(page);
     await completeQuestionnaire(page);
     await fillLead(page);
     await shot(page, '04-rapport-teaser-ipip-50');
@@ -132,9 +130,8 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await page.goto('/quiz/big-five');
     await dismissCookies(page);
     await page.getByTestId('choose-ipip-120').click({ force: true });
-    await expect(page.getByTestId('self-test-intro')).toBeVisible();
-    await shot(page, '05-intro-ipip-120');
-    await startQuestions(page);
+    await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
+    await shot(page, '05-questions-ipip-120');
     await completeQuestionnaire(page);
     await fillLead(page);
     await shot(page, '06-rapport-teaser-ipip-120');
@@ -143,7 +140,8 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-intro')).toBeVisible();
     await shot(page, '07-intro-attachement');
-    await startQuestions(page);
+    await page.getByTestId('intro-start').click({ force: true });
+    await expect(page.getByTestId('self-test-questions')).toBeVisible();
     await completeQuestionnaire(page);
     await fillLead(page);
     await shot(page, '08-rapport-teaser-attachement');
@@ -151,15 +149,15 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
+    await expect(page.getByTestId('report-sticky-nav')).toBeVisible();
+    await expect(page.getByTestId('score-phrases')).toBeVisible();
+    await expect(page.getByTestId('download-pdf')).toBeVisible();
     await shot(page, '09-rapport-full-ipip-50');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-120&full=1');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
-    const facet = page.locator('details').first();
-    if (await facet.count()) {
-      await facet.click({ force: true });
-    }
+    await expect(page.getByTestId('facets-accordion')).toBeVisible();
     await shot(page, '10-rapport-full-ipip-120-facettes');
 
     await page.goto('/quiz/ux-capture?slug=attachement&full=1');
@@ -167,7 +165,6 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
     await shot(page, '11-rapport-full-attachement');
 
-    // Profil équilibré + rapport sans répétition (full 50)
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1&balanced=1');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toBeVisible();
@@ -176,7 +173,9 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
     await dismissCookies(page);
-    await shot(page, '13-rapport-full-sans-repetition');
+    await expect(page.getByTestId('micro-recommendation')).toBeVisible();
+    await expect(page.getByTestId('self-test-share-invite')).toBeVisible();
+    await shot(page, '13-rapport-full-pdf-parrainage');
 
     const files = fs
       .readdirSync(CAPTURE_DIR)

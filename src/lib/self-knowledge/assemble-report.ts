@@ -25,11 +25,22 @@ import {
   deriveBigFivePortrait,
   isBalancedBands,
 } from './banks/portraits';
+import {
+  ATTACHMENT_BAND_PHRASE,
+  ATTACHMENT_PRACTICE_IMPACT,
+  TRAIT_BAND_PHRASE,
+  assemblePracticeImpactBlock,
+  bandWord,
+  microRecoText,
+  pickAttachmentMicroReco,
+  pickBigFiveMicroReco,
+} from './banks/practice-impact';
 import type {
   BigFiveFormat,
   SelfTestAnalysis,
   SelfTestFacetSection,
   SelfTestLang,
+  SelfTestScorePhrase,
   SelfTestScores,
 } from './types';
 
@@ -128,6 +139,13 @@ export function selectTraitBundle(
   });
 }
 
+/** N (névrosisme IPIP) → ES (stabilité émotionnelle) pour l’UI FitMangas. */
+function facetParentTrait(facetId: string): string {
+  const letter = facetId.charAt(0);
+  if (letter === 'N') return 'ES';
+  return letter;
+}
+
 function buildFacetSections(
   scores: SelfTestScores,
   lang: SelfTestLang
@@ -143,12 +161,32 @@ function buildFacetSections(
       label: FACET_LABELS[id as FacetId][lang],
       score: raw,
       band,
+      bandLabel: bandWord(lang, band),
+      parentTrait: facetParentTrait(id),
       narrative: bank.narrative[lang],
       force: bank.force[lang],
       limit: bank.limit[lang],
     });
   }
   return sections;
+}
+
+function buildBigFiveScorePhrases(
+  scores: SelfTestScores,
+  lang: SelfTestLang
+): SelfTestScorePhrase[] {
+  return TRAIT_ORDER.map((key) => {
+    const score = scores[key] ?? 30;
+    const band = bandFromTraitScore(score);
+    const percent = Math.round(((score - 10) / 40) * 100);
+    return {
+      key,
+      label: BIG_FIVE_LABELS[key]![lang],
+      percent: Math.min(100, Math.max(0, percent)),
+      phrase: TRAIT_BAND_PHRASE[key][band][lang],
+      band,
+    };
+  });
 }
 
 function buildFullText(
@@ -179,12 +217,21 @@ function buildFullText(
     lines.push(h ? 'Combinaisons repérées' : 'Combinaciones detectadas');
     for (const c of sections.combinations) lines.push(`• ${c}`);
   }
+  if (sections.practiceImpact?.length) {
+    lines.push('');
+    lines.push(h ? 'Ce que ça change pour ta pratique' : 'Qué cambia para tu práctica');
+    for (const p of sections.practiceImpact) lines.push(`• ${p}`);
+  }
+  if (sections.microRecommendation) {
+    lines.push('');
+    lines.push(sections.microRecommendation);
+  }
   if (sections.facets?.length) {
     lines.push('');
     lines.push(h ? 'Facettes détaillées' : 'Facetas detalladas');
     for (const facet of sections.facets) {
       lines.push('');
-      lines.push(`${facet.label} (${facet.score}/20)`);
+      lines.push(`${facet.label} — ${facet.bandLabel}`);
       lines.push(facet.narrative);
     }
   }
@@ -291,6 +338,9 @@ export function assembleBigFiveReport(
     .slice(0, 2);
 
   const facets = format === 'ipip-120' ? buildFacetSections(scores, lang) : undefined;
+  const scorePhrases = buildBigFiveScorePhrases(scores, lang);
+  const practiceImpact = assemblePracticeImpactBlock(bands, lang);
+  const microRecommendation = microRecoText(pickBigFiveMicroReco(bands, balanced), lang);
 
   const sections = {
     whoYouAre,
@@ -298,6 +348,9 @@ export function assembleBigFiveReport(
     forces: forces.slice(0, 5),
     limits: limits.slice(0, 5),
     combinations,
+    scorePhrases,
+    practiceImpact,
+    microRecommendation,
     ...(facets?.length ? { facets } : {}),
   };
 
@@ -375,12 +428,38 @@ export function assembleAttachmentReport(
     .slice(0, 2)
     .map((d) => d.force);
 
+  const styleId = style.id as keyof typeof ATTACHMENT_PRACTICE_IMPACT;
+  const practiceImpact = [
+    ATTACHMENT_PRACTICE_IMPACT[styleId]?.[lang] ?? ATTACHMENT_PRACTICE_IMPACT['secure-ish'][lang],
+  ];
+  const microRecommendation = microRecoText(pickAttachmentMicroReco(style.id), lang);
+
+  const scorePhrases: SelfTestScorePhrase[] = [
+    {
+      key: 'anxiety',
+      label: ATTACHMENT_LABELS.anxiety![lang],
+      percent: Math.round(((anxiety - 1) / 6) * 100),
+      phrase: ATTACHMENT_BAND_PHRASE.anxiety[anxietyBand][lang],
+      band: anxietyBand,
+    },
+    {
+      key: 'avoidance',
+      label: ATTACHMENT_LABELS.avoidance![lang],
+      percent: Math.round(((avoidance - 1) / 6) * 100),
+      phrase: ATTACHMENT_BAND_PHRASE.avoidance[avoidanceBand][lang],
+      band: avoidanceBand,
+    },
+  ];
+
   const sections = {
     whoYouAre,
     howYouWork,
     forces,
     limits,
     combinations,
+    scorePhrases,
+    practiceImpact,
+    microRecommendation,
   };
 
   const instrumentVersion = 'ecr-s';

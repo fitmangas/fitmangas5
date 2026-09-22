@@ -100,6 +100,10 @@ export async function GET(request: Request) {
     if (attached > 0) {
       console.info('[checkout-success] self-test results attached', { userId, count: attached });
     }
+    if (customerEmail) {
+      const { promoteEmailToMemberFlow } = await import('@/lib/self-knowledge/email-flow-priority');
+      await promoteEmailToMemberFlow(customerEmail, userId);
+    }
   } catch (attachErr) {
     console.error('[checkout-success] self-test attach failed', attachErr);
   }

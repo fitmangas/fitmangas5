@@ -8,6 +8,8 @@ export type SelfTestLeadPayload = {
   firstName: string;
   email: string;
   consent: true;
+  /** Opt-in optionnel newsletter articles blog (double opt-in) — séparé du consentement acquisition. */
+  blogOptIn?: boolean;
 };
 
 type Props = {
@@ -27,6 +29,8 @@ const copy = {
     email: 'Email',
     consent:
       'J’accepte d’être recontactée par FitMangas (email) au sujet de mon profil et de l’essai gratuit de 7 jours.',
+    blogOptIn:
+      'Je souhaite aussi recevoir les articles du blog FitMangas par email (confirmation obligatoire).',
     cta: 'Voir mon aperçu →',
     loading: 'Enregistrement…',
   },
@@ -38,6 +42,8 @@ const copy = {
     email: 'Email',
     consent:
       'Acepto que FitMangas me contacte (email) sobre mi perfil y la prueba gratuita de 7 días.',
+    blogOptIn:
+      'También quiero recibir los artículos del blog FitMangas por email (confirmación obligatoria).',
     cta: 'Ver mi vista previa →',
     loading: 'Guardando…',
   },
@@ -48,6 +54,7 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
+  const [blogOptIn, setBlogOptIn] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   function handleSubmit(e: FormEvent) {
@@ -65,7 +72,7 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
       );
       return;
     }
-    onSubmit({ firstName: name, email: mail, consent: true });
+    onSubmit({ firstName: name, email: mail, consent: true, blogOptIn });
   }
 
   const shownError = localError ?? error;
@@ -125,6 +132,18 @@ export function SelfTestLeadCapture({ locale, testTitle, submitting, error, onSu
             disabled={submitting}
           />
           <span>{t.consent}</span>
+        </label>
+
+        <label className="flex items-start gap-3 text-[13px] leading-relaxed text-brand-ink/70">
+          <input
+            type="checkbox"
+            data-testid="lead-blog-optin"
+            className="mt-1"
+            checked={blogOptIn}
+            onChange={(e) => setBlogOptIn(e.target.checked)}
+            disabled={submitting}
+          />
+          <span>{t.blogOptIn}</span>
         </label>
 
         {shownError ? (

@@ -138,6 +138,10 @@ export async function sendPublicationNewsletter(params: { articleId: string; tit
     .map((s) => s.email)
     .filter(Boolean)
     .filter((email) => !excludedEmails.has(String(email).trim().toLowerCase()));
+  // Anti double-liste : promoteEmailToMemberFlow (self-knowledge) met unsubscribed=true
+  // dès qu’une membre active|trialing — la requête ci-dessus les exclut déjà.
+  // Priorité documentée : member > acquisition > blog_public
+  // (src/lib/self-knowledge/email-flow-priority.ts).
   const articleUrlEsc = escapeHref(articleUrl);
   const titleEsc = escapeHtml(params.title);
   let sent = 0;
