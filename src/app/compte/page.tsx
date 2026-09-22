@@ -393,7 +393,7 @@ export default async function ComptePage({
         </div>
         <div className="relative z-0 grid grid-cols-2 items-stretch gap-3 md:gap-5 xl:grid-cols-4">
           <GlassCard className="relative order-1 flex h-full flex-col p-3 md:order-none md:p-6">
-            <Link href="/compte/progression" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.openProgress} />
+            <Link href="/compte/connaissance-de-soi/progression" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.openProgress} />
             <div className="max-md:mb-6">
               <div className="flex items-start justify-between gap-2 md:gap-3">
                 <div className="min-w-0 flex-1">

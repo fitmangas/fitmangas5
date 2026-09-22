@@ -36,19 +36,6 @@ export default async function ConnaissanceProgressionPage() {
       ])
     : [{ followedCount: 0, goal }, [], 0];
 
-  const t =
-    locale === 'es'
-      ? {
-          title: 'Mi progreso',
-          dashboard: 'Panel',
-          lead: 'Tu constancia en el tiempo — lives y replays, tú frente a ti misma.',
-        }
-      : {
-          title: 'Ma progression',
-          dashboard: 'Dashboard',
-          lead: 'Ta constance dans le temps — lives et replays, toi face à toi-même.',
-        };
-
   return (
     <VisioLock
       hasAccess={hasVisioAccess}
@@ -57,11 +44,10 @@ export default async function ConnaissanceProgressionPage() {
       featureDescription_es="El progreso detallado es para miembros active o en prueba."
     >
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-        <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-        <header>
-          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-3 max-w-xl text-sm text-luxury-muted">{t.lead}</p>
-        </header>
+        <CompteDashboardBackLink
+          label={locale === 'es' ? 'Panel' : 'Dashboard'}
+          className="mb-4"
+        />
         <SelfKnowledgeHubNav lang={lang} active="progression" />
         <ProgressionMemberView
           lang={lang}

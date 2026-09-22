@@ -23,15 +23,6 @@ export default async function ConnaissanceDeSoiTestsPage() {
   const locale = lang === 'es' ? 'es' : 'fr';
   const history = hasVisioAccess ? await listResultsForProfile(user.id) : [];
 
-  const t =
-    locale === 'es'
-      ? { title: 'Mis tests', dashboard: 'Panel', lead: 'Historial datado — rehacer y comparar contigo misma.' }
-      : {
-          title: 'Mes tests',
-          dashboard: 'Dashboard',
-          lead: 'Historique daté — refaire et te comparer à toi-même.',
-        };
-
   return (
     <VisioLock
       hasAccess={hasVisioAccess}
@@ -40,11 +31,10 @@ export default async function ConnaissanceDeSoiTestsPage() {
       featureDescription_es="Los tests completos son para miembros active o en prueba."
     >
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-        <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-        <header>
-          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-3 max-w-xl text-sm text-luxury-muted">{t.lead}</p>
-        </header>
+        <CompteDashboardBackLink
+          label={locale === 'es' ? 'Panel' : 'Dashboard'}
+          className="mb-4"
+        />
         <SelfKnowledgeHubNav lang={lang} active="tests" />
         <SelfKnowledgeTestsPanel lang={lang} history={history} />
       </main>

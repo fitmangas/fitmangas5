@@ -62,7 +62,12 @@ function NextAppointmentCard({ appointment }: { appointment: NextAppointment }) 
 
 function MonthlyProgressCard({ progress }: { progress: MonthlyProgress }) {
   return (
-    <GlassCard className="flex flex-col p-5 md:p-6">
+    <GlassCard className="relative flex flex-col p-5 md:p-6">
+      <Link
+        href="/compte/connaissance-de-soi/progression"
+        className="absolute inset-0 z-10 rounded-[inherit]"
+        aria-label="Ouvrir la progression détaillée"
+      />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">Progression mensuelle</p>

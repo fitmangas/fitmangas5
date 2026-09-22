@@ -43,19 +43,6 @@ export default async function ConnaissanceCorpsPage() {
     }
   }
 
-  const t =
-    locale === 'es'
-      ? {
-          title: 'Mi cuerpo',
-          dashboard: 'Panel',
-          lead: 'Bienestar indicativo — no médico. Tú frente a tus propias tendencias.',
-        }
-      : {
-          title: 'Mon corps',
-          dashboard: 'Dashboard',
-          lead: 'Bien-être indicatif — non médical. Toi face à tes propres tendances.',
-        };
-
   return (
     <VisioLock
       hasAccess={hasVisioAccess}
@@ -64,11 +51,10 @@ export default async function ConnaissanceCorpsPage() {
       featureDescription_es="Los scores de bienestar son para miembros active o en prueba."
     >
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-        <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-        <header>
-          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-          <p className="mt-3 max-w-xl text-sm text-luxury-muted">{t.lead}</p>
-        </header>
+        <CompteDashboardBackLink
+          label={locale === 'es' ? 'Panel' : 'Dashboard'}
+          className="mb-4"
+        />
         <SelfKnowledgeHubNav lang={lang} active="corps" />
         <CorpsSanteView
           lang={lang}
