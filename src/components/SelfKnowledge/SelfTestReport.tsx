@@ -11,7 +11,7 @@ import { QuizVideoProof } from '@/components/Quiz/QuizVideoProof';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
 import { OCEAN_TRAIT_SHORT } from '@/lib/self-knowledge/ocean-palette';
-import { buildSelfTestReportPdfFromElement, downloadBlob } from '@/lib/self-knowledge/build-self-test-pdf';
+import { downloadBlob } from '@/lib/self-knowledge/build-self-test-pdf';
 import type {
   SelfTestAnalysis,
   SelfTestDefinition,
@@ -30,6 +30,8 @@ type Props = {
   showFull: boolean;
   firstName?: string | null;
   inviterEmail?: string | null;
+  /** Masque actions / vidéo (génération PDF serveur) */
+  printMode?: boolean;
 };
 
 const LABELS = {
@@ -249,6 +251,7 @@ export function SelfTestReport({
   showFull,
   firstName,
   inviterEmail,
+  printMode = false,
 }: Props) {
   const t = LABELS[locale];
   const portrait = analysis.portrait;
@@ -295,14 +298,21 @@ export function SelfTestReport({
     if (pdfBusy || !sections || !showFull) return;
     setPdfBusy(true);
     try {
-      const el = document.querySelector<HTMLElement>('[data-testid="self-test-report"]');
-      if (!el) throw new Error('Rapport introuvable pour PDF');
-      const blob = await buildSelfTestReportPdfFromElement(el, {
-        footer:
-          locale === 'es'
-            ? `${analysis.instrumentVersion ?? test.slug} · fitmangas.com`
-            : `${analysis.instrumentVersion ?? test.slug} · fitmangas.com`,
+      const res = await fetch('/api/self-knowledge/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: test.slug,
+          format: test.format ?? (test.slug === 'big-five' ? 'ipip-50' : undefined),
+          locale,
+          scores,
+        }),
       });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(err?.error ?? `PDF ${res.status}`);
+      }
+      const blob = await res.blob();
       const slug = heroName
         .toLowerCase()
         .normalize('NFD')
@@ -310,6 +320,9 @@ export function SelfTestReport({
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
       downloadBlob(blob, `fitmangas-${test.slug}-${slug || 'resultat'}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert(locale === 'es' ? 'No se pudo generar el PDF.' : 'Impossible de générer le PDF.');
     } finally {
       setPdfBusy(false);
     }
@@ -421,13 +434,16 @@ export function SelfTestReport({
       data-format={test.format ?? (test.slug === 'attachement' ? 'ecr-s' : 'ipip-50')}
     >
       {/* En-tête logo visible à l’impression / PDF */}
-      <div className="mb-6 hidden items-center gap-2 print:flex" aria-hidden>
+      <div
+        className={`mb-6 items-center gap-2 ${printMode ? 'flex' : 'hidden print:flex'}`}
+        aria-hidden
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="" className="h-7 w-7 object-contain" />
         <span className="text-[13px] font-semibold tracking-wide text-brand-ink">FitMangas</span>
       </div>
 
-      {showFull ? (
+      {showFull && !printMode ? (
         <nav
           className="sticky top-[52px] z-30 mb-8 -mx-1 overflow-x-auto rounded-full border border-white/70 bg-white/90 px-2 py-2 shadow-[0_8px_24px_rgba(60,40,30,0.08)] backdrop-blur-md"
           data-testid="report-sticky-nav"
@@ -539,10 +555,13 @@ export function SelfTestReport({
         fullSections
       )}
 
-      <div className="mt-12 border-t border-brand-ink/[0.06] pt-10">
-        <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
-      </div>
+      {!printMode ? (
+        <div className="mt-12 border-t border-brand-ink/[0.06] pt-10">
+          <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
+        </div>
+      ) : null}
 
+      {!printMode ? (
       <div className="self-test-no-print mt-10 flex flex-col items-center gap-5 pb-16" data-testid="report-actions">
         <div className="flex flex-wrap justify-center gap-3">
           {showFull ? (
@@ -574,6 +593,7 @@ export function SelfTestReport({
           />
         ) : null}
       </div>
+      ) : null}
     </article>
   );
 }

@@ -12,7 +12,7 @@ const FACES = VIDEO_TESTIMONIALS.filter((t) => t.id !== 'jose-luis').map((t) => 
   src: t.posterSrc,
 }));
 
-/** Positions relatives autour du titre — nuage organique */
+/** Positions aérées autour du titre — éloignées du centre (style V1) */
 const LAYOUT: Array<{
   id: string;
   top: string;
@@ -22,24 +22,24 @@ const LAYOUT: Array<{
   delay: string;
   opacity?: number;
 }> = [
-  { id: 'elena', top: '2%', left: '6%', size: 72, delay: '0s' },
-  { id: 'maria', top: '8%', right: '8%', size: 64, delay: '0.4s' },
-  { id: 'karla', top: '38%', left: '0%', size: 56, delay: '0.8s', opacity: 0.92 },
-  { id: 'sandrine', top: '42%', right: '2%', size: 60, delay: '1.1s' },
-  { id: 'alicia', top: '68%', left: '10%', size: 48, delay: '0.2s', opacity: 0.85 },
-  { id: 'olivia', top: '72%', right: '12%', size: 52, delay: '1.4s', opacity: 0.88 },
-  { id: 'teresa', top: '18%', left: '22%', size: 40, delay: '0.6s', opacity: 0.75 },
-  { id: 'elena', top: '22%', right: '24%', size: 36, delay: '1.6s', opacity: 0.7 },
+  { id: 'elena', top: '2%', left: '3%', size: 84, delay: '0s' },
+  { id: 'maria', top: '6%', right: '4%', size: 76, delay: '0.4s' },
+  { id: 'karla', top: '48%', left: '1%', size: 66, delay: '0.8s', opacity: 0.92 },
+  { id: 'sandrine', top: '52%', right: '2%', size: 70, delay: '1.1s' },
+  { id: 'alicia', top: '88%', left: '10%', size: 56, delay: '0.2s', opacity: 0.85 },
+  { id: 'olivia', top: '90%', right: '12%', size: 58, delay: '1.4s', opacity: 0.88 },
+  { id: 'teresa', top: '22%', left: '16%', size: 46, delay: '0.6s', opacity: 0.72 },
+  { id: 'elena', top: '26%', right: '18%', size: 42, delay: '1.6s', opacity: 0.68 },
 ];
 
 type Props = {
   children: ReactNode;
   className?: string;
-  /** Hub : hero plus bas pour laisser place aux 2 cartes */
+  /** @deprecated — hub utilise désormais le layout aéré complet */
   compact?: boolean;
 };
 
-export function FacesCloud({ children, className = '', compact = false }: Props) {
+export function FacesCloud({ children, className = '' }: Props) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const t = window.setTimeout(() => setReady(true), 40);
@@ -47,18 +47,16 @@ export function FacesCloud({ children, className = '', compact = false }: Props)
   }, []);
 
   const byId = Object.fromEntries(FACES.map((f) => [f.id, f]));
-  const scale = compact ? 0.72 : 1;
-  const layout = compact ? LAYOUT.slice(0, 6) : LAYOUT;
 
   return (
     <div
-      className={`relative mx-auto max-w-4xl px-5 ${compact ? 'pt-4 sm:pt-6' : 'pt-10 sm:pt-14'} ${className}`}
+      className={`relative mx-auto max-w-5xl overflow-visible px-5 pt-12 sm:pt-16 ${className}`}
       data-testid="faces-cloud-hero"
     >
       <div className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
-        {layout.map((slot, i) => {
+        {LAYOUT.map((slot, i) => {
           const face = byId[slot.id] ?? FACES[i % FACES.length]!;
-          const size = Math.round(slot.size * scale);
+          const size = slot.size;
           return (
             <div
               key={`${slot.id}-${i}`}
@@ -88,11 +86,7 @@ export function FacesCloud({ children, className = '', compact = false }: Props)
         })}
       </div>
 
-      <div
-        className={`relative z-10 mx-auto max-w-xl px-2 text-center ${
-          compact ? 'pb-2 pt-10 sm:pt-12' : 'pb-6 pt-16 sm:pt-20'
-        }`}
-      >
+      <div className="relative z-10 mx-auto max-w-xl px-2 pb-10 pt-20 text-center sm:pb-12 sm:pt-24">
         {children}
       </div>
 
