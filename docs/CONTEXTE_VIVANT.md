@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — UX hub /quiz : grille + crédibilité + Polyvalente
+- Hub : cartes **côte à côte** (`SelfTestCardGrid`) — carrousel 3D conservé mais non utilisé sur /quiz.
+- Portraits coach Alejandra sur cartes/intros : `public/library/portraits/portrait-05-4x5.webp` (Big Five) + `portrait-01-4x5.webp` (Attachement). Nuage = adhérentes.
+- Crédibilité positive IPIP (600 000+ / 0,94 NEO-PI-R) ; 3 indicateurs hero ; plus de « pas médical ».
+- Assembleur : dédoublonnage sections ; variante **La Polyvalente** (traits ~50) FR/ES.
+- Captures Playwright écrasées : `_captures/tests-ux/` (13 PNG + MANIFEST) dont profil équilibré + sans répétition.
+- Fichiers : `SelfTestCardGrid.tsx`, `SelfTestHub.tsx`, `assemble-report.ts`, `banks/portraits.ts`, `e2e/self-knowledge-ux.spec.ts`.
+
 ### 2026-09-22 — UX desire hub /quiz (nuage + carrousel 3D)
 - Inspirations sauvées : `docs/design-references/tests-inspiration/`
 - Hub : `FacesCloud` (vraies adhérentes) + `SelfTestDepthCarousel` + `QuizVideoProof`

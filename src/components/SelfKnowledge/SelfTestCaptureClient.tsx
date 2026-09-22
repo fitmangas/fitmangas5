@@ -21,25 +21,38 @@ type Props = {
   format: BigFiveFormat;
   showFull: boolean;
   locale: SelfTestLang;
+  /** Fixture : profil équilibré (tous traits mid) */
+  balanced?: boolean;
 };
 
-function fixtureScores(slug: SelfTestSlug, format: BigFiveFormat): SelfTestScores {
+function fixtureScores(
+  slug: SelfTestSlug,
+  format: BigFiveFormat,
+  balanced?: boolean
+): SelfTestScores {
   if (slug === 'attachement') {
     return { anxiety: 5.1, avoidance: 2.4 };
   }
-  const base: SelfTestScores = { E: 28, A: 34, C: 44, ES: 18, O: 36 };
+  const base: SelfTestScores = balanced
+    ? { E: 30, A: 30, C: 30, ES: 30, O: 30 }
+    : { E: 28, A: 34, C: 44, ES: 18, O: 36 };
   if (format === 'ipip-120') {
     for (const id of IPIP120_FACET_IDS) {
-      // Pattern déterministe pour fiches lisibles
       const n = Number(id.slice(1));
-      base[id] = 8 + ((n * 2) % 10);
+      base[id] = balanced ? 12 : 8 + ((n * 2) % 10);
     }
   }
   return base;
 }
 
-export function SelfTestCaptureClient({ slug, format, showFull, locale }: Props) {
-  const scores = fixtureScores(slug, format);
+export function SelfTestCaptureClient({
+  slug,
+  format,
+  showFull,
+  locale,
+  balanced,
+}: Props) {
+  const scores = fixtureScores(slug, format, balanced);
   const test =
     slug === 'attachement'
       ? ATTACHMENT_TEST
