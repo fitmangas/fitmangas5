@@ -1,95 +1,84 @@
 'use client';
 
-import Link from 'next/link';
-
+import { QuizVideoProof } from '@/components/Quiz/QuizVideoProof';
+import { FacesCloud } from '@/components/SelfKnowledge/FacesCloud';
+import { SelfTestDepthCarousel } from '@/components/SelfKnowledge/SelfTestDepthCarousel';
 import { SelfTestShell } from '@/components/SelfKnowledge/SelfTestShell';
-import { SELF_TEST_SLUGS, getSelfTest } from '@/lib/self-knowledge/scoring';
+import { getSelfTest, SELF_TEST_SLUGS } from '@/lib/self-knowledge/scoring';
 import type { SelfTestLang } from '@/lib/self-knowledge/types';
 
 type Props = { locale: SelfTestLang };
 
+const CARD_IMAGES: Record<string, { image: string; altFr: string; altEs: string }> = {
+  'big-five': {
+    image: '/library/portraits/portrait-01-4x5.webp',
+    altFr: 'Portrait — découvrir ton profil Big Five',
+    altEs: 'Retrato — descubrir tu perfil Big Five',
+  },
+  attachement: {
+    image: '/library/lifestyle-coulisses/lifestyle-04-4x5.webp',
+    altFr: 'Ambiance douce — test d’attachement',
+    altEs: 'Ambiente suave — test de apego',
+  },
+};
+
 const COPY = {
   fr: {
-    eyebrow: 'Tests validés · lecture claire',
+    eyebrow: 'Connaissance de soi',
     title: 'Mieux te connaître pour tenir ta pratique.',
-    lead: 'Big Five (rapide 50 ou approfondi 120) et attachement. Portrait nommé, radar, forces et limites — puis essai gratuit si tu veux ne plus t’entraîner seule.',
-    start: 'Commencer',
+    lead: 'Un portrait clair de comment tu fonctionnes — pour ne plus lâcher seule. Indicatif, jamais médical.',
+    proof: 'Elles aussi se sont découvertes — puis se sont tenues',
+    proofSub: 'Vidéos réelles d’adhérentes. Glisse pour voir.',
+    start: 'Je commence',
     questions: 'questions',
     min: 'min',
-    source: 'Source',
   },
   es: {
-    eyebrow: 'Tests validados · lectura clara',
+    eyebrow: 'Conocimiento de una misma',
     title: 'Conocerte mejor para sostener tu práctica.',
-    lead: 'Big Five (rápido 50 o en profundidad 120) y apego. Retrato nombrado, radar, fuerzas y límites — luego prueba gratuita si quieres dejar de entrenar sola.',
-    start: 'Empezar',
+    lead: 'Un retrato claro de cómo funcionas — para no soltar sola. Orientativo, nunca médico.',
+    proof: 'Ellas también se descubrieron — y se sostuvieron',
+    proofSub: 'Vídeos reales de alumnas. Desliza para ver.',
+    start: 'Empiezo',
     questions: 'preguntas',
     min: 'min',
-    source: 'Fuente',
   },
 } as const;
-
-const terracottaCta =
-  'inline-flex items-center justify-center rounded-full border-2 border-[#c45d3e] bg-white/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e] shadow-[0_8px_20px_rgba(196,93,62,0.14)] transition group-hover:bg-[#c45d3e] group-hover:text-white group-hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]';
 
 export function SelfTestHub({ locale }: Props) {
   const t = COPY[locale];
   const testBase = locale === 'es' ? '/es/quiz' : '/quiz';
 
+  const cards = SELF_TEST_SLUGS.map((slug) => {
+    const test = getSelfTest(slug)!;
+    const img = CARD_IMAGES[slug]!;
+    return {
+      slug,
+      href: `${testBase}/${slug}`,
+      title: test.title[locale],
+      meta: `${test.items.length} ${t.questions} · ~${test.durationMin} ${t.min}`,
+      description: test.description[locale],
+      image: img.image,
+      imageAlt: locale === 'es' ? img.altEs : img.altFr,
+      cta: t.start,
+    };
+  });
+
   return (
     <SelfTestShell locale={locale}>
-      <section className="mx-auto max-w-5xl px-5 pb-6 pt-12 sm:pt-16">
+      <FacesCloud>
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c45d3e]">{t.eyebrow}</p>
-        <h1 className="mt-4 max-w-3xl font-serif text-[2.1rem] italic leading-[1.12] tracking-tight text-brand-ink sm:text-[2.65rem]">
+        <h1 className="mt-4 font-serif text-[2.15rem] italic leading-[1.12] tracking-tight text-brand-ink sm:text-[2.75rem]">
           {t.title}
         </h1>
-        <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-brand-ink/60">{t.lead}</p>
-      </section>
+        <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-brand-ink/60">{t.lead}</p>
+      </FacesCloud>
 
-      <ol className="mx-auto max-w-5xl space-y-5 px-5 pb-20">
-        {SELF_TEST_SLUGS.map((slug, i) => {
-          const test = getSelfTest(slug);
-          if (!test) return null;
-          return (
-            <li key={slug}>
-              <Link
-                href={`${testBase}/${slug}`}
-                className="group block overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/80 p-6 shadow-[0_10px_28px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(196,93,62,0.14)] sm:p-8"
-              >
-                <div className="flex items-start gap-4">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-[11px] font-bold text-white shadow-lg">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-serif text-[1.35rem] italic leading-snug tracking-tight text-brand-ink sm:text-[1.5rem]">
-                      {test.title[locale]}
-                    </span>
-                    <span className="mt-1 block text-[12px] text-brand-ink/40">
-                      {test.items.length} {t.questions} · ~{test.durationMin} {t.min}
-                    </span>
-                    <span className="mt-2 block text-[14px] leading-relaxed text-brand-ink/60">
-                      {test.description[locale]}
-                    </span>
-                    <span className="mt-2 block text-[11px] text-brand-ink/45">
-                      {t.source} :{' '}
-                      <a
-                        href={test.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline underline-offset-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {test.source}
-                      </a>
-                    </span>
-                    <span className={`${terracottaCta} mt-4`}>{t.start} →</span>
-                  </span>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
+      <SelfTestDepthCarousel locale={locale} cards={cards} />
+
+      <div className="pb-16" data-testid="hub-video-proof">
+        <QuizVideoProof locale={locale} title={t.proof} subtitle={t.proofSub} />
+      </div>
     </SelfTestShell>
   );
 }

@@ -42,7 +42,7 @@ const LABELS = {
     save: 'Enregistrer',
     hub: 'Autre test',
     trial: 'Essai gratuit 7 jours',
-    human: 'Elles aussi ont un profil — et un rendez-vous',
+    human: 'Elles aussi ont un profil — et un créneau collectif',
     humanSub: 'Vidéos d’adhérentes.',
     notDiagnosis: 'Indicatif — pas un diagnostic. Les scores évoluent avec le temps.',
     modeClaude: 'Analyse IA',
@@ -315,7 +315,13 @@ export function SelfTestReport({
   );
 
   return (
-    <article className="self-test-report mx-auto max-w-3xl px-5 py-10 sm:max-w-4xl sm:py-14">
+    <article
+      className="self-test-report mx-auto max-w-3xl px-5 py-10 sm:max-w-4xl sm:py-14"
+      data-testid="self-test-report"
+      data-show-full={showFull ? 'true' : 'false'}
+      data-slug={test.slug}
+      data-format={test.format ?? (test.slug === 'attachement' ? 'ecr-s' : 'ipip-50')}
+    >
       <header className="glass-card relative overflow-hidden rounded-[32px] border border-white/55 bg-white/80 transition duration-200 hover:-translate-y-0.5">
         <div className="p-6 sm:p-8">
           <div className="flex flex-wrap items-center gap-2">

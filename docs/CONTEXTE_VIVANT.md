@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — UX desire hub /quiz (nuage + carrousel 3D)
+- Inspirations sauvées : `docs/design-references/tests-inspiration/`
+- Hub : `FacesCloud` (vraies adhérentes) + `SelfTestDepthCarousel` + `QuizVideoProof`
+- Choose / intro premium ; fond cream `#FFFAF5`
+- Playwright E2E + captures : `_captures/tests-ux/` (11 PNG + MANIFEST)
+- Page capture `/quiz/ux-capture` (gate `NEXT_PUBLIC_UX_CAPTURE=1`)
+
 ### 2026-09-22 — Refonte résultats connaissance de soi (niveau profil-discipline)
 - Banques déterministes FR/ES : 5 traits × 3 niveaux + 8 combos ; 30 facettes × 3 ; attachement anxiété/évitement + 4 styles ; portraits nommés dérivés des scores.
 - Analyse : `assemble-report.ts` = source de vérité ; Claude ne fait que fluidifier (garde `assertAnalysisWithinBank`) ; sans clé = analyse **complète** (badge « Banque FitMangas »).

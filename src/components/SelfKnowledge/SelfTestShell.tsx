@@ -19,9 +19,9 @@ export function SelfTestShell({ locale, children }: Props) {
     <div
       className="quiz-doc relative min-h-screen text-brand-ink font-sans selection:bg-[#c45d3e]/20"
       style={{
-        backgroundColor: '#f6f3ed',
+        backgroundColor: '#FFFAF5',
         backgroundImage:
-          'radial-gradient(900px 480px at -8% -16%, rgba(255,209,153,0.22) 0%, transparent 62%), radial-gradient(800px 420px at 108% -12%, rgba(229,208,186,0.2) 0%, transparent 64%), linear-gradient(180deg, #f8f5ef 0%, #f2eee7 100%)',
+          'radial-gradient(900px 520px at -6% -18%, rgba(196,93,62,0.10) 0%, transparent 58%), radial-gradient(780px 440px at 108% -10%, rgba(229,208,186,0.35) 0%, transparent 62%), linear-gradient(180deg, #FFFAF5 0%, #F7F0E8 100%)',
       }}
     >
       <header className="quiz-no-print sticky top-0 z-50 border-b border-brand-ink/[0.03] bg-white/90 backdrop-blur-md">

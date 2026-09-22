@@ -109,7 +109,7 @@ export function SelfTestRunner({
           introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
           introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
           introBullet3: 'Un puente hacia cursos colectivos a horarios fijos (no es un diagnóstico).',
-          disclaimer: 'Resultado indicativo, no médico. Basado en ítems IPIP de dominio público.',
+          disclaimer: 'Resultado indicativo, no médico. Basado en los ítems oficiales del cuestionario (dominio público).',
         }
       : {
           chooseTitle: 'Choisis la profondeur du test',
@@ -131,7 +131,7 @@ export function SelfTestRunner({
           introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
           introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
           introBullet3: 'Un pont vers les cours collectifs à horaires fixes (pas un diagnostic).',
-          disclaimer: 'Résultat indicatif, pas médical. Basé sur les items IPIP domaine public.',
+          disclaimer: 'Résultat indicatif, pas médical. Basé sur les items officiels du questionnaire (domaine public).',
         };
 
   const batchComplete = currentBatch.every((item) => answers[item.id] != null);
@@ -253,93 +253,149 @@ export function SelfTestRunner({
 
   return (
     <SelfTestShell locale={locale}>
-      <div className="mx-auto max-w-2xl px-5 py-8 pb-20">
+      <div className="mx-auto max-w-3xl px-5 py-8 pb-20" data-testid={`self-test-phase-${phase}`}>
         {phase === 'choose' ? (
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">Big Five</p>
-            <h1 className="mt-4 font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
-              {copy.chooseTitle}
-            </h1>
-            <p className="mt-3 text-[15px] text-brand-ink/55">{copy.chooseSub}</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => pickFormat('ipip-50')}
-                className="glass-card rounded-[24px] border border-white/55 bg-white/85 p-6 text-left transition hover:-translate-y-0.5 hover:border-[#c45d3e]/40"
+          <div data-testid="self-test-choose">
+            <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/50 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
+              <div
+                className="relative h-36 bg-cover bg-center sm:h-44"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(120deg, rgba(26,20,16,0.45), rgba(196,93,62,0.25)), url('/library/portraits/portrait-08-4x5.webp')",
+                }}
               >
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
-                  {copy.quickTitle}
+                <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
+                  Big Five
                 </p>
-                <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.quickMeta}</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => pickFormat('ipip-120')}
-                className="glass-card rounded-[24px] border border-white/55 bg-white/85 p-6 text-left transition hover:-translate-y-0.5 hover:border-[#c45d3e]/40"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
-                  {copy.deepTitle}
-                </p>
-                <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.deepMeta}</p>
-              </button>
+              </div>
+              <div className="p-6 sm:p-8">
+                <h1 className="font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
+                  {copy.chooseTitle}
+                </h1>
+                <p className="mt-3 text-[15px] text-brand-ink/55">{copy.chooseSub}</p>
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    data-testid="choose-ipip-50"
+                    onClick={() => pickFormat('ipip-50')}
+                    className="group rounded-[24px] border border-[#c45d3e]/20 bg-[#FFFAF5] p-6 text-left shadow-[0_12px_32px_rgba(196,93,62,0.08)] transition hover:-translate-y-1 hover:border-[#c45d3e]/50 hover:shadow-[0_18px_40px_rgba(196,93,62,0.16)]"
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
+                      {copy.quickTitle}
+                    </p>
+                    <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.quickMeta}</p>
+                    <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c45d3e] opacity-0 transition group-hover:opacity-100">
+                      {locale === 'es' ? 'Elegir →' : 'Choisir →'}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="choose-ipip-120"
+                    onClick={() => pickFormat('ipip-120')}
+                    className="group rounded-[24px] border border-brand-ink/10 bg-white p-6 text-left shadow-[0_12px_32px_rgba(0,0,0,0.05)] transition hover:-translate-y-1 hover:border-[#c45d3e]/40 hover:shadow-[0_18px_40px_rgba(196,93,62,0.14)]"
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
+                      {copy.deepTitle}
+                    </p>
+                    <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.deepMeta}</p>
+                    <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c45d3e] opacity-0 transition group-hover:opacity-100">
+                      {locale === 'es' ? 'Elegir →' : 'Choisir →'}
+                    </p>
+                  </button>
+                </div>
+                <p className="mt-6 text-center text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
+              </div>
             </div>
           </div>
         ) : phase === 'intro' ? (
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">
-              {test.durationMin} min · {test.items.length} {locale === 'es' ? 'preguntas' : 'questions'}
-            </p>
-            <h1 className="mt-4 font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
-              {test.title[locale]}
-            </h1>
-            <p className="mt-4 text-[15px] leading-relaxed text-brand-ink/60">{test.description[locale]}</p>
-
-            <div className="mt-6 rounded-[20px] border border-brand-ink/[0.06] bg-white/70 p-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/45">{copy.introWhat}</p>
-              <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-brand-ink/65">
-                <li>· {copy.introBullet1}</li>
-                <li>· {copy.introBullet2}</li>
-                <li>· {copy.introBullet3}</li>
-              </ul>
-              <p className="mt-4 text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
-            </div>
-
-            <p className="mt-4 text-[12px] text-brand-ink/45">
-              {copy.source} :{' '}
-              <a href={test.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                {test.source}
-              </a>
-            </p>
-            {mode === 'member' && memberEmail ? (
-              <p className="mt-4 text-[13px] text-brand-ink/50">
-                {locale === 'es' ? 'Conectada como' : 'Connectée en tant que'} {memberFirstName ?? memberEmail}
-              </p>
-            ) : null}
-            <div className="mt-8 flex flex-wrap gap-3">
-              {isBigFive && !initialFormat ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAnswers({});
-                    setBatchIndex(0);
-                    setPhase('choose');
-                  }}
-                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
-                >
-                  ← {copy.back}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setPhase('questions')}
-                className="rounded-full bg-[#c45d3e] px-8 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338]"
+          <div data-testid="self-test-intro">
+            <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/60 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
+              <div
+                className="relative h-40 bg-cover bg-center sm:h-48"
+                style={{
+                  backgroundImage: isBigFive
+                    ? "linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.2)), url('/library/portraits/portrait-01-4x5.webp')"
+                    : "linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.2)), url('/library/lifestyle-coulisses/lifestyle-04-4x5.webp')",
+                }}
               >
-                {copy.introCta} →
-              </button>
+                <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
+                  {test.durationMin} min · {test.items.length}{' '}
+                  {locale === 'es' ? 'preguntas' : 'questions'}
+                </p>
+              </div>
+              <div className="p-6 sm:p-8">
+                <h1 className="font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
+                  {test.title[locale]}
+                </h1>
+                <p className="mt-4 text-[15px] leading-relaxed text-brand-ink/60">{test.description[locale]}</p>
+
+                <div className="mt-6 rounded-[20px] border border-[#c45d3e]/15 bg-[#FFFAF5] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c45d3e]">
+                    {copy.introWhat}
+                  </p>
+                  <ul className="mt-3 space-y-3 text-[14px] leading-relaxed text-brand-ink/70">
+                    <li className="flex gap-2">
+                      <span className="mt-0.5 text-[#c45d3e]">●</span>
+                      <span>{copy.introBullet1}</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-0.5 text-[#c45d3e]">●</span>
+                      <span>{copy.introBullet2}</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-0.5 text-[#c45d3e]">●</span>
+                      <span>{copy.introBullet3}</span>
+                    </li>
+                  </ul>
+                  <p className="mt-4 text-[12px] text-brand-ink/45">{copy.disclaimer}</p>
+                </div>
+
+                <p className="mt-4 text-[12px] text-brand-ink/45">
+                  {copy.source} :{' '}
+                  <a
+                    href={test.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    {test.source}
+                  </a>
+                </p>
+                {mode === 'member' && memberEmail ? (
+                  <p className="mt-4 text-[13px] text-brand-ink/50">
+                    {locale === 'es' ? 'Conectada como' : 'Connectée en tant que'}{' '}
+                    {memberFirstName ?? memberEmail}
+                  </p>
+                ) : null}
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {isBigFive && !initialFormat ? (
+                    <button
+                      type="button"
+                      data-testid="intro-back-choose"
+                      onClick={() => {
+                        setAnswers({});
+                        setBatchIndex(0);
+                        setPhase('choose');
+                      }}
+                      className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                    >
+                      ← {copy.back}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    data-testid="intro-start"
+                    onClick={() => setPhase('questions')}
+                    className="rounded-full bg-[#c45d3e] px-8 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_10px_24px_rgba(196,93,62,0.28)] transition hover:bg-[#b35338]"
+                  >
+                    {copy.introCta} →
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div>
+          <div data-testid="self-test-questions">
             <div className="mb-6">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45">
                 <span>
@@ -361,25 +417,34 @@ export function SelfTestRunner({
 
             <div className="space-y-8">
               {currentBatch.map((item) => (
-                <fieldset key={item.id} className="rounded-[20px] border border-brand-ink/[0.06] bg-white/85 p-5 shadow-sm">
-                  <legend className="text-[15px] font-medium leading-snug text-brand-ink">{item.text[locale]}</legend>
+                <fieldset
+                  key={item.id}
+                  data-testid={`question-${item.id}`}
+                  className="rounded-[20px] border border-brand-ink/[0.06] bg-white/85 p-5 shadow-sm"
+                >
+                  <legend className="text-[15px] font-medium leading-snug text-brand-ink">
+                    {item.text[locale]}
+                  </legend>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {(Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue)).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        aria-pressed={answers[item.id] === v}
-                        onClick={() => pickAnswer(item.id, v)}
-                        className={`min-w-[2.75rem] rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
-                          answers[item.id] === v
-                            ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
-                            : 'border-brand-ink/10 bg-white text-brand-ink/70 hover:border-[#c45d3e]/40'
-                        }`}
-                        title={test.likertLabels[locale][v - 1]}
-                      >
-                        {v}
-                      </button>
-                    ))}
+                    {(Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue)).map(
+                      (v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          data-testid={`answer-${item.id}-${v}`}
+                          aria-pressed={answers[item.id] === v}
+                          onClick={() => pickAnswer(item.id, v)}
+                          className={`min-w-[2.75rem] rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
+                            answers[item.id] === v
+                              ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
+                              : 'border-brand-ink/10 bg-white text-brand-ink/70 hover:border-[#c45d3e]/40'
+                          }`}
+                          title={test.likertLabels[locale][v - 1]}
+                        >
+                          {v}
+                        </button>
+                      ),
+                    )}
                   </div>
                   <p className="mt-2 text-[10px] text-brand-ink/40">
                     1 = {test.likertLabels[locale][0]} · {test.likertMax} ={' '}
@@ -409,6 +474,7 @@ export function SelfTestRunner({
               )}
               <button
                 type="button"
+                data-testid="questions-next"
                 disabled={!batchComplete || submitting}
                 onClick={() => {
                   if (batchIndex < batches.length - 1) {
@@ -432,7 +498,7 @@ export function SelfTestRunner({
             </div>
 
             {submitError ? (
-              <p className="mt-4 text-[13px] text-red-600" role="alert">
+              <p className="mt-4 text-[13px] text-red-600" role="alert" data-testid="submit-error">
                 {submitError}
               </p>
             ) : null}
