@@ -100,23 +100,21 @@ export function SelfTestHub({ locale }: Props) {
     <SelfTestShell locale={locale}>
       <FacesCloud>
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c45d3e]">{t.eyebrow}</p>
-        <h1 className="mt-2 font-serif text-[1.45rem] italic leading-[1.12] tracking-tight text-brand-ink sm:mt-2.5 sm:text-[1.85rem]">
+        <h1 className="mt-3.5 font-serif text-[1.85rem] italic leading-[1.12] tracking-tight text-brand-ink sm:mt-4 sm:text-[2.35rem]">
           {t.title}
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-[12.5px] leading-snug text-brand-ink/60 sm:text-[13px]">
-          {t.lead}
-        </p>
+        <p className="mx-auto mt-3.5 max-w-md text-[14px] leading-relaxed text-brand-ink/60">{t.lead}</p>
 
         <dl
-          className="mx-auto mt-3 grid max-w-md grid-cols-2 gap-3 sm:mt-3.5 sm:gap-4"
+          className="mx-auto mt-6 grid max-w-md grid-cols-2 gap-6"
           data-testid="hub-credibility-stats"
         >
           {t.stats.map((s) => (
             <div key={s.value} className="text-center">
-              <dt className="font-serif text-[1.1rem] italic leading-none text-[#c45d3e] sm:text-[1.25rem]">
+              <dt className="font-serif text-[1.4rem] italic leading-none text-[#c45d3e] sm:text-[1.65rem]">
                 {s.value}
               </dt>
-              <dd className="mt-1 text-[9.5px] leading-snug text-brand-ink/50 sm:text-[10px]">{s.label}</dd>
+              <dd className="mt-2 text-[11px] leading-snug text-brand-ink/50">{s.label}</dd>
             </div>
           ))}
         </dl>
@@ -124,10 +122,10 @@ export function SelfTestHub({ locale }: Props) {
 
       <SelfTestCardGrid locale={locale} cards={cards} vertical />
 
-      <div data-testid="hub-proof-avatars" className="mt-1 pt-1 sm:mt-2">
+      <div data-testid="hub-proof-avatars" className="mt-4 pt-2 sm:mt-6">
         <QuizVideoProof locale={locale} title={t.proof} subtitle={t.proofSub} variant="avatars" />
       </div>
-      <div className="mt-8 min-h-[50vh] pb-14 sm:mt-12" data-testid="hub-video-proof">
+      <div className="mt-12 min-h-[50vh] pb-20 sm:mt-16" data-testid="hub-video-proof">
         <QuizVideoProof locale={locale} title={t.proof} variant="carousel" />
       </div>
     </SelfTestShell>

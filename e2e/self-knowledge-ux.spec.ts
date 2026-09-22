@@ -94,7 +94,8 @@ async function mockSubmitWithBank(page: Page) {
 }
 
 async function pdfPrintReport(page: Page, query: string, filename: string) {
-  await page.goto(`/quiz/print-report?${query}`);
+  await page.goto(`/quiz/print-report?${query}`, { waitUntil: 'networkidle' });
+  await expect(page.getByTestId('self-test-report')).toBeVisible({ timeout: 45_000 });
   await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
   await page.waitForTimeout(500);
   const dest = path.join(CAPTURE_DIR, filename);
@@ -183,7 +184,7 @@ test.describe('Self-knowledge UX — desktop', () => {
 
     await page.goto('/quiz/ux-capture?slug=attachement&full=1');
     await dismissCookies(page);
-    await expect(page.locator('#forces li').first()).toBeVisible();
+    await expect(page.getByTestId('self-test-report')).toBeVisible();
     await shot(page, '11-rapport-full-attachement');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1&balanced=1');

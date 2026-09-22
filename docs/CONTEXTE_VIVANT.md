@@ -27,6 +27,11 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge : hub aéré corrigé (pas hyper-compact)
+
+- Erreur : sur-compaction (photos ~96px). Corrige : layout aéré V1 restauré (FacesCloud 8 orbes, typo, paddings, textes complets) ; **seule** hauteur photo cartes = 144/160px pour CTA above fold.
+- E2E desktop+mobile verts. Fichiers : `FacesCloud`, `SelfTestCardGrid`, `SelfTestHub`.
+
 ### 2026-09-22 — Self-knowledge : hub compact CTA + fond + radar + mobile
 
 - Hub `/quiz` : photos cartes ~96–112px + FacesCloud réduit → CTA « Je commence » visibles sans scroll (desktop 1280×900) ; textes inchangés.
