@@ -135,6 +135,10 @@
     {
       "path": "/api/admin/blog/cron/prepare-monthly-validation",
       "schedule": "0 7 1 * *"
+    },
+    {
+      "path": "/api/self-knowledge/cron/progress-monthly",
+      "schedule": "15 7 1 * *"
     }
   ]
 }

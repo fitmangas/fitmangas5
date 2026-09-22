@@ -51,6 +51,23 @@ export type ReadingResourceRow = {
   why_text: string;
   locale: string;
   sort_order: number;
+  affiliate_url?: string | null;
+  disclosure?: boolean;
+  resource_type?: string;
+};
+
+export type HealthEntryRow = {
+  id: string;
+  profile_id: string;
+  scores: HealthScores;
+  source: string;
+  created_at: string;
+  sleep_hours: number | null;
+  resting_hr: number | null;
+  hrv_ms: number | null;
+  active_minutes: number | null;
+  regularity_sessions: number | null;
+  note: string | null;
 };
 
 export type HealthConsentRow = {
@@ -414,6 +431,7 @@ export async function saveHealthEntry(
     active_minutes: input.metrics.activeMinutes,
     scores,
     note: input.note ?? null,
+    source: 'manual',
   };
   if (input.metrics.hrvMs != null) {
     payload.hrv_ms = input.metrics.hrvMs;
@@ -433,7 +451,9 @@ export async function listReadingResources(locale: SelfTestLang): Promise<Readin
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('reading_resources')
-    .select('id, title, author, theme, why_text, locale, sort_order')
+    .select(
+      'id, title, author, theme, why_text, locale, sort_order, affiliate_url, disclosure, resource_type',
+    )
     .eq('published', true)
     .eq('locale', locale)
     .order('sort_order', { ascending: true });
@@ -444,3 +464,71 @@ export async function listReadingResources(locale: SelfTestLang): Promise<Readin
   }
   return (data ?? []) as ReadingResourceRow[];
 }
+
+export async function listHealthEntries(
+  profileId: string,
+  limit = 24,
+): Promise<HealthEntryRow[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('health_score_entries')
+    .select(
+      'id, profile_id, scores, source, created_at, sleep_hours, resting_hr, hrv_ms, active_minutes, regularity_sessions, note',
+    )
+    .eq('profile_id', profileId)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error('[self-test] list health entries', error);
+    return [];
+  }
+  return (data ?? []) as HealthEntryRow[];
+}
+
+export type JournalEntryRow = {
+  id: string;
+  victory: string;
+  friction: string;
+  next_step: string;
+  created_at: string;
+};
+
+export async function listJournalEntries(profileId: string, limit = 20): Promise<JournalEntryRow[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('journal_entries')
+    .select('id, victory, friction, next_step, created_at')
+    .eq('profile_id', profileId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error('[journal] list', error);
+    return [];
+  }
+  return (data ?? []) as JournalEntryRow[];
+}
+
+export async function insertJournalEntry(input: {
+  profileId: string;
+  victory: string;
+  friction: string;
+  nextStep: string;
+  locale: string;
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('journal_entries')
+    .insert({
+      profile_id: input.profileId,
+      victory: input.victory.trim(),
+      friction: input.friction.trim(),
+      next_step: input.nextStep.trim(),
+      locale: input.locale,
+    })
+    .select('id')
+    .maybeSingle();
+  if (error || !data?.id) return { ok: false, error: error?.message ?? 'Erreur' };
+  return { ok: true, id: data.id };
+}
+

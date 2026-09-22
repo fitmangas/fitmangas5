@@ -27,6 +27,16 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-23 — Hub membre cerveau 5 sections + progression DA + wearable stub + journal
+
+- Hub `/compte/connaissance-de-soi` : 5 onglets (évolution · progression · tests · corps · développement). Sidebar Brain inchangé.
+- Progression : DA cream/terracotta, `member_progress_monthly` + courbe recharts, cron 1er du mois. `/compte/progression` aligné.
+- Tests : compare radar T0/T1 (OceanRadar dual), fix label IPIP-50/120.
+- Corps : historique health en courbe ; OAuth Strava/Fitbit prêt, `WEARABLES_V2_ENABLED=false`.
+- Dev perso : journal 3 champs, défis, reading + affiliate_url + « Lien affilié » + `affiliate_clicks`.
+- Quiz publics : switcher FR/ES dans `SelfTestShell`.
+- Migration additive `self_knowledge_member_hub_v2`. Fichiers clés sous `src/components/SelfKnowledge/compte/*`, `progress-monthly.ts`, `TrendLineChart`.
+
 ### 2026-09-22 — Self-knowledge : hub aéré corrigé (pas hyper-compact)
 
 - Erreur : sur-compaction (photos ~96px). Corrige : layout aéré V1 restauré (FacesCloud 8 orbes, typo, paddings, textes complets) ; **seule** hauteur photo cartes = 144/160px pour CTA above fold.

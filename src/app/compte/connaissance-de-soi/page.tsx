@@ -2,15 +2,20 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
+import { SelfKnowledgeHubNav } from '@/components/SelfKnowledge/compte/SelfKnowledgeHubNav';
 import { VisioLock } from '@/components/Premium/VisioLock';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { hasVisioClientAccess } from '@/lib/access-control';
 import { getClientLang } from '@/lib/compte/i18n';
-import { getSelfTest, SELF_TEST_SLUGS } from '@/lib/self-knowledge/scoring';
-import { listReadingResources, listResultsForProfile } from '@/lib/self-knowledge/store';
+import {
+  computeConsistencyStreak,
+  listMemberProgressHistory,
+} from '@/lib/self-knowledge/progress-monthly';
+import { getSelfTest } from '@/lib/self-knowledge/scoring';
+import { listHealthEntries, listJournalEntries, listResultsForProfile } from '@/lib/self-knowledge/store';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function ConnaissanceDeSoiPage() {
+export default async function ConnaissanceDeSoiEvolutionPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,51 +27,67 @@ export default async function ConnaissanceDeSoiPage() {
     hasVisioClientAccess(user.id),
   ]);
   const locale = lang === 'es' ? 'es' : 'fr';
-  const results = hasVisioAccess ? await listResultsForProfile(user.id) : [];
-  const resources = hasVisioAccess ? await listReadingResources(locale) : [];
+
+  const [results, health, progress, streak, journal] = hasVisioAccess
+    ? await Promise.all([
+        listResultsForProfile(user.id),
+        listHealthEntries(user.id, 12),
+        listMemberProgressHistory(user.id, 6),
+        computeConsistencyStreak(user.id),
+        listJournalEntries(user.id, 3),
+      ])
+    : [[], [], [], 0, []];
+
+  const latestTest = results[0];
+  const prevSame =
+    latestTest &&
+    results.find(
+      (r) =>
+        r.id !== latestTest.id &&
+        r.test_slug === latestTest.test_slug &&
+        (r.test_version ?? '') === (latestTest.test_version ?? ''),
+    );
+  const latestHealth = health.length ? health[health.length - 1] : null;
+  const prevHealth = health.length > 1 ? health[health.length - 2] : null;
+  const currentMonth = progress.length ? progress[progress.length - 1] : null;
+  const prevMonth = progress.length > 1 ? progress[progress.length - 2] : null;
 
   const t =
-    lang === 'es'
+    locale === 'es'
       ? {
-          title: 'Conocimiento de uno mismo',
+          title: 'Conocimiento de una misma',
           dashboard: 'Panel',
-          tests: 'Tests disponibles',
-          history: 'Tu historial',
-          emptyHistory: 'Aún no has hecho un test.',
-          start: 'Empezar',
-          health: 'Bienestar indicativo',
-          healthLead: 'Sueño, FC, VFC, minutos activos — scores orientativos.',
-          reading: 'Club de lectura',
-          readingEmpty: 'Recursos próximamente.',
+          lead: 'Tú frente a ti misma — el camino recorrido, sin compararte con nadie.',
+          streak: 'Cadena de constancia',
+          weeks: 'semana(s) seguidas con al menos una práctica',
+          victory: 'Tu micro-victoria',
+          noVictory: 'Haz un test, una sesión o una entrada de diario — tu primera victoria te espera.',
+          tests: 'Último avance en tests',
+          health: 'Tendencia bienestar',
+          progress: 'Constancia reciente',
           open: 'Abrir',
+          vs: 'vs',
+          none: 'Aún no hay datos.',
+          better: 'en progreso',
+          steady: 'estable',
         }
-      : lang === 'en'
-        ? {
-            title: 'Self-knowledge',
-            dashboard: 'Dashboard',
-            tests: 'Available tests',
-            history: 'Your history',
-            emptyHistory: 'No tests yet.',
-            start: 'Start',
-            health: 'Indicative wellness',
-            healthLead: 'Sleep, HR, HRV, active minutes — indicative scores.',
-            reading: 'Reading club',
-            readingEmpty: 'Resources coming soon.',
-            open: 'Open',
-          }
-        : {
-            title: 'Connaissance de soi',
-            dashboard: 'Dashboard',
-            tests: 'Tests disponibles',
-            history: 'Ton historique',
-            emptyHistory: 'Tu n’as pas encore passé de test.',
-            start: 'Commencer',
-            health: 'Bien-être indicatif',
-            healthLead: 'Sommeil, FC, VFC, minutes actives — scores indicatifs.',
-            reading: 'Club de lecture',
-            readingEmpty: 'Ressources bientôt disponibles.',
-            open: 'Ouvrir',
-          };
+      : {
+          title: 'Connaissance de soi',
+          dashboard: 'Dashboard',
+          lead: 'Toi face à toi-même — le chemin parcouru, sans te comparer à personne.',
+          streak: 'Chaîne de constance',
+          weeks: 'semaine(s) d’affilée avec au moins une pratique',
+          victory: 'Ta micro-victoire',
+          noVictory: 'Passe un test, suis un cours ou note une entrée de journal — ta première victoire t’attend.',
+          tests: 'Dernière avancée tests',
+          health: 'Tendance bien-être',
+          progress: 'Constance récente',
+          open: 'Ouvrir',
+          vs: 'vs',
+          none: 'Pas encore de données.',
+          better: 'en progrès',
+          steady: 'stable',
+        };
 
   const dateFmt = new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'fr-FR', {
     day: 'numeric',
@@ -74,165 +95,133 @@ export default async function ConnaissanceDeSoiPage() {
     year: 'numeric',
   });
 
+  let microVictory: string | null = null;
+  if (journal[0]?.victory) {
+    microVictory = journal[0].victory;
+  } else if (latestTest?.analysis_teaser) {
+    microVictory = latestTest.analysis_teaser.slice(0, 140);
+  } else if (currentMonth && currentMonth.sessions > 0) {
+    microVictory =
+      locale === 'es'
+        ? `${currentMonth.sessions} sesión(es) este mes — sigues apareciendo.`
+        : `${currentMonth.sessions} séance(s) ce mois — tu continues d’être là.`;
+  }
+
+  const healthTrend =
+    latestHealth && prevHealth
+      ? (() => {
+          const a = (latestHealth.scores as { energie?: number })?.energie ?? 0;
+          const b = (prevHealth.scores as { energie?: number })?.energie ?? 0;
+          return a >= b ? t.better : t.steady;
+        })()
+      : null;
+
   return (
     <VisioLock
       hasAccess={hasVisioAccess}
       locale={locale}
-      featureDescription_fr="L’univers connaissance de soi (tests, scores, lecture) est réservé aux membres active ou en essai."
-      featureDescription_es="El universo de conocimiento de uno mismo (tests, scores, lectura) es para miembros active o en prueba."
+      featureDescription_fr="L’univers connaissance de soi est réservé aux membres active ou en essai."
+      featureDescription_es="El universo de conocimiento de una misma es para miembros active o en prueba."
     >
-    <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
-      <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
-      <header>
-        <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
-      </header>
+      <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
+        <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
+        <header>
+          <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-luxury-muted">{t.lead}</p>
+        </header>
+        <SelfKnowledgeHubNav lang={lang} active="evolution" />
 
-      <section className="mt-10">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.tests}</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          {SELF_TEST_SLUGS.map((slug) => {
-            const test = getSelfTest(slug);
-            if (!test) return null;
-            if (slug === 'big-five') {
-              const rapid = getSelfTest('big-five', 'ipip-50');
-              const deep = getSelfTest('big-five', 'ipip-120');
-              return (
-                <GlassCard key={slug} className="flex flex-col p-5 md:p-6 md:col-span-2">
-                  <h3 className="text-lg font-semibold text-luxury-ink">{test.title[locale]}</h3>
-                  <p className="mt-2 text-sm text-luxury-muted">
-                    {locale === 'es'
-                      ? 'Elige formato: rápido (50) o en profundidad (120 + facetas). El historial guarda ambos.'
-                      : 'Choisis le format : rapide (50) ou approfondi (120 + facettes). L’historique conserve les deux.'}
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <Link
-                      href="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
-                      className="rounded-2xl border border-luxury-ink/10 bg-white/50 p-4 transition hover:border-[#c45d3e]/40"
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c45d3e]">
-                        {locale === 'es' ? 'Rápido' : 'Rapide'}
-                      </p>
-                      <p className="mt-1 text-sm text-luxury-ink">
-                        IPIP-50 · ~{rapid?.durationMin ?? 8} min · {rapid?.items.length ?? 50}{' '}
-                        {locale === 'es' ? 'preg.' : 'quest.'}
-                      </p>
-                    </Link>
-                    <Link
-                      href="/compte/connaissance-de-soi/tests/big-five?format=ipip-120"
-                      className="rounded-2xl border border-luxury-ink/10 bg-white/50 p-4 transition hover:border-[#c45d3e]/40"
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c45d3e]">
-                        {locale === 'es' ? 'En profundidad' : 'Approfondie'}
-                      </p>
-                      <p className="mt-1 text-sm text-luxury-ink">
-                        IPIP-NEO-120 · ~{deep?.durationMin ?? 20} min · {deep?.items.length ?? 120}{' '}
-                        {locale === 'es' ? 'preg.' : 'quest.'}
-                      </p>
-                    </Link>
-                  </div>
-                </GlassCard>
-              );
-            }
-            return (
-              <GlassCard key={slug} className="flex flex-col p-5 md:p-6">
-                <h3 className="text-lg font-semibold text-luxury-ink">{test.title[locale]}</h3>
-                <p className="mt-2 flex-1 text-sm text-luxury-muted">{test.description[locale]}</p>
-                <p className="mt-2 text-[11px] text-luxury-soft">
-                  ~{test.durationMin} min · {test.items.length} {locale === 'es' ? 'preg.' : 'quest.'}
+        <section className="mt-8 grid gap-4 md:grid-cols-2">
+          <GlassCard className="p-5 md:p-6 md:col-span-2" elevated>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c45d3e]">{t.victory}</p>
+            <p className="mt-3 font-serif text-xl italic leading-snug text-luxury-ink md:text-2xl">
+              {microVictory ?? t.noVictory}
+            </p>
+          </GlassCard>
+
+          <GlassCard className="p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.streak}</p>
+            <p className="mt-3 font-serif text-4xl italic text-[#c45d3e]">{streak}</p>
+            <p className="mt-1 text-sm text-luxury-muted">{t.weeks}</p>
+          </GlassCard>
+
+          <GlassCard className="p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.progress}</p>
+            {currentMonth ? (
+              <>
+                <p className="mt-3 text-lg font-semibold text-luxury-ink">
+                  {currentMonth.sessions}/{currentMonth.goal}{' '}
+                  {locale === 'es' ? 'sesiones' : 'séances'}
                 </p>
-                <Link
-                  href={`/compte/connaissance-de-soi/tests/${slug}`}
-                  className="btn-luxury-primary mt-4 inline-flex w-fit px-5 py-2.5 text-[11px] tracking-[0.12em]"
-                >
-                  {t.start}
-                </Link>
-              </GlassCard>
-            );
-          })}
-        </div>
-      </section>
+                {prevMonth ? (
+                  <p className="mt-1 text-sm text-luxury-muted">
+                    {t.vs} {prevMonth.year_month} : {prevMonth.sessions}/{prevMonth.goal}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-luxury-muted">{t.none}</p>
+            )}
+            <Link
+              href="/compte/connaissance-de-soi/progression"
+              className="mt-4 inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]"
+            >
+              {t.open} →
+            </Link>
+          </GlassCard>
 
-      <section className="mt-12">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.history}</h2>
-        {results.length === 0 ? (
-          <p className="mt-4 text-sm text-luxury-muted">{t.emptyHistory}</p>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {results.slice(0, 8).map((row) => {
-              const version = row.test_version ?? '';
-              const is120 = version.includes('120');
-              const test = getSelfTest(
-                row.test_slug,
-                row.test_slug === 'big-five' ? (is120 ? 'ipip-120' : 'ipip-50') : undefined,
-              );
-              const formatLabel =
-                row.test_slug === 'big-five'
-                  ? is120
-                    ? locale === 'es'
-                      ? ' · IPIP-120'
-                      : ' · IPIP-120'
-                    : ' · IPIP-50'
-                  : '';
-              const retryHref =
-                row.test_slug === 'big-five'
-                  ? `/compte/connaissance-de-soi/tests/big-five?format=${is120 ? 'ipip-120' : 'ipip-50'}`
-                  : `/compte/connaissance-de-soi/tests/${row.test_slug}`;
-              return (
-                <GlassCard key={row.id} className="p-4 md:p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium text-luxury-ink">
-                      {test?.title[locale] ?? row.test_slug}
-                      <span className="font-normal text-luxury-soft">{formatLabel}</span>
-                    </p>
-                    <span className="text-[11px] text-luxury-soft">{dateFmt.format(new Date(row.created_at))}</span>
-                  </div>
-                  {row.analysis_teaser ? (
-                    <p className="mt-2 line-clamp-2 text-sm text-luxury-muted">{row.analysis_teaser}</p>
-                  ) : null}
-                  <Link
-                    href={retryHref}
-                    className="mt-3 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-muted underline underline-offset-2"
-                  >
-                    {t.open}
-                  </Link>
-                </GlassCard>
-              );
-            })}
-          </div>
-        )}
-      </section>
+          <GlassCard className="p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.tests}</p>
+            {latestTest ? (
+              <>
+                <p className="mt-3 font-medium text-luxury-ink">
+                  {getSelfTest(latestTest.test_slug)?.title[locale] ?? latestTest.test_slug}
+                </p>
+                <p className="mt-1 text-[11px] text-luxury-soft">
+                  {dateFmt.format(new Date(latestTest.created_at))}
+                  {latestTest.test_version ? ` · ${latestTest.test_version}` : ''}
+                </p>
+                {prevSame ? (
+                  <p className="mt-2 text-sm text-luxury-muted">
+                    {t.vs} {dateFmt.format(new Date(prevSame.created_at))}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-luxury-muted">{t.none}</p>
+            )}
+            <Link
+              href="/compte/connaissance-de-soi/tests"
+              className="mt-4 inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]"
+            >
+              {t.open} →
+            </Link>
+          </GlassCard>
 
-      <section className="mt-12">
-        <GlassCard className="p-5 md:p-6">
-          <h2 className="text-lg font-semibold text-luxury-ink">{t.health}</h2>
-          <p className="mt-2 text-sm text-luxury-muted">{t.healthLead}</p>
-          <Link
-            href="/compte/connaissance-de-soi/sante"
-            className="btn-luxury-primary mt-4 inline-flex px-5 py-2.5 text-[11px] tracking-[0.12em]"
-          >
-            {t.open} →
-          </Link>
-        </GlassCard>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">{t.reading}</h2>
-        {resources.length === 0 ? (
-          <p className="mt-4 text-sm text-luxury-muted">{t.readingEmpty}</p>
-        ) : (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {resources.map((r) => (
-              <GlassCard key={r.id} className="p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-soft">{r.theme}</p>
-                <h3 className="mt-1 font-medium text-luxury-ink">{r.title}</h3>
-                <p className="mt-0.5 text-xs text-luxury-muted">{r.author}</p>
-                {r.why_text ? <p className="mt-2 text-sm text-luxury-muted">{r.why_text}</p> : null}
-              </GlassCard>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+          <GlassCard className="p-5 md:p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.health}</p>
+            {latestHealth ? (
+              <>
+                <p className="mt-3 text-sm text-luxury-ink">
+                  {dateFmt.format(new Date(latestHealth.created_at))}
+                  {healthTrend ? ` · ${healthTrend}` : ''}
+                </p>
+                <p className="mt-1 text-[11px] text-luxury-soft">
+                  {locale === 'es' ? 'Fuente' : 'Source'} : {latestHealth.source}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-luxury-muted">{t.none}</p>
+            )}
+            <Link
+              href="/compte/connaissance-de-soi/corps"
+              className="mt-4 inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]"
+            >
+              {t.open} →
+            </Link>
+          </GlassCard>
+        </section>
+      </main>
     </VisioLock>
   );
 }

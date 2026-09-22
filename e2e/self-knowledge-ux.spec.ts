@@ -136,6 +136,7 @@ test.describe('Self-knowledge UX — desktop', () => {
     await dismissCookies(page);
     await expect(page.getByTestId('faces-cloud-hero')).toBeVisible();
     await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
+    await expect(page.getByTestId('locale-switcher')).toBeVisible();
     await expectCtasAboveFold(page);
     await shot(page, '01-hub-hero-carousel', false);
 

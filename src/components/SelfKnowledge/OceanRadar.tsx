@@ -11,11 +11,14 @@ export type OceanRadarSlice = {
 
 type Props = {
   slices: OceanRadarSlice[];
+  /** Superposition optionnelle (passation antérieure) — trait pointillé terracotta soft */
+  compareSlices?: OceanRadarSlice[];
+  compareLabel?: string;
   size?: number;
 };
 
 /** Radar 5 axes — labels clairement hors des points (pas de chevauchement). */
-export function OceanRadar({ slices, size = 260 }: Props) {
+export function OceanRadar({ slices, compareSlices, compareLabel, size = 260 }: Props) {
   const pad = 84;
   const vb = size + pad * 2;
   const cx = vb / 2;
@@ -53,9 +56,20 @@ export function OceanRadar({ slices, size = 260 }: Props) {
     })
     .join(' ');
 
+  const comparePoints =
+    compareSlices && compareSlices.length >= 3
+      ? compareSlices
+          .map((slice, i) => {
+            const p = pt(i, slice.value);
+            return `${p.x},${p.y}`;
+          })
+          .join(' ')
+      : null;
+
   const dominant = slices.reduce((best, s) => (s.value > best.value ? s : best), slices[0]!);
   const stroke = dominant?.color ?? '#C45D3E';
   const gradientId = `ocean-radar-${size}`;
+  const compareStroke = '#958780';
 
   return (
     <svg
@@ -107,6 +121,15 @@ export function OceanRadar({ slices, size = 260 }: Props) {
           </g>
         );
       })}
+      {comparePoints ? (
+        <polygon
+          points={comparePoints}
+          fill="rgba(149,135,128,0.12)"
+          stroke={compareStroke}
+          strokeWidth={2}
+          strokeDasharray="6 4"
+        />
+      ) : null}
       {slices.length >= 3 ? (
         <polygon points={points} fill={`url(#${gradientId})`} stroke={stroke} strokeWidth={2.5} />
       ) : null}
@@ -124,6 +147,11 @@ export function OceanRadar({ slices, size = 260 }: Props) {
           />
         );
       })}
+      {compareLabel && comparePoints ? (
+        <text x={cx} y={vb - 10} textAnchor="middle" fill="#958780" fontSize={9} fontWeight={600}>
+          {compareLabel}
+        </text>
+      ) : null}
     </svg>
   );
 }

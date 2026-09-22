@@ -139,7 +139,11 @@ export function SelfKnowledgeMemberTest({
                     slug === 'big-five'
                       ? BIG_FIVE_LABELS[key]?.[locale] ?? key
                       : ATTACHMENT_LABELS[key]?.[locale] ?? key;
-                  const formatted = slug === 'big-five' ? `${val}/50` : `${val}/7`;
+                  const is120 = (row.test_version ?? '').includes('120');
+                  const formatted =
+                    slug === 'big-five'
+                      ? `${val}/50${is120 ? ' · IPIP-120' : ' · IPIP-50'}`
+                      : `${Number(val).toFixed(1)}/7`;
                   return (
                     <div key={key} className="flex justify-between rounded-xl bg-white/40 px-3 py-2 text-sm">
                       <dt className="text-luxury-muted">{label}</dt>

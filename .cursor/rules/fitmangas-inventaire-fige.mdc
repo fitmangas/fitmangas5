@@ -40,7 +40,7 @@ alwaysApply: true
 ### Quiz / Connaissance de soi
 - Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
 - **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; **rapport = 100 % banque** (`SELF_TEST_CLAUDE_ANALYSIS` OFF) ; DA type profil-discipline (`SelfTestReport`, radar OCEAN labels hors points) ; hub `/quiz` = cartes verticales compactes (CTA « Je commence » above fold desktop) + portraits coach + stats ; fond questions `public/tests/questions-bg.jpg` ; carrousel vidéo sous le fold ; PDF Chromium full-bleed + marges contenu ; dédup email membre>acq>blog
-- Pages `/quiz` ; compte `/compte/connaissance-de-soi` (historique conserve formats 50 et 120)
+- Pages `/quiz` ; compte `/compte/connaissance-de-soi` (hub 5 onglets : évolution · progression · tests · corps · développement ; historique conserve formats 50 et 120 ; compare radar ; journal/défis/lecture affiliée)
 - PDF self-test : print-to-PDF de la page rapport (`page.pdf` / `buildSelfTestReportPdfFromElement`) ; invites RGPD `self_test_invites` + `SelfTestShareInvite` ; priorité email member > acq > blog (`email-flow-priority.ts`)
 - Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`
 - PDF legacy DiSC : `src/lib/quiz/build-report-pdf.ts`
