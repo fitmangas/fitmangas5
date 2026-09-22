@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-23 — TikTok Live + WhatsApp paiement (en cours)
+
+- TikTok app **Fitmangas** validée / Live (Sep 22). Clés `TIKTOK_CLIENT_*` déjà en `.env.local` + Vercel. Manque encore **OAuth compte @fit.mangas** → `tiktok_social_connection` absent en DB.
+- Redirect URI attendue : `https://fitmangas.com/api/admin/community/tiktok/callback` (scopes `user.info.basic`, `video.upload`, `video.publish`).
+- WhatsApp WABA toujours **BLOCKED 141006** (pas de moyen de paiement) + téléphone **DISCONNECTED** + 0 templates. Formulaire carte ouvert dans Billing Hub. Script prêt : `scripts/create-wa-template-quiz-essai.ts` (API refuse encore « non autorisé à gérer les modèles » tant que paiement/connexion OK).
+
 ### 2026-09-23 — Hub membre : passe design (DA quiz + empty engageants)
 
 - Dashboard « Progression mensuelle » → `/compte/connaissance-de-soi/progression` (page `/compte/progression` redirige).
