@@ -11,7 +11,6 @@ _captures/tests-ux/10-rapport-full-ipip-120-facettes.png
 _captures/tests-ux/11-rapport-full-attachement.png
 _captures/tests-ux/12-rapport-full-profil-equilibre.png
 _captures/tests-ux/13-rapport-full-pdf-parrainage.png
-_captures/tests-ux/Captures d'écrans.pdf
 _captures/tests-ux/rapport-attachement.pdf
 _captures/tests-ux/rapport-ipip120.pdf
 _captures/tests-ux/rapport-ipip50.pdf
