@@ -39,7 +39,7 @@ alwaysApply: true
 
 ### Quiz / Connaissance de soi
 - Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
-- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; **rapport = 100 % banque** (`SELF_TEST_CLAUDE_ANALYSIS` OFF) ; DA type profil-discipline (`SelfTestReport`, radar OCEAN) ; hub `/quiz` = cartes verticales côte à côte (`SelfTestCardGrid`) + portraits coach 4×5 + 2 indicateurs (600k / ~8 min) ; carrousel vidéo sous le fold ; choix profondeur = lancement direct ; PDF + parrainage RGPD ; dédup email membre>acq>blog
+- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; **rapport = 100 % banque** (`SELF_TEST_CLAUDE_ANALYSIS` OFF) ; DA type profil-discipline (`SelfTestReport`, radar OCEAN labels hors points) ; hub `/quiz` = cartes verticales compactes (CTA « Je commence » above fold desktop) + portraits coach + stats ; fond questions `public/tests/questions-bg.jpg` ; carrousel vidéo sous le fold ; PDF Chromium full-bleed + marges contenu ; dédup email membre>acq>blog
 - Pages `/quiz` ; compte `/compte/connaissance-de-soi` (historique conserve formats 50 et 120)
 - PDF self-test : print-to-PDF de la page rapport (`page.pdf` / `buildSelfTestReportPdfFromElement`) ; invites RGPD `self_test_invites` + `SelfTestShareInvite` ; priorité email member > acq > blog (`email-flow-priority.ts`)
 - Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`

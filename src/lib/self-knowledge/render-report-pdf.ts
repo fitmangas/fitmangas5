@@ -38,8 +38,8 @@ async function renderWithPlaywright(opts: RenderPdfOptions): Promise<Buffer> {
     const pdf = await page.pdf({
       ...PDF_OPTS,
       displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `<div style="width:100%;font-size:8px;color:#958780;text-align:center;padding-bottom:6mm;">${footer}</div>`,
+      headerTemplate: '<div style="font-size:8px;padding-top:4mm;"></div>',
+      footerTemplate: `<div style="width:100%;font-size:8px;color:#958780;text-align:center;padding-bottom:8mm;">${footer}</div>`,
     });
     return Buffer.from(pdf);
   } finally {
@@ -66,8 +66,8 @@ async function renderWithSparticuz(opts: RenderPdfOptions): Promise<Buffer> {
     const pdf = await page.pdf({
       ...PDF_OPTS,
       displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `<div style="width:100%;font-size:8px;color:#958780;text-align:center;padding-bottom:6mm;">${footer}</div>`,
+      headerTemplate: '<div style="font-size:8px;padding-top:4mm;"></div>',
+      footerTemplate: `<div style="width:100%;font-size:8px;color:#958780;text-align:center;padding-bottom:8mm;">${footer}</div>`,
     });
     return Buffer.from(pdf);
   } finally {

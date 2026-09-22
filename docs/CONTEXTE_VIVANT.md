@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge : hub compact CTA + fond + radar + mobile
+
+- Hub `/quiz` : photos cartes ~96–112px + FacesCloud réduit → CTA « Je commence » visibles sans scroll (desktop 1280×900) ; textes inchangés.
+- Fond questions : `public/tests/questions-bg.jpg` = pièce jointe user (salle boiserie).
+- PDF : padding contenu 18/16/24mm + footer/header Chromium plus généreux.
+- Radar OCEAN : labels loin des points (`Stabilité` court) + pad SVG 84.
+- E2E desktop + mobile (Chromium 390×844) : `e2e/self-knowledge-ux.spec.ts` + captures 01–18.
+- Fichiers : `FacesCloud`, `SelfTestCardGrid`, `SelfTestHub`, `OceanRadar`, `SelfTestShell`, `SelfTestRunner`, `render-report-pdf`, `playwright.config`.
+
 ### 2026-09-22 — Self-knowledge : hub aéré + PDF serveur full-bleed + fond questions
 - Hub : respiration V1 (nuage dispersé, titres/cartes espacés, portraits plus hauts).
 - PDF unifié : `/quiz/print-report` + `/api/self-knowledge/pdf` (Playwright local / Sparticuz Vercel) — fond crème full-bleed `@page margin:0` ; bouton client = même moteur.

@@ -14,13 +14,13 @@ type Props = {
   size?: number;
 };
 
-/** Radar 5 axes — même langage visuel que DiscRadar (QuizVisuals). */
+/** Radar 5 axes — labels clairement hors des points (pas de chevauchement). */
 export function OceanRadar({ slices, size = 260 }: Props) {
-  const pad = 28;
+  const pad = 84;
   const vb = size + pad * 2;
   const cx = vb / 2;
   const cy = vb / 2;
-  const maxR = size * 0.34;
+  const maxR = size * 0.26;
   const n = slices.length;
   const step = 360 / Math.max(n, 1);
 
@@ -29,6 +29,21 @@ export function OceanRadar({ slices, size = 260 }: Props) {
     const rad = (deg * Math.PI) / 180;
     const r = maxR * Math.max(Math.min(normalized, 1), 0.08);
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  /** Labels loin des ronds (anneau + score) — boost généreux + offset bas/haut */
+  function labelPt(index: number) {
+    const deg = -90 + index * step;
+    const rad = (deg * Math.PI) / 180;
+    const boost = index === 0 ? 2.35 : index === 2 || index === 3 ? 2.28 : 2.15;
+    const r = maxR * boost;
+    let x = cx + r * Math.cos(rad);
+    let y = cy + r * Math.sin(rad);
+    if (index === 0) y -= 8;
+    if (index === 2 || index === 3) y += 12;
+    if (index === 1) x += 6;
+    if (index === 4) x -= 6;
+    return { x, y };
   }
 
   const points = slices
@@ -47,7 +62,7 @@ export function OceanRadar({ slices, size = 260 }: Props) {
       width={size + pad}
       height={size + pad}
       viewBox={`0 0 ${vb} ${vb}`}
-      className="mx-auto block"
+      className="mx-auto block max-w-full"
       role="img"
     >
       <defs>
@@ -72,21 +87,20 @@ export function OceanRadar({ slices, size = 260 }: Props) {
       ))}
       {slices.map((slice, i) => {
         const outer = pt(i, 1);
-        // Labels un peu plus loin du sommet (Extraversion en haut)
-        const labelR = i === 0 ? 1.38 : 1.28;
-        const label = pt(i, labelR);
+        const label = labelPt(i);
         return (
           <g key={slice.key}>
             <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(44,36,30,0.1)" />
-            <circle cx={outer.x} cy={outer.y} r={4} fill={slice.color} />
+            <circle cx={outer.x} cy={outer.y} r={2.5} fill={slice.color} opacity={0.55} />
             <text
               x={label.x}
               y={label.y}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#2C241E"
-              fontSize={11}
+              fontSize={10}
               fontWeight={700}
+              letterSpacing="0.02em"
             >
               {slice.label}
             </text>

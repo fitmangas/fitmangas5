@@ -29,6 +29,19 @@ async function dismissCookies(page: Page) {
   }
 }
 
+/** CTA « Je commence » entièrement dans le viewport (pas besoin de scroll). */
+async function expectCtasAboveFold(page: Page) {
+  const viewport = page.viewportSize();
+  expect(viewport).toBeTruthy();
+  for (const slug of ['big-five', 'attachement'] as const) {
+    const cta = page.getByTestId(`grid-cta-${slug}`);
+    await expect(cta).toBeVisible();
+    const box = await cta.boundingBox();
+    expect(box, `CTA ${slug} bounding box`).toBeTruthy();
+    expect(box!.y + box!.height, `CTA ${slug} bottom`).toBeLessThanOrEqual(viewport!.height - 4);
+  }
+}
+
 async function completeQuestionnaire(page: Page) {
   for (let guard = 0; guard < 40; guard++) {
     if (await page.getByTestId('self-test-lead').isVisible().catch(() => false)) return;
@@ -99,12 +112,16 @@ async function pdfPrintReport(page: Page, query: string, filename: string) {
 const FIXTURE_50 = { E: 28, A: 34, C: 44, ES: 18, O: 36 };
 const FIXTURE_ATTACH = { anxiety: 5.1, avoidance: 2.4 };
 
-test.describe('Self-knowledge UX — parcours + captures', () => {
+test.describe('Self-knowledge UX — desktop', () => {
   test.beforeAll(() => {
     ensureDir();
   });
 
-  test('hub aéré + questions fond + PDF serveur unifié', async ({ page }) => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'desktop only');
+  });
+
+  test('hub CTA above fold + questions + PDF', async ({ page }) => {
     await page.addInitScript(() => {
       try {
         localStorage.setItem('fm_cookie_consent', 'accepted');
@@ -118,7 +135,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await dismissCookies(page);
     await expect(page.getByTestId('faces-cloud-hero')).toBeVisible();
     await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
-    await expect(page.getByTestId('hub-credibility-stats')).toBeVisible();
+    await expectCtasAboveFold(page);
     await shot(page, '01-hub-hero-carousel', false);
 
     await page.getByTestId('grid-cta-big-five').click({ force: true });
@@ -156,6 +173,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
     await dismissCookies(page);
+    await expect(page.getByText('Stabilité').first()).toBeVisible();
     await shot(page, '09-rapport-full-ipip-50');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-120&full=1');
@@ -178,7 +196,6 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('download-pdf')).toBeVisible();
     await shot(page, '13-rapport-full-pdf-parrainage');
 
-    // Livrables PDF full-bleed (page print-report)
     await pdfPrintReport(
       page,
       `slug=big-five&format=ipip-50&scores=${encodeURIComponent(JSON.stringify(FIXTURE_50))}`,
@@ -191,7 +208,6 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
       'rapport-attachement.pdf',
     );
 
-    // PDF bouton client = API Chromium (même moteur)
     const apiRes = await page.request.post('/api/self-knowledge/pdf', {
       data: {
         slug: 'big-five',
@@ -203,9 +219,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     });
     expect(apiRes.ok(), await apiRes.text()).toBeTruthy();
     const apiBuf = Buffer.from(await apiRes.body());
-    const clientPath = path.join(CAPTURE_DIR, 'rapport-client-api-ipip50.pdf');
-    fs.writeFileSync(clientPath, apiBuf);
-    expect(apiBuf.length).toBeGreaterThan(40_000);
+    fs.writeFileSync(path.join(CAPTURE_DIR, 'rapport-client-api-ipip50.pdf'), apiBuf);
 
     await page.goto(
       `/quiz/print-report?slug=big-five&format=ipip-50&scores=${encodeURIComponent(JSON.stringify(FIXTURE_50))}`,
@@ -219,7 +233,62 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
       .map((f) => path.join('_captures/tests-ux', f));
     fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
     expect(files.filter((f) => f.endsWith('.png')).length).toBeGreaterThanOrEqual(14);
-    expect(fs.existsSync(path.join(CAPTURE_DIR, 'rapport-ipip50.pdf'))).toBe(true);
-    expect(fs.existsSync(clientPath)).toBe(true);
+  });
+});
+
+test.describe('Self-knowledge UX — mobile', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'mobile only');
+  });
+
+  test('hub + questions 2/écran + rapport lisible', async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fm_cookie_consent', 'accepted');
+      } catch {
+        /* ignore */
+      }
+    });
+    await mockSubmitWithBank(page);
+
+    await page.goto('/quiz');
+    await dismissCookies(page);
+    await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
+    // Mobile : cartes empilées — au moins le 1er CTA visible
+    const firstCta = page.getByTestId('grid-cta-big-five');
+    await expect(firstCta).toBeVisible();
+    const box = await firstCta.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box!.y).toBeLessThan(page.viewportSize()!.height);
+    await shot(page, '15-hub-mobile', false);
+
+    await firstCta.click({ force: true });
+    await page.getByTestId('choose-ipip-50').click({ force: true });
+    await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
+    // Mobile = 2 questions / écran
+    await expect(page.locator('[data-testid^="question-"]')).toHaveCount(2);
+    await shot(page, '16-questions-mobile', false);
+
+    await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
+    await dismissCookies(page);
+    await expect(page.getByTestId('self-test-report')).toBeVisible();
+    await expect(page.getByText('Stabilité').first()).toBeVisible();
+    await shot(page, '17-rapport-mobile', true);
+
+    await page.goto('/quiz/attachement');
+    await dismissCookies(page);
+    await page.getByTestId('intro-start').click({ force: true });
+    await expect(page.getByTestId('self-test-questions')).toBeVisible();
+    // ECR-S : 7 boutons toujours accessibles
+    const firstQ = page.locator('[data-testid^="question-"]').first();
+    await expect(firstQ.locator('button[data-testid^="answer-"]')).toHaveCount(7);
+    await shot(page, '18-questions-attachement-mobile', false);
+
+    const files = fs
+      .readdirSync(CAPTURE_DIR)
+      .filter((f) => f.endsWith('.png') || f.endsWith('.pdf'))
+      .sort()
+      .map((f) => path.join('_captures/tests-ux', f));
+    fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
   });
 });

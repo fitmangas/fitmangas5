@@ -36,7 +36,7 @@ export function SelfTestShell({
         backgroundImage: `linear-gradient(rgba(255,250,245,${veilOpacity}), rgba(255,250,245,${veilOpacity})), url('${pageBackgroundUrl}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        backgroundAttachment: 'scroll',
         backgroundRepeat: 'no-repeat',
       }
     : {
@@ -85,16 +85,18 @@ export function SelfTestShell({
           }
           .self-test-report {
             max-width: none !important;
-            padding: 14mm 14mm 18mm !important;
+            padding: 18mm 16mm 24mm !important;
             box-sizing: border-box !important;
           }
           .self-test-report a { text-decoration: none; color: inherit; }
           .sticky { position: static !important; }
           nav[data-testid="report-sticky-nav"] { display: none !important; }
+          .self-test-report section { break-inside: avoid; page-break-inside: avoid; }
+          .self-test-report h1, .self-test-report blockquote { break-after: avoid; }
         }
         /* Chromium page.pdf (emulateMedia print) — même règles */
         .self-test-print-bleed .self-test-report {
-          padding: 14mm 14mm 18mm;
+          padding: 18mm 16mm 24mm;
           max-width: none;
         }
       `}</style>

@@ -12,7 +12,10 @@ const FACES = VIDEO_TESTIMONIALS.filter((t) => t.id !== 'jose-luis').map((t) => 
   src: t.posterSrc,
 }));
 
-/** Positions aérées autour du titre — éloignées du centre (style V1) */
+/**
+ * Nuage compact (réf. dashboard espace cliente) —
+ * orbes petits pour laisser les CTA « Je commence » au 1er viewport.
+ */
 const LAYOUT: Array<{
   id: string;
   top: string;
@@ -21,22 +24,20 @@ const LAYOUT: Array<{
   size: number;
   delay: string;
   opacity?: number;
+  /** Masqué sous sm pour ne pas pousser le fold mobile */
+  desktopOnly?: boolean;
 }> = [
-  { id: 'elena', top: '2%', left: '3%', size: 84, delay: '0s' },
-  { id: 'maria', top: '6%', right: '4%', size: 76, delay: '0.4s' },
-  { id: 'karla', top: '48%', left: '1%', size: 66, delay: '0.8s', opacity: 0.92 },
-  { id: 'sandrine', top: '52%', right: '2%', size: 70, delay: '1.1s' },
-  { id: 'alicia', top: '88%', left: '10%', size: 56, delay: '0.2s', opacity: 0.85 },
-  { id: 'olivia', top: '90%', right: '12%', size: 58, delay: '1.4s', opacity: 0.88 },
-  { id: 'teresa', top: '22%', left: '16%', size: 46, delay: '0.6s', opacity: 0.72 },
-  { id: 'elena', top: '26%', right: '18%', size: 42, delay: '1.6s', opacity: 0.68 },
+  { id: 'elena', top: '0%', left: '8%', size: 40, delay: '0s' },
+  { id: 'maria', top: '2%', right: '9%', size: 36, delay: '0.4s' },
+  { id: 'karla', top: '48%', left: '3%', size: 32, delay: '0.8s', opacity: 0.88 },
+  { id: 'sandrine', top: '50%', right: '4%', size: 34, delay: '1.1s' },
+  { id: 'alicia', top: '78%', left: '16%', size: 28, delay: '0.2s', opacity: 0.75, desktopOnly: true },
+  { id: 'olivia', top: '80%', right: '18%', size: 30, delay: '1.4s', opacity: 0.78, desktopOnly: true },
 ];
 
 type Props = {
   children: ReactNode;
   className?: string;
-  /** @deprecated — hub utilise désormais le layout aéré complet */
-  compact?: boolean;
 };
 
 export function FacesCloud({ children, className = '' }: Props) {
@@ -50,7 +51,7 @@ export function FacesCloud({ children, className = '' }: Props) {
 
   return (
     <div
-      className={`relative mx-auto max-w-5xl overflow-visible px-5 pt-12 sm:pt-16 ${className}`}
+      className={`relative mx-auto max-w-4xl overflow-visible px-4 pt-3 sm:px-5 sm:pt-5 ${className}`}
       data-testid="faces-cloud-hero"
     >
       <div className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
@@ -60,9 +61,9 @@ export function FacesCloud({ children, className = '' }: Props) {
           return (
             <div
               key={`${slot.id}-${i}`}
-              className={`faces-cloud-orb absolute rounded-full border-2 border-white/90 shadow-[0_12px_32px_rgba(196,93,62,0.18)] transition-all duration-700 ease-out ${
-                ready ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-              }`}
+              className={`faces-cloud-orb absolute rounded-full border-2 border-white/90 shadow-[0_8px_18px_rgba(196,93,62,0.14)] transition-all duration-700 ease-out ${
+                slot.desktopOnly ? 'hidden sm:block' : ''
+              } ${ready ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}
               style={{
                 top: slot.top,
                 left: slot.left,
@@ -71,7 +72,7 @@ export function FacesCloud({ children, className = '' }: Props) {
                 height: size,
                 animationDelay: slot.delay,
                 opacity: ready ? (slot.opacity ?? 1) : 0,
-                transitionDelay: `${i * 70}ms`,
+                transitionDelay: `${i * 60}ms`,
               }}
             >
               <Image
@@ -86,7 +87,7 @@ export function FacesCloud({ children, className = '' }: Props) {
         })}
       </div>
 
-      <div className="relative z-10 mx-auto max-w-xl px-2 pb-10 pt-20 text-center sm:pb-12 sm:pt-24">
+      <div className="relative z-10 mx-auto max-w-xl px-2 pb-1 pt-7 text-center sm:pb-2 sm:pt-9">
         {children}
       </div>
 
@@ -96,7 +97,7 @@ export function FacesCloud({ children, className = '' }: Props) {
         }
         @keyframes faces-float {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+          50% { transform: translateY(-5px); }
         }
         @media (prefers-reduced-motion: reduce) {
           .faces-cloud-orb { animation: none !important; }

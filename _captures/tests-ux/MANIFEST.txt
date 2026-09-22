@@ -12,6 +12,12 @@ _captures/tests-ux/11-rapport-full-attachement.png
 _captures/tests-ux/12-rapport-full-profil-equilibre.png
 _captures/tests-ux/13-rapport-full-pdf-parrainage.png
 _captures/tests-ux/14-pdf-print-report-preview.png
+_captures/tests-ux/15-hub-mobile.png
+_captures/tests-ux/16-questions-mobile.png
+_captures/tests-ux/17-rapport-mobile.png
+_captures/tests-ux/18-questions-attachement-mobile.png
+_captures/tests-ux/19-radar-labels-check.png
+_captures/tests-ux/20-hub-cta-bottom-check.png
 _captures/tests-ux/rapport-attachement.pdf
 _captures/tests-ux/rapport-client-api-ipip50.pdf
 _captures/tests-ux/rapport-ipip120.pdf

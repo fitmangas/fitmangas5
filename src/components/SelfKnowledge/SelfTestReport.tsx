@@ -276,9 +276,10 @@ export function SelfTestReport({
 
   const oceanSlices =
     test.slug === 'big-five'
-      ? buildOceanSlices(test.scoreKeys, scores, (key) =>
-          BIG_FIVE_LABELS[key]?.short[locale] ?? traitLabel(key),
-        )
+      ? buildOceanSlices(test.scoreKeys, scores, (key) => {
+          if (key === 'ES') return locale === 'es' ? 'Estabilidad' : 'Stabilité';
+          return BIG_FIVE_LABELS[key]?.short[locale] ?? traitLabel(key);
+        })
       : [];
 
   const heroName = portrait?.name ?? test.title[locale];

@@ -20,7 +20,22 @@ export default defineConfig({
     video: 'off',
     locale: 'fr-FR',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } }],
+  projects: [
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: 'mobile',
+      use: {
+        ...devices['Pixel 7'],
+        defaultBrowserType: 'chromium',
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
+  ],
   webServer: {
     command: 'NEXT_PUBLIC_UX_CAPTURE=1 NEXT_DIST_DIR=.next-dev next dev -p 3000 -H 127.0.0.1',
     url: 'http://127.0.0.1:3000/quiz',

@@ -495,16 +495,16 @@ export function SelfTestRunner({
                           aria-pressed={answers[item.id] === v}
                           aria-label={labels[v - 1]}
                           onClick={() => pickAnswer(item.id, v)}
-                          className={`flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-lg border px-0.5 py-1 transition sm:min-h-[3.5rem] ${
+                          className={`flex min-h-[2.85rem] w-full flex-col items-center justify-center gap-0.5 rounded-lg border px-0.5 py-1 transition sm:min-h-[3.5rem] ${
                             answers[item.id] === v
                               ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-sm'
                               : 'border-brand-ink/10 bg-[#FFFAF5] text-brand-ink/70 hover:border-[#c45d3e]/40'
                           }`}
                           title={labels[v - 1]}
                         >
-                          <span className="text-[13px] font-semibold leading-none sm:text-[14px]">{v}</span>
+                          <span className="text-[12px] font-semibold leading-none sm:text-[14px]">{v}</span>
                           <span
-                            className={`text-center text-[7px] leading-[1.15] tracking-normal sm:text-[8px] ${
+                            className={`max-w-full text-center text-[6.5px] leading-[1.1] tracking-normal sm:text-[8px] ${
                               answers[item.id] === v ? 'text-white/85' : 'text-brand-ink/40'
                             }`}
                           >
