@@ -168,13 +168,20 @@ async function callClaudeAnalysis(
   }
 }
 
-/** Claude si clé OK et garde passée, sinon banque assemblée — jamais d'erreur bloquante */
+/** Claude fluidifie la banque — OFF par défaut (coût zéro, texte stable). Flag runtime. */
+export function isSelfTestClaudeAnalysisEnabled(): boolean {
+  const v = process.env.SELF_TEST_CLAUDE_ANALYSIS?.trim();
+  return v === '1' || v === 'true';
+}
+
+/** Claude si flag ON + clé OK + garde passée, sinon banque assemblée — jamais d'erreur bloquante */
 export async function generateSelfTestAnalysis(
   def: SelfTestDefinition,
   scores: SelfTestScores,
   lang: SelfTestLang
 ): Promise<SelfTestAnalysis> {
   const assembled = buildTemplateAnalysis(def, scores, lang);
+  if (!isSelfTestClaudeAnalysisEnabled()) return assembled;
   const claude = await callClaudeAnalysis(assembled, lang);
   if (claude) return claude;
   return assembled;

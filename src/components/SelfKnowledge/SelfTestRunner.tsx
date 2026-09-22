@@ -31,11 +31,11 @@ type Props = {
 
 type Phase = 'choose' | 'intro' | 'questions' | 'lead' | 'result';
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 1;
 
 const COACH_BG = {
-  'big-five': '/library/portraits/portrait-05-1x1.webp',
-  attachement: '/library/portraits/portrait-01-1x1.webp',
+  'big-five': '/library/portraits/portrait-05-4x5.webp',
+  attachement: '/library/portraits/portrait-01-4x5.webp',
 } as const;
 
 function trialUrl(locale: SelfTestLang, slug: string) {
@@ -118,10 +118,9 @@ export function SelfTestRunner({
           introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
           introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
           introBullet3: 'Un puente hacia cursos colectivos a horarios fijos.',
-          disclaimer:
-            'Test de referencia — validado en más de 600 000 personas, correlación 0,94 con el NEO-PI-R. Ítems IPIP, dominio público.',
+          disclaimer: 'Ítems IPIP · dominio público · ~600 000 personas.',
           disclaimerAttach:
-            'Escala ECR-S (Wei et al., 2007) — referencia internacional sobre el apego adulto. Ítems oficiales, dominio público.',
+            'Escala ECR-S (Wei et al., 2007) — ítems oficiales, dominio público.',
         }
       : {
           chooseTitle: 'Choisis la profondeur',
@@ -150,10 +149,9 @@ export function SelfTestRunner({
           introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
           introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
           introBullet3: 'Un pont vers les cours collectifs à horaires fixes.',
-          disclaimer:
-            'Test de référence — validé sur plus de 600 000 personnes, corrélation 0,94 avec le NEO-PI-R. Items IPIP, domaine public.',
+          disclaimer: 'Items IPIP · domaine public · ~600 000 personnes.',
           disclaimerAttach:
-            'Échelle ECR-S (Wei et al., 2007) — référence internationale sur l’attachement adulte. Items officiels, domaine public.',
+            'Échelle ECR-S (Wei et al., 2007) — items officiels, domaine public.',
         };
 
   const credibilityLine = isBigFive ? copy.disclaimer : copy.disclaimerAttach;
@@ -281,23 +279,27 @@ export function SelfTestRunner({
 
   return (
     <SelfTestShell locale={locale}>
-      <div className="mx-auto max-w-3xl px-5 py-8 pb-20" data-testid={`self-test-phase-${phase}`}>
+      <div
+        className={`mx-auto px-5 py-8 pb-20 ${phase === 'choose' ? 'max-w-4xl' : 'max-w-3xl'}`}
+        data-testid={`self-test-phase-${phase}`}
+      >
         {phase === 'choose' ? (
           <div data-testid="self-test-choose">
             <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/50 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
               <div
-                className="relative h-28 bg-cover sm:h-32"
+                className="relative h-72 bg-cover bg-no-repeat sm:h-[22rem] md:h-[26rem]"
                 style={{
-                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.22)), url('${coachBg}')`,
-                  backgroundPosition: 'center 18%',
+                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.28), rgba(196,93,62,0.12)), url('${coachBg}')`,
+                  backgroundPosition: 'center 8%',
+                  backgroundSize: 'cover',
                 }}
               >
-                <p className="absolute bottom-3 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
+                <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
                   Big Five
                 </p>
               </div>
-              <div className="p-5 sm:p-7">
-                <h1 className="font-serif text-[1.85rem] italic leading-tight text-brand-ink sm:text-[2.15rem]">
+              <div className="p-6 sm:p-8">
+                <h1 className="font-serif text-[1.85rem] italic leading-tight text-brand-ink sm:text-[2.25rem]">
                   {copy.chooseTitle}
                 </h1>
                 <p className="mt-2 text-[14px] text-brand-ink/55">{copy.chooseSub}</p>
@@ -357,10 +359,11 @@ export function SelfTestRunner({
           <div data-testid="self-test-intro">
             <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/60 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
               <div
-                className="relative h-36 bg-cover sm:h-40"
+                className="relative h-64 bg-cover bg-no-repeat sm:h-80"
                 style={{
-                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.38), rgba(196,93,62,0.2)), url('${coachBg}')`,
-                  backgroundPosition: 'center 18%',
+                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.28), rgba(196,93,62,0.12)), url('${coachBg}')`,
+                  backgroundPosition: 'center 8%',
+                  backgroundSize: 'cover',
                 }}
               >
                 <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
@@ -426,8 +429,11 @@ export function SelfTestRunner({
             </div>
           </div>
         ) : (
-          <div data-testid="self-test-questions" className="mx-auto max-w-xl">
-            <div className="mb-5">
+          <div
+            data-testid="self-test-questions"
+            className="mx-auto flex min-h-[calc(100dvh-7.5rem)] max-w-lg flex-col justify-center py-4"
+          >
+            <div className="mb-6 shrink-0">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45">
                 <span>
                   {copy.batch} {batchIndex + 1} {copy.of} {batches.length}
@@ -444,23 +450,23 @@ export function SelfTestRunner({
               </div>
             </div>
 
-            <p className="mb-5 text-center text-[12px] text-brand-ink/50">{copy.pick}</p>
+            <p className="mb-4 text-center text-[12px] text-brand-ink/50">{copy.pick}</p>
 
-            <div className="space-y-5">
+            <div className="flex flex-1 flex-col justify-center">
               {currentBatch.map((item) => {
                 const labels = test.likertLabels[locale];
                 const values = Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue);
                 return (
-                  <fieldset
+                  <div
                     key={item.id}
                     data-testid={`question-${item.id}`}
-                    className="rounded-[22px] border border-brand-ink/[0.06] bg-white/90 px-4 py-5 shadow-[0_8px_24px_rgba(60,40,30,0.05)] sm:px-5"
+                    className="rounded-[24px] border border-brand-ink/[0.06] bg-white/95 px-6 py-7 shadow-[0_8px_24px_rgba(60,40,30,0.05)] sm:px-8 sm:py-8"
                   >
-                    <legend className="w-full px-0.5 text-center text-[15px] font-medium leading-snug text-brand-ink">
+                    <p className="px-2 text-center text-[16px] font-medium leading-snug text-brand-ink sm:px-3 sm:text-[17px]">
                       {item.text[locale]}
-                    </legend>
+                    </p>
                     <div
-                      className="mt-5 grid gap-1.5"
+                      className="mt-6 grid gap-2"
                       style={{ gridTemplateColumns: `repeat(${test.likertMax}, minmax(0, 1fr))` }}
                     >
                       {values.map((v) => (
@@ -470,8 +476,20 @@ export function SelfTestRunner({
                           data-testid={`answer-${item.id}-${v}`}
                           aria-pressed={answers[item.id] === v}
                           aria-label={labels[v - 1]}
-                          onClick={() => pickAnswer(item.id, v)}
-                          className={`flex aspect-square w-full flex-col items-center justify-center rounded-xl border text-[14px] font-semibold transition ${
+                          onClick={() => {
+                            pickAnswer(item.id, v);
+                            // Typeform : avance fluide après réponse
+                            window.setTimeout(() => {
+                              if (batchIndex < batches.length - 1) {
+                                setBatchIndex((i) => i + 1);
+                              } else if (mode === 'member') {
+                                handleMemberFinish();
+                              } else {
+                                setPhase('lead');
+                              }
+                            }, 220);
+                          }}
+                          className={`flex aspect-square w-full flex-col items-center justify-center rounded-xl border text-[15px] font-semibold transition ${
                             answers[item.id] === v
                               ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
                               : 'border-brand-ink/10 bg-[#FFFAF5] text-brand-ink/70 hover:border-[#c45d3e]/40'
@@ -482,16 +500,16 @@ export function SelfTestRunner({
                         </button>
                       ))}
                     </div>
-                    <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.06em] text-brand-ink/35">
-                      <span className="max-w-[40%] truncate">{labels[0]}</span>
-                      <span className="max-w-[40%] truncate text-right">{labels[test.likertMax - 1]}</span>
+                    <div className="mt-3 flex justify-between gap-2 px-0.5 text-[9px] uppercase tracking-[0.06em] text-brand-ink/35">
+                      <span className="max-w-[42%] truncate">{labels[0]}</span>
+                      <span className="max-w-[42%] truncate text-right">{labels[test.likertMax - 1]}</span>
                     </div>
-                  </fieldset>
+                  </div>
                 );
               })}
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex shrink-0 flex-wrap gap-3">
               {batchIndex > 0 ? (
                 <button
                   type="button"
@@ -509,6 +527,7 @@ export function SelfTestRunner({
                   ← {copy.back}
                 </button>
               )}
+              {/* Bouton Continuer conservé pour accessibilité / Playwright */}
               <button
                 type="button"
                 data-testid="questions-next"

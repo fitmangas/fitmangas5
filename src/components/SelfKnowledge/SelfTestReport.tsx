@@ -252,7 +252,15 @@ export function SelfTestReport({
 }: Props) {
   const t = LABELS[locale];
   const portrait = analysis.portrait;
-  const sections = analysis.sections;
+  const sections = analysis.sections
+    ? {
+        ...analysis.sections,
+        forces:
+          analysis.sections.forces.length > 0
+            ? analysis.sections.forces
+            : analysis.strengths.filter(Boolean).slice(0, 3),
+      }
+    : undefined;
   const accent = '#C45D3E';
   const [pdfBusy, setPdfBusy] = useState(false);
 

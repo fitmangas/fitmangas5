@@ -40,8 +40,23 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     expect(analysis.teaser).toBeTruthy();
   });
 
+  it('flag Claude OFF (défaut) → toujours banque même avec clé', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-fake');
+    vi.stubEnv('SELF_TEST_CLAUDE_ANALYSIS', '');
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const analysis = await generateSelfTestAnalysis(
+      BIG_FIVE_TEST,
+      { O: 30, C: 30, E: 30, A: 30, ES: 30 },
+      'fr',
+    );
+    expect(analysis.mode).toBe('template');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('si Claude échoue (HTTP 500) → template, pas d’exception', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-fake');
+    vi.stubEnv('SELF_TEST_CLAUDE_ANALYSIS', '1');
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('err', { status: 500 })),
@@ -54,10 +69,11 @@ describe('generateSelfTestAnalysis — jamais bloquant', () => {
     expect(analysis.mode).toBe('template');
   });
 
-  it('si Claude répond JSON valide dans la banque → mode claude', async () => {
+  it('si Claude répond JSON valide dans la banque → mode claude (flag ON)', async () => {
     const scores = { O: 40, C: 30, E: 30, A: 30, ES: 20 };
     const assembled = buildTemplateAnalysis(BIG_FIVE_TEST, scores, 'fr');
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-fake');
+    vi.stubEnv('SELF_TEST_CLAUDE_ANALYSIS', '1');
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>

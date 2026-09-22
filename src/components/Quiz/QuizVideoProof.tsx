@@ -11,6 +11,8 @@ type Props = {
   locale: QuizLocale;
   title: string;
   subtitle?: string;
+  /** full = titre+avatars+carousel ; avatars = titre+rondes ; carousel = vidéos seules */
+  variant?: 'full' | 'avatars' | 'carousel';
 };
 
 function relativeOffset(index: number, active: number, total: number) {
@@ -30,7 +32,9 @@ async function tryPlay(video: HTMLVideoElement) {
 }
 
 /** Carousel 3D témoignages vidéo — même logique que la landing, sans marquee / vide. */
-export function QuizVideoProof({ locale, title, subtitle }: Props) {
+export function QuizVideoProof({ locale, title, subtitle, variant = 'full' }: Props) {
+  const showHeader = variant === 'full' || variant === 'avatars';
+  const showCarousel = variant === 'full' || variant === 'carousel';
   const items = QUIZ_TESTIMONIALS;
   const total = items.length;
   const [active, setActive] = useState(0);
@@ -100,6 +104,7 @@ export function QuizVideoProof({ locale, title, subtitle }: Props) {
 
   return (
     <section ref={sectionRef} className="quiz-no-print relative py-6 sm:py-8">
+      {showHeader ? (
       <div className="mb-4 px-5 text-center">
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">{title}</p>
         {subtitle ? <p className="mt-2 text-[13px] text-brand-ink/50">{subtitle}</p> : null}
@@ -116,7 +121,10 @@ export function QuizVideoProof({ locale, title, subtitle }: Props) {
           ))}
         </div>
       </div>
+      ) : null}
 
+      {showCarousel ? (
+      <>
       <div
         className="relative mx-auto max-w-4xl select-none"
         onTouchStart={(e) => {
@@ -255,6 +263,8 @@ export function QuizVideoProof({ locale, title, subtitle }: Props) {
           {locale === 'es' ? current.seoBlurbEs : current.seoBlurbFr}
         </motion.p>
       </AnimatePresence>
+      </>
+      ) : null}
     </section>
   );
 }

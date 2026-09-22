@@ -22,8 +22,8 @@ export type DerivedPortrait = {
 };
 
 const DISCLAIMER: Record<SelfTestLang, string> = {
-  fr: 'Test de référence IPIP — validé sur plus de 600 000 personnes, corrélation 0,94 avec le NEO-PI-R. Un portrait pour t’orienter, qui évolue avec ta pratique.',
-  es: 'Test de referencia IPIP — validado en más de 600 000 personas, correlación 0,94 con el NEO-PI-R. Un retrato para orientarte, que evoluciona con tu práctica.',
+  fr: 'Test de référence IPIP — validé sur plus de 600 000 personnes. Un portrait pour t’orienter, qui évolue avec ta pratique.',
+  es: 'Test de referencia IPIP — validado en más de 600 000 personas. Un retrato para orientarte, que evoluciona con tu práctica.',
 };
 
 const ATTACHMENT_DISCLAIMER: Record<SelfTestLang, string> = {

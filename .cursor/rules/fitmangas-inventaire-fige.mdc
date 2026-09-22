@@ -39,7 +39,7 @@ alwaysApply: true
 
 ### Quiz / Connaissance de soi
 - Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
-- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; analyse Claude bornée à la banque ; DA type profil-discipline (`SelfTestReport`, radar OCEAN) ; hub `/quiz` = grille côte à côte compacte (`SelfTestCardGrid`) + portraits coach 1×1 + crédibilité IPIP ; choix profondeur = lancement direct ; PDF + parrainage RGPD ; dédup email membre>acq>blog ; carrousel 3D gardé hors hub
+- **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; **rapport = 100 % banque** (`SELF_TEST_CLAUDE_ANALYSIS` OFF) ; DA type profil-discipline (`SelfTestReport`, radar OCEAN) ; hub `/quiz` = cartes verticales côte à côte (`SelfTestCardGrid`) + portraits coach 4×5 + 2 indicateurs (600k / ~8 min) ; carrousel vidéo sous le fold ; choix profondeur = lancement direct ; PDF + parrainage RGPD ; dédup email membre>acq>blog
 - Pages `/quiz` ; compte `/compte/connaissance-de-soi` (historique conserve formats 50 et 120)
 - PDF self-test : `build-self-test-pdf.ts` ; invites RGPD `self_test_invites` + `SelfTestShareInvite` ; priorité email member > acq > blog (`email-flow-priority.ts`)
 - Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`
