@@ -403,21 +403,41 @@ export function assembleAttachmentReport(
       lang === 'fr'
         ? 'Dans un cours collectif à horaires fixes, le lien (être attendue, corrigée) te donne un cadre relationnel prévisible — sans te demander d’être « toujours disponible ».'
         : 'En un curso colectivo a horarios fijos, el vínculo (que te esperen, te corrijan) te da un marco relacional previsible — sin pedirte estar « siempre disponible ».',
-      anxietyBank.force[lang],
-      avoidanceBank.force[lang],
+      lang === 'fr'
+        ? 'Ce que tu cherches vraiment : un rythme relationnel clair — le collectif te voit sans te demander d’être « toujours disponible ».'
+        : 'Lo que realmente buscas: un ritmo relacional claro — el colectivo te ve sin pedirte estar « siempre disponible ».',
     ],
     used
   );
   const howYouWork = howParts.join('\n\n');
 
-  const forces = dedupeAgainstUsed(
-    [anxietyBank.force[lang], avoidanceBank.force[lang]],
-    used
+  // Forces / limites : dédoublonnage interne — ne pas vider par howYouWork
+  const forceUsed = new Set<string>();
+  let forces = dedupeAgainstUsed(
+    [anxietyBank.force[lang], avoidanceBank.force[lang], style.tagline[lang]].filter(Boolean),
+    forceUsed
   );
-  const limits = dedupeAgainstUsed(
+  if (forces.length < 2) {
+    const fallbacks = [anxietyBank.force[lang], avoidanceBank.force[lang]].filter(Boolean);
+    for (const f of fallbacks) {
+      if (!forces.includes(f)) forces.push(f);
+    }
+  }
+  if (!forces.length) {
+    forces = [
+      lang === 'fr'
+        ? 'Tu sais ce dont tu as besoin pour te sentir en sécurité dans le lien.'
+        : 'Sabes lo que necesitas para sentirte segura en el vínculo.',
+    ];
+  }
+  const limitUsed = new Set<string>();
+  let limits = dedupeAgainstUsed(
     [anxietyBank.limit[lang], avoidanceBank.limit[lang]],
-    used
+    limitUsed
   );
+  if (!limits.length) {
+    limits = [anxietyBank.limit[lang], avoidanceBank.limit[lang]].filter(Boolean);
+  }
   const combinations: string[] = [];
 
   const strengths = [

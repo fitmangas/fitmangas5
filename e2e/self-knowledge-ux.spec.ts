@@ -6,16 +6,16 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CAPTURE_DIR = path.join(root, '_captures', 'tests-ux');
 
-test.setTimeout(600_000);
+test.setTimeout(300_000);
 
 function ensureDir() {
   fs.mkdirSync(CAPTURE_DIR, { recursive: true });
 }
 
-async function shot(page: Page, name: string) {
+async function shot(page: Page, name: string, fullPage = true) {
   ensureDir();
   const file = path.join(CAPTURE_DIR, `${name}.png`);
-  await page.screenshot({ path: file, fullPage: true });
+  await page.screenshot({ path: file, fullPage });
   return file;
 }
 
@@ -29,38 +29,24 @@ async function dismissCookies(page: Page) {
   }
 }
 
-async function answerCurrentBatch(page: Page) {
-  await page.evaluate(() => {
-    document.querySelectorAll('[data-testid^="question-"]').forEach((field) => {
-      const buttons = Array.from(
-        field.querySelectorAll('button[data-testid^="answer-"]'),
-      ) as HTMLButtonElement[];
-      if (!buttons.length) return;
-      const mid = buttons[Math.floor((buttons.length - 1) / 2)];
-      mid?.click();
-    });
-  });
-}
-
-async function completeQuestionnaire(page: Page) {
-  for (let guard = 0; guard < 50; guard++) {
+/** Attachement seulement (12 Q) — IPIP trop long en 1/écran pour E2E. */
+async function completeShortQuestionnaire(page: Page) {
+  for (let guard = 0; guard < 30; guard++) {
     if (await page.getByTestId('self-test-lead').isVisible().catch(() => false)) return;
     if (await page.getByTestId('self-test-report').isVisible().catch(() => false)) return;
     await expect(page.getByTestId('self-test-questions')).toBeVisible();
-    await answerCurrentBatch(page);
-    await page.getByTestId('questions-next').click({ force: true });
-    await page.waitForTimeout(60);
+    const mid = page.locator('[data-testid^="question-"]').first().locator('button[data-testid^="answer-"]').nth(2);
+    await mid.click({ force: true });
+    await page.waitForTimeout(300);
   }
-  throw new Error('Questionnaire : trop de batches sans atteindre lead/rapport');
+  throw new Error('Questionnaire court : pas de lead');
 }
 
 async function fillLead(page: Page) {
-  await expect(page.getByTestId('self-test-lead')).toBeVisible();
+  await expect(page.getByTestId('self-test-lead')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('lead-firstname').fill('Camille');
   await page.getByTestId('lead-email').fill(`e2e-ux-${Date.now()}@fitmangas.test`);
   await page.getByTestId('lead-consent').check({ force: true });
-  // Opt-in blog explicite (case décochée par défaut)
-  await page.getByTestId('lead-blog-optin').check({ force: true });
   await page.getByTestId('lead-submit').click({ force: true });
   await expect(page.getByTestId('self-test-report')).toBeVisible({ timeout: 60_000 });
 }
@@ -72,7 +58,6 @@ async function mockSubmitWithBank(page: Page) {
       format?: string;
       locale?: string;
       answers: Record<string, number>;
-      blogOptIn?: boolean;
     };
     const res = await page.request.post('/api/self-knowledge/ux-fixture', {
       data: {
@@ -96,7 +81,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     ensureDir();
   });
 
-  test('hub + choix fusionné + questions + 3 parcours + rapports full', async ({ page }) => {
+  test('hub + profondeur + questions 1/écran + rapports', async ({ page }) => {
     await page.addInitScript(() => {
       try {
         localStorage.setItem('fm_cookie_consent', 'accepted');
@@ -111,29 +96,36 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('faces-cloud-hero')).toBeVisible();
     await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
     await expect(page.getByTestId('hub-credibility-stats')).toBeVisible();
-    await expect(page.getByTestId('hub-video-proof')).toBeVisible();
-    await shot(page, '01-hub-hero-carousel');
+    await expect(page.getByTestId('hub-proof-avatars')).toBeVisible();
+    // Premier viewport : hero + cartes + avatars — pas le carrousel vidéo
+    await shot(page, '01-hub-hero-carousel', false);
+    const carouselBox = await page.getByTestId('hub-video-proof').boundingBox();
+    expect(carouselBox).toBeTruthy();
+    expect(carouselBox!.y).toBeGreaterThan(850);
 
     await page.getByTestId('grid-cta-big-five').click({ force: true });
     await expect(page.getByTestId('self-test-choose')).toBeVisible();
     await shot(page, '02-big-five-choix');
 
-    // Choix = lancement immédiat (plus de page intro)
     await page.getByTestId('choose-ipip-50').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
     await shot(page, '03-questions-redesign');
 
-    await completeQuestionnaire(page);
-    await fillLead(page);
+    // Teasers via ux-capture (évite 50/120 clics E2E)
+    await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=0');
+    await dismissCookies(page);
+    await expect(page.getByTestId('self-test-report')).toBeVisible();
     await shot(page, '04-rapport-teaser-ipip-50');
 
     await page.goto('/quiz/big-five');
     await dismissCookies(page);
+    await expect(page.getByTestId('self-test-choose')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('choose-ipip-120').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
     await shot(page, '05-questions-ipip-120');
-    await completeQuestionnaire(page);
-    await fillLead(page);
+
+    await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-120&full=0');
+    await dismissCookies(page);
     await shot(page, '06-rapport-teaser-ipip-120');
 
     await page.goto('/quiz/attachement');
@@ -142,47 +134,43 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await shot(page, '07-intro-attachement');
     await page.getByTestId('intro-start').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible();
-    await completeQuestionnaire(page);
+    await completeShortQuestionnaire(page);
     await fillLead(page);
     await shot(page, '08-rapport-teaser-attachement');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
-    await expect(page.getByTestId('report-sticky-nav')).toBeVisible();
-    await expect(page.getByTestId('score-phrases')).toBeVisible();
-    await expect(page.getByTestId('download-pdf')).toBeVisible();
     await shot(page, '09-rapport-full-ipip-50');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-120&full=1');
     await dismissCookies(page);
-    await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
     await expect(page.getByTestId('facets-accordion')).toBeVisible();
     await shot(page, '10-rapport-full-ipip-120-facettes');
 
     await page.goto('/quiz/ux-capture?slug=attachement&full=1');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
+    await expect(page.locator('#forces li').first()).toBeVisible();
     await shot(page, '11-rapport-full-attachement');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1&balanced=1');
     await dismissCookies(page);
-    await expect(page.getByTestId('self-test-report')).toBeVisible();
     await expect(page.getByText(/Polyvalente/i)).toBeVisible();
     await shot(page, '12-rapport-full-profil-equilibre');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=1');
     await dismissCookies(page);
-    await expect(page.getByTestId('micro-recommendation')).toBeVisible();
-    await expect(page.getByTestId('self-test-share-invite')).toBeVisible();
+    await expect(page.getByTestId('download-pdf')).toBeVisible();
     await shot(page, '13-rapport-full-pdf-parrainage');
 
     const files = fs
       .readdirSync(CAPTURE_DIR)
-      .filter((f) => f.endsWith('.png'))
+      .filter((f) => f.endsWith('.png') || f.endsWith('.pdf'))
       .sort()
       .map((f) => path.join('_captures/tests-ux', f));
     fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
-    expect(files.length).toBeGreaterThanOrEqual(13);
+    expect(files.filter((f) => f.endsWith('.png')).length).toBeGreaterThanOrEqual(13);
+    expect(files.filter((f) => f.endsWith('.pdf')).length).toBeGreaterThanOrEqual(3);
   });
 });

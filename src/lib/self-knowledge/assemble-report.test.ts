@@ -124,8 +124,19 @@ describe('assembleAttachmentReport', () => {
     const report = assembleAttachmentReport({ anxiety: 5.2, avoidance: 2.1 }, 'fr');
     expect(report.portrait?.name).toBeTruthy();
     expect(report.sections?.whoYouAre.length).toBeGreaterThan(40);
+    expect(report.sections?.forces.length).toBeGreaterThanOrEqual(2);
     expect(report.full.length).toBeGreaterThan(100);
     expect(report.teaser.length).toBeGreaterThan(40);
+  });
+
+  it('forces toujours remplies (tous bandes)', () => {
+    for (const anxiety of [1.5, 3.5, 6.2]) {
+      for (const avoidance of [1.5, 3.5, 6.2]) {
+        const report = assembleAttachmentReport({ anxiety, avoidance }, 'fr');
+        expect(report.sections?.forces.length).toBeGreaterThanOrEqual(1);
+        expect(report.sections!.forces.every((f) => f.trim().length > 8)).toBe(true);
+      }
+    }
   });
 });
 
@@ -156,7 +167,7 @@ describe('fallback sans clé = analyse complète', () => {
     const a = buildTemplateAnalysis(BIG_FIVE_TEST, highCLowEs(), 'fr');
     expect(a.full.length).toBeGreaterThan(a.teaser.length);
     expect(a.sections?.whoYouAre).toBeTruthy();
-    expect(a.portrait?.disclaimer).toMatch(/600\s*000|0[,.]94|NEO-PI-R/i);
+    expect(a.portrait?.disclaimer).toMatch(/600\s*000/i);
   });
 
   it('buildTemplateAnalysis attachement complet', () => {

@@ -141,6 +141,13 @@ export async function buildSelfTestReportPdf(input: SelfTestPdfInput): Promise<B
   if (input.sections.microRecommendation) {
     y = body(doc, y + 2, input.sections.microRecommendation);
   }
+  if (input.sections.facets?.length) {
+    y = heading(doc, y + 2, fr ? 'Facettes' : 'Facetas');
+    for (const facet of input.sections.facets) {
+      y = body(doc, y, `${facet.label} — ${facet.bandLabel}`);
+      y = body(doc, y, facet.narrative);
+    }
+  }
 
   y = ensureSpace(doc, y + 4, 20);
   doc.setDrawColor(...LINE);

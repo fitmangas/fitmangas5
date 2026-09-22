@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge : PDF + banque 100% + hub Typeform
+- **3 PDF** générés : `_captures/tests-ux/rapport-ipip50.pdf`, `rapport-ipip120.pdf`, `rapport-attachement.pdf` (`scripts/generate-self-test-report-pdfs.ts`).
+- **Analyse** : `SELF_TEST_CLAUDE_ANALYSIS` OFF par défaut → rapport 100 % banque déterministe (Claude derrière flag).
+- Hub : 1er viewport = hero + cartes verticales + « Elles aussi… » vignettes ; carrousel vidéo au scroll ; 2 indicateurs (600k + ~8 min) ; sans 0,94.
+- Choix profondeur : photo agrandie ; questions 1/écran Typeform ; forces attachement toujours remplies.
+- Captures + MANIFEST régénérés ; Vitest self-knowledge vert.
+
 ### 2026-09-22 — Self-knowledge A–D (hub + rapports + PDF + dédup)
 - **A** Hub compact (2 cartes 1er écran) ; textes bénéfice ; choix profondeur = lancement direct ; portraits `portrait-05-1x1` / `portrait-01-1x1` (object-position visage) ; questions redesign.
 - **B** Phrases-clés % + pratique Pilates + micro-reco ; facettes accordéon 2 niveaux + barres (plus de /20) ; nav sticky.
