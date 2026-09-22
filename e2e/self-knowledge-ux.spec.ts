@@ -29,17 +29,22 @@ async function dismissCookies(page: Page) {
   }
 }
 
-/** Attachement seulement (12 Q) — IPIP trop long en 1/écran pour E2E. */
-async function completeShortQuestionnaire(page: Page) {
-  for (let guard = 0; guard < 30; guard++) {
+/** Répond à tout l’écran courant (jusqu’à 5 Q) + Suivant jusqu’au lead. */
+async function completeQuestionnaire(page: Page) {
+  for (let guard = 0; guard < 40; guard++) {
     if (await page.getByTestId('self-test-lead').isVisible().catch(() => false)) return;
     if (await page.getByTestId('self-test-report').isVisible().catch(() => false)) return;
     await expect(page.getByTestId('self-test-questions')).toBeVisible();
-    const mid = page.locator('[data-testid^="question-"]').first().locator('button[data-testid^="answer-"]').nth(2);
-    await mid.click({ force: true });
-    await page.waitForTimeout(300);
+    const questions = page.locator('[data-testid^="question-"]');
+    const n = await questions.count();
+    for (let i = 0; i < n; i++) {
+      const mid = questions.nth(i).locator('button[data-testid^="answer-"]').nth(2);
+      await mid.click({ force: true });
+    }
+    await page.getByTestId('questions-next').click({ force: true });
+    await page.waitForTimeout(200);
   }
-  throw new Error('Questionnaire court : pas de lead');
+  throw new Error('Questionnaire : pas de lead');
 }
 
 async function fillLead(page: Page) {
@@ -81,7 +86,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     ensureDir();
   });
 
-  test('hub + profondeur + questions 1/écran + rapports', async ({ page }) => {
+  test('hub + profondeur + questions 5/écran + rapports', async ({ page }) => {
     await page.addInitScript(() => {
       try {
         localStorage.setItem('fm_cookie_consent', 'accepted');
@@ -97,11 +102,10 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('self-test-card-grid')).toBeVisible();
     await expect(page.getByTestId('hub-credibility-stats')).toBeVisible();
     await expect(page.getByTestId('hub-proof-avatars')).toBeVisible();
-    // Premier viewport : hero + cartes + avatars — pas le carrousel vidéo
     await shot(page, '01-hub-hero-carousel', false);
     const carouselBox = await page.getByTestId('hub-video-proof').boundingBox();
     expect(carouselBox).toBeTruthy();
-    expect(carouselBox!.y).toBeGreaterThan(850);
+    expect(carouselBox!.y).toBeGreaterThan(700);
 
     await page.getByTestId('grid-cta-big-five').click({ force: true });
     await expect(page.getByTestId('self-test-choose')).toBeVisible();
@@ -109,9 +113,11 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
 
     await page.getByTestId('choose-ipip-50').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
+    // 5 questions visibles + sous-titres d’échelle
+    await expect(page.locator('[data-testid^="question-"]')).toHaveCount(5);
+    await expect(page.getByText('Plutôt inexact').first()).toBeVisible();
     await shot(page, '03-questions-redesign');
 
-    // Teasers via ux-capture (évite 50/120 clics E2E)
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-50&full=0');
     await dismissCookies(page);
     await expect(page.getByTestId('self-test-report')).toBeVisible();
@@ -122,6 +128,7 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('self-test-choose')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('choose-ipip-120').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-testid^="question-"]')).toHaveCount(5);
     await shot(page, '05-questions-ipip-120');
 
     await page.goto('/quiz/ux-capture?slug=big-five&format=ipip-120&full=0');
@@ -134,7 +141,8 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await shot(page, '07-intro-attachement');
     await page.getByTestId('intro-start').click({ force: true });
     await expect(page.getByTestId('self-test-questions')).toBeVisible();
-    await completeShortQuestionnaire(page);
+    await expect(page.getByText(/Pas du tout d.accord/).first()).toBeVisible();
+    await completeQuestionnaire(page);
     await fillLead(page);
     await shot(page, '08-rapport-teaser-attachement');
 
@@ -164,6 +172,26 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
     await expect(page.getByTestId('download-pdf')).toBeVisible();
     await shot(page, '13-rapport-full-pdf-parrainage');
 
+    // PDF print-to-PDF (page web complète)
+    for (const [qs, name] of [
+      ['slug=big-five&format=ipip-50&full=1', 'rapport-ipip50.pdf'],
+      ['slug=big-five&format=ipip-120&full=1', 'rapport-ipip120.pdf'],
+      ['slug=attachement&full=1', 'rapport-attachement.pdf'],
+    ] as const) {
+      await page.goto(`/quiz/ux-capture?${qs}`);
+      await dismissCookies(page);
+      await expect(page.getByTestId('self-test-report')).toHaveAttribute('data-show-full', 'true');
+      await page.waitForTimeout(400);
+      const dest = path.join(CAPTURE_DIR, name);
+      await page.pdf({
+        path: dest,
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '10mm', bottom: '14mm', left: '12mm', right: '12mm' },
+      });
+      expect(fs.statSync(dest).size).toBeGreaterThan(20_000);
+    }
+
     const files = fs
       .readdirSync(CAPTURE_DIR)
       .filter((f) => f.endsWith('.png') || f.endsWith('.pdf'))
@@ -171,6 +199,6 @@ test.describe('Self-knowledge UX — parcours + captures', () => {
       .map((f) => path.join('_captures/tests-ux', f));
     fs.writeFileSync(path.join(CAPTURE_DIR, 'MANIFEST.txt'), files.join('\n') + '\n', 'utf8');
     expect(files.filter((f) => f.endsWith('.png')).length).toBeGreaterThanOrEqual(13);
-    expect(files.filter((f) => f.endsWith('.pdf')).length).toBeGreaterThanOrEqual(3);
+    expect(files.filter((f) => f.endsWith('rapport-ipip50.pdf')).length).toBe(1);
   });
 });

@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge : PDF print + questions 5/écran + fond
+- PDF = print headless / html2canvas de la **vraie page rapport** (plus de jspdf texte) ; 3 fichiers `_captures/tests-ux/rapport-*.pdf`.
+- Hub : cartes verticales V1 élancées côte à côte ; carrousel sous le fold.
+- Questions : 5/écran desktop (2 mobile), sous-titres sur chaque bouton échelle, fond `public/tests/questions-bg.jpg` + voile cream.
+- Banque : coquilles « tu n’ignores pas » / « Tu honores » ; Claude toujours OFF.
+
 ### 2026-09-22 — Self-knowledge : PDF + banque 100% + hub Typeform
 - **3 PDF** générés : `_captures/tests-ux/rapport-ipip50.pdf`, `rapport-ipip120.pdf`, `rapport-attachement.pdf` (`scripts/generate-self-test-report-pdfs.ts`).
 - **Analyse** : `SELF_TEST_CLAUDE_ANALYSIS` OFF par défaut → rapport 100 % banque déterministe (Claude derrière flag).

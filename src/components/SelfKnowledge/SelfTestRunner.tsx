@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SelfTestLeadCapture, type SelfTestLeadPayload } from '@/components/SelfKnowledge/SelfTestLeadCapture';
 import { SelfTestShell } from '@/components/SelfKnowledge/SelfTestShell';
@@ -31,7 +31,9 @@ type Props = {
 
 type Phase = 'choose' | 'intro' | 'questions' | 'lead' | 'result';
 
-const BATCH_SIZE = 1;
+/** Desktop : 5 questions / écran ; mobile : 2 (évite le scroll long). */
+const BATCH_SIZE_DESKTOP = 5;
+const BATCH_SIZE_MOBILE = 2;
 
 const COACH_BG = {
   'big-five': '/library/portraits/portrait-05-4x5.webp',
@@ -78,6 +80,15 @@ export function SelfTestRunner({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<SelfTestAnalysis | null>(null);
   const [scores, setScores] = useState<SelfTestScores | null>(null);
+  const [batchSize, setBatchSize] = useState(BATCH_SIZE_DESKTOP);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const sync = () => setBatchSize(mq.matches ? BATCH_SIZE_MOBILE : BATCH_SIZE_DESKTOP);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   const test = useMemo(() => {
     if (!isBigFive) return initialTest;
@@ -87,7 +98,12 @@ export function SelfTestRunner({
   }, [format, initialTest, isBigFive]);
 
   const hubHref = locale === 'es' ? '/es/quiz' : '/quiz';
-  const batches = useMemo(() => chunkItems(test.items, BATCH_SIZE), [test.items]);
+  const batches = useMemo(() => chunkItems(test.items, batchSize), [test.items, batchSize]);
+
+  // Si le batchSize change (resize), recentrer l’index
+  useEffect(() => {
+    setBatchIndex((i) => Math.min(i, Math.max(0, batches.length - 1)));
+  }, [batches.length]);
   const currentBatch = batches[batchIndex] ?? [];
   const answeredCount = test.items.filter((item) => answers[item.id] != null).length;
   const progressPct = Math.round((answeredCount / test.items.length) * 100);
@@ -431,10 +447,16 @@ export function SelfTestRunner({
         ) : (
           <div
             data-testid="self-test-questions"
-            className="mx-auto flex min-h-[calc(100dvh-7.5rem)] max-w-lg flex-col justify-center py-4"
+            className="relative mx-auto flex min-h-[calc(100dvh-7.5rem)] max-w-2xl flex-col justify-center overflow-hidden rounded-[28px] border border-white/50 py-3 sm:py-4"
+            style={{
+              backgroundImage:
+                "linear-gradient(180deg, rgba(255,250,245,0.92) 0%, rgba(255,250,245,0.88) 100%), url('/tests/questions-bg.jpg')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           >
-            <div className="mb-6 shrink-0">
-              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45">
+            <div className="relative z-10 mb-3 shrink-0 px-4 sm:px-5">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45 sm:text-[11px]">
                 <span>
                   {copy.batch} {batchIndex + 1} {copy.of} {batches.length}
                 </span>
@@ -442,7 +464,7 @@ export function SelfTestRunner({
                   {copy.progress} {progressPct}%
                 </span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-brand-ink/8">
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-brand-ink/8">
                 <div
                   className="h-full rounded-full bg-[#c45d3e] transition-all duration-300"
                   style={{ width: `${progressPct}%` }}
@@ -450,9 +472,7 @@ export function SelfTestRunner({
               </div>
             </div>
 
-            <p className="mb-4 text-center text-[12px] text-brand-ink/50">{copy.pick}</p>
-
-            <div className="flex flex-1 flex-col justify-center">
+            <div className="relative z-10 flex flex-1 flex-col justify-center gap-2 px-3 sm:gap-2.5 sm:px-5">
               {currentBatch.map((item) => {
                 const labels = test.likertLabels[locale];
                 const values = Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue);
@@ -460,13 +480,13 @@ export function SelfTestRunner({
                   <div
                     key={item.id}
                     data-testid={`question-${item.id}`}
-                    className="rounded-[24px] border border-brand-ink/[0.06] bg-white/95 px-6 py-7 shadow-[0_8px_24px_rgba(60,40,30,0.05)] sm:px-8 sm:py-8"
+                    className="rounded-[16px] border border-brand-ink/[0.06] bg-white/95 px-3 py-2.5 shadow-[0_4px_16px_rgba(60,40,30,0.04)] sm:px-4 sm:py-3"
                   >
-                    <p className="px-2 text-center text-[16px] font-medium leading-snug text-brand-ink sm:px-3 sm:text-[17px]">
+                    <p className="px-1 text-center text-[13px] font-medium leading-snug text-brand-ink sm:text-[14px]">
                       {item.text[locale]}
                     </p>
                     <div
-                      className="mt-6 grid gap-2"
+                      className="mt-2 grid gap-1"
                       style={{ gridTemplateColumns: `repeat(${test.likertMax}, minmax(0, 1fr))` }}
                     >
                       {values.map((v) => (
@@ -476,45 +496,36 @@ export function SelfTestRunner({
                           data-testid={`answer-${item.id}-${v}`}
                           aria-pressed={answers[item.id] === v}
                           aria-label={labels[v - 1]}
-                          onClick={() => {
-                            pickAnswer(item.id, v);
-                            // Typeform : avance fluide après réponse
-                            window.setTimeout(() => {
-                              if (batchIndex < batches.length - 1) {
-                                setBatchIndex((i) => i + 1);
-                              } else if (mode === 'member') {
-                                handleMemberFinish();
-                              } else {
-                                setPhase('lead');
-                              }
-                            }, 220);
-                          }}
-                          className={`flex aspect-square w-full flex-col items-center justify-center rounded-xl border text-[15px] font-semibold transition ${
+                          onClick={() => pickAnswer(item.id, v)}
+                          className={`flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-lg border px-0.5 py-1 transition sm:min-h-[3.5rem] ${
                             answers[item.id] === v
-                              ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
+                              ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-sm'
                               : 'border-brand-ink/10 bg-[#FFFAF5] text-brand-ink/70 hover:border-[#c45d3e]/40'
                           }`}
                           title={labels[v - 1]}
                         >
-                          {v}
+                          <span className="text-[13px] font-semibold leading-none sm:text-[14px]">{v}</span>
+                          <span
+                            className={`text-center text-[7px] leading-[1.15] tracking-normal sm:text-[8px] ${
+                              answers[item.id] === v ? 'text-white/85' : 'text-brand-ink/40'
+                            }`}
+                          >
+                            {labels[v - 1]}
+                          </span>
                         </button>
                       ))}
-                    </div>
-                    <div className="mt-3 flex justify-between gap-2 px-0.5 text-[9px] uppercase tracking-[0.06em] text-brand-ink/35">
-                      <span className="max-w-[42%] truncate">{labels[0]}</span>
-                      <span className="max-w-[42%] truncate text-right">{labels[test.likertMax - 1]}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="mt-6 flex shrink-0 flex-wrap gap-3">
+            <div className="relative z-10 mt-3 flex shrink-0 flex-wrap gap-2 px-4 sm:mt-4 sm:gap-3 sm:px-5">
               {batchIndex > 0 ? (
                 <button
                   type="button"
                   onClick={() => setBatchIndex((i) => i - 1)}
-                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                  className="rounded-full border border-brand-ink/15 bg-white/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-ink/60 sm:px-5 sm:py-2.5 sm:text-[11px]"
                 >
                   ← {copy.back}
                 </button>
@@ -522,12 +533,11 @@ export function SelfTestRunner({
                 <button
                   type="button"
                   onClick={() => setPhase(isBigFive && !initialFormat ? 'choose' : 'intro')}
-                  className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
+                  className="rounded-full border border-brand-ink/15 bg-white/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-ink/60 sm:px-5 sm:py-2.5 sm:text-[11px]"
                 >
                   ← {copy.back}
                 </button>
               )}
-              {/* Bouton Continuer conservé pour accessibilité / Playwright */}
               <button
                 type="button"
                 data-testid="questions-next"
@@ -541,7 +551,7 @@ export function SelfTestRunner({
                     setPhase('lead');
                   }
                 }}
-                className="flex-1 rounded-full bg-[#c45d3e] px-6 py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white shadow-md transition hover:bg-[#b35338] disabled:opacity-50 sm:flex-none"
+                className="flex-1 rounded-full bg-[#c45d3e] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-md transition hover:bg-[#b35338] disabled:opacity-50 sm:flex-none sm:px-6 sm:py-2.5 sm:text-[11px]"
               >
                 {batchIndex < batches.length - 1
                   ? `${copy.next} →`
@@ -554,7 +564,7 @@ export function SelfTestRunner({
             </div>
 
             {submitError ? (
-              <p className="mt-4 text-[13px] text-red-600" role="alert" data-testid="submit-error">
+              <p className="relative z-10 mt-3 px-4 text-[13px] text-red-600" role="alert" data-testid="submit-error">
                 {submitError}
               </p>
             ) : null}

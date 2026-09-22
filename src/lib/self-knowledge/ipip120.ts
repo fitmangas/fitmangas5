@@ -203,16 +203,16 @@ export const BIG_FIVE_120_TEST: SelfTestDefinition = {
   likertLabels: {
     fr: [
       'Très inexact',
-      'Modérément inexact',
-      'Ni exact ni inexact',
-      'Modérément exact',
+      'Plutôt inexact',
+      'Neutre',
+      'Plutôt exact',
       'Très exact',
     ],
     es: [
       'Muy inexacto',
-      'Moderadamente inexacto',
-      'Ni exacto ni inexacto',
-      'Moderadamente exacto',
+      'Más bien inexacto',
+      'Neutral',
+      'Más bien exacto',
       'Muy exacto',
     ],
   },

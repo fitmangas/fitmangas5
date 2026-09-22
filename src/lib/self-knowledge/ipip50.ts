@@ -272,8 +272,8 @@ export const BIG_FIVE_TEST: SelfTestDefinition = {
   scoreKeys: ['E', 'A', 'C', 'ES', 'O'],
   likertMax: 5,
   likertLabels: {
-    fr: ['Très inexact', 'Modérément inexact', 'Ni exact ni inexact', 'Modérément exact', 'Très exact'],
-    es: ['Muy inexacto', 'Moderadamente inexacto', 'Ni exacto ni inexacto', 'Moderadamente exacto', 'Muy exacto'],
+    fr: ['Très inexact', 'Plutôt inexact', 'Neutre', 'Plutôt exact', 'Très exact'],
+    es: ['Muy inexacto', 'Más bien inexacto', 'Neutral', 'Más bien exacto', 'Muy exacto'],
   },
 };
 

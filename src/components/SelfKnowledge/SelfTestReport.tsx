@@ -11,7 +11,7 @@ import { QuizVideoProof } from '@/components/Quiz/QuizVideoProof';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
 import { OCEAN_TRAIT_SHORT } from '@/lib/self-knowledge/ocean-palette';
-import { buildSelfTestReportPdf, downloadBlob } from '@/lib/self-knowledge/build-self-test-pdf';
+import { buildSelfTestReportPdfFromElement, downloadBlob } from '@/lib/self-knowledge/build-self-test-pdf';
 import type {
   SelfTestAnalysis,
   SelfTestDefinition,
@@ -292,17 +292,16 @@ export function SelfTestReport({
   ];
 
   async function handlePdf() {
-    if (pdfBusy || !sections) return;
+    if (pdfBusy || !sections || !showFull) return;
     setPdfBusy(true);
     try {
-      const blob = await buildSelfTestReportPdf({
-        locale,
-        testTitle: test.title[locale],
-        portraitName: heroName,
-        tagline: heroTagline,
-        disclaimer: portrait?.disclaimer ?? '',
-        sections,
-        instrumentVersion: analysis.instrumentVersion ?? test.format ?? test.slug,
+      const el = document.querySelector<HTMLElement>('[data-testid="self-test-report"]');
+      if (!el) throw new Error('Rapport introuvable pour PDF');
+      const blob = await buildSelfTestReportPdfFromElement(el, {
+        footer:
+          locale === 'es'
+            ? `${analysis.instrumentVersion ?? test.slug} · fitmangas.com`
+            : `${analysis.instrumentVersion ?? test.slug} · fitmangas.com`,
       });
       const slug = heroName
         .toLowerCase()
@@ -421,6 +420,13 @@ export function SelfTestReport({
       data-slug={test.slug}
       data-format={test.format ?? (test.slug === 'attachement' ? 'ecr-s' : 'ipip-50')}
     >
+      {/* En-tête logo visible à l’impression / PDF */}
+      <div className="mb-6 hidden items-center gap-2 print:flex" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" className="h-7 w-7 object-contain" />
+        <span className="text-[13px] font-semibold tracking-wide text-brand-ink">FitMangas</span>
+      </div>
+
       {showFull ? (
         <nav
           className="sticky top-[52px] z-30 mb-8 -mx-1 overflow-x-auto rounded-full border border-white/70 bg-white/90 px-2 py-2 shadow-[0_8px_24px_rgba(60,40,30,0.08)] backdrop-blur-md"

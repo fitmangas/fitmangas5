@@ -178,7 +178,7 @@ export const BIG_FIVE_TRAIT_BANK: Record<BigFiveTraitKey, TraitBank> = {
         es: 'Tu cuerpo reacciona rápido al estrés, al cansancio o a los cambios. Una mala noche, una semana densa — y lo notas enseguida en tu práctica. No es un defecto: es una señal de que a veces hay que frenar, respirar, ir acompañada.',
       },
       force: {
-        fr: 'Tu ressens finement ce qui se passe en toi — tu ne ignores pas les signaux du corps.',
+        fr: 'Tu ressens finement ce qui se passe en toi — tu n’ignores pas les signaux du corps.',
         es: 'Sientes con finura lo que pasa en ti — no ignoras las señales del cuerpo.',
       },
       limit: {

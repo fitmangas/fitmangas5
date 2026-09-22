@@ -88,7 +88,7 @@ export const TRAIT_PRACTICE_IMPACT: Record<BigFiveTraitKey, Record<Level, Biling
       es: 'Sostienes cuando el marco es claro sin ser rígido: 2–3 horarios/semana bastan para anclar la práctica.',
     },
     high: {
-      fr: 'Tu honorés ce que tu as promis : un abonnement avec créneaux collectifs te donne un contrat avec toi-même.',
+      fr: 'Tu honores ce que tu as promis : un abonnement avec créneaux collectifs te donne un contrat avec toi-même.',
       es: 'Cumples lo que prometes: una suscripción con horarios colectivos te da un contrato contigo misma.',
     },
   },

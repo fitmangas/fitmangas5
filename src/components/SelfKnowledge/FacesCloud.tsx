@@ -52,7 +52,7 @@ export function FacesCloud({ children, className = '', compact = false }: Props)
 
   return (
     <div
-      className={`relative mx-auto max-w-4xl px-5 ${compact ? 'pt-6 sm:pt-8' : 'pt-10 sm:pt-14'} ${className}`}
+      className={`relative mx-auto max-w-4xl px-5 ${compact ? 'pt-4 sm:pt-6' : 'pt-10 sm:pt-14'} ${className}`}
       data-testid="faces-cloud-hero"
     >
       <div className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>

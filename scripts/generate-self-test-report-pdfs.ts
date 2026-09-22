@@ -1,96 +1,125 @@
 /**
- * Génère 3 PDF de rapports complets (fixtures) → _captures/tests-ux/
- * Usage : npx tsx scripts/generate-self-test-report-pdfs.ts
+ * Génère 3 PDF visuels = print headless de la page rapport web (full).
+ * Usage : NEXT_PUBLIC_UX_CAPTURE=1 npx tsx scripts/generate-self-test-report-pdfs.ts
+ * (démarre un serveur Next temporaire si besoin)
  */
+import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
 
-import {
-  assembleAttachmentReport,
-  assembleBigFiveReport,
-} from '../src/lib/self-knowledge/assemble-report';
-import { buildSelfTestReportPdf } from '../src/lib/self-knowledge/build-self-test-pdf';
-import { IPIP120_FACET_IDS } from '../src/lib/self-knowledge/ipip120';
-import { ATTACHMENT_TEST } from '../src/lib/self-knowledge/ecr-short';
-import { BIG_FIVE_TEST } from '../src/lib/self-knowledge/ipip50';
-import { BIG_FIVE_120_TEST } from '../src/lib/self-knowledge/ipip120';
-import type { SelfTestScores } from '../src/lib/self-knowledge/types';
+import { assembleAttachmentReport } from '../src/lib/self-knowledge/assemble-report';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(root, '_captures', 'tests-ux');
+const PORT = 3099;
+const BASE = `http://127.0.0.1:${PORT}`;
 
-function scores50(): SelfTestScores {
-  return { E: 28, A: 34, C: 44, ES: 18, O: 36 };
-}
-
-function scores120(): SelfTestScores {
-  const base = scores50();
-  for (const id of IPIP120_FACET_IDS) {
-    const n = Number(id.slice(1));
-    base[id] = 8 + ((n * 2) % 10);
+async function waitForServer(url: string, ms = 120_000) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+    try {
+      const res = await fetch(url);
+      if (res.ok || res.status === 404) return;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 800));
   }
-  return base;
+  throw new Error(`Serveur non prêt : ${url}`);
 }
 
-function scoresAttach(): SelfTestScores {
-  return { anxiety: 5.1, avoidance: 2.4 };
+async function startServer(): Promise<ChildProcess> {
+  const child = spawn(
+    'npx',
+    ['next', 'dev', '-p', String(PORT), '-H', '127.0.0.1'],
+    {
+      cwd: root,
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_UX_CAPTURE: '1',
+        NEXT_DIST_DIR: '.next-pdf-gen',
+        PORT: String(PORT),
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }
+  );
+  child.stdout?.on('data', () => {});
+  child.stderr?.on('data', () => {});
+  await waitForServer(`${BASE}/quiz/ux-capture?slug=attachement&full=1`);
+  return child;
 }
 
-async function writePdf(filename: string, blob: Blob) {
-  const buf = Buffer.from(await blob.arrayBuffer());
+async function printReport(
+  page: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newPage']>>,
+  urlPath: string,
+  filename: string
+) {
+  await page.goto(`${BASE}${urlPath}`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.waitForSelector('[data-testid="self-test-report"][data-show-full="true"]', {
+    timeout: 30_000,
+  });
+  // Laisse radar / polices peindre
+  await page.waitForTimeout(600);
+
   const dest = path.join(OUT, filename);
   fs.mkdirSync(OUT, { recursive: true });
-  fs.writeFileSync(dest, buf);
-  const stat = fs.statSync(dest);
-  console.log(`OK ${dest} (${stat.size} bytes)`);
-  return { dest, size: stat.size };
+  await page.pdf({
+    path: dest,
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '10mm', bottom: '14mm', left: '12mm', right: '12mm' },
+    displayHeaderFooter: true,
+    headerTemplate: '<div></div>',
+    footerTemplate: `
+      <div style="width:100%;font-size:8px;color:#958780;text-align:center;padding:0 12mm;">
+        FitMangas · fitmangas.com · connaissance de soi
+      </div>`,
+  });
+  const size = fs.statSync(dest).size;
+  console.log(`OK ${dest} (${size} bytes)`);
+  return size;
 }
 
 async function main() {
-  const locale = 'fr' as const;
-
-  const a50 = assembleBigFiveReport(scores50(), locale, 'ipip-50');
-  const pdf50 = await buildSelfTestReportPdf({
-    locale,
-    testTitle: BIG_FIVE_TEST.title.fr,
-    portraitName: a50.portrait!.name,
-    tagline: a50.portrait!.tagline,
-    disclaimer: a50.portrait!.disclaimer,
-    sections: a50.sections!,
-    instrumentVersion: 'ipip-50',
-  });
-  await writePdf('rapport-ipip50.pdf', pdf50);
-
-  const a120 = assembleBigFiveReport(scores120(), locale, 'ipip-120');
-  const pdf120 = await buildSelfTestReportPdf({
-    locale,
-    testTitle: BIG_FIVE_120_TEST.title.fr,
-    portraitName: a120.portrait!.name,
-    tagline: a120.portrait!.tagline,
-    disclaimer: a120.portrait!.disclaimer,
-    sections: a120.sections!,
-    instrumentVersion: 'ipip-120',
-  });
-  await writePdf('rapport-ipip120.pdf', pdf120);
-
-  const aAtt = assembleAttachmentReport(scoresAttach(), locale);
-  const pdfAtt = await buildSelfTestReportPdf({
-    locale,
-    testTitle: ATTACHMENT_TEST.title.fr,
-    portraitName: aAtt.portrait!.name,
-    tagline: aAtt.portrait!.tagline,
-    disclaimer: aAtt.portrait!.disclaimer,
-    sections: aAtt.sections!,
-    instrumentVersion: 'ecr-s',
-  });
-  await writePdf('rapport-attachement.pdf', pdfAtt);
-
-  // Garde-fou : forces non vides
+  // Garde-fou banque
+  const aAtt = assembleAttachmentReport({ anxiety: 5.1, avoidance: 2.4 }, 'fr');
   if (!aAtt.sections?.forces?.length) {
     throw new Error('BUG: rapport attachement sans forces');
   }
-  console.log('forces attachement:', aAtt.sections.forces.length);
+
+  let child: ChildProcess | null = null;
+  const browser = await chromium.launch({ headless: true });
+  try {
+    child = await startServer();
+    const page = await browser.newPage({ viewport: { width: 1100, height: 1400 } });
+
+    await printReport(
+      page,
+      '/quiz/ux-capture?slug=big-five&format=ipip-50&full=1',
+      'rapport-ipip50.pdf'
+    );
+    await printReport(
+      page,
+      '/quiz/ux-capture?slug=big-five&format=ipip-120&full=1',
+      'rapport-ipip120.pdf'
+    );
+    await printReport(
+      page,
+      '/quiz/ux-capture?slug=attachement&full=1',
+      'rapport-attachement.pdf'
+    );
+  } finally {
+    await browser.close();
+    if (child?.pid) {
+      try {
+        process.kill(child.pid, 'SIGTERM');
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 }
 
 main().catch((e) => {

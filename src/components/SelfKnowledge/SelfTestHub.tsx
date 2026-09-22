@@ -123,10 +123,10 @@ export function SelfTestHub({ locale }: Props) {
       <SelfTestCardGrid locale={locale} cards={cards} compact vertical />
 
       {/* Premier écran : titre + vignettes rondes ; carrousel vidéo uniquement au scroll */}
-      <div data-testid="hub-proof-avatars" className="pt-1">
+      <div data-testid="hub-proof-avatars" className="pt-0">
         <QuizVideoProof locale={locale} title={t.proof} subtitle={t.proofSub} variant="avatars" />
       </div>
-      <div className="mt-10 min-h-[55vh] pb-16 sm:mt-14" data-testid="hub-video-proof">
+      <div className="mt-8 min-h-[50vh] pb-16 sm:mt-12" data-testid="hub-video-proof">
         <QuizVideoProof locale={locale} title={t.proof} variant="carousel" />
       </div>
     </SelfTestShell>
