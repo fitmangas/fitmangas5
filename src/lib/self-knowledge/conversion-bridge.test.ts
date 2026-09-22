@@ -105,7 +105,21 @@ function createMemoryDb() {
     return api;
   }
 
-  mockFrom.mockImplementation((table: string) => chainFor(table));
+  mockFrom.mockImplementation((table: string) => {
+    // promoteEmailToMemberFlow touche newsletter + acq — chaînes no-op
+    if (table === 'newsletter_subscriptions') {
+      return {
+        update: () => ({
+          ilike: () => ({
+            eq: () => ({
+              select: async () => ({ data: [], error: null }),
+            }),
+          }),
+        }),
+      };
+    }
+    return chainFor(table);
+  });
   return { results, contacts };
 }
 

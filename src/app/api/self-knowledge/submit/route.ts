@@ -13,6 +13,8 @@ const bodySchema = z.object({
   firstName: z.string().trim().min(1).max(60),
   email: z.string().trim().email().max(120),
   consent: z.literal(true),
+  /** Opt-in blog newsletter (double opt-in) — distinct du consentement acquisition. */
+  blogOptIn: z.boolean().optional().default(false),
   answers: z.record(z.string(), z.number().int().min(1).max(7)),
   source: z
     .object({
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
     scores,
     analysis,
     consent: true,
+    blogOptIn: parsed.data.blogOptIn === true,
     source: parsed.data.source,
   });
 
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
     ok: true,
     resultId: saved.resultId,
     contactId: saved.contactId,
+    blogOptInPending: saved.blogOptInPending ?? false,
     scores,
     analysis,
   });

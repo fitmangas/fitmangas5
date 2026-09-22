@@ -2,16 +2,20 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { Lock } from 'lucide-react';
 
 import { OceanRadar, buildOceanSlices } from '@/components/SelfKnowledge/OceanRadar';
+import { SelfTestShareInvite } from '@/components/SelfKnowledge/SelfTestShareInvite';
 import { QuizVideoProof } from '@/components/Quiz/QuizVideoProof';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
 import { OCEAN_TRAIT_SHORT } from '@/lib/self-knowledge/ocean-palette';
+import { buildSelfTestReportPdf, downloadBlob } from '@/lib/self-knowledge/build-self-test-pdf';
 import type {
   SelfTestAnalysis,
   SelfTestDefinition,
+  SelfTestFacetSection,
   SelfTestLang,
   SelfTestScores,
 } from '@/lib/self-knowledge/types';
@@ -24,6 +28,8 @@ type Props = {
   trialHref: string;
   hubHref: string;
   showFull: boolean;
+  firstName?: string | null;
+  inviterEmail?: string | null;
 };
 
 const LABELS = {
@@ -36,17 +42,24 @@ const LABELS = {
     strengths: 'Tes forces',
     limits: 'Tes limites — sans te juger',
     combinations: 'Combinaisons repérées',
-    facets: 'Facettes détaillées',
+    facets: 'Facettes',
+    practice: 'Ce que ça change pour ta pratique',
+    micro: 'Micro-recommandation',
     lockedTitle: 'Analyse complète réservée aux membres',
     lockedCta: 'Récupère ton analyse complète',
-    save: 'Enregistrer',
+    pdf: 'Télécharger le PDF',
     hub: 'Autre test',
     trial: 'Essai gratuit 7 jours',
     human: 'Elles aussi ont un profil — et un créneau collectif',
     humanSub: 'Vidéos d’adhérentes.',
-    notDiagnosis: 'Indicatif — pas un diagnostic. Les scores évoluent avec le temps.',
     modeClaude: 'Analyse IA',
     modeTemplate: 'Analyse modèle',
+    navPortrait: 'Portrait',
+    navProfil: 'Profil',
+    navForces: 'Forces',
+    navLimits: 'Limites',
+    navFacets: 'Facettes',
+    navPractice: 'Pratique',
   },
   es: {
     report: 'Tu resultado',
@@ -57,19 +70,28 @@ const LABELS = {
     strengths: 'Tus fuerzas',
     limits: 'Tus límites — sin juzgarte',
     combinations: 'Combinaciones detectadas',
-    facets: 'Facetas detalladas',
+    facets: 'Facetas',
+    practice: 'Qué cambia para tu práctica',
+    micro: 'Micro-recomendación',
     lockedTitle: 'Análisis completo reservado a socias',
     lockedCta: 'Recupera tu análisis completo',
-    save: 'Guardar',
+    pdf: 'Descargar el PDF',
     hub: 'Otro test',
     trial: 'Prueba gratis 7 días',
     human: 'Ellas también tienen un perfil — y una cita',
     humanSub: 'Vídeos de alumnas.',
-    notDiagnosis: 'Orientativo — no es un diagnóstico. Las puntuaciones evolucionan.',
     modeClaude: 'Análisis IA',
     modeTemplate: 'Análisis plantilla',
+    navPortrait: 'Retrato',
+    navProfil: 'Perfil',
+    navForces: 'Fuerzas',
+    navLimits: 'Límites',
+    navFacets: 'Facetas',
+    navPractice: 'Práctica',
   },
 } as const;
+
+const PARENT_ORDER = ['E', 'A', 'C', 'ES', 'O'] as const;
 
 const terracottaCta =
   'inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_26px_rgba(196,93,62,0.28)] transition hover:brightness-110';
@@ -96,59 +118,95 @@ function NumberedList({ items, accent }: { items: string[]; accent: string }) {
 }
 
 function ProseBlock({ text }: { text: string }) {
-  return (
-    <p className="text-[15px] leading-[1.8] text-brand-ink/75 whitespace-pre-line">{text}</p>
-  );
+  return <p className="text-[15px] leading-[1.8] text-brand-ink/75 whitespace-pre-line">{text}</p>;
 }
 
-function AttachmentBars({
-  scores,
-  locale,
-}: {
-  scores: SelfTestScores;
-  locale: SelfTestLang;
-}) {
-  const dims = ['anxiety', 'avoidance'] as const;
-  const colors = { anxiety: '#C45D3E', avoidance: '#5B7C8D' };
-
+function FacetBar({ band, bandLabel }: { band: 'low' | 'mid' | 'high'; bandLabel: string }) {
+  const pct = band === 'high' ? 88 : band === 'low' ? 22 : 52;
   return (
-    <div className="space-y-4">
-      {dims.map((key) => {
-        const raw = scores[key] ?? 4;
-        const pct = Math.round(((raw - 1) / 6) * 100);
-        const label = ATTACHMENT_LABELS[key]?.[locale] ?? key;
-        return (
-          <div key={key}>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="text-[14px] font-medium text-brand-ink/70">{label}</span>
-              <span className="tabular-nums text-[13px] font-semibold text-brand-ink/40">
-                {raw}/7
-              </span>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-brand-ink/[0.06]">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${Math.max(pct, 4)}%`,
-                  background: `linear-gradient(90deg, ${colors[key]}, ${colors[key]}cc)`,
-                }}
-              />
-            </div>
-          </div>
-        );
-      })}
+    <div className="flex min-w-[7.5rem] items-center gap-2">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-brand-ink/[0.08]">
+        <div
+          className="h-full rounded-full bg-[#c45d3e]"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-brand-ink/45">
+        {bandLabel}
+      </span>
     </div>
   );
 }
 
-function downloadTextFile(text: string, filename: string) {
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+function FacetsByTrait({
+  facets,
+  locale,
+}: {
+  facets: SelfTestFacetSection[];
+  locale: SelfTestLang;
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, SelfTestFacetSection[]>();
+    for (const f of facets) {
+      const parent = f.parentTrait ?? f.id.charAt(0);
+      const list = map.get(parent) ?? [];
+      list.push(f);
+      map.set(parent, list);
+    }
+    return PARENT_ORDER.filter((k) => map.has(k)).map((k) => ({
+      key: k,
+      label: BIG_FIVE_LABELS[k]?.[locale] ?? k,
+      facets: map.get(k)!,
+      openByDefault: map.get(k)!.some((f) => f.band === 'high' || f.band === 'low'),
+    }));
+  }, [facets, locale]);
+
+  return (
+    <div className="space-y-3" data-testid="facets-accordion">
+      {grouped.map((group) => (
+        <details
+          key={group.key}
+          open={group.openByDefault}
+          className="rounded-[20px] border border-white/55 bg-white/85 px-4 py-3"
+        >
+          <summary className="cursor-pointer list-none text-[13px] font-semibold text-brand-ink/80">
+            <span className="text-[#c45d3e]">{group.label}</span>
+            <span className="ml-2 text-[11px] font-normal text-brand-ink/40">
+              {group.facets.length} {locale === 'es' ? 'facetas' : 'facettes'}
+            </span>
+          </summary>
+          <div className="mt-3 space-y-2 border-t border-brand-ink/[0.06] pt-3">
+            {group.facets.map((facet) => {
+              const salient = facet.band === 'high' || facet.band === 'low';
+              return (
+                <details
+                  key={facet.id}
+                  open={salient}
+                  className="rounded-xl bg-[#FFFAF5]/80 px-3 py-2.5"
+                >
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-[12.5px] font-medium text-brand-ink/75">
+                    <span>{facet.label}</span>
+                    <FacetBar band={facet.band} bandLabel={facet.bandLabel} />
+                  </summary>
+                  <div className="mt-2 space-y-2 border-t border-brand-ink/[0.05] pt-2">
+                    <p className="text-[13px] leading-relaxed text-brand-ink/65">{facet.narrative}</p>
+                    <p className="text-[12px] text-[#6B8F71]">
+                      <span className="font-semibold">{locale === 'es' ? 'Fortaleza' : 'Force'} : </span>
+                      {facet.force}
+                    </p>
+                    <p className="text-[12px] text-[#5B7C8D]">
+                      <span className="font-semibold">{locale === 'es' ? 'Límite' : 'Limite'} : </span>
+                      {facet.limit}
+                    </p>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
 }
 
 function LockedSection({
@@ -175,6 +233,12 @@ function LockedSection({
   );
 }
 
+function firstSentences(text: string, count: number): string {
+  const sentences = text.match(/[^.!?…]+[.!?…]+/g);
+  if (!sentences?.length) return text.slice(0, 280).trim();
+  return sentences.slice(0, count).join(' ').trim();
+}
+
 export function SelfTestReport({
   locale,
   test,
@@ -183,11 +247,14 @@ export function SelfTestReport({
   trialHref,
   hubHref,
   showFull,
+  firstName,
+  inviterEmail,
 }: Props) {
   const t = LABELS[locale];
   const portrait = analysis.portrait;
   const sections = analysis.sections;
   const accent = '#C45D3E';
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const traitLabel = (key: string) => {
     if (test.slug === 'big-five') {
@@ -205,18 +272,40 @@ export function SelfTestReport({
 
   const heroName = portrait?.name ?? test.title[locale];
   const heroTagline = portrait?.tagline ?? analysis.teaser.slice(0, 160);
+  const modeLabel = analysis.mode === 'claude' ? t.modeClaude : t.modeTemplate;
 
-  const modeLabel =
-    analysis.mode === 'claude' ? t.modeClaude : t.modeTemplate;
+  const navItems = [
+    { id: 'portrait', label: t.navPortrait },
+    { id: 'scores', label: t.navProfil },
+    { id: 'forces', label: t.navForces },
+    { id: 'limits', label: t.navLimits },
+    ...(sections?.facets?.length ? [{ id: 'facets', label: t.navFacets }] : []),
+    ...(sections?.practiceImpact?.length ? [{ id: 'practice', label: t.navPractice }] : []),
+  ];
 
-  function handleSave() {
-    const slug = heroName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-    downloadTextFile(analysis.full, `fitmangas-${test.slug}-${slug || 'resultat'}.txt`);
+  async function handlePdf() {
+    if (pdfBusy || !sections) return;
+    setPdfBusy(true);
+    try {
+      const blob = await buildSelfTestReportPdf({
+        locale,
+        testTitle: test.title[locale],
+        portraitName: heroName,
+        tagline: heroTagline,
+        disclaimer: portrait?.disclaimer ?? '',
+        sections,
+        instrumentVersion: analysis.instrumentVersion ?? test.format ?? test.slug,
+      });
+      const slug = heroName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      downloadBlob(blob, `fitmangas-${test.slug}-${slug || 'resultat'}.pdf`);
+    } finally {
+      setPdfBusy(false);
+    }
   }
 
   const strengthsPreview = analysis.strengths.slice(0, 2);
@@ -263,47 +352,49 @@ export function SelfTestReport({
         ) : null}
       </section>
 
-      <section id="forces" className="scroll-mt-28 mt-14 space-y-10">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.strengths}</p>
-          <div className="mt-4">
-            <NumberedList items={sections.forces} accent="#6B8F71" />
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.limits}</p>
-          <div className="mt-4">
-            <NumberedList items={sections.limits} accent="#5B7C8D" />
-          </div>
+      <section id="forces" className="scroll-mt-28 mt-14">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B8F71]">{t.strengths}</p>
+        <div className="mt-4">
+          <NumberedList items={sections.forces} accent="#6B8F71" />
         </div>
       </section>
+
+      <section id="limits" className="scroll-mt-28 mt-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5B7C8D]">{t.limits}</p>
+        <div className="mt-4">
+          <NumberedList items={sections.limits} accent="#5B7C8D" />
+        </div>
+      </section>
+
+      {sections.practiceImpact?.length ? (
+        <section id="practice" className="scroll-mt-28 mt-14">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c45d3e]">{t.practice}</p>
+          <ul className="mt-4 space-y-3">
+            {sections.practiceImpact.map((p) => (
+              <li
+                key={p.slice(0, 40)}
+                className="rounded-[20px] border border-[#c45d3e]/12 bg-[#FFFAF5] px-4 py-3.5 text-[14px] leading-relaxed text-brand-ink/75"
+              >
+                {p}
+              </li>
+            ))}
+          </ul>
+          {sections.microRecommendation ? (
+            <p
+              className="mt-5 rounded-full border border-[#c45d3e]/20 bg-white px-4 py-3 text-center text-[13px] font-medium text-[#c45d3e]"
+              data-testid="micro-recommendation"
+            >
+              {sections.microRecommendation}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {sections.facets?.length ? (
         <section id="facets" className="scroll-mt-28 mt-14">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A227]">{t.facets}</p>
-          <div className="mt-4 space-y-3">
-            {sections.facets.map((facet) => (
-              <details
-                key={facet.id}
-                className="glass-card rounded-[20px] border border-white/55 bg-white/80 px-5 py-4"
-              >
-                <summary className="cursor-pointer text-[13px] font-semibold text-brand-ink/75">
-                  {facet.label}{' '}
-                  <span className="text-[11px] font-normal text-brand-ink/40">({facet.score}/20)</span>
-                </summary>
-                <div className="mt-3 space-y-3 border-t border-brand-ink/[0.06] pt-3">
-                  <p className="text-[14px] leading-relaxed text-brand-ink/70">{facet.narrative}</p>
-                  <p className="text-[13px] text-[#6B8F71]">
-                    <span className="font-semibold">{locale === 'es' ? 'Fortaleza' : 'Force'} : </span>
-                    {facet.force}
-                  </p>
-                  <p className="text-[13px] text-[#5B7C8D]">
-                    <span className="font-semibold">{locale === 'es' ? 'Límite' : 'Limite'} : </span>
-                    {facet.limit}
-                  </p>
-                </div>
-              </details>
-            ))}
+          <div className="mt-4">
+            <FacetsByTrait facets={sections.facets} locale={locale} />
           </div>
         </section>
       ) : null}
@@ -322,7 +413,27 @@ export function SelfTestReport({
       data-slug={test.slug}
       data-format={test.format ?? (test.slug === 'attachement' ? 'ecr-s' : 'ipip-50')}
     >
-      <header className="glass-card relative overflow-hidden rounded-[32px] border border-white/55 bg-white/80 transition duration-200 hover:-translate-y-0.5">
+      {showFull ? (
+        <nav
+          className="sticky top-[52px] z-30 mb-8 -mx-1 overflow-x-auto rounded-full border border-white/70 bg-white/90 px-2 py-2 shadow-[0_8px_24px_rgba(60,40,30,0.08)] backdrop-blur-md"
+          data-testid="report-sticky-nav"
+        >
+          <ul className="flex min-w-max items-center gap-1 px-1">
+            {navItems.map((item) => (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  className="inline-flex rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-ink/50 transition hover:bg-[#FFFAF5] hover:text-[#c45d3e]"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+
+      <header id="portrait-header" className="glass-card relative overflow-hidden rounded-[32px] border border-white/55 bg-white/80">
         <div className="p-6 sm:p-8">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">{t.report}</p>
@@ -337,9 +448,7 @@ export function SelfTestReport({
           <p className="mt-4 text-[16px] leading-snug text-brand-ink/70">{heroTagline}</p>
           {portrait?.disclaimer ? (
             <p className="mt-3 text-[11px] leading-relaxed text-brand-ink/40">{portrait.disclaimer}</p>
-          ) : (
-            <p className="mt-3 text-[11px] leading-relaxed text-brand-ink/40">{t.notDiagnosis}</p>
-          )}
+          ) : null}
           {strengthsPreview.length > 0 ? (
             <div className="mt-5 flex flex-wrap gap-2">
               {strengthsPreview.map((s) => (
@@ -357,27 +466,44 @@ export function SelfTestReport({
 
       <section id="scores" className="scroll-mt-28 mt-10 space-y-6">
         {test.slug === 'big-five' && oceanSlices.length >= 5 ? (
-          <div className="glass-card rounded-[28px] border border-white/55 bg-white/80 p-4 transition duration-200 hover:-translate-y-0.5">
+          <div className="glass-card rounded-[28px] border border-white/55 bg-white/80 p-4">
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">
               {t.radar}
             </p>
             <OceanRadar slices={oceanSlices} size={260} />
-            <div className="mt-2 flex flex-wrap justify-center gap-3">
-              {oceanSlices.map((s) => (
-                <span key={s.key} className="text-[10px] text-brand-ink/45">
-                  <span className="font-bold" style={{ color: s.color }}>
-                    {s.label}
-                  </span>{' '}
-                  {Math.round(s.value * 100)}%
-                </span>
+            <div className="mt-3 space-y-2 px-2" data-testid="score-phrases">
+              {(sections?.scorePhrases ?? []).map((sp) => (
+                <div key={sp.key} className="flex items-baseline justify-between gap-3 text-[12px]">
+                  <span className="font-medium text-brand-ink/70">
+                    {sp.label}{' '}
+                    <span className="tabular-nums text-brand-ink/40">{sp.percent}%</span>
+                  </span>
+                  <span className="text-right text-brand-ink/50">— {sp.phrase}</span>
+                </div>
               ))}
             </div>
           </div>
         ) : test.slug === 'attachement' ? (
           <div className="glass-card rounded-[28px] border border-white/55 bg-white/80 p-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#c45d3e]">{t.bars}</p>
-            <div className="mt-4">
-              <AttachmentBars scores={scores} locale={locale} />
+            <div className="mt-4 space-y-4" data-testid="score-phrases">
+              {(sections?.scorePhrases ?? []).map((sp) => (
+                <div key={sp.key}>
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[14px] font-medium text-brand-ink/70">
+                      {sp.label}{' '}
+                      <span className="tabular-nums text-[12px] text-brand-ink/40">{sp.percent}%</span>
+                    </span>
+                    <span className="text-[12px] text-brand-ink/50">— {sp.phrase}</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-brand-ink/[0.06]">
+                    <div
+                      className="h-full rounded-full bg-[#c45d3e]"
+                      style={{ width: `${Math.max(sp.percent, 4)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : null}
@@ -403,15 +529,17 @@ export function SelfTestReport({
         <QuizVideoProof locale={locale} title={t.human} subtitle={t.humanSub} />
       </div>
 
-      <div className="self-test-no-print mt-10 flex flex-col items-center gap-3 pb-16">
+      <div className="self-test-no-print mt-10 flex flex-col items-center gap-5 pb-16" data-testid="report-actions">
         <div className="flex flex-wrap justify-center gap-3">
           {showFull ? (
             <button
               type="button"
-              onClick={handleSave}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white/80 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(28,24,20,0.06)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#c45d3e] hover:text-[#c45d3e]"
+              data-testid="download-pdf"
+              onClick={() => void handlePdf()}
+              disabled={pdfBusy}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-2 border-brand-ink/15 bg-white/80 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(28,24,20,0.06)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#c45d3e] hover:text-[#c45d3e] disabled:opacity-60"
             >
-              {t.save}
+              {pdfBusy ? '…' : t.pdf}
             </button>
           ) : null}
           <Link href={trialHref} className={terracottaCta}>
@@ -424,13 +552,14 @@ export function SelfTestReport({
             {t.hub}
           </Link>
         </div>
+        {showFull ? (
+          <SelfTestShareInvite
+            locale={locale}
+            firstName={firstName ?? null}
+            inviterEmail={inviterEmail ?? null}
+          />
+        ) : null}
       </div>
     </article>
   );
-}
-
-function firstSentences(text: string, count: number): string {
-  const sentences = text.match(/[^.!?…]+[.!?…]+/g);
-  if (!sentences?.length) return text.slice(0, 280).trim();
-  return sentences.slice(0, count).join(' ').trim();
 }

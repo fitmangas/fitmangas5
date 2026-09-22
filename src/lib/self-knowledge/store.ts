@@ -1,5 +1,10 @@
 import { LEAD_SCORE_DELTA, clampLeadScore } from '@/lib/acquisition/engine/lead-score';
+import {
+  createNewsletterConfirmationToken,
+  sendNewsletterConfirmationEmail,
+} from '@/lib/blog/newsletter-double-optin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { promoteEmailToMemberFlow } from './email-flow-priority';
 import { computeHealthScores } from './health-scores';
 import { selfTestAcqTag } from './scoring';
 import type {
@@ -64,11 +69,13 @@ export type SavePublicSelfTestInput = {
   scores: SelfTestScores;
   analysis: SelfTestAnalysis;
   consent: true;
+  /** Opt-in blog articles (double opt-in) — séparé du consentement acquisition. */
+  blogOptIn?: boolean;
   source?: Record<string, string>;
 };
 
 export type SavePublicSelfTestResult =
-  | { ok: true; resultId: string; contactId: string }
+  | { ok: true; resultId: string; contactId: string; blogOptInPending?: boolean }
   | { ok: false; error: string; status: number };
 
 export async function savePublicSelfTestResult(
@@ -182,7 +189,43 @@ export async function savePublicSelfTestResult(
     return { ok: false, error: resultErr?.message ?? 'Impossible d’enregistrer le résultat.', status: 500 };
   }
 
-  return { ok: true, resultId: row.id, contactId };
+  let blogOptInPending = false;
+  if (input.blogOptIn === true) {
+    try {
+      const { data: coach } = await admin.from('profiles').select('id').eq('role', 'admin').limit(1).maybeSingle();
+      if (coach?.id) {
+        const { data: sub, error: subErr } = await admin
+          .from('newsletter_subscriptions')
+          .upsert(
+            {
+              email,
+              coach_id: coach.id,
+              subscribed_from_article_id: null,
+              confirmed: false,
+              confirmed_at: null,
+              unsubscribed: false,
+            },
+            { onConflict: 'email,coach_id' },
+          )
+          .select('id, confirmed')
+          .maybeSingle();
+
+        if (subErr) {
+          console.error('[self-test] blog opt-in upsert', subErr);
+        } else if (sub?.id && !sub.confirmed) {
+          const token = await createNewsletterConfirmationToken(String(sub.id));
+          await sendNewsletterConfirmationEmail(email, token);
+          blogOptInPending = true;
+        }
+      } else {
+        console.error('[self-test] blog opt-in: coach admin introuvable');
+      }
+    } catch (e) {
+      console.error('[self-test] blog opt-in', e);
+    }
+  }
+
+  return { ok: true, resultId: row.id, contactId, blogOptInPending };
 }
 
 export type SaveMemberSelfTestInput = {
@@ -279,6 +322,13 @@ export async function attachSelfTestResultsToProfile(
     console.error('[self-test] attach to profile (ilike)', errIlike);
   } else {
     attached += byIlike?.length ?? 0;
+  }
+
+  // Déduplication email : membre gagne sur acquisition + blog public
+  try {
+    await promoteEmailToMemberFlow(normalized, profileId);
+  } catch (e) {
+    console.error('[self-test] promoteEmailToMemberFlow', e);
   }
 
   return attached;

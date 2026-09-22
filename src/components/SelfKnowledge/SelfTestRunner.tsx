@@ -33,6 +33,11 @@ type Phase = 'choose' | 'intro' | 'questions' | 'lead' | 'result';
 
 const BATCH_SIZE = 5;
 
+const COACH_BG = {
+  'big-five': '/library/portraits/portrait-05-1x1.webp',
+  attachement: '/library/portraits/portrait-01-1x1.webp',
+} as const;
+
 function trialUrl(locale: SelfTestLang, slug: string) {
   const path = locale === 'es' ? '/es' : '';
   const params = new URLSearchParams({
@@ -86,16 +91,20 @@ export function SelfTestRunner({
   const currentBatch = batches[batchIndex] ?? [];
   const answeredCount = test.items.filter((item) => answers[item.id] != null).length;
   const progressPct = Math.round((answeredCount / test.items.length) * 100);
+  const coachBg = isBigFive ? COACH_BG['big-five'] : COACH_BG.attachement;
 
   const copy =
     locale === 'es'
       ? {
-          chooseTitle: 'Elige la profundidad del test',
-          chooseSub: 'Mismo modelo Big Five — más preguntas = más matices.',
-          quickTitle: 'Rápida IPIP-50',
-          quickMeta: '50 preguntas · ~8 min · 5 rasgos',
-          deepTitle: 'Profunda IPIP-NEO-120',
-          deepMeta: '120 preguntas · ~20 min · 30 facetas',
+          chooseTitle: 'Elige la profundidad',
+          chooseSub: 'Mismo modelo Big Five — el clic lanza el test.',
+          quickTitle: 'Rápida · IPIP-50',
+          quickMeta: '50 preguntas · ~8 min',
+          quickGets: ['Retrato + radar de 5 rasgos', 'Fuerzas y límites orientados a la práctica', 'Puente hacia cursos colectivos'],
+          deepTitle: 'Profunda · IPIP-NEO-120',
+          deepMeta: '120 preguntas · ~20 min',
+          deepGets: ['Todo lo de la rápida', '30 facetas bajo los 5 rasgos', 'Más matices en tu perfil'],
+          startNow: 'Empezar ahora',
           introCta: 'Empezar el test',
           back: 'Volver',
           next: 'Continuar',
@@ -104,7 +113,7 @@ export function SelfTestRunner({
           of: 'de',
           source: 'Fuente',
           progress: 'Progreso',
-          pick: 'Elige de 1 (muy en desacuerdo) a 5 (muy de acuerdo) según el test.',
+          pick: 'De 1 (muy en desacuerdo) a 5 (muy de acuerdo).',
           introWhat: 'Qué obtienes',
           introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
           introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
@@ -115,12 +124,19 @@ export function SelfTestRunner({
             'Escala ECR-S (Wei et al., 2007) — referencia internacional sobre el apego adulto. Ítems oficiales, dominio público.',
         }
       : {
-          chooseTitle: 'Choisis la profondeur du test',
-          chooseSub: 'Même modèle Big Five — plus de questions = plus de nuances.',
-          quickTitle: 'Rapide IPIP-50',
-          quickMeta: '50 questions · ~8 min · 5 traits',
-          deepTitle: 'Approfondie IPIP-NEO-120',
-          deepMeta: '120 questions · ~20 min · 30 facettes',
+          chooseTitle: 'Choisis la profondeur',
+          chooseSub: 'Même modèle Big Five — le clic lance le test.',
+          quickTitle: 'Rapide · IPIP-50',
+          quickMeta: '50 questions · ~8 min',
+          quickGets: [
+            'Portrait + radar des 5 traits',
+            'Forces et limites orientées pratique',
+            'Pont vers les cours collectifs',
+          ],
+          deepTitle: 'Approfondie · IPIP-NEO-120',
+          deepMeta: '120 questions · ~20 min',
+          deepGets: ['Tout ce que la rapide offre', '30 facettes sous les 5 traits', 'Plus de nuances sur ton profil'],
+          startNow: 'Commencer maintenant',
           introCta: 'Commencer le test',
           back: 'Retour',
           next: 'Continuer',
@@ -129,7 +145,7 @@ export function SelfTestRunner({
           of: 'sur',
           source: 'Source',
           progress: 'Progression',
-          pick: 'Choisis de 1 (très inexact) à 5 (très exact) selon l’échelle indiquée.',
+          pick: 'De 1 (très inexact) à 5 (très exact).',
           introWhat: 'Ce que tu obtiens',
           introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
           introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
@@ -172,6 +188,7 @@ export function SelfTestRunner({
                 firstName: lead!.firstName,
                 email: lead!.email,
                 consent: true,
+                blogOptIn: lead!.blogOptIn ?? false,
                 answers,
                 format: test.slug === 'big-five' ? resolvedFormat : undefined,
                 source: {
@@ -222,11 +239,12 @@ export function SelfTestRunner({
     void submitAnswers();
   }, [submitAnswers]);
 
+  /** Choix profondeur = lancement immédiat (plus de page intro intermédiaire). */
   const pickFormat = useCallback((picked: BigFiveFormat) => {
     setFormat(picked);
     setAnswers({});
     setBatchIndex(0);
-    setPhase('intro');
+    setPhase('questions');
   }, []);
 
   if (phase === 'result' && analysis && scores) {
@@ -240,6 +258,8 @@ export function SelfTestRunner({
           trialHref={trialUrl(locale, test.slug)}
           hubHref={hubHref}
           showFull={mode === 'member'}
+          firstName={memberFirstName}
+          inviterEmail={memberEmail}
         />
       </SelfTestShell>
     );
@@ -266,52 +286,70 @@ export function SelfTestRunner({
           <div data-testid="self-test-choose">
             <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/50 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
               <div
-                className="relative h-36 bg-cover bg-center sm:h-44"
+                className="relative h-28 bg-cover sm:h-32"
                 style={{
-                  backgroundImage:
-                    "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.2)), url('/library/portraits/portrait-05-4x5.webp')",
+                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.4), rgba(196,93,62,0.22)), url('${coachBg}')`,
+                  backgroundPosition: 'center 18%',
                 }}
               >
-                <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
+                <p className="absolute bottom-3 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
                   Big Five
                 </p>
               </div>
-              <div className="p-6 sm:p-8">
-                <h1 className="font-serif text-[2rem] italic leading-tight text-brand-ink sm:text-[2.35rem]">
+              <div className="p-5 sm:p-7">
+                <h1 className="font-serif text-[1.85rem] italic leading-tight text-brand-ink sm:text-[2.15rem]">
                   {copy.chooseTitle}
                 </h1>
-                <p className="mt-3 text-[15px] text-brand-ink/55">{copy.chooseSub}</p>
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    data-testid="choose-ipip-50"
-                    onClick={() => pickFormat('ipip-50')}
-                    className="group rounded-[24px] border border-[#c45d3e]/20 bg-[#FFFAF5] p-6 text-left shadow-[0_12px_32px_rgba(196,93,62,0.08)] transition hover:-translate-y-1 hover:border-[#c45d3e]/50 hover:shadow-[0_18px_40px_rgba(196,93,62,0.16)]"
-                  >
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
-                      {copy.quickTitle}
-                    </p>
-                    <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.quickMeta}</p>
-                    <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c45d3e] opacity-0 transition group-hover:opacity-100">
-                      {locale === 'es' ? 'Elegir →' : 'Choisir →'}
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="choose-ipip-120"
-                    onClick={() => pickFormat('ipip-120')}
-                    className="group rounded-[24px] border border-brand-ink/10 bg-white p-6 text-left shadow-[0_12px_32px_rgba(0,0,0,0.05)] transition hover:-translate-y-1 hover:border-[#c45d3e]/40 hover:shadow-[0_18px_40px_rgba(196,93,62,0.14)]"
-                  >
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
-                      {copy.deepTitle}
-                    </p>
-                    <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/65">{copy.deepMeta}</p>
-                    <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c45d3e] opacity-0 transition group-hover:opacity-100">
-                      {locale === 'es' ? 'Elegir →' : 'Choisir →'}
-                    </p>
-                  </button>
+                <p className="mt-2 text-[14px] text-brand-ink/55">{copy.chooseSub}</p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        id: 'ipip-50' as const,
+                        title: copy.quickTitle,
+                        meta: copy.quickMeta,
+                        gets: copy.quickGets,
+                        testId: 'choose-ipip-50',
+                      },
+                      {
+                        id: 'ipip-120' as const,
+                        title: copy.deepTitle,
+                        meta: copy.deepMeta,
+                        gets: copy.deepGets,
+                        testId: 'choose-ipip-120',
+                      },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-testid={opt.testId}
+                      onClick={() => pickFormat(opt.id)}
+                      className="group flex flex-col rounded-[22px] border border-[#c45d3e]/18 bg-[#FFFAF5] p-5 text-left shadow-[0_10px_28px_rgba(196,93,62,0.08)] transition hover:-translate-y-1 hover:border-[#c45d3e]/45 hover:shadow-[0_16px_36px_rgba(196,93,62,0.16)]"
+                    >
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">{opt.title}</p>
+                      <p className="mt-1 text-[13px] font-medium text-brand-ink/70">{opt.meta}</p>
+                      <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">
+                        {copy.introWhat}
+                      </p>
+                      <ul className="mt-2 flex-1 space-y-1.5 text-[12.5px] leading-snug text-brand-ink/65">
+                        {opt.gets.map((g) => (
+                          <li key={g} className="flex gap-2">
+                            <span className="text-[#c45d3e]">●</span>
+                            <span>{g}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-3 text-[10px] leading-snug text-brand-ink/40">
+                        {locale === 'es' ? 'Fuente IPIP · dominio público' : 'Source IPIP · domaine public'}
+                      </p>
+                      <span className="mt-4 inline-flex items-center justify-center rounded-full bg-[#c45d3e] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                        {copy.startNow} →
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <p className="mt-6 text-center text-[12px] text-brand-ink/45">{credibilityLine}</p>
+                <p className="mt-5 text-center text-[11px] text-brand-ink/40">{credibilityLine}</p>
               </div>
             </div>
           </div>
@@ -319,11 +357,10 @@ export function SelfTestRunner({
           <div data-testid="self-test-intro">
             <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/60 shadow-[0_20px_50px_rgba(60,40,30,0.08)]">
               <div
-                className="relative h-40 bg-cover bg-center sm:h-48"
+                className="relative h-36 bg-cover sm:h-40"
                 style={{
-                  backgroundImage: isBigFive
-                    ? "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.18)), url('/library/portraits/portrait-05-4x5.webp')"
-                    : "linear-gradient(120deg, rgba(26,20,16,0.35), rgba(196,93,62,0.18)), url('/library/portraits/portrait-01-4x5.webp')",
+                  backgroundImage: `linear-gradient(120deg, rgba(26,20,16,0.38), rgba(196,93,62,0.2)), url('${coachBg}')`,
+                  backgroundPosition: 'center 18%',
                 }}
               >
                 <p className="absolute bottom-4 left-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
@@ -376,20 +413,6 @@ export function SelfTestRunner({
                   </p>
                 ) : null}
                 <div className="mt-8 flex flex-wrap gap-3">
-                  {isBigFive && !initialFormat ? (
-                    <button
-                      type="button"
-                      data-testid="intro-back-choose"
-                      onClick={() => {
-                        setAnswers({});
-                        setBatchIndex(0);
-                        setPhase('choose');
-                      }}
-                      className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
-                    >
-                      ← {copy.back}
-                    </button>
-                  ) : null}
                   <button
                     type="button"
                     data-testid="intro-start"
@@ -403,8 +426,8 @@ export function SelfTestRunner({
             </div>
           </div>
         ) : (
-          <div data-testid="self-test-questions">
-            <div className="mb-6">
+          <div data-testid="self-test-questions" className="mx-auto max-w-xl">
+            <div className="mb-5">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-ink/45">
                 <span>
                   {copy.batch} {batchIndex + 1} {copy.of} {batches.length}
@@ -413,7 +436,7 @@ export function SelfTestRunner({
                   {copy.progress} {progressPct}%
                 </span>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-ink/8">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-brand-ink/8">
                 <div
                   className="h-full rounded-full bg-[#c45d3e] transition-all duration-300"
                   style={{ width: `${progressPct}%` }}
@@ -421,45 +444,51 @@ export function SelfTestRunner({
               </div>
             </div>
 
-            <p className="mb-6 text-[14px] text-brand-ink/55">{copy.pick}</p>
+            <p className="mb-5 text-center text-[12px] text-brand-ink/50">{copy.pick}</p>
 
-            <div className="space-y-8">
-              {currentBatch.map((item) => (
-                <fieldset
-                  key={item.id}
-                  data-testid={`question-${item.id}`}
-                  className="rounded-[20px] border border-brand-ink/[0.06] bg-white/85 p-5 shadow-sm"
-                >
-                  <legend className="text-[15px] font-medium leading-snug text-brand-ink">
-                    {item.text[locale]}
-                  </legend>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {(Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue)).map(
-                      (v) => (
+            <div className="space-y-5">
+              {currentBatch.map((item) => {
+                const labels = test.likertLabels[locale];
+                const values = Array.from({ length: test.likertMax }, (_, i) => (i + 1) as LikertValue);
+                return (
+                  <fieldset
+                    key={item.id}
+                    data-testid={`question-${item.id}`}
+                    className="rounded-[22px] border border-brand-ink/[0.06] bg-white/90 px-4 py-5 shadow-[0_8px_24px_rgba(60,40,30,0.05)] sm:px-5"
+                  >
+                    <legend className="w-full px-0.5 text-center text-[15px] font-medium leading-snug text-brand-ink">
+                      {item.text[locale]}
+                    </legend>
+                    <div
+                      className="mt-5 grid gap-1.5"
+                      style={{ gridTemplateColumns: `repeat(${test.likertMax}, minmax(0, 1fr))` }}
+                    >
+                      {values.map((v) => (
                         <button
                           key={v}
                           type="button"
                           data-testid={`answer-${item.id}-${v}`}
                           aria-pressed={answers[item.id] === v}
+                          aria-label={labels[v - 1]}
                           onClick={() => pickAnswer(item.id, v)}
-                          className={`min-w-[2.75rem] rounded-full border px-3 py-2 text-[13px] font-semibold transition ${
+                          className={`flex aspect-square w-full flex-col items-center justify-center rounded-xl border text-[14px] font-semibold transition ${
                             answers[item.id] === v
                               ? 'border-[#c45d3e] bg-[#c45d3e] text-white shadow-md'
-                              : 'border-brand-ink/10 bg-white text-brand-ink/70 hover:border-[#c45d3e]/40'
+                              : 'border-brand-ink/10 bg-[#FFFAF5] text-brand-ink/70 hover:border-[#c45d3e]/40'
                           }`}
-                          title={test.likertLabels[locale][v - 1]}
+                          title={labels[v - 1]}
                         >
                           {v}
                         </button>
-                      ),
-                    )}
-                  </div>
-                  <p className="mt-2 text-[10px] text-brand-ink/40">
-                    1 = {test.likertLabels[locale][0]} · {test.likertMax} ={' '}
-                    {test.likertLabels[locale][test.likertMax - 1]}
-                  </p>
-                </fieldset>
-              ))}
+                      ))}
+                    </div>
+                    <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.06em] text-brand-ink/35">
+                      <span className="max-w-[40%] truncate">{labels[0]}</span>
+                      <span className="max-w-[40%] truncate text-right">{labels[test.likertMax - 1]}</span>
+                    </div>
+                  </fieldset>
+                );
+              })}
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -474,7 +503,7 @@ export function SelfTestRunner({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setPhase('intro')}
+                  onClick={() => setPhase(isBigFive && !initialFormat ? 'choose' : 'intro')}
                   className="rounded-full border border-brand-ink/15 bg-white/80 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-ink/60"
                 >
                   ← {copy.back}

@@ -221,6 +221,10 @@ export async function POST(request: Request) {
           if (attached > 0) {
             console.info('[stripe webhook] self-test results attached', { userId, count: attached });
           }
+          if (customerEmail) {
+            const { promoteEmailToMemberFlow } = await import('@/lib/self-knowledge/email-flow-priority');
+            await promoteEmailToMemberFlow(customerEmail, userId);
+          }
         } catch (attachErr) {
           console.error('[stripe webhook] self-test attach failed', attachErr);
         }

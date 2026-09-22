@@ -13,6 +13,8 @@ export type DepthCard = {
   title: string;
   meta: string;
   description: string;
+  /** Ligne discrète source (IPIP / ECR-S) */
+  sourceLine?: string;
   image: string;
   imageAlt: string;
   cta: string;

@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-22 — Self-knowledge A–D (hub + rapports + PDF + dédup)
+- **A** Hub compact (2 cartes 1er écran) ; textes bénéfice ; choix profondeur = lancement direct ; portraits `portrait-05-1x1` / `portrait-01-1x1` (object-position visage) ; questions redesign.
+- **B** Phrases-clés % + pratique Pilates + micro-reco ; facettes accordéon 2 niveaux + barres (plus de /20) ; nav sticky.
+- **C** PDF `build-self-test-pdf.ts` ; parrainage RGPD (`self_test_invites`, lien + email 1×) ; opt-in blog lead (double opt-in).
+- **D** `promoteEmailToMemberFlow` : membre (active/trialing) > acquisition > blog_public — appelé au rattachement Stripe/checkout.
+- Captures : `_captures/tests-ux/` 13 PNG (questions, PDF/parrainage). Vitest 81 ; Playwright UX vert ; build vert.
+
 ### 2026-09-22 — UX hub /quiz : grille + crédibilité + Polyvalente
 - Hub : cartes **côte à côte** (`SelfTestCardGrid`) — carrousel 3D conservé mais non utilisé sur /quiz.
 - Portraits coach Alejandra sur cartes/intros : `public/library/portraits/portrait-05-4x5.webp` (Big Five) + `portrait-01-4x5.webp` (Attachement). Nuage = adhérentes.

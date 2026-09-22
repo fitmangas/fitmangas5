@@ -17,6 +17,8 @@ type Props = {
   hubHref: string;
   /** Membre connectée : affiche l’analyse complète */
   showFull?: boolean;
+  firstName?: string | null;
+  inviterEmail?: string | null;
 };
 
 /** Wrapper conservé pour les imports existants — délègue au rapport riche. */
@@ -30,6 +32,8 @@ export function SelfTestTeaser(props: Props) {
       trialHref={props.trialHref}
       hubHref={props.hubHref}
       showFull={props.showFull ?? false}
+      firstName={props.firstName}
+      inviterEmail={props.inviterEmail}
     />
   );
 }

@@ -58,9 +58,23 @@ export type SelfTestFacetSection = {
   label: string;
   score: number;
   band: 'low' | 'mid' | 'high';
+  /** Mot lisible : élevé / modéré / bas */
+  bandLabel: string;
   narrative: string;
   force: string;
   limit: string;
+  /** Trait parent (E/A/C/ES/O) pour accordéon 2 niveaux */
+  parentTrait?: string;
+};
+
+export type SelfTestScorePhrase = {
+  key: string;
+  label: string;
+  /** 0–100 pour affichage barre / radar */
+  percent: number;
+  /** Phrase-clé à côté du % */
+  phrase: string;
+  band: 'low' | 'mid' | 'high';
 };
 
 export type SelfTestSections = {
@@ -70,6 +84,12 @@ export type SelfTestSections = {
   limits: string[];
   combinations: string[];
   facets?: SelfTestFacetSection[];
+  /** Phrases-clés sous le radar / barres */
+  scorePhrases?: SelfTestScorePhrase[];
+  /** Ce que ça change pour la pratique (Pilates / collectif) */
+  practiceImpact?: string[];
+  /** Micro-recommandation format idéal */
+  microRecommendation?: string;
 };
 
 export type SelfTestAnalysis = {

@@ -35,9 +35,11 @@ const LAYOUT: Array<{
 type Props = {
   children: ReactNode;
   className?: string;
+  /** Hub : hero plus bas pour laisser place aux 2 cartes */
+  compact?: boolean;
 };
 
-export function FacesCloud({ children, className = '' }: Props) {
+export function FacesCloud({ children, className = '', compact = false }: Props) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const t = window.setTimeout(() => setReady(true), 40);
@@ -45,15 +47,18 @@ export function FacesCloud({ children, className = '' }: Props) {
   }, []);
 
   const byId = Object.fromEntries(FACES.map((f) => [f.id, f]));
+  const scale = compact ? 0.72 : 1;
+  const layout = compact ? LAYOUT.slice(0, 6) : LAYOUT;
 
   return (
     <div
-      className={`relative mx-auto max-w-4xl px-5 pt-10 sm:pt-14 ${className}`}
+      className={`relative mx-auto max-w-4xl px-5 ${compact ? 'pt-6 sm:pt-8' : 'pt-10 sm:pt-14'} ${className}`}
       data-testid="faces-cloud-hero"
     >
       <div className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
-        {LAYOUT.map((slot, i) => {
+        {layout.map((slot, i) => {
           const face = byId[slot.id] ?? FACES[i % FACES.length]!;
+          const size = Math.round(slot.size * scale);
           return (
             <div
               key={`${slot.id}-${i}`}
@@ -64,8 +69,8 @@ export function FacesCloud({ children, className = '' }: Props) {
                 top: slot.top,
                 left: slot.left,
                 right: slot.right,
-                width: slot.size,
-                height: slot.size,
+                width: size,
+                height: size,
                 animationDelay: slot.delay,
                 opacity: ready ? (slot.opacity ?? 1) : 0,
                 transitionDelay: `${i * 70}ms`,
@@ -74,16 +79,20 @@ export function FacesCloud({ children, className = '' }: Props) {
               <Image
                 src={face.src}
                 alt=""
-                width={slot.size * 2}
-                height={slot.size * 2}
-                className="h-full w-full rounded-full object-cover"
+                width={size * 2}
+                height={size * 2}
+                className="h-full w-full rounded-full object-cover object-[center_20%]"
               />
             </div>
           );
         })}
       </div>
 
-      <div className="relative z-10 mx-auto max-w-xl px-2 pb-6 pt-16 text-center sm:pt-20">
+      <div
+        className={`relative z-10 mx-auto max-w-xl px-2 text-center ${
+          compact ? 'pb-2 pt-10 sm:pt-12' : 'pb-6 pt-16 sm:pt-20'
+        }`}
+      >
         {children}
       </div>
 

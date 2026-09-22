@@ -74,6 +74,8 @@ export function SelfTestCaptureClient({
         trialHref="/?offer=v-coll&utm_source=self-test"
         hubHref="/quiz"
         showFull={showFull}
+        firstName="Camille"
+        inviterEmail="camille@fitmangas.test"
       />
     </SelfTestShell>
   );
