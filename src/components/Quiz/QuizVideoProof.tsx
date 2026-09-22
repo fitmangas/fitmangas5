@@ -103,12 +103,15 @@ export function QuizVideoProof({ locale, title, subtitle, variant = 'full' }: Pr
   const current = items[active]!;
 
   return (
-    <section ref={sectionRef} className="quiz-no-print relative py-6 sm:py-8">
+    <section
+      ref={sectionRef}
+      className={`quiz-no-print relative ${variant === 'avatars' ? 'py-3 sm:py-4' : 'py-6 sm:py-8'}`}
+    >
       {showHeader ? (
-      <div className="mb-4 px-5 text-center">
+      <div className={`px-5 text-center ${variant === 'avatars' ? 'mb-2' : 'mb-4'}`}>
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">{title}</p>
-        {subtitle ? <p className="mt-2 text-[13px] text-brand-ink/50">{subtitle}</p> : null}
-        <div className="mt-3 flex justify-center -space-x-3" aria-hidden>
+        {subtitle ? <p className="mt-1.5 text-[12px] text-brand-ink/50 sm:text-[13px]">{subtitle}</p> : null}
+        <div className="mt-2.5 flex justify-center -space-x-3" aria-hidden>
           {items.slice(0, 5).map((item, i) => (
             <div
               key={item.id}

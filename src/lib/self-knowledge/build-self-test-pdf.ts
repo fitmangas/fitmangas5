@@ -1,29 +1,8 @@
+/**
+ * PDF = capture visuelle de la page rapport (DOM → canvas → PDF),
+ * pas une reconstruction texte. Logo, radar, couleurs, typo = ceux du web.
+ */
 import { jsPDF } from 'jspdf';
-
-import type { SelfTestLang, SelfTestSections } from './types';
-
-const CREAM: [number, number, number] = [255, 250, 245];
-const INK: [number, number, number] = [29, 29, 31];
-const MUTED: [number, number, number] = [90, 85, 80];
-const LINE: [number, number, number] = [220, 210, 200];
-const TERRACOTTA: [number, number, number] = [196, 93, 62];
-
-const MARGIN = 16;
-const PAGE_W = 210;
-const PAGE_H = 297;
-const CONTENT_W = PAGE_W - MARGIN * 2;
-const BOTTOM = PAGE_H - 16;
-const LINE_H = 5.2;
-
-export type SelfTestPdfInput = {
-  locale: SelfTestLang;
-  testTitle: string;
-  portraitName: string;
-  tagline: string;
-  disclaimer: string;
-  sections: SelfTestSections;
-  instrumentVersion: string;
-};
 
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -34,150 +13,85 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function wrap(doc: jsPDF, text: string, maxW: number): string[] {
-  return doc.splitTextToSize(text, maxW) as string[];
-}
+const A4_W_MM = 210;
+const A4_H_MM = 297;
+const MARGIN_MM = 10;
 
-function ensureSpace(doc: jsPDF, y: number, need: number): number {
-  if (y + need <= BOTTOM) return y;
-  doc.addPage();
-  doc.setFillColor(...CREAM);
-  doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
-  return 18;
-}
+/**
+ * Imprime l’élément rapport (version complète affichée) en PDF multipages.
+ * Utilise html2canvas pour coller au rendu CSS (cream / terracotta / radar).
+ */
+export async function buildSelfTestReportPdfFromElement(
+  element: HTMLElement,
+  opts?: { footer?: string }
+): Promise<Blob> {
+  const html2canvas = (await import('html2canvas')).default;
 
-function heading(doc: jsPDF, y: number, title: string): number {
-  y = ensureSpace(doc, y, 12);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...TERRACOTTA);
-  doc.text(title.toUpperCase(), MARGIN, y);
-  return y + 7;
-}
+  // Masque temporairement les blocs non imprimables dans l’élément
+  const hide = element.querySelectorAll('.self-test-no-print, .quiz-no-print');
+  const prev: Array<{ el: HTMLElement; display: string }> = [];
+  hide.forEach((node) => {
+    const el = node as HTMLElement;
+    prev.push({ el, display: el.style.display });
+    el.style.display = 'none';
+  });
 
-function body(doc: jsPDF, y: number, text: string): number {
-  const lines = wrap(doc, text, CONTENT_W);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(...INK);
-  for (const line of lines) {
-    y = ensureSpace(doc, y, LINE_H);
-    doc.text(line, MARGIN, y);
-    y += LINE_H;
-  }
-  return y + 3;
-}
-
-function bullets(doc: jsPDF, y: number, items: string[]): number {
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(...INK);
-  for (const item of items) {
-    const lines = wrap(doc, `• ${item}`, CONTENT_W);
-    for (const line of lines) {
-      y = ensureSpace(doc, y, LINE_H);
-      doc.text(line, MARGIN, y);
-      y += LINE_H;
-    }
-    y += 1.5;
-  }
-  return y + 2;
-}
-
-/** PDF client-side — DA cream / terracotta FitMangas. */
-export async function buildSelfTestReportPdf(input: SelfTestPdfInput): Promise<Blob> {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const fr = input.locale === 'fr';
-  doc.setFillColor(...CREAM);
-  doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
-
-  let y = 20;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(...TERRACOTTA);
-  doc.text('FitMangas', MARGIN, y);
-  y += 6;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...MUTED);
-  doc.text(input.testTitle, MARGIN, y);
-  y += 10;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(...INK);
-  const nameLines = wrap(doc, input.portraitName, CONTENT_W);
-  for (const line of nameLines) {
-    doc.text(line, MARGIN, y);
-    y += 8;
-  }
-  y = body(doc, y + 2, input.tagline);
-
-  if (input.sections.scorePhrases?.length) {
-    y = heading(doc, y + 2, fr ? 'Profil' : 'Perfil');
-    for (const sp of input.sections.scorePhrases) {
-      y = body(doc, y, `${sp.label} ${sp.percent}% — ${sp.phrase}`);
-    }
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#FFFAF5',
+      logging: false,
+      windowWidth: Math.max(element.scrollWidth, 800),
+    });
+  } finally {
+    prev.forEach(({ el, display }) => {
+      el.style.display = display;
+    });
   }
 
-  y = heading(doc, y + 2, fr ? 'Qui tu es' : 'Quién eres');
-  y = body(doc, y, input.sections.whoYouAre);
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const usableW = A4_W_MM - MARGIN_MM * 2;
+  const usableH = A4_H_MM - MARGIN_MM * 2 - 6; // réserve pied de page
+  const imgW = usableW;
+  const imgH = (canvas.height * imgW) / canvas.width;
+  const pageCanvasH = (usableH / imgH) * canvas.height;
 
-  y = heading(doc, y + 2, fr ? 'Comment tu fonctionnes' : 'Cómo funcionas');
-  y = body(doc, y, input.sections.howYouWork);
+  let yPx = 0;
+  let page = 0;
+  while (yPx < canvas.height) {
+    if (page > 0) doc.addPage();
+    const sliceH = Math.min(pageCanvasH, canvas.height - yPx);
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width;
+    slice.height = Math.max(1, Math.ceil(sliceH));
+    const ctx = slice.getContext('2d')!;
+    ctx.fillStyle = '#FFFAF5';
+    ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(canvas, 0, yPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
 
-  if (input.sections.forces.length) {
-    y = heading(doc, y + 2, fr ? 'Forces' : 'Fortalezas');
-    y = bullets(doc, y, input.sections.forces);
-  }
-  if (input.sections.limits.length) {
-    y = heading(doc, y + 2, fr ? 'Limites' : 'Límites');
-    y = bullets(doc, y, input.sections.limits);
-  }
-  if (input.sections.practiceImpact?.length) {
-    y = heading(doc, y + 2, fr ? 'Ce que ça change pour ta pratique' : 'Qué cambia para tu práctica');
-    y = bullets(doc, y, input.sections.practiceImpact);
-  }
-  if (input.sections.microRecommendation) {
-    y = body(doc, y + 2, input.sections.microRecommendation);
-  }
-  if (input.sections.facets?.length) {
-    y = heading(doc, y + 2, fr ? 'Facettes' : 'Facetas');
-    for (const facet of input.sections.facets) {
-      y = body(doc, y, `${facet.label} — ${facet.bandLabel}`);
-      y = body(doc, y, facet.narrative);
-    }
-  }
+    const sliceHmm = (slice.height * imgW) / canvas.width;
+    doc.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', MARGIN_MM, MARGIN_MM, imgW, sliceHmm);
 
-  y = ensureSpace(doc, y + 4, 20);
-  doc.setDrawColor(...LINE);
-  doc.setLineWidth(0.3);
-  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
-  y += 6;
-  if (input.disclaimer) y = body(doc, y, input.disclaimer);
-  doc.setFontSize(8);
-  doc.setTextColor(...MUTED);
-  y = ensureSpace(doc, y + 2, 8);
-  doc.text(
-    fr
-      ? `Instrument : ${input.instrumentVersion} · fitmangas.com`
-      : `Instrumento : ${input.instrumentVersion} · fitmangas.com`,
-    MARGIN,
-    y,
-  );
+    const footer = opts?.footer ?? 'FitMangas · fitmangas.com · connaissance de soi';
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(150, 140, 130);
+    doc.text(footer, A4_W_MM / 2, A4_H_MM - 6, { align: 'center' });
 
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(...MUTED);
-    doc.text(
-      fr ? 'FitMangas · Connaissance de soi' : 'FitMangas · Conocimiento de una misma',
-      MARGIN,
-      PAGE_H - 6,
-    );
-    doc.text(`${i} / ${total}`, PAGE_W - MARGIN, PAGE_H - 6, { align: 'right' });
+    yPx += sliceH;
+    page += 1;
+    if (page > 40) break; // garde-fou
   }
 
   return doc.output('blob');
+}
+
+/** @deprecated Conservé pour imports anciens — préfère buildSelfTestReportPdfFromElement */
+export async function buildSelfTestReportPdf(): Promise<Blob> {
+  throw new Error(
+    'buildSelfTestReportPdf texte est retiré. Utilise buildSelfTestReportPdfFromElement (DOM) ou le script Playwright print-to-PDF.'
+  );
 }

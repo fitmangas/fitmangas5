@@ -41,10 +41,24 @@ export function SelfTestShell({ locale, children }: Props) {
       <main className="relative z-10">{children}</main>
       <style>{`
         @media print {
-          @page { margin: 14mm; }
-          html, body { background: #fff !important; }
-          .quiz-no-print { display: none !important; }
-          .quiz-doc { background: #fff !important; }
+          @page { margin: 10mm 12mm 14mm; size: A4; }
+          html, body {
+            background: #FFFAF5 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .quiz-no-print, .self-test-no-print { display: none !important; }
+          .quiz-doc {
+            background: #FFFAF5 !important;
+            background-image: none !important;
+          }
+          .self-test-report {
+            max-width: none !important;
+            padding: 0 !important;
+          }
+          .self-test-report a { text-decoration: none; color: inherit; }
+          .sticky { position: static !important; }
+          nav[data-testid="report-sticky-nav"] { display: none !important; }
         }
       `}</style>
     </div>
