@@ -47,7 +47,9 @@ function tiktokRedirectUri() {
 
 export function buildTikTokOAuthUrl(state: string) {
   const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim() || '';
-  const scopes = ['user.info.basic', 'video.upload', 'video.publish'].join(',');
+  // Live app scopes today: user.info.basic + video.upload.
+  // video.publish (Direct Post) requires a TikTok app revision — do not request it until Live.
+  const scopes = ['user.info.basic', 'video.upload'].join(',');
   const params = new URLSearchParams({
     client_key: clientKey,
     scope: scopes,
