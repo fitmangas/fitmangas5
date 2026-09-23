@@ -54,6 +54,8 @@ export type ReadingResourceRow = {
   affiliate_url?: string | null;
   disclosure?: boolean;
   resource_type?: string;
+  /** Chemin local (ex. /library/book-covers/…) ou URL — jamais photo coach. */
+  cover_image_url?: string | null;
 };
 
 export type HealthEntryRow = {
@@ -452,7 +454,7 @@ export async function listReadingResources(locale: SelfTestLang): Promise<Readin
   const { data, error } = await admin
     .from('reading_resources')
     .select(
-      'id, title, author, theme, why_text, locale, sort_order, affiliate_url, disclosure, resource_type',
+      'id, title, author, theme, why_text, locale, sort_order, affiliate_url, disclosure, resource_type, cover_image_url',
     )
     .eq('published', true)
     .eq('locale', locale)

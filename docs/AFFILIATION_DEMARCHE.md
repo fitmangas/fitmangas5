@@ -1,28 +1,28 @@
-# Affiliation — démarches Kevin (mécanique code déjà en place)
+# Affiliation — état opérationnel
 
-Le site **n’inscrit à aucun programme** à ta place. Quand tu as un lien affilié, tu le colles en base ; l’UI affiche le bouton + le badge **« Lien affilié »** obligatoire, et chaque clic est tracé dans `affiliate_clicks`.
+Mécanique code : bouton + tracking `affiliate_clicks` + badge **« Lien affilié »** seulement si `disclosure = true`.
 
-## Où coller le lien
+## État 23/09/2026
 
-Table Supabase `reading_resources` :
-- `affiliate_url` = ton URL trackée (Amazon / Fnac / Decathlon…)
-- `disclosure` = `true` (recommandé ; l’UI affiche quand même « Lien affilié » dès qu’il y a une URL)
+| Programme | Réseau | Statut |
+|---|---|---|
+| **Fnac FR** | **Awin** (#12665), éditeur **3103771** | Candidature **Pending Approval**. Liens Awin→Fnac déjà en base FR (`disclosure=false` tant que pas Joined). |
+| **Amazon** | Partenaires | En pause (identifiants perso à retrouver). |
+| **Decathlon** | **Rakuten** (pas Awin en FR) | Pas encore — autre inscription. |
 
-Admin SQL exemple :
-```sql
-UPDATE reading_resources
-SET affiliate_url = 'https://www.amazon.fr/...?...tag=TONTAG',
-    disclosure = true
-WHERE id = '…';
-```
+| Ressource | Lien | Badge |
+|---|---|---|
+| Livres + matériel FR | Awin → Fnac | non (attente Joined → `npx tsx scripts/apply-awin-fnac-urls.ts --disclose`) |
+| Livres / gear ES | aucun (Amazon retiré) | — |
 
-## Programmes à créer (toi, hors Cursor)
+UI : mention « Même prix qu’en magasin » sous le bouton.
 
-1. **Amazon Partenaires (FR)** — https://partenaires.amazon.fr — idéal livres (ex. *Atomic Habits*, *Le corps n’oublie rien*). Tag affilié dans l’URL.
-2. **Fnac Affiliation** — https://www.fnac.com/ (programme partenaires / Awin selon période) — livres FR grand public.
-3. **Decathlon Affiliation** — matériel Pilates léger (tapis, ballon) si tu ajoutes des ressources `resource_type = gear`.
-4. *(Optionnel ES)* Amazon.es Partners si le club de lecture ES est prioritaire.
+## Après Fnac Approuvé
+
+1. Dashboard Awin → My Programmes → Fnac = Joined  
+2. `npx tsx scripts/apply-awin-fnac-urls.ts --disclose`  
+3. (Optionnel) Link Builder pour URLs produit exactes au lieu des recherches ISBN.
 
 ## Règle légale
 
-Toujours le libellé **« Lien affilié »** visible à côté du lien (déjà codé). Pas de faux avis « cliente » sur un produit affilié.
+Pas de badge sans programme réellement actif. Prix client = prix catalogue (aucune majoration).

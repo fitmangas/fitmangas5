@@ -10,6 +10,8 @@ import type { ClientLang } from '@/lib/compte/i18n';
 import { WEARABLES_V2_ENABLED } from '@/lib/self-knowledge/wearables';
 import type { HealthEntryRow } from '@/lib/self-knowledge/store';
 
+import '@/components/SelfKnowledge/compte/hub-member.css';
+
 type Props = {
   lang: ClientLang;
   initialConsentId: string | null;
@@ -77,25 +79,18 @@ export function CorpsSanteView({
   );
 
   return (
-    <div className="mt-2 space-y-6">
-      <HubSectionHero
-        imageSrc="/library/portraits/portrait-09-4x5.webp"
-        imageAlt=""
-        eyebrow={t.eyebrow}
-        title={t.title}
-        lead={t.lead}
-      />
+    <div className="mt-2 space-y-8">
+      <HubSectionHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
 
       {!consentId ? (
         <div className="space-y-4">
           <HubEmptyState
-            imageSrc="/library/portraits/portrait-04-4x5.webp"
-            imageAlt=""
             title={t.emptyTitle}
             lead={t.emptyLead}
             ctaLabel={t.emptyCta}
             ctaHref="#health-consent"
             testId="corps-empty"
+            preview="curve"
           />
           <div id="health-consent">
             <HealthConsentGate lang={lang} onConsented={setConsentId} />
@@ -105,16 +100,15 @@ export function CorpsSanteView({
         <>
           {entries.length === 0 ? (
             <HubEmptyState
-              imageSrc="/library/portraits/portrait-04-4x5.webp"
-              imageAlt=""
               title={t.emptyTitle}
               lead={t.emptyLead}
               ctaLabel={t.emptyCta}
               ctaHref="#health-form"
               testId="corps-empty-form"
+              preview="pastilles"
             />
           ) : (
-            <div className="rounded-[26px] border border-white/70 bg-[#FFFAF5] p-5 shadow-[0_14px_40px_rgba(60,40,30,0.1)] sm:p-6">
+            <div className="hub-reveal hub-elevate rounded-[26px] border border-white/70 bg-[#FFFAF5] p-5 shadow-[0_14px_40px_rgba(60,40,30,0.1)] sm:p-6">
               <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c45d3e]">{t.curve}</h2>
               <div className="mt-4">
                 <TrendLineChart

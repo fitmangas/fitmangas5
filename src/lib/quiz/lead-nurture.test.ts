@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { trialFollowupSequence } from '@/lib/acquisition/copy-bilingual';
 import { textMatchesKeyword } from '@/lib/acquisition/engine/workflow-catalog';
 import {
+  buildQuizNurtureEmail,
   buildQuizWhatsAppBody,
   phoneDigitsForWhatsApp,
   profileHook,
@@ -57,5 +58,23 @@ describe('quiz nurture helpers', () => {
     expect(body).toContain('offer=v-coll');
     expect(body.toLowerCase()).not.toContain('mangitas');
     expect(body.toLowerCase()).not.toContain('rendez-vous fixe');
+  });
+
+  it('buildQuizNurtureEmail : CTA essai + wa.me sur welcome, j2, j5', () => {
+    for (const step of ['welcome', 'j2', 'j5'] as const) {
+      const { subject, innerHtml } = buildQuizNurtureEmail({
+        step,
+        locale: 'fr',
+        firstName: 'Marie',
+        resultId: 'jaune',
+        quizSlug: 'profil-discipline',
+      });
+      expect(subject.length).toBeGreaterThan(5);
+      expect(innerHtml).toContain('wa.me/');
+      expect(innerHtml).toContain('Écris-moi ici');
+      expect(innerHtml).toContain('#C45D3E');
+      expect(innerHtml.toLowerCase()).not.toContain('mangitas');
+      expect(innerHtml.toLowerCase()).not.toContain('rendez-vous fixe');
+    }
   });
 });

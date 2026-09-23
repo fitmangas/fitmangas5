@@ -118,7 +118,8 @@ export function buildQuizWhatsAppBody(params: {
   ].join('\n');
 }
 
-function buildEmail(params: {
+/** Exporté pour tests (texte + wa.me sur welcome / J+2 / J+5). */
+export function buildQuizNurtureEmail(params: {
   step: 'welcome' | 'j2' | 'j5';
   locale: QuizLocale;
   firstName: string;
@@ -144,6 +145,13 @@ function buildEmail(params: {
       : `Salut Alejandra, je viens de faire le quiz (${style}). Je veux tester 7 jours.`,
   )}`;
 
+  const waLine =
+    locale === 'es'
+      ? `<p style="margin:0 0 24px;font-size:14px;color:#2D2D2D;line-height:1.5;">¿Prefieres WhatsApp? <a href="${escapeHtml(waLink)}" style="color:#C45D3E;font-weight:600;">Escríbeme aquí</a> — te respondo enseguida.</p>`
+      : `<p style="margin:0 0 24px;font-size:14px;color:#2D2D2D;line-height:1.5;">Tu préfères WhatsApp ? <a href="${escapeHtml(waLink)}" style="color:#C45D3E;font-weight:600;">Écris-moi ici</a> — je te réponds tout de suite.</p>`;
+  const ctaStyle =
+    'display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;';
+
   if (locale === 'es') {
     if (step === 'welcome') {
       return {
@@ -154,8 +162,8 @@ function buildEmail(params: {
           <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">${escapeHtml(hook)}</p>
           <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">Conmigo: clases grupales en visio con horarios fijos — te corrijo en directo, te veo de verdad.</p>
           <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;"><strong>Prueba 7 días gratis ✨</strong></p>
-          <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Empezar mi prueba →</a></p>
-          <p style="margin:0 0 24px;font-size:14px;color:#2D2D2D;line-height:1.5;">¿Prefieres WhatsApp? <a href="${escapeHtml(waLink)}" style="color:#C45D3E;font-weight:600;">Escríbeme aquí</a> — te respondo enseguida.</p>
+          <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Empezar mi prueba →</a></p>
+          ${waLine}
           <p style="margin:0;font-size:13px;color:#6B6560;"><a href="${escapeHtml(reportUrl)}" style="color:#C45D3E;">Reabrir mi informe</a></p>
         `,
       };
@@ -167,7 +175,8 @@ function buildEmail(params: {
           <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Solo un recordatorio</h1>
           <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">Como <strong>${escapeHtml(style)}</strong>, lo que te frena rara vez es el ejercicio — es hacerlo sola.</p>
           <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Ven a una clase grupal conmigo esta semana. Yo te veo. Tú decides después.</p>
-          <p style="margin:0 0 24px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Probar 7 días gratis →</a></p>
+          <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Probar 7 días gratis →</a></p>
+          ${waLine}
         `,
       };
     }
@@ -176,7 +185,8 @@ function buildEmail(params: {
       innerHtml: `
         <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Último mensaje de mi parte</h1>
         <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">La prueba es sin compromiso de quedarte. Vienes a clase, te corrijo, decides.</p>
-        <p style="margin:0 0 24px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Abrir el enlace →</a></p>
+        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Abrir el enlace →</a></p>
+        ${waLine}
       `,
     };
   }
@@ -190,8 +200,8 @@ function buildEmail(params: {
         <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">${escapeHtml(hook)}</p>
         <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">Avec moi : des cours collectifs en visio à horaires fixes — je te corrige en direct, je te vois vraiment.</p>
         <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;"><strong>Essai 7 jours gratuits ✨</strong></p>
-        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Démarrer mon essai →</a></p>
-        <p style="margin:0 0 24px;font-size:14px;color:#2D2D2D;line-height:1.5;">Tu préfères WhatsApp ? <a href="${escapeHtml(waLink)}" style="color:#C45D3E;font-weight:600;">Écris-moi ici</a> — je te réponds tout de suite.</p>
+        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Démarrer mon essai →</a></p>
+        ${waLine}
         <p style="margin:0;font-size:13px;color:#6B6560;"><a href="${escapeHtml(reportUrl)}" style="color:#C45D3E;">Rouvrir mon rapport</a></p>
       `,
     };
@@ -203,7 +213,8 @@ function buildEmail(params: {
         <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Juste un rappel</h1>
         <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">En profil <strong>${escapeHtml(style)}</strong>, ce qui freine n’est presque jamais l’exo — c’est de le faire seule.</p>
         <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Viens à un cours en groupe avec moi cette semaine. Je te vois. Tu décides après.</p>
-        <p style="margin:0 0 24px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Tester 7 jours gratuits →</a></p>
+        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Tester 7 jours gratuits →</a></p>
+        ${waLine}
       `,
     };
   }
@@ -212,7 +223,8 @@ function buildEmail(params: {
     innerHtml: `
       <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Dernier message de mon côté</h1>
       <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">L’essai, c’est sans engagement de rester. Tu viens en cours, je te corrige, tu décides.</p>
-      <p style="margin:0 0 24px;"><a href="${escapeHtml(trialUrl)}" style="display:inline-block;background:#C45D3E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">Ouvrir le lien →</a></p>
+      <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Ouvrir le lien →</a></p>
+      ${waLine}
     `,
   };
 }
@@ -347,7 +359,7 @@ export async function scheduleAndSendQuizWelcome(params: {
   const j2 = new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString();
   const j5 = new Date(now + 5 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { subject, innerHtml } = buildEmail({
+  const { subject, innerHtml } = buildQuizNurtureEmail({
     step: 'welcome',
     locale: params.locale,
     firstName: params.firstName,
@@ -472,7 +484,7 @@ export async function processDueQuizNurture(limit = 40): Promise<{
       continue;
     }
     const locale = row.locale === 'es' ? 'es' : 'fr';
-    const { subject, innerHtml } = buildEmail({
+    const { subject, innerHtml } = buildQuizNurtureEmail({
       step: 'j2',
       locale,
       firstName: row.first_name,
@@ -507,7 +519,7 @@ export async function processDueQuizNurture(limit = 40): Promise<{
       continue;
     }
     const locale = row.locale === 'es' ? 'es' : 'fr';
-    const { subject, innerHtml } = buildEmail({
+    const { subject, innerHtml } = buildQuizNurtureEmail({
       step: 'j5',
       locale,
       firstName: row.first_name,
