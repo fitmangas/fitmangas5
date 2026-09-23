@@ -27,11 +27,42 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
-### 2026-09-23 — TikTok OAuth @fit.mangas CONNECTÉ
+### 2026-09-23 — Hub membre : refonte design data-viz (DA FitMangas)
 
-- `admin_settings.tiktok_social_connection` : **connected** (`displayName: fit.mangas`, scopes `user.info.basic,video.upload`). Redirect URI Live OK.
-- Fix scopes sans `video.publish` poussé (`6517738`). Pub auto Direct Post = révision TikTok `video.publish` plus tard (sinon upload brouillon).
-- WA inchangé : coexistence `ON_PREMISE` → support Meta (2494160 / 133010). Carte OK.
+- **Mon évolution** : scène Nike/tennis-spirit (gros chiffres, pastilles donut, courbe fluide draw-on, 1 ambiance max). Composant `EvolutionScene`.
+- **Onglets** : barre sticky icône+label, indicateur terracotta animé (`SelfKnowledgeHubNav`).
+- **5 sections** : même niveau (typo serif, empty silhouettes, motion CSS `hub-member-motion.css`, `prefers-reduced-motion`).
+- **Club lecture** : couvertures Open Library → `public/library/book-covers/` + colonne `cover_image_url` ; sections **Lectures** / **Matériel** séparées ; badge affilié si `disclosure` seulement.
+- Script : `scripts/fetch-reading-covers.ts`. Migration additive `reading_resources_cover_image_url`.
+- Quiz publics `/quiz` **non touchés**. Captures hub régénérées `_captures/tests-ux/21–30` + mobile.
+
+### 2026-09-23 — Affiliation : bascule Awin/Fnac (Amazon en pause)
+
+- **Base FR** : livres + tapis/ballon → deep links Awin (`awinmid=12665`, `awinaffid=3103771`) vers Fnac. `disclosure=false` tant que Fnac = **Pending Approval**. Amazon retiré. ES sans lien pour l’instant.
+- **UI** : mention « Même prix qu’en magasin » sous le bouton (`DeveloppementPersoView`).
+- **Script** : `scripts/apply-awin-fnac-urls.ts` (+ `--disclose` après Joined).
+- **Decathlon** : réseau **Rakuten**, pas Awin FR — à faire à part. Ordre de grandeur pub. ~4 % client existant / jusqu’à ~15 % nouveau (à confirmer dans Rakuten).
+- Amazon Partenaires : Kevin retrouve identifiants plus tard.
+
+### 2026-09-23 — Filet email+wa.me + affiliation (préparation)
+
+- **Quiz nurture** : lien `wa.me` + CTA terracotta sur **welcome, J+2 et J+5** (FR/ES). Copy OK (pas Mangitas / pas « rendez-vous fixe »). Numéro `33784835972`. Tests `lead-nurture.test.ts` verts.
+- **Affiliation** : UI badge + tracking OK ; script `scripts/apply-affiliate-urls.ts` ; doc `docs/AFFILIATION_DEMARCHE.md`.
+- **WA Cloud** : reporté (2ᵉ numéro / budget) — filet email+wa.me suffit.
+
+### 2026-09-23 — WhatsApp : bascule WABA Ale Mangas (sans support Meta)
+
+- **Découverte** : WABA Alejandra `142760…` = SMB / Business App → templates **2494160** + `/register` SMB bloqués. WABA **Ale Mangas** `1103500375480853` = Cloud pur → templates **OK**.
+- **Fait** : template `quiz_essai_fitmangas_v3` (FR, MARKETING) → **APPROVED** (`id` `1285346160320325`). App FitMangas Community 2 **subscribed** sur ce WABA.
+- **Fait** : phone Cloud créé `1399435993243764` (+33 7 84 83 59 72, nom FitMangas, `PENDING` / `NOT_VERIFIED`, `is_on_biz_app:false`).
+- **Paiement Ale Mangas** : carte OK → `health_status.can_send_message: AVAILABLE` (plus de 141006). Template APPROVED + app subscribed.
+- **Bloquant restant** : phone Cloud `1399435993243764` encore `PENDING` / `NOT_VERIFIED` — le +33 784835972 est encore dans l’app WhatsApp Business (famille/amis). **Conseil** : plutôt un **2ᵉ numéro** pour le robot (ne pas supprimer le compte perso). Filet = email + wa.me.
+
+### 2026-09-23 — TikTok / WhatsApp : objectifs + état réel
+
+- **Objectifs** : (1) TikTok = Reels IG publiés **directement** sur `@fit.mangas` (pas brouillon). (2) WhatsApp = template après quiz via Cloud API.
+- **TikTok** : OAuth Live OK (`user.info.basic`+`video.upload`). Draft : **Direct Post ON** + scope `video.publish` ajouté (history 23/09 14:07). Révision **soumise**. Tant que Live sans `video.publish` → brouillon seulement.
+- **WhatsApp** : voir entrée « bascule WABA Ale Mangas » ci-dessus (état figé précédent SMB Alejandra = obsolète).
 
 ### 2026-09-23 — Hub membre : passe design (DA quiz + empty engageants)
 

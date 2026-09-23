@@ -274,7 +274,15 @@ test.describe('Hub membre — captures DA', () => {
       });
       await expect(page.getByTestId('hub-ux-capture')).toHaveAttribute('data-filled', '1');
       if (section === 'developpement') {
-        await expect(page.getByTestId('affiliate-disclosure')).toBeVisible();
+        await expect(page.getByTestId('affiliate-disclosure').first()).toBeVisible();
+        await expect(page.getByTestId('reading-section-books')).toBeVisible();
+        await expect(page.getByTestId('reading-section-gear')).toBeVisible();
+        await expect(page.getByTestId('reading-book-card').first()).toBeVisible();
+        await expect(page.getByTestId('reading-gear-card').first()).toBeVisible();
+      }
+      if (section === 'evolution' && page.url().includes('filled=1')) {
+        await expect(page.getByTestId('evolution-scene')).toBeVisible();
+        await expect(page.getByTestId('fluid-evolution-curve')).toBeVisible();
       }
       await page.waitForTimeout(400);
       await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-filled`);

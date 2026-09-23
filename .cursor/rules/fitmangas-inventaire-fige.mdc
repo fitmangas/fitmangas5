@@ -40,26 +40,26 @@ alwaysApply: true
 ### Quiz / Connaissance de soi
 - Définition legacy DiSC : `src/lib/quiz/quizzes/profil-discipline*.ts` (nurture cron encore branché sur `quiz_leads`)
 - **Moteur neuf** : `src/lib/self-knowledge/` — Big Five IPIP-50 **ou** IPIP-NEO-120 (choix cliente) + ECR-S ; banques déterministes traits/facettes/attachement ; **rapport = 100 % banque** (`SELF_TEST_CLAUDE_ANALYSIS` OFF) ; DA type profil-discipline (`SelfTestReport`, radar OCEAN labels hors points) ; hub `/quiz` = cartes verticales compactes (CTA « Je commence » above fold desktop) + portraits coach + stats ; fond questions `public/tests/questions-bg.jpg` ; carrousel vidéo sous le fold ; PDF Chromium full-bleed + marges contenu ; dédup email membre>acq>blog
-- Pages `/quiz` ; compte `/compte/connaissance-de-soi` (hub 5 onglets DA immersive type `/quiz` : `HubVisuals` hero/empty/chaîne/jalons ; dashboard KPI → onglet Ma progression ; `/compte/progression` redirige ; affiliation `affiliate_url` + badge « Lien affilié » + `affiliate_clicks` ; doc `docs/AFFILIATION_DEMARCHE.md` ; historique 50/120 ; compare radar ; journal/défis)
+- Pages `/quiz` ; compte `/compte/connaissance-de-soi` (hub 5 onglets sticky icône+label ; scène **Mon évolution** data-viz ; DA cream/terracotta motion ; affiliation FR = **Awin→Fnac** (éd. 3103771) `disclosure=false` tant que Pending ; couvertures livres `cover_image_url` + cache `public/library/book-covers/` ; Lectures ≠ Matériel ; Amazon en pause ; Decathlon = **Rakuten** ; UI « Même prix qu’en magasin » ; badge seulement si `disclosure` ; doc `docs/AFFILIATION_DEMARCHE.md` ; historique 50/120 ; compare radar ; journal/défis)
 - PDF self-test : print-to-PDF de la page rapport (`page.pdf` / `buildSelfTestReportPdfFromElement`) ; invites RGPD `self_test_invites` + `SelfTestShareInvite` ; priorité email member > acq > blog (`email-flow-priority.ts`)
 - Archive code : `_archive/quiz-legacy-YYYY-MM-DD/`
 - PDF legacy DiSC : `src/lib/quiz/build-report-pdf.ts`
 - Lead gate legacy : `src/lib/quiz/lead.ts` → `quiz_leads` + `acq_contacts`
 
-## Meta (re-vérifié 21/09/2026 — ne pas re-dire « expiré » sans test)
+## Meta (re-vérifié 23/09/2026)
 - Script : `npx tsx scripts/check-meta-tokens.ts`
 - Page ID ≠ IG User ID OK ; tokens CM + IGAA valides
-- WhatsApp robot branché ; templates marketing = 0
-- **Bloquant WA réel** : WABA `1427605062481966` sans moyen de paiement → `health_status.can_send_message = BLOCKED` (code 141006). Pas de template / cold send tant que carte absente dans Billing Hub. Email + wa.me = filet OK.
-- Template cible une fois paiement OK : `quiz_essai_fitmangas` (FR, MARKETING, corps **statique sans {{vars}}**)
-- **Carte Meta** : Kevin débloque demain (carte bancaire temporairement bloquée) — reprendre alors paiement + template.
+- **WhatsApp Cloud (bascule Ale Mangas)** :
+  - WABA SMB Alejandra `1427605062481966` → templates **2494160** (Business App) — ne plus y créer de modèles.
+  - WABA Cloud **Ale Mangas** `1103500375480853` : template `quiz_essai_fitmangas_v3` **APPROVED** ; paiement **AVAILABLE** ; phone Cloud `1399435993243764` PENDING ; app subscribed.
+  - Reste : enregistrer un numéro Cloud (idéalement **2ᵉ numéro**, car +33 784835972 = aussi chats perso famille). Filet = email + wa.me.
 
 ## CM / Programmation & publication
 - Miroirs Reels IG : Facebook + TikTok + **YouTube Shorts** (`alsoPublishYouTube`, `src/lib/admin/youtube-social.ts`)
 - YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` — **connecté 21/09/2026** (`youtube_social_connection`, chaîne Alejandra Mangas `UCHkmseevG7-gcLcQZS5xVkQ`).
 - Compte cible chaîne : `info@casamangas.com` (OAuth Google Cloud — pas le mot de passe dans le repo).
 - **TikTok** (23/09/2026) : app Live `Fitmangas` ; Redirect URI OK `…/api/admin/community/tiktok/callback` ; OAuth scopes Live = `user.info.basic` + `video.upload` seulement (`video.publish` = révision TikTok à faire). Connexion compte `@fit.mangas` → `tiktok_social_connection` encore à finaliser (QR / session créateur).
-- **WhatsApp** : WABA AVAILABLE (carte OK) ; téléphone `DISCONNECTED` + `ON_PREMISE` coexistence incomplète → templates bloqués **2494160** + envoi **133010**. Filet = email + wa.me. Support Meta requis pour pairing `CLOUD_API`.
+- **WhatsApp** : voir section Meta — bascule Ale Mangas (template APPROVED) ; register Cloud + carte encore à finaliser.
 
 ## Git push
 - Compte CLI `support811` = **pull only**

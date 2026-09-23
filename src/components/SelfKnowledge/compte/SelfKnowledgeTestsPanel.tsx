@@ -13,6 +13,8 @@ import type { ClientLang } from '@/lib/compte/i18n';
 import { getSelfTest } from '@/lib/self-knowledge/scoring';
 import type { SelfTestSlug } from '@/lib/self-knowledge/types';
 
+import '@/components/SelfKnowledge/compte/hub-member.css';
+
 type Props = {
   lang: ClientLang;
   history: SelfTestResultRow[];
@@ -122,16 +124,10 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
 
   return (
     <div className="mt-2 space-y-10">
-      <HubSectionHero
-        imageSrc="/library/portraits/portrait-05-4x5.webp"
-        imageAlt=""
-        eyebrow={t.eyebrow}
-        title={t.title}
-        lead={t.lead}
-      />
+      <HubSectionHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
 
-      <section>
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c45d3e]">{t.available}</h2>
+      <section className="hub-reveal">
+        <h2 className="font-serif text-2xl italic text-brand-ink">{t.available}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {(['big-five', 'attachement'] as const).map((slug) => {
             const test = getSelfTest(slug);
@@ -139,14 +135,14 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
             return (
               <article
                 key={slug}
-                className="group overflow-hidden rounded-[26px] border border-white/70 bg-[#FFFAF5] shadow-[0_16px_42px_rgba(60,40,30,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(196,93,62,0.16)]"
+                className="hub-elevate group overflow-hidden rounded-[26px] border border-white/70 bg-[#FFFAF5] shadow-[0_16px_42px_rgba(60,40,30,0.11)]"
               >
-                <div className="relative h-[140px] w-full sm:h-[160px]">
+                <div className="relative h-[120px] w-full sm:h-[140px]">
                   <Image
                     src={CARD_IMG[slug]!}
                     alt=""
                     fill
-                    className="object-cover object-[center_12%] transition duration-500 group-hover:scale-[1.03]"
+                    className="object-cover object-[center_12%] opacity-90 transition duration-500 group-hover:scale-[1.02]"
                     sizes="(max-width:640px) 100vw, 320px"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1410]/55 via-transparent to-transparent" />
@@ -184,9 +180,9 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
         </div>
       </section>
 
-      <section>
+      <section className="hub-reveal">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.24em] text-brand-ink/45">{t.history}</h2>
+          <h2 className="font-serif text-2xl italic text-brand-ink">{t.history}</h2>
           <div className="flex gap-1">
             {(['all', 'big-five', 'attachement'] as const).map((s) => (
               <button
@@ -206,13 +202,12 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
         {filtered.length === 0 ? (
           <div className="mt-4">
             <HubEmptyState
-              imageSrc="/library/portraits/portrait-02-4x5.webp"
-              imageAlt=""
               title={t.emptyTitle}
               lead={t.emptyLead}
               ctaLabel={t.emptyCta}
               ctaHref="/compte/connaissance-de-soi/tests/big-five?format=ipip-50"
               testId="tests-empty"
+              preview="radar"
             />
           </div>
         ) : (

@@ -66,6 +66,9 @@ export function TrendLineChart({ data, series, height = 220, yDomain = ['auto', 
               dot={{ r: 3, fill: s.color }}
               activeDot={{ r: 5 }}
               connectNulls
+              isAnimationActive
+              animationDuration={1100}
+              animationEasing="ease-out"
             />
           ))}
         </LineChart>

@@ -1,15 +1,9 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-
-import {
-  ConsistencyChain,
-  HubEmptyState,
-  HubSectionHero,
-} from '@/components/SelfKnowledge/compte/HubVisuals';
 import { CorpsSanteView } from '@/components/SelfKnowledge/compte/CorpsSanteView';
 import { DeveloppementPersoView } from '@/components/SelfKnowledge/compte/DeveloppementPersoView';
+import { EvolutionScene } from '@/components/SelfKnowledge/compte/EvolutionScene';
+import { HubSectionHero } from '@/components/SelfKnowledge/compte/HubVisuals';
 import { ProgressionMemberView } from '@/components/SelfKnowledge/compte/ProgressionMemberView';
 import { SelfKnowledgeHubNav } from '@/components/SelfKnowledge/compte/SelfKnowledgeHubNav';
 import { SelfKnowledgeTestsPanel } from '@/components/SelfKnowledge/compte/SelfKnowledgeTestsPanel';
@@ -29,13 +23,7 @@ const DEMO_TEST: SelfTestResultRow = {
   email: null,
   profile_id: null,
   answers: {},
-  scores: {
-    O: 32,
-    C: 38,
-    E: 28,
-    A: 41,
-    N: 22,
-  },
+  scores: { O: 32, C: 38, E: 28, A: 41, N: 22 },
   analysis_teaser: 'Tu avances avec constance — ta curiosité et ta fiabilité se renforcent.',
   analysis_full: null,
   analysis_mode: 'bank',
@@ -95,16 +83,43 @@ const DEMO_JOURNAL: JournalEntryRow[] = [
 
 const DEMO_RESOURCES: ReadingResourceRow[] = [
   {
-    id: 'r1',
+    id: 'a0e86d67-ea6b-4c36-81c9-86e4f7f37214',
     title: 'Le corps n’oublie rien',
     author: 'Bessel van der Kolk',
     theme: 'corps',
     why_text: 'Pour comprendre le lien émotions / sensations, sans jargon.',
     locale: 'fr',
     sort_order: 1,
-    affiliate_url: 'https://www.amazon.fr/dp/example-affiliate',
+    affiliate_url: 'https://www.awin1.com/cread.php?awinmid=12665&awinaffid=3103771&ued=example',
     disclosure: true,
     resource_type: 'book',
+    cover_image_url: '/library/book-covers/a0e86d67-ea6b-4c36-81c9-86e4f7f37214.jpg',
+  },
+  {
+    id: '5389a57b-a514-497c-8530-35e3b908886e',
+    title: 'Un rien peut tout changer',
+    author: 'James Clear',
+    theme: 'habitudes',
+    why_text: 'Des micro-gestes qui tiennent dans le temps.',
+    locale: 'fr',
+    sort_order: 2,
+    affiliate_url: 'https://www.awin1.com/cread.php?awinmid=12665&awinaffid=3103771&ued=example2',
+    disclosure: true,
+    resource_type: 'book',
+    cover_image_url: '/library/book-covers/5389a57b-a514-497c-8530-35e3b908886e.jpg',
+  },
+  {
+    id: '778affab-75f1-4e77-b295-bf2bcc32ece0',
+    title: 'Tapis de sol Pilates',
+    author: 'Decathlon',
+    theme: 'matériel',
+    why_text: 'Un sol stable pour pratiquer à la maison.',
+    locale: 'fr',
+    sort_order: 10,
+    affiliate_url: 'https://www.awin1.com/cread.php?awinmid=12665&awinaffid=3103771&ued=gear',
+    disclosure: false,
+    resource_type: 'gear',
+    cover_image_url: null,
   },
 ];
 
@@ -142,63 +157,26 @@ const DEMO_CHALLENGES = [
 
 function EvolutionCapture({ filled }: { filled: boolean }) {
   return (
-    <div className="mt-2 space-y-6" data-testid="hub-capture-evolution">
+    <div data-testid="hub-capture-evolution">
       <HubSectionHero
-        imageSrc="/library/portraits/portrait-05-4x5.webp"
-        imageAlt=""
         eyebrow="Connaissance de soi"
         title="Mon évolution"
-        lead="Toi face à toi-même — le chemin parcouru, sans te comparer à personne."
+        lead="Tes données incarnées — le chemin parcouru, sans bruit ni comparaison."
+        ambianceSrc="/library/ambiance-studio/ambiance-studio-02-4x5.webp"
       />
-      {!filled ? (
-        <HubEmptyState
-          imageSrc="/library/portraits/portrait-01-4x5.webp"
-          imageAlt=""
-          title="Ta première victoire t’attend"
-          lead="Passe un test, suis un cours ou note une ligne dans le journal — tu apparaîtras ici."
-          ctaLabel="Faire un test"
-          ctaHref="/compte/connaissance-de-soi/tests"
-          testId="evolution-empty"
-        />
-      ) : (
-        <div className="relative overflow-hidden rounded-[28px] border border-white/70 bg-[#FFFAF5] shadow-[0_18px_48px_rgba(60,40,30,0.12)]">
-          <div className="grid md:grid-cols-[1.1fr_0.9fr]">
-            <div className="relative min-h-[180px] md:min-h-full">
-              <Image
-                src="/library/portraits/portrait-08-4x5.webp"
-                alt=""
-                fill
-                className="object-cover object-[center_15%]"
-                sizes="(max-width:768px) 100vw, 50vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#FFFAF5] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#FFFAF5]" />
-            </div>
-            <div className="relative z-10 flex flex-col justify-center px-5 py-6 sm:px-7 sm:py-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c45d3e]">Ta micro-victoire</p>
-              <p className="mt-3 font-serif text-xl italic leading-snug text-brand-ink sm:text-2xl">
-                J’ai tenu mon cours du mardi même fatiguée.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="grid gap-4 md:grid-cols-2">
-        <ConsistencyChain
-          streak={filled ? 4 : 0}
-          label="Chaîne de constance"
-          sub="semaine(s) d’affilée avec au moins une pratique"
-        />
-        <div className="rounded-[26px] border border-white/70 bg-[#FFFAF5] p-5 shadow-[0_14px_40px_rgba(60,40,30,0.1)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-ink/45">Constance récente</p>
-          <p className="mt-3 font-serif text-3xl italic text-[#c45d3e]">{filled ? '5/8' : '—'}</p>
-          <Link
-            href="/compte/connaissance-de-soi/progression"
-            className="mt-4 inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]"
-          >
-            Ouvrir →
-          </Link>
-        </div>
-      </div>
+      <EvolutionScene
+        lang="fr"
+        streak={filled ? 4 : 0}
+        sessions={filled ? 5 : 0}
+        goal={8}
+        energy={filled ? 61 : null}
+        microVictory={filled ? 'J’ai tenu mon cours du mardi même fatiguée.' : null}
+        hasAnySignal={filled}
+        curvePoints={filled ? [3, 4, 5, 6, 5] : [0, 0, 0]}
+        comparePoints={filled ? [2, 3, 3, 4, 4] : undefined}
+        latestTestLabel={filled ? 'Big Five' : null}
+        progressHistory={[]}
+      />
     </div>
   );
 }

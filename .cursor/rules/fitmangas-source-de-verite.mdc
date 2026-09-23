@@ -31,7 +31,7 @@ alwaysApply: true
 - **Meta — état vérifié live le 21/09/2026** (ne plus dire « expiré » sans retester) :
   - `meta_social_connection` (CM / pub) : token EAA **valide**, `expires_at: 0` (Page token), `data_access_expires_at` ≈ **17/12/2026**. Page ID `104974608387991` ≠ IG User ID `17841419052253666` ✅.
   - `acquisition_meta_connection` (DM) : token IGAA **valide** (Graph IG `/me` → 200, `@fit.mangas`). Même Page/IG IDs distincts ✅.
-  - WhatsApp robot : `WHATSAPP_PHONE_NUMBER_ID` + token EAA **présents**. WABA `1427605062481966` (Alejandra Mangas) **APPROVED + business verified**, mais **paiement manquant** → `can_send_message: BLOCKED` (141006). **Aucun template** ; cold hors 24h impossible tant que (1) carte Billing Hub + (2) template `quiz_essai_fitmangas` approuvé. Filet = email + wa.me / `awaiting_optin`.
+  - WhatsApp robot : token EAA **présent**. **WABA Cloud cible** = Ale Mangas `1103500375480853` (templates OK). Template **`quiz_essai_fitmangas_v3` APPROVED**. Phone Cloud `1399435993243764` à enregistrer après dissociation app Business. WABA SMB Alejandra `142760…` = ne plus utiliser pour templates (2494160). Paiement à lier sur Ale Mangas (141006). Filet = email + wa.me / `awaiting_optin`.
   - Script de re-check : `npx tsx scripts/check-meta-tokens.ts`
 - Supabase, Stripe (live), Vimeo, Resend, GA4, Printful, Mistral, Groq, Unsplash : OK.
 - **Abonnements grand public (Claude Pro, Google AI Pro) ≠ accès API.** Aucune image/texte programmatique via ces abonnements. Seule une clé API + facturation API compte.
