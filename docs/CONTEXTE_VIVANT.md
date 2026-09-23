@@ -27,11 +27,11 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
-### 2026-09-23 — TikTok scopes fix + WA coexistence bloquée Meta
+### 2026-09-23 — TikTok OAuth @fit.mangas CONNECTÉ
 
-- Redirect URI Live OK. OAuth avec `video.publish` → **invalid_scope** ; fix code scopes = `user.info.basic,video.upload` seul (`6517738` sur `main` fitmangas). Pub direct = révision TikTok `video.publish` plus tard.
-- Écran auth Fitmangas / `@fit.mangas` OK une fois ; session volet perdue → **QR TikTok** ouvert pour rescanner. `tiktok_social_connection` encore absent.
-- WA : Mastercard ····2474 OK, WABA AVAILABLE. Phone toujours `ON_PREMISE`+`DISCONNECTED` → `smb_app_data` **133010**, templates **2494160**. Pas de self-fix documenté : **support Meta** (WABA `1427605062481966`, phone `1013040665225467`, business `1015050482234942`).
+- `admin_settings.tiktok_social_connection` : **connected** (`displayName: fit.mangas`, scopes `user.info.basic,video.upload`). Redirect URI Live OK.
+- Fix scopes sans `video.publish` poussé (`6517738`). Pub auto Direct Post = révision TikTok `video.publish` plus tard (sinon upload brouillon).
+- WA inchangé : coexistence `ON_PREMISE` → support Meta (2494160 / 133010). Carte OK.
 
 ### 2026-09-23 — Hub membre : passe design (DA quiz + empty engageants)
 
