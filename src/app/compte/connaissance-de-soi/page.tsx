@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 
 import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
 import { EvolutionScene } from '@/components/SelfKnowledge/compte/EvolutionScene';
-import { HubSectionHero } from '@/components/SelfKnowledge/compte/HubVisuals';
 import { SelfKnowledgeHubNav } from '@/components/SelfKnowledge/compte/SelfKnowledgeHubNav';
 import { VisioLock } from '@/components/Premium/VisioLock';
 import { hasVisioClientAccess } from '@/lib/access-control';
@@ -45,16 +44,10 @@ export default async function ConnaissanceDeSoiEvolutionPage() {
   const t =
     locale === 'es'
       ? {
-          title: 'Mi evolución',
-          eyebrow: 'Conocimiento de una misma',
           dashboard: 'Panel',
-          lead: 'Datos vivos de tu camino — sin ruido, sin comparación.',
         }
       : {
-          title: 'Mon évolution',
-          eyebrow: 'Connaissance de soi',
           dashboard: 'Dashboard',
-          lead: 'Tes données incarnées — le chemin parcouru, sans bruit ni comparaison.',
         };
 
   let microVictory: string | null = null;
@@ -107,8 +100,6 @@ export default async function ConnaissanceDeSoiEvolutionPage() {
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-2 sm:px-5 md:px-8 md:pt-6">
         <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
         <SelfKnowledgeHubNav lang={lang} active="evolution" />
-
-        <HubSectionHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
 
         <EvolutionScene
           lang={lang}

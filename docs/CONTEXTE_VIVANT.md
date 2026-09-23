@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-23 — Mon évolution : HUD tennis une scène (refonte vs pile de cartes)
+
+- Critique capture pile CRM ≠ inspirations PDF tennis → **une scène full-bleed** (`EvolutionScene`) : ambiance pilates-mat, pastilles gauches, clusters barres + anneaux droite, courbe bas, delta ↑%.
+- Plus de `HubSectionHero` / cartes « dernières avancées » séparées. `AnimatedCounter` : `UX_CAPTURE` / start 70 % (évite chiffre mid-anim en capture).
+- Captures 21–30 régénérées. E2E hub OK.
+
 ### 2026-09-23 — Hub membre : démo remplie + évolution data-viz + historique visuel
 
 - **Démo** : `hub-demo-data.ts` (3 Big Five + attachement, 5 mois progression, 4 scores santé, journal, défis) → capture `filled=1`.

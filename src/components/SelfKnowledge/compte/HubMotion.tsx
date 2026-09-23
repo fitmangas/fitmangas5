@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Compteur animé — démarre déjà proche de la cible (évite captures à 2/7).
+ * Respecte prefers-reduced-motion.
+ */
 import { useEffect, useRef, useState } from 'react';
 
 type Props = {
@@ -10,10 +14,9 @@ type Props = {
   suffix?: string;
 };
 
-/** Compteur animé — respect prefers-reduced-motion. */
 export function AnimatedCounter({
   value,
-  durationMs = 900,
+  durationMs = 550,
   className,
   decimals = 0,
   suffix = '',
@@ -29,15 +32,17 @@ export function AnimatedCounter({
 
     if (!mounted.current) {
       mounted.current = true;
-      if (reduced) {
+      if (reduced || process.env.NEXT_PUBLIC_UX_CAPTURE === '1') {
         setDisplay(value);
         fromRef.current = value;
         return;
       }
-      fromRef.current = 0;
+      /* Départ à ~70 % de la cible — pas depuis 0 (évite captures mid-anim) */
+      fromRef.current = Math.round(value * 0.7);
+      setDisplay(fromRef.current);
     }
 
-    if (reduced) {
+    if (reduced || process.env.NEXT_PUBLIC_UX_CAPTURE === '1') {
       setDisplay(value);
       fromRef.current = value;
       return;
