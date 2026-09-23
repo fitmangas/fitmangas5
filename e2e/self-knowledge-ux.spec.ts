@@ -266,7 +266,7 @@ test.describe('Hub membre — captures DA', () => {
       await dismissCookies(page);
       await expect(page.getByTestId('hub-ux-capture')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('hub-ux-capture')).toHaveAttribute('data-section', section);
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(700);
       await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-empty`);
       n += 1;
       await page.goto(`/quiz/hub-membre-capture?section=${section}&filled=1`, {
@@ -295,7 +295,7 @@ test.describe('Hub membre — captures DA', () => {
         await expect(page.getByTestId('mini-ocean-radar').first()).toBeVisible();
         await expect(page.getByTestId('test-compare')).toBeVisible();
       }
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(700);
       await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-filled`);
       n += 1;
     }

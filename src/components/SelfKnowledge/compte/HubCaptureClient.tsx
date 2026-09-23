@@ -3,7 +3,6 @@
 import { CorpsSanteView } from '@/components/SelfKnowledge/compte/CorpsSanteView';
 import { DeveloppementPersoView } from '@/components/SelfKnowledge/compte/DeveloppementPersoView';
 import { EvolutionScene } from '@/components/SelfKnowledge/compte/EvolutionScene';
-import { HubSectionHero } from '@/components/SelfKnowledge/compte/HubVisuals';
 import { ProgressionMemberView } from '@/components/SelfKnowledge/compte/ProgressionMemberView';
 import { SelfKnowledgeHubNav } from '@/components/SelfKnowledge/compte/SelfKnowledgeHubNav';
 import { SelfKnowledgeTestsPanel } from '@/components/SelfKnowledge/compte/SelfKnowledgeTestsPanel';
@@ -36,11 +35,6 @@ function EvolutionCapture({ filled }: { filled: boolean }) {
 
   return (
     <div data-testid="hub-capture-evolution">
-      <HubSectionHero
-        eyebrow="Connaissance de soi"
-        title="Mon évolution"
-        lead="Tes données incarnées — le chemin parcouru, sans bruit ni comparaison."
-      />
       <EvolutionScene
         lang="fr"
         streak={filled ? HUB_DEMO_STREAK : 0}
