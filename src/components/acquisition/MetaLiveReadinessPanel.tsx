@@ -11,24 +11,36 @@ type Props = {
 };
 
 export function MetaLiveReadinessPanel({ status }: Props) {
+  const reviewLabel =
+    status.appReviewMessaging === 'approved'
+      ? 'Approuvée'
+      : status.appReviewMessaging === 'pending'
+        ? 'En attente'
+        : 'Non vérifiée';
+
   return (
     <Card overlap padding="lg">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-            Meta LIVE — préparation
+            Meta messaging — état réel
           </p>
           <p className="mt-2 text-sm leading-relaxed" style={{ color: acq.muted }}>
-            Code prêt — ne pas passer <code className="text-xs">MESSAGING_MODE=live</code> avant checklist verte.
+            {status.messagingMode === 'live'
+              ? 'MESSAGING_MODE=live : les envois Instagram passent par l’API Meta. Cette fiche décrit ce qui est vraiment branché (pas un feu vert marketing).'
+              : 'MESSAGING_MODE=sandbox : simulation. Passe en live seulement après App Review messaging OK.'}
           </p>
         </div>
         <ChipRow>
-          {status.readyForLive ? (
-            <Chip label="Prêt techniquement" tone="terracotta" />
+          <Chip
+            label={status.messagingMode === 'live' ? 'LIVE (env)' : 'SANDBOX (env)'}
+            tone={status.messagingMode === 'live' ? 'terracotta' : 'sandbox'}
+          />
+          {status.appReviewMessaging === 'approved' ? (
+            <Chip label="App Review OK" tone="terracotta" />
           ) : (
-            <Chip label={`${status.blockers.length} blocage(s)`} tone="sandbox" />
+            <Chip label={`App Review : ${reviewLabel}`} tone="sandbox" />
           )}
-          {status.messagingMode === 'live' ? <Chip label="LIVE actif" tone="terracotta" /> : null}
         </ChipRow>
       </div>
 
@@ -36,6 +48,7 @@ export function MetaLiveReadinessPanel({ status }: Props) {
         <Item label="Webhook" value={status.webhookUrl} />
         <Item label="Verify token" value={status.verifyTokenConfigured ? 'Configuré' : 'Manquant'} />
         <Item label="App Meta" value={status.metaAppConfigured ? 'OK' : 'Manquant'} />
+        <Item label="App Review messaging" value={reviewLabel} />
         <Item label="Page ID" value={status.pageId ?? '—'} />
         <Item label="IG User ID" value={status.igUserId ?? '—'} />
         <Item
@@ -58,8 +71,12 @@ export function MetaLiveReadinessPanel({ status }: Props) {
           value={status.whatsapp?.displayPhone ? `+${status.whatsapp.displayPhone}` : '—'}
         />
         <Item
+          label="WhatsApp Cloud"
+          value={status.whatsapp?.cloudRegistered ? 'Enregistré' : 'Non enregistré / PENDING'}
+        />
+        <Item
           label="WhatsApp robot"
-          value={status.whatsapp?.robotReady ? 'Branché' : 'Pas encore (API Meta manquante)'}
+          value={status.whatsapp?.robotReady ? 'Branché' : 'Pas prêt'}
         />
       </dl>
 
@@ -84,11 +101,6 @@ export function MetaLiveReadinessPanel({ status }: Props) {
           ))}
         </ul>
       ) : null}
-
-      <p className="mt-6 text-xs leading-relaxed" style={{ color: acq.muted }}>
-        Permissions App Review : instagram_manage_messages, pages_messaging, webhooks messages. Détail dans{' '}
-        <span className="font-medium">ACQUISITION-SETUP.md</span>.
-      </p>
     </Card>
   );
 }

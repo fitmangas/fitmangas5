@@ -34,10 +34,14 @@ export type MetaLiveReadiness = {
   readyForLive: boolean;
   blockers: string[];
   notes: string[];
-  /** WhatsApp robot (API) — pas le bouton wa.me du site */
+  /** approved | pending | unknown — jamais un faux vert */
+  appReviewMessaging: 'approved' | 'pending' | 'unknown';
+  /** WhatsApp (n° public) — pas le bouton wa.me du site */
   whatsapp: {
     displayPhone: string | null;
     phoneNumberIdPresent: boolean;
+    /** true seulement si ID Cloud enregistré (pas CLOUD_PENDING seul) */
+    cloudRegistered: boolean;
     robotReady: boolean;
     plainStatus: string;
   };
@@ -194,12 +198,18 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
 
   const displayPhone = conn.whatsappDisplayPhone?.replace(/\D/g, '') || getWhatsAppDisplayPhoneE164();
   const phoneNumberId = resolveWhatsAppPhoneNumberId(conn);
+  const pendingOnly = Boolean(
+    process.env.WHATSAPP_PHONE_NUMBER_ID_CLOUD_PENDING?.trim() && !phoneNumberId,
+  );
   const waToken = resolveWhatsAppAccessToken(conn);
-  const waRobotReady = Boolean(phoneNumberId && waToken);
+  const cloudRegistered = Boolean(phoneNumberId && !pendingOnly);
+  const waRobotReady = Boolean(cloudRegistered && waToken);
   let waPlain =
     'Le numéro 07… du site sert à discuter à la main. Le robot WhatsApp a besoin d’un branchement Meta séparé (pas encore fait).';
   if (waRobotReady) {
     waPlain = `Robot WhatsApp branché (n° ${displayPhone}). Aucun template marketing approuvé → cold outreach hors 24h impossible tant qu’un modèle n’est pas créé dans Meta Business Manager.`;
+  } else if (pendingOnly) {
+    waPlain = `WhatsApp Cloud PENDING (ID ${process.env.WHATSAPP_PHONE_NUMBER_ID_CLOUD_PENDING?.trim()}) — numéro pas encore enregistré.`;
   } else if (phoneNumberId && !waToken) {
     waPlain = `ID technique WhatsApp OK (${phoneNumberId}). Manque un token Facebook Cloud API (pas le token Instagram IGAA) — générer via Utilisateur système Meta.`;
   } else if (displayPhone && !phoneNumberId) {
@@ -211,6 +221,23 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
   const tokenExpired = Boolean(
     conn.tokenExpiresAt && new Date(conn.tokenExpiresAt).getTime() < Date.now(),
   );
+
+  const appReviewRaw = process.env.ACQUISITION_META_APP_REVIEW?.trim().toLowerCase();
+  const appReviewMessaging: MetaLiveReadiness['appReviewMessaging'] =
+    appReviewRaw === 'approved' || appReviewRaw === 'ok'
+      ? 'approved'
+      : appReviewRaw === 'pending' || appReviewRaw === 'submitted'
+        ? 'pending'
+        : 'unknown';
+
+  if (appReviewMessaging !== 'approved') {
+    notes.push(
+      'App Review messaging Meta non confirmée (ACQUISITION_META_APP_REVIEW≠approved) — ne pas afficher comme vert.',
+    );
+  }
+  if (!cloudRegistered) {
+    notes.push('WhatsApp Cloud non enregistré (ou uniquement CLOUD_PENDING).');
+  }
 
   return {
     messagingMode: process.env.MESSAGING_MODE?.trim().toLowerCase() === 'live' ? 'live' : 'sandbox',
@@ -227,9 +254,11 @@ export async function getMetaLiveReadiness(): Promise<MetaLiveReadiness> {
     readyForLive: blockers.length === 0,
     blockers,
     notes,
+    appReviewMessaging,
     whatsapp: {
       displayPhone,
       phoneNumberIdPresent: Boolean(phoneNumberId),
+      cloudRegistered,
       robotReady: waRobotReady,
       plainStatus: waPlain,
     },

@@ -32,9 +32,11 @@ alwaysApply: true
 - `blog`, `clients`, `courses`, `replays`, `promos`, `inbox`, `support`, `boutique`, `videos`, `vimeo`, `attendance`, `croissance`, `notifications`
 
 ### Acquisition (code clé)
+- **Stratégie permanente** : `docs/STRATEGIE_CROISSANCE.md` (relire avant toute tâche Croissance)
 - Catalog workflows : `src/lib/acquisition/engine/workflow-catalog.ts` (sync DB via `ensureWorkflowCatalog`)
+- Soft-no / follow-gate intention : `soft-decline.ts` + `follow-gate.ts` + `orchestrator.ts`
 - Webhook Meta : `src/app/api/acquisition/webhooks/meta/route.ts` (anti-doublon mid + texte 2 min)
-- Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + J+2/J+5 + WA)
+- Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + **1** relance J+5 + WA ; cancel soft_decline)
 - Cron : `/api/admin/acquisition/cron/run-followups`
 
 ### Quiz / Connaissance de soi

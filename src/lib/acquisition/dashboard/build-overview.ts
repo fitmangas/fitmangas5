@@ -216,6 +216,7 @@ export async function buildAcquisitionOverview(
   const ltv = stripe.ok ? stripe.data.ltvEur : null;
   const churn = stripe.ok ? stripe.data.monthlyChurnRate : null;
   const referral = stripe.ok ? stripe.data.referralConversions30d : null;
+  const sampleTooSmall = (sitePaid ?? 0) + (siteTrials ?? 0) < 10;
 
   const kpis: AcquisitionKpi[] = [
     {
@@ -240,24 +241,31 @@ export async function buildAcquisitionOverview(
     },
     {
       id: 'ltv',
-      label: 'LTV estimée',
-      value: formatEur(ltv),
+      label: sampleTooSmall ? 'LTV (échantillon trop faible)' : 'LTV estimée',
+      value: sampleTooSmall ? `${formatEur(ltv)} · n<10` : formatEur(ltv),
       hint:
-        churn != null && churn > 0
-          ? `ARPU ÷ churn ${churn} % (business_stats_daily).`
-          : 'ARPU × 12 mois (churn indisponible).',
+        sampleTooSmall
+          ? 'Estimation — moins de 10 abonnées : chiffre non décisionnel.'
+          : churn != null && churn > 0
+            ? `Estimation : ARPU ÷ churn ${churn} % (business_stats_daily).`
+            : 'Estimation : ARPU × 12 mois (churn indisponible).',
     },
     {
       id: 'churn',
-      label: 'Churn 30j',
-      value: formatPct(churn),
+      label: sampleTooSmall ? 'Churn 30j (échantillon trop faible)' : 'Churn 30j',
+      value: sampleTooSmall ? `${formatPct(churn)} · n<10` : formatPct(churn),
+      hint: sampleTooSmall
+        ? 'Estimation — n trop faible pour interpréter un %.'
+        : 'business_stats_daily.churn_rate_30d',
       tone: churn != null && churn > 8 ? 'watch' : 'neutral',
     },
     {
       id: 'trial_paid',
-      label: 'Essai → Payant',
-      value: formatPct(trialToPaid),
-      tone: trialToPaid != null && trialToPaid >= 25 ? 'good' : 'watch',
+      label: 'Essai → Payant (estimation)',
+      value: trialToPaid == null ? '—' : `${formatPct(trialToPaid)} · proxy`,
+      hint:
+        'Proxy stock (pas une attribution Acquisition). Les payantes Stripe préexistantes ne sont PAS des conversions du module.',
+      tone: 'watch',
     },
     {
       id: 'referral',
@@ -269,11 +277,13 @@ export async function buildAcquisitionOverview(
       id: 'trials',
       label: 'Essais actifs (Stripe)',
       value: formatNum(siteTrials),
+      hint: 'Réel — abonnements status=trialing.',
     },
     {
       id: 'paid',
-      label: 'Payantes actives (Stripe)',
+      label: 'Payantes totales (Stripe)',
       value: formatNum(sitePaid),
+      hint: 'Réel — stock Stripe active (pas « conversions Acquisition »).',
       tone: 'good',
     },
     {
@@ -284,12 +294,22 @@ export async function buildAcquisitionOverview(
     },
   ];
 
+  // Rétention site : étiqueter proxy dans le funnel
+  const siteFunnelLabeled = siteFunnel.map((step) =>
+    step.id === 'retention'
+      ? {
+          ...step,
+          label: sampleTooSmall ? 'Rétention 90j (estimation, n faible)' : 'Rétention 90j (estimation)',
+        }
+      : step,
+  );
+
   const performanceHooks = await loadPerformanceHooks();
 
   return {
     channel,
     funnel: crmFunnel,
-    siteFunnel,
+    siteFunnel: siteFunnelLabeled,
     crmFunnel,
     kpis,
     performanceHooks,

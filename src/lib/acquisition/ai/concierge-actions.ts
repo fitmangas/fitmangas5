@@ -78,9 +78,11 @@ export async function applyConciergeResult(
   }
 
   const wantsTrialLink =
-    concierge.intent === 'trial' ||
-    concierge.intent === 'info' ||
-    concierge.suggestedActions.some((s) => s.toLowerCase().includes('trial'));
+    concierge.intent !== 'soft_decline' &&
+    concierge.intent !== 'optout' &&
+    (concierge.intent === 'trial' ||
+      concierge.intent === 'info' ||
+      concierge.suggestedActions.some((s) => s.toLowerCase().includes('trial')));
 
   // Une seule bulle : réponse + lien essai si besoin (pas de double DM)
   if (concierge.reply) {
@@ -106,6 +108,24 @@ export async function applyConciergeResult(
     // Intérêt essai ≠ essai démarré (Stripe) → qualified
     await updateContactLifecycle(ctx.contact.id, 'qualified');
     if (!emailCaptured) await runOnce('capture_email_optin');
+  }
+
+  if (concierge.intent === 'soft_decline' && ctx.contact) {
+    await tagContact(ctx.contact.id, 'soft_decline');
+    await cancelScheduledFollowups(ctx.contact.id);
+    if (ctx.contact.email) {
+      try {
+        const { cancelQuizNurtureForEmail } = await import('@/lib/quiz/lead-nurture');
+        await cancelQuizNurtureForEmail(ctx.contact.email, 'soft_decline');
+      } catch {
+        // non bloquant
+      }
+    }
+    actions.push({
+      type: 'tag_contact',
+      ok: true,
+      detail: 'Soft-no — tag soft_decline + relances annulées.',
+    });
   }
 
   if (concierge.intent === 'optout' && ctx.contact) {

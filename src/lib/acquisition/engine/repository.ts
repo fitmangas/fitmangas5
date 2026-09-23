@@ -1005,7 +1005,7 @@ export async function runDueFollowups(limit = 40): Promise<{
 
 /**
  * Aligne les stages CRM Acquisition sur les abonnements Stripe (email + profile_id).
- * trial = trialing · paid = active. Synchronise aussi les conversations.
+ * trial = trialing · member = active (payante). Synchronise aussi les conversations.
  */
 export async function syncAcqLifecycleFromSubscriptions(): Promise<{
   updated: number;
@@ -1092,11 +1092,13 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
     if (!userId) continue;
     const sub = statusByUser.get(userId);
     if (!sub) continue;
-    const next: LifecycleStage = sub === 'trialing' ? 'trial' : 'paid';
+    const next: LifecycleStage = sub === 'trialing' ? 'trial' : 'member';
     const current = (c.lifecycle_stage as LifecycleStage) ?? 'new';
     if (current === next || current === 'member') continue;
-    if (current === 'paid' && next === 'trial') continue;
-    const nextScore = clampLeadScore(Number(c.lead_score ?? 0) + scoreForLifecycle(next));
+    if ((current === 'paid' || current === 'member') && next === 'trial') continue;
+    const nextScore = clampLeadScore(
+      Number(c.lead_score ?? 0) + scoreForLifecycle(next === 'member' ? 'paid' : next),
+    );
     const { error: upErr } = await admin
       .from('acq_contacts')
       .update({
@@ -1117,9 +1119,9 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
         .update({ status: 'cancelled' })
         .eq('contact_id', c.id)
         .eq('status', 'scheduled');
-      if (email && (next === 'trial' || next === 'paid')) {
+      if (email && (next === 'trial' || next === 'member' || next === 'paid')) {
         const { cancelQuizNurtureForEmail } = await import('@/lib/quiz/lead-nurture');
-        await cancelQuizNurtureForEmail(email, next === 'paid' ? 'paid' : 'trial');
+        await cancelQuizNurtureForEmail(email, next === 'trial' ? 'trial' : 'paid');
       }
       updated += 1;
       details.push(`${email || userId}: ${current} → ${next}`);

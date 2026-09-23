@@ -33,6 +33,19 @@ export function AcquisitionOpsPanel({
   onSyncInsights,
   onCheckLive,
 }: Props) {
+  const appReviewOk = metaLive?.appReviewMessaging === 'approved';
+  const appReviewLabel =
+    metaLive?.appReviewMessaging === 'approved'
+      ? 'App Review messaging : approuvée'
+      : metaLive?.appReviewMessaging === 'pending'
+        ? 'App Review messaging : en attente (non vérifié)'
+        : 'App Review messaging : non vérifiée';
+
+  const waOk = Boolean(metaLive?.whatsapp?.cloudRegistered);
+  const waLabel = waOk
+    ? 'WhatsApp Cloud : numéro enregistré'
+    : 'WhatsApp Cloud : non enregistré / PENDING';
+
   const steps = [
     {
       ok: schemaReady,
@@ -43,10 +56,6 @@ export function AcquisitionOpsPanel({
       label: 'Au moins 1 fil dans Conversations',
     },
     {
-      ok: messagingMode === 'sandbox' || messagingMode === 'live',
-      label: messagingMode === 'live' ? 'Mode LIVE messages' : 'Mode SANDBOX (simulation OK pour tester)',
-    },
-    {
       ok: Boolean(metaLive?.verifyTokenConfigured),
       label: 'Verify token webhook configuré',
     },
@@ -55,8 +64,12 @@ export function AcquisitionOpsPanel({
       label: 'Token Meta + Page ID ≠ IG User ID',
     },
     {
-      ok: Boolean(metaLive?.readyForLive),
-      label: 'Checklist LIVE messaging verte',
+      ok: appReviewOk,
+      label: appReviewLabel,
+    },
+    {
+      ok: waOk,
+      label: waLabel,
     },
   ];
 
@@ -65,15 +78,19 @@ export function AcquisitionOpsPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-            Validation & passage LIVE
+            Validation technique Messaging
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: acq.muted }}>
-            1) Tester Conversations + relances en simulation. 2) Préparer Meta messaging. 3) Passer LIVE
-            seulement quand la checklist est verte (permissions messaging Meta approuvées).
+            {messagingMode === 'live'
+              ? 'Mode LIVE déjà actif (envois Meta réels). Cette checklist ne « active » pas le live — elle dit ce qui est vraiment prêt (App Review, WhatsApp Cloud).'
+              : 'Mode SANDBOX : les envois sont simulés. Passe MESSAGING_MODE=live sur Vercel seulement quand App Review + WhatsApp (si besoin) sont OK.'}
           </p>
         </div>
         <ChipRow>
-          <Chip label={messagingMode === 'live' ? 'LIVE' : 'SANDBOX'} tone={messagingMode === 'live' ? 'terracotta' : 'sandbox'} />
+          <Chip
+            label={messagingMode === 'live' ? 'LIVE (env)' : 'SANDBOX (env)'}
+            tone={messagingMode === 'live' ? 'terracotta' : 'sandbox'}
+          />
           <Chip label={`${upcomingFollowups} relance(s)`} />
         </ChipRow>
       </div>
@@ -139,14 +156,13 @@ export function AcquisitionOpsPanel({
           className="rounded-full px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
           style={{ backgroundColor: acq.terracotta }}
         >
-          Recalculer checklist LIVE
+          Recalculer checklist
         </button>
       </div>
 
       {metaLive?.webhookUrl ? (
         <p className="mt-4 text-xs leading-relaxed" style={{ color: acq.muted }}>
-          Webhook à coller dans Meta Developers →{' '}
-          <code className="text-[11px]">{metaLive.webhookUrl}</code>
+          Webhook Meta → <code className="text-[11px]">{metaLive.webhookUrl}</code>
         </p>
       ) : null}
     </Card>

@@ -5,7 +5,8 @@ Ce repo est piloté surtout via Cursor. Lis dans l’ordre :
 1. `.cursor/rules/fitmangas-source-de-verite.mdc` — faits acquis, chemins CM, autonomie
 2. `.cursor/rules/fitmangas-inventaire-fige.mdc` — surfaces à ne pas casser
 3. `docs/CONTEXTE_VIVANT.md` — journal des validations récentes
-4. `docs/archive-produit/` — copie descriptive admin / cliente / quiz
+4. `docs/STRATEGIE_CROISSANCE.md` — trame permanente Croissance / Acquisition (soft-no, follow-gate, funnel)
+5. `docs/archive-produit/` — copie descriptive admin / cliente / quiz
 
 **Dossier canonique** : `/Users/kevinpicard/Projets/fitmangas5` (pas la copie iCloud).
 

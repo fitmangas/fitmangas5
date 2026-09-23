@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Croissance : stratégie + soft-no + dashboard honnête
+
+- Guide permanent : `docs/STRATEGIE_CROISSANCE.md` (funnel, soft-no, follow-gate, ads, honnêteté data).
+- Soft-no / cas Léa : refus poli → clôture + tag `soft_decline` + 0 relance ; follow-gate **seulement** sur vraie demande info/essai.
+- CRM : Stripe `active` → lifecycle `member` ; pas de pitch essai aux membres.
+- Relances : retirées des catch-all / salut ; checklist sans faux vert ; KPIs proxy étiquetés ; badge DÉMO/TEST inbox ; canal email UI retiré.
+- Nurture quiz : plus de J+2 (1 seule relance J+5) + cancel `soft_decline`.
+
 ### 2026-09-23 — Mon évolution : HUD tennis une scène (refonte vs pile de cartes)
 
 - Critique capture pile CRM ≠ inspirations PDF tennis → **une scène full-bleed** (`EvolutionScene`) : ambiance pilates-mat, pastilles gauches, clusters barres + anneaux droite, courbe bas, delta ↑%.

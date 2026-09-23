@@ -1,5 +1,7 @@
 import type { AcqContact, WorkflowTriggerType } from '@/lib/acquisition/types';
 
+import { isRealInfoOrTrialRequest, isSoftDeclineText } from './soft-decline';
+
 /** Tags = abonnement IG déjà validé (plus de frein). */
 export const FOLLOW_VERIFIED_TAGS = ['follow_verified', 'follow_gate_passed'] as const;
 
@@ -14,15 +16,43 @@ export function shouldEnforceFollowGate(triggerType: WorkflowTriggerType): boole
   );
 }
 
+/**
+ * Follow-gate UNIQUEMENT si vraie demande d’info/essai (stratégie Croissance).
+ * Jamais sur refus poli, salut seul, ou hors-sujet.
+ */
+export function shouldAskFollowGate(params: {
+  triggerType: WorkflowTriggerType;
+  inboundText?: string;
+  contact?: AcqContact | null;
+}): boolean {
+  if (!shouldEnforceFollowGate(params.triggerType)) return false;
+  if (!params.contact) return false;
+  if (isContactFollowVerified(params.contact)) return false;
+  if ((params.contact.tags ?? []).includes('optout')) return false;
+  if ((params.contact.tags ?? []).includes('soft_decline')) return false;
+  if (isSoftDeclineText(params.inboundText)) return false;
+  if (isFollowGateBypassText(params.inboundText)) return false;
+  if (isExistingPayingMember(params.contact)) return false;
+  return isRealInfoOrTrialRequest(params.inboundText);
+}
+
 export function isContactFollowVerified(contact: AcqContact | null | undefined): boolean {
   if (!contact) return false;
   const tags = contact.tags ?? [];
   return FOLLOW_VERIFIED_TAGS.some((t) => tags.includes(t));
 }
 
-/** Clics gate / opt-out : ne pas re-bloquer. */
+/** Cliente déjà en essai / payante / membre — jamais de pitch essai. */
+export function isExistingPayingMember(contact: AcqContact | null | undefined): boolean {
+  if (!contact) return false;
+  const stage = contact.lifecycleStage;
+  return stage === 'trial' || stage === 'paid' || stage === 'member';
+}
+
+/** Clics gate / opt-out / soft-no : ne pas re-bloquer. */
 export function isFollowGateBypassText(text: string | undefined): boolean {
   if (!text?.trim()) return false;
+  if (isSoftDeclineText(text)) return true;
   const t = text.toLowerCase();
   return (
     /follow_claim|follow_done|follow_verified/.test(t) ||
