@@ -181,7 +181,7 @@ export function MetricPastille({ value, label, progress = 0.65, icon = '●', mu
   const offset = c * (1 - Math.min(1, Math.max(0, progress)));
   const inner = (
     <div
-      className={`relative flex h-[5.5rem] w-[5.5rem] flex-col items-center justify-center rounded-full border border-[#e5d0c4]/80 bg-white/85 shadow-[0_10px_28px_rgba(60,40,30,0.08)] ${
+      className={`hub-pastille-sm relative flex h-[5.5rem] w-[5.5rem] flex-col items-center justify-center rounded-full border border-[#e5d0c4]/80 bg-white/85 shadow-[0_10px_28px_rgba(60,40,30,0.08)] ${
         muted ? '' : 'hub-elevate'
       }`}
     >

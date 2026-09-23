@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-23 — Hub membre : démo remplie + évolution data-viz + historique visuel
+
+- **Démo** : `hub-demo-data.ts` (3 Big Five + attachement, 5 mois progression, 4 scores santé, journal, défis) → capture `filled=1`.
+- **Mon évolution** : hero chiffre séances, 4 pastilles, delta ↑%, courbe, aperçus visuels test/santé.
+- **Historique tests** : mini-radar + sparkline + étiquette banque (`TRAIT_BAND_PHRASE`) ; clic → `/tests/resultat/[id]` rapport + PDF.
+- Captures hub 21–30 + mobile régénérées. Quiz publics intacts.
+
 ### 2026-09-23 — Hub membre : refonte design data-viz (DA FitMangas)
 
 - **Mon évolution** : scène Nike/tennis-spirit (gros chiffres, pastilles donut, courbe fluide draw-on, 1 ambiance max). Composant `EvolutionScene`.

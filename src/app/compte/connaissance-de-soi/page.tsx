@@ -75,12 +75,21 @@ export default async function ConnaissanceDeSoiEvolutionPage() {
     latestHealth && typeof (latestHealth.scores as { energie?: number })?.energie === 'number'
       ? (latestHealth.scores as { energie: number }).energie
       : null;
+  const regularity =
+    latestHealth && typeof (latestHealth.scores as { regularite?: number })?.regularite === 'number'
+      ? (latestHealth.scores as { regularite: number }).regularite
+      : currentMonth && currentMonth.goal > 0
+        ? Math.round((currentMonth.sessions / currentMonth.goal) * 100)
+        : null;
 
   const curvePoints = progress.map((p) => p.sessions);
+  const prevMonthSessions = progress.length >= 2 ? progress[progress.length - 2]!.sessions : null;
   const comparePoints =
     curvePoints.length >= 2
-      ? curvePoints.map((v, i) => Math.max(0, (curvePoints[i - 1] ?? v) - 1))
-      : undefined;
+      ? curvePoints.map((_, i) => (i === 0 ? curvePoints[0]! : curvePoints[i - 1]!))
+      : prevMonthSessions != null
+        ? [prevMonthSessions, sessions]
+        : undefined;
 
   const hasAnySignal = Boolean(microVictory || latestTest || sessions || streak > 0);
 
@@ -95,16 +104,11 @@ export default async function ConnaissanceDeSoiEvolutionPage() {
       featureDescription_fr="L’univers connaissance de soi est réservé aux membres active ou en essai."
       featureDescription_es="El universo de conocimiento de una misma es para miembros active o en prueba."
     >
-      <main className="mx-auto max-w-5xl px-5 pb-16 pt-2 md:px-8 md:pt-6">
+      <main className="mx-auto max-w-5xl px-4 pb-16 pt-2 sm:px-5 md:px-8 md:pt-6">
         <CompteDashboardBackLink label={t.dashboard} className="mb-4" />
         <SelfKnowledgeHubNav lang={lang} active="evolution" />
 
-        <HubSectionHero
-          eyebrow={t.eyebrow}
-          title={t.title}
-          lead={t.lead}
-          ambianceSrc="/library/ambiance-studio/ambiance-studio-02-4x5.webp"
-        />
+        <HubSectionHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
 
         <EvolutionScene
           lang={lang}
@@ -112,11 +116,14 @@ export default async function ConnaissanceDeSoiEvolutionPage() {
           sessions={sessions}
           goal={goal}
           energy={energy}
+          regularity={regularity}
           microVictory={microVictory}
           hasAnySignal={hasAnySignal}
           curvePoints={curvePoints.length ? curvePoints : [0, 0, sessions]}
           comparePoints={comparePoints}
+          latestTest={latestTest ?? null}
           latestTestLabel={latestTestLabel}
+          latestHealth={latestHealth}
           progressHistory={progress}
         />
       </main>
