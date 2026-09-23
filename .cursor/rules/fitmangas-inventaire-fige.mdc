@@ -58,6 +58,8 @@ alwaysApply: true
 - Miroirs Reels IG : Facebook + TikTok + **YouTube Shorts** (`alsoPublishYouTube`, `src/lib/admin/youtube-social.ts`)
 - YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` — **connecté 21/09/2026** (`youtube_social_connection`, chaîne Alejandra Mangas `UCHkmseevG7-gcLcQZS5xVkQ`).
 - Compte cible chaîne : `info@casamangas.com` (OAuth Google Cloud — pas le mot de passe dans le repo).
+- **TikTok** (23/09/2026) : app Live `Fitmangas` ; Redirect URI OK `…/api/admin/community/tiktok/callback` ; OAuth scopes Live = `user.info.basic` + `video.upload` seulement (`video.publish` = révision TikTok à faire). Connexion compte `@fit.mangas` → `tiktok_social_connection` encore à finaliser (QR / session créateur).
+- **WhatsApp** : WABA AVAILABLE (carte OK) ; téléphone `DISCONNECTED` + `ON_PREMISE` coexistence incomplète → templates bloqués **2494160** + envoi **133010**. Filet = email + wa.me. Support Meta requis pour pairing `CLOUD_API`.
 
 ## Git push
 - Compte CLI `support811` = **pull only**

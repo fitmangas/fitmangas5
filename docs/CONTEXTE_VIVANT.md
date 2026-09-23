@@ -27,12 +27,11 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
-### 2026-09-23 — TikTok redirect OK + WA carte OK (OAuth / templates bloqués)
+### 2026-09-23 — TikTok scopes fix + WA coexistence bloquée Meta
 
-- **TikTok Developers** (app Live `Fitmangas` / ID `7685356596200900629`) : Redirect URI Login Kit = exactement `https://fitmangas.com/api/admin/community/tiktok/callback` ✅. Scopes Live vus : `user.info.basic` + `video.upload` (+ Direct Post).
-- OAuth admin (`/admin/croissance?tab=publications` → régler → OAuth TikTok) démarre bien ; **login compte créateur `@fit.mangas`** refuse l’automate (TikTok « problème… plus tard » / MDP ≠ admin). `tiktok_social_connection` toujours absent en DB. URL OAuth ouverte dans Chrome système pour Kevin.
-- **WhatsApp** : WABA `1427605062481966` santé **AVAILABLE** (carte Mastercard OK). Téléphone `+33 7 84 83 59 72` toujours **DISCONNECTED** / `platform_type: ON_PREMISE` / `is_on_biz_app: true` (coexistence incomplète → pas `CLOUD_API`).
-- Template `quiz_essai_fitmangas` : UI + Graph **2494160** « non autorisé à gérer les modèles » malgré paiement — lié au pairing Cloud API incomplet (pas un bug code). Script `scripts/create-wa-template-quiz-essai.ts` prêt une fois Meta débloque.
+- Redirect URI Live OK. OAuth avec `video.publish` → **invalid_scope** ; fix code scopes = `user.info.basic,video.upload` seul (`6517738` sur `main` fitmangas). Pub direct = révision TikTok `video.publish` plus tard.
+- Écran auth Fitmangas / `@fit.mangas` OK une fois ; session volet perdue → **QR TikTok** ouvert pour rescanner. `tiktok_social_connection` encore absent.
+- WA : Mastercard ····2474 OK, WABA AVAILABLE. Phone toujours `ON_PREMISE`+`DISCONNECTED` → `smb_app_data` **133010**, templates **2494160**. Pas de self-fix documenté : **support Meta** (WABA `1427605062481966`, phone `1013040665225467`, business `1015050482234942`).
 
 ### 2026-09-23 — Hub membre : passe design (DA quiz + empty engageants)
 
