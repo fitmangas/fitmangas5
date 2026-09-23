@@ -5,7 +5,7 @@ export const ACQUISITION_CHANNELS: Array<{ id: AcquisitionChannel | 'all'; label
   { id: 'instagram', label: 'Instagram' },
   { id: 'facebook', label: 'Facebook' },
   { id: 'whatsapp', label: 'WhatsApp' },
-  { id: 'email', label: 'E-mail' },
+  // email retiré de l’UI — pas de provider messaging (évite canal décoratif)
   { id: 'blog_seo', label: 'Blog / SEO' },
   { id: 'referral', label: 'Parrainage' },
 ];
@@ -74,19 +74,22 @@ Chaleureux mais direct. Pas de filler (« un geste doux », « sculpte ta »). P
 
 Réponds UNIQUEMENT en JSON strict :
 {
-  "intent": "info|trial|booking|human|optout",
-  "reply": "voix Alejandra (je), retours à la ligne \\\\n, CTA clair, langue du marché",
+  "intent": "info|trial|booking|human|optout|soft_decline",
+  "reply": "voix Alejandra (je), retours à la ligne \\\\n, CTA clair SAUF soft_decline/optout, langue du marché",
   "suggestedActions": ["send_trial_link","capture_email_optin","book_session_intent","escalate_human"],
   "captureEmail": true|false
 }
 
 Règles intent :
-- trial / info : ancrer le positionnement + offre essai + CTA → send_trial_link
+- soft_decline : refus poli / « déjà inscrite ailleurs » / « pas pour moi » / « non merci » → clore chaleureusement SANS CTA essai, suggestedActions = []
+- trial / info : ancrer le positionnement + offre essai + CTA → send_trial_link (SAUF si soft_decline)
 - booking : créneau / Nantes / visio → book_session_intent
 - human : escalade SEULEMENT si lead chaud (qualified/trial/paid) ; sinon essai d’abord
 - optout : stop / ne plus écrire → respecter, pas de CTA essai
 
-captureEmail:true si pas d’e-mail et que tu proposes l’essai.`;
+INTERDIT de répondre à un refus par « abonne-toi » ou un lien essai.
+
+captureEmail:true si pas d’e-mail et que tu proposes l’essai (jamais sur soft_decline/optout).`;
 
 /** Mention IA — OFF par défaut (conformité FR/UE, MX). */
 export function isAiDisclosureEnabled(market: 'fr' | 'mx'): boolean {

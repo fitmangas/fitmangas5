@@ -354,6 +354,13 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
   if (ctx.contact.tags.includes('optout')) {
     return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — contact en opt-out.' };
   }
+  if (ctx.contact.tags.includes('soft_decline')) {
+    return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — soft_decline.' };
+  }
+  const stage = ctx.contact.lifecycleStage;
+  if (stage === 'trial' || stage === 'paid' || stage === 'member') {
+    return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — déjà en essai / membre.' };
+  }
   const hours = typeof config?.delayHours === 'number' ? config.delayHours : 24;
   const runAt = new Date(Date.now() + hours * 3600000).toISOString();
   const actionType = typeof config?.actionType === 'string' ? config.actionType : 'send_trial_link';

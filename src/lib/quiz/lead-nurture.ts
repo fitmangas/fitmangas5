@@ -170,12 +170,12 @@ export function buildQuizNurtureEmail(params: {
     }
     if (step === 'j2') {
       return {
-        subject: `${name}, ¿todavía sola frente a la pantalla?`,
+        subject: `${name}, un pequeño recordatorio — prueba 7 días`,
         innerHtml: `
           <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Solo un recordatorio</h1>
-          <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">Como <strong>${escapeHtml(style)}</strong>, lo que te frena rara vez es el ejercicio — es hacerlo sola.</p>
-          <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Ven a una clase grupal conmigo esta semana. Yo te veo. Tú decides después.</p>
-          <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Probar 7 días gratis →</a></p>
+          <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">Como <strong>${escapeHtml(style)}</strong>, lo que más cambia suele ser ser vista y corregida en directo.</p>
+          <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Si quieres probar una clase grupal conmigo, la prueba de 7 días está ahí. Si no, sin presión.</p>
+          <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Probar 7 días →</a></p>
           ${waLine}
         `,
       };
@@ -208,18 +208,18 @@ export function buildQuizNurtureEmail(params: {
   }
   if (step === 'j2') {
     return {
-      subject: `${name}, encore seule devant l’écran ?`,
+      subject: `${name}, un petit rappel — essai 7 jours`,
       innerHtml: `
         <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Juste un rappel</h1>
-        <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">En profil <strong>${escapeHtml(style)}</strong>, ce qui freine n’est presque jamais l’exo — c’est de le faire seule.</p>
-        <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Viens à un cours en groupe avec moi cette semaine. Je te vois. Tu décides après.</p>
-        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Tester 7 jours gratuits →</a></p>
+        <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">En profil <strong>${escapeHtml(style)}</strong>, ce qui change souvent, c’est d’être vue et corrigée en direct.</p>
+        <p style="margin:0 0 20px;color:#2D2D2D;line-height:1.5;">Si tu veux tester un cours en groupe avec moi, l’essai 7 jours est là. Sinon, aucune pression.</p>
+        <p style="margin:0 0 16px;"><a href="${escapeHtml(trialUrl)}" style="${ctaStyle}">Tester 7 jours →</a></p>
         ${waLine}
       `,
     };
   }
   return {
-    subject: `${name}, dernier coup de pouce — essai 7 jours`,
+    subject: `${name}, si tu veux encore tester — essai 7 jours`,
     innerHtml: `
       <h1 style="margin:0 0 16px;font-size:22px;color:#C45D3E;font-family:system-ui,sans-serif;">Dernier message de mon côté</h1>
       <p style="margin:0 0 12px;color:#2D2D2D;line-height:1.5;">L’essai, c’est sans engagement de rester. Tu viens en cours, je te corrige, tu décides.</p>
@@ -320,7 +320,7 @@ async function trySendQuizWhatsApp(params: {
 /** Stoppe nurture email/WA si la lead a démarré un essai / payé / opt-out. */
 export async function cancelQuizNurtureForEmail(
   email: string,
-  reason: 'trial' | 'paid' | 'optout' | 'manual' = 'trial',
+  reason: 'trial' | 'paid' | 'optout' | 'manual' | 'soft_decline' = 'trial',
 ): Promise<number> {
   const admin = createAdminClient();
   const normalized = email.trim().toLowerCase();
@@ -356,7 +356,7 @@ export async function scheduleAndSendQuizWelcome(params: {
 }): Promise<{ ok: boolean; error?: string; whatsapp?: string }> {
   const admin = createAdminClient();
   const now = Date.now();
-  const j2 = new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString();
+  // Une seule relance (J+5) — plus de J+2 pour éviter l’empilement (stratégie Croissance)
   const j5 = new Date(now + 5 * 24 * 60 * 60 * 1000).toISOString();
 
   const { subject, innerHtml } = buildQuizNurtureEmail({
@@ -369,7 +369,7 @@ export async function scheduleAndSendQuizWelcome(params: {
 
   const sent = await sendRawEmail(params.email, subject, innerHtml, params.locale);
   const patch: Record<string, string | null> = {
-    nurture_j2_due_at: j2,
+    nurture_j2_due_at: null,
     nurture_j5_due_at: j5,
   };
   if (sent.ok) {

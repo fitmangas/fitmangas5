@@ -77,7 +77,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'dm_entrant' } },
       { type: 'capture_email_optin' },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -300,7 +299,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
         ),
       },
       { type: 'tag_contact', config: { tag: 'story_reply' } },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -353,7 +351,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'dm_salutation' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -638,7 +635,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'messenger_entrant' } },
       { type: 'capture_email_optin' },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -679,7 +675,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'messenger_salut' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -757,7 +752,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'wa_entrant' } },
       { type: 'capture_email_optin' },
-      ...trialFollowupSequence(),
     ],
   },
   {
@@ -798,7 +792,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
       },
       { type: 'tag_contact', config: { tag: 'wa_salut' } },
       { type: 'set_lifecycle_stage', config: { stage: 'qualified' } },
-      ...trialFollowupSequence(),
     ],
   },
   {

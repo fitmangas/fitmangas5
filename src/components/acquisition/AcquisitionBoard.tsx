@@ -16,7 +16,7 @@ import type {
 
 import { AlejandraAvatar, AvatarBadge } from './AvatarBadge';
 import { AvatarStack, type AvatarPerson } from './AvatarStack';
-import { contactDisplayName, contactsWithRealHandles } from './avatar-guards';
+import { contactDisplayName, contactsWithRealHandles, isDemoOrTestHandle } from './avatar-guards';
 import { Card } from './Card';
 import { Chip, ChipRow } from './Chip';
 import { FloatingCard } from './FloatingCard';
@@ -444,7 +444,7 @@ export function AcquisitionBoard({
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
             <JourneyBoard
               title="Inbox unifiée"
-              subtitle="Instagram · Messenger · WhatsApp · Email"
+              subtitle="Instagram · Messenger · WhatsApp"
               action={
                 <JourneyActionCluster
                   variant="create-thread"
@@ -515,6 +515,7 @@ export function AcquisitionBoard({
                   const selected = selectedConversationId === c.id;
                   const avatarName = contactDisplayName(c);
                   const displayName = avatarName ?? c.subject ?? c.contactHandle ?? 'Sans nom';
+                  const demo = isDemoOrTestHandle(c.contactHandle);
                   return (
                     <button
                       key={c.id}
@@ -528,6 +529,7 @@ export function AcquisitionBoard({
                           backgroundColor: selected ? acq.active : '#FFFFFF',
                           color: selected ? '#FFFFFF' : acq.ink,
                           boxShadow: selected ? '0 16px 40px rgba(26,26,26,0.2)' : acq.shadowCard,
+                          opacity: demo ? 0.72 : 1,
                         }}
                       >
                         <div className="flex items-start gap-3">
@@ -541,6 +543,9 @@ export function AcquisitionBoard({
                               {c.lastMessagePreview ?? 'Aucun message'}
                             </p>
                             <ChipRow className="mt-2">
+                              {demo ? (
+                                <Chip label="DÉMO/TEST" tone={selected ? 'onDark' : 'sandbox'} />
+                              ) : null}
                               <Chip label={c.channel} tone={selected ? 'onDark' : 'neutral'} />
                               <Chip
                                 label={LIFECYCLE_LABELS[c.lifecycleStage] ?? c.lifecycleStage}

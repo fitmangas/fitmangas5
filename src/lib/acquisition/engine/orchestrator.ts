@@ -1,18 +1,32 @@
 import { detectAcquisitionMarket, workflowKeywordPriority } from '@/lib/acquisition/market';
-import type { AcqContact, AcqWorkflow } from '@/lib/acquisition/types';
+import type { AcqWorkflow } from '@/lib/acquisition/types';
 
-import { actionAskFollowGate, runWorkflowAction, type ActionContext } from './actions';
+import {
+  actionAskFollowGate,
+  runWorkflowAction,
+  type ActionContext,
+} from './actions';
 import {
   inferPendingIntent,
-  isContactFollowVerified,
-  isFollowGateBypassText,
-  shouldEnforceFollowGate,
+  isExistingPayingMember,
+  shouldAskFollowGate,
 } from './follow-gate';
 import {
+  isRealInfoOrTrialRequest,
+  memberWarmReplyEs,
+  memberWarmReplyFr,
+  softDeclineReplyEs,
+  softDeclineReplyFr,
+  SOFT_DECLINE_TAG,
+  isSoftDeclineText,
+} from './soft-decline';
+import {
+  cancelScheduledFollowups,
   getContact,
   listWorkflows,
   patchContactExternalIds,
   recordWorkflowRun,
+  tagContact,
   wasWorkflowRunRecently,
 } from './repository';
 import { textMatchesKeyword } from './workflow-catalog';
@@ -24,13 +38,15 @@ export type OrchestratorResult = {
 };
 
 export const FOLLOW_GATE_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f601';
+export const SOFT_DECLINE_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f602';
+export const MEMBER_WARM_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f603';
 
 export function workflowMatchesInbound(
   workflow: AcqWorkflow,
   params: {
     triggerType: AcqWorkflow['triggerType'];
     inboundText?: string;
-    contact?: AcqContact | null;
+    contact?: import('@/lib/acquisition/types').AcqContact | null;
   },
 ): boolean {
   if (!workflow.enabled || workflow.triggerType !== params.triggerType) return false;
@@ -76,10 +92,33 @@ export async function runWorkflow(
       : null;
   const fullCtx: ActionContext = { ...ctx, contact };
 
+  // Jamais de pitch essai / relance sur soft_decline ou membre payante
+  if (contact && ((contact.tags ?? []).includes(SOFT_DECLINE_TAG) || (contact.tags ?? []).includes('optout'))) {
+    return {
+      workflowId: workflow.id,
+      ok: true,
+      steps: [{ type: 'workflow', ok: true, detail: 'Ignoré — soft_decline / optout.' }],
+    };
+  }
+
   const steps: OrchestratorResult['steps'] = [];
   let allOk = true;
 
   for (const action of workflow.actions) {
+    if (
+      contact &&
+      isExistingPayingMember(contact) &&
+      (action.type === 'send_trial_link' ||
+        action.type === 'schedule_followup' ||
+        action.type === 'capture_email_optin')
+    ) {
+      steps.push({
+        type: action.type,
+        ok: true,
+        detail: 'Ignoré — contact déjà en essai / membre.',
+      });
+      continue;
+    }
     const result = await runWorkflowAction(action, fullCtx);
     steps.push({ type: result.type, ok: result.ok, detail: result.detail });
     if (!result.ok) allOk = false;
@@ -120,18 +159,85 @@ export async function runInboundTrigger(params: {
     );
 
   const optedOut = (contact?.tags ?? []).includes('optout');
+  const softDeclined = (contact?.tags ?? []).includes(SOFT_DECLINE_TAG);
 
-  // Gate abonnement IG (ManyChat) — avant les workflows conversion.
+  // 1) Soft-no — avant follow-gate et avant tout pitch
+  //    Si elle revient avec une vraie demande, on laisse le flux normal (ré-engagement).
+  if (contact && !optedOut && isSoftDeclineText(params.inboundText)) {
+    await tagContact(contact.id, SOFT_DECLINE_TAG);
+    await cancelScheduledFollowups(contact.id);
+    if (contact.email) {
+      try {
+        const { cancelQuizNurtureForEmail } = await import('@/lib/quiz/lead-nurture');
+        await cancelQuizNurtureForEmail(contact.email, 'soft_decline');
+      } catch {
+        // non bloquant
+      }
+    }
+    const body = market === 'mx' ? softDeclineReplyEs() : softDeclineReplyFr();
+    const send = await runWorkflowAction(
+      { type: 'send_message', config: { body, appendTrialLink: false } },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    const steps = [
+      { type: 'soft_decline', ok: true, detail: 'Soft-no — clôture polie, relances annulées.' },
+      { type: send.type, ok: send.ok, detail: send.detail },
+    ];
+    await recordWorkflowRun({
+      workflowId: SOFT_DECLINE_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: send.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: SOFT_DECLINE_INTERCEPT_ID, ok: send.ok, steps }];
+  }
+
   if (
-    shouldEnforceFollowGate(params.triggerType) &&
     contact &&
+    softDeclined &&
     !optedOut &&
-    !isContactFollowVerified(contact) &&
-    !isFollowGateBypassText(params.inboundText)
+    !isRealInfoOrTrialRequest(params.inboundText)
   ) {
+    const steps = [
+      { type: 'soft_decline', ok: true, detail: 'Déjà soft_decline — silence (pas de relance).' },
+    ];
+    await recordWorkflowRun({
+      workflowId: SOFT_DECLINE_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: 'ok',
+      log: steps,
+    });
+    return [{ workflowId: SOFT_DECLINE_INTERCEPT_ID, ok: true, steps }];
+  }
+
+  // 2) Déjà cliente (essai / payante / membre) — jamais pitch essai
+  if (contact && isExistingPayingMember(contact) && !optedOut) {
+    const body = market === 'mx' ? memberWarmReplyEs() : memberWarmReplyFr();
+    const send = await runWorkflowAction(
+      { type: 'send_message', config: { body, appendTrialLink: false } },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    const steps = [
+      { type: 'member_warm', ok: true, detail: `Lifecycle ${contact.lifecycleStage} — pas de pitch essai.` },
+      { type: send.type, ok: send.ok, detail: send.detail },
+    ];
+    await recordWorkflowRun({
+      workflowId: MEMBER_WARM_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: send.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: MEMBER_WARM_INTERCEPT_ID, ok: send.ok, steps }];
+  }
+
+  // 3) Follow-gate — UNIQUEMENT vraie demande info/essai
+  if (shouldAskFollowGate({ triggerType: params.triggerType, inboundText: params.inboundText, contact })) {
     const intent = inferPendingIntent(params.inboundText);
-    await patchContactExternalIds(contact.id, { pending_intent: intent });
-    contact = (await getContact(contact.id)) ?? contact;
+    await patchContactExternalIds(contact!.id, { pending_intent: intent });
+    contact = (await getContact(contact!.id)) ?? contact;
     const ask = await actionAskFollowGate({
       contact,
       conversation: params.conversation,
@@ -142,7 +248,7 @@ export async function runInboundTrigger(params: {
     const steps = [{ type: ask.type, ok: ask.ok, detail: `${ask.detail} · intent=${intent}` }];
     await recordWorkflowRun({
       workflowId: FOLLOW_GATE_INTERCEPT_ID,
-      contactId: contact.id,
+      contactId: contact!.id,
       conversationId: params.conversation.id,
       status: ask.ok ? 'ok' : 'error',
       log: steps,

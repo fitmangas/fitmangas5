@@ -1,6 +1,12 @@
-import { CONCIERGE_OPENING_ES, CONCIERGE_OPENING_FR, CONCIERGE_SYSTEM_PROMPT, isAiDisclosureEnabled } from '@/lib/acquisition/config';
+import {
+  CONCIERGE_OPENING_ES,
+  CONCIERGE_OPENING_FR,
+  CONCIERGE_SYSTEM_PROMPT,
+  isAiDisclosureEnabled,
+} from '@/lib/acquisition/config';
+import { isSoftDeclineText } from '@/lib/acquisition/engine/soft-decline';
 
-export type ConciergeIntent = 'info' | 'trial' | 'booking' | 'human' | 'optout';
+export type ConciergeIntent = 'info' | 'trial' | 'booking' | 'human' | 'optout' | 'soft_decline';
 
 export type ConciergeResult =
   | {
@@ -15,11 +21,16 @@ export type ConciergeResult =
 function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeResult {
   const lower = inboundText.toLowerCase();
   let intent: ConciergeIntent = 'info';
-  if (/essai|gratuit|prix|abon|trial|prueba/.test(lower)) intent = 'trial';
-  if (/cours|horaire|réserver|reserv|nantes|visio/.test(lower)) intent = 'booking';
-  if (/humain|alejandra|appel|téléphone|telefono/.test(lower)) intent = 'human';
   if (/stop|désabonne|desabonne|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas/.test(lower)) {
     intent = 'optout';
+  } else if (isSoftDeclineText(inboundText)) {
+    intent = 'soft_decline';
+  } else if (/essai|gratuit|prix|abon|trial|prueba/.test(lower)) {
+    intent = 'trial';
+  } else if (/cours|horaire|réserver|reserv|nantes|visio/.test(lower)) {
+    intent = 'booking';
+  } else if (/humain|alejandra|appel|téléphone|telefono/.test(lower)) {
+    intent = 'human';
   }
 
   const replies: Record<ConciergeIntent, string> = {
@@ -40,6 +51,10 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
         ? 'Te respondo yo en persona cuando estás en prueba o suscrita.\n\n¿Empezamos con la prueba 7 días gratis ✨?'
         : 'Je te réponds en personne quand tu es en essai ou abonnée.\n\nOn commence par l’essai 7 jours gratuits ✨ ?',
     optout: market === 'mx' ? 'Entendido, no te escribo más.' : 'Compris, je ne t’écris plus.',
+    soft_decline:
+      market === 'mx'
+        ? 'Gracias por tu sinceridad 💛\n\nTe deseo lo mejor donde estés. Si un día quieres probar conmigo, estaré aquí — sin presión.'
+        : 'Merci pour ta sincérité 💛\n\nJe te souhaite une belle continuation là où tu es. Si un jour tu as envie d’essayer avec moi, je serai là — sans pression.',
   };
 
   const suggested: Record<ConciergeIntent, string[]> = {
@@ -48,6 +63,7 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
     booking: ['book_session_intent'],
     human: ['send_trial_link'],
     optout: [],
+    soft_decline: [],
   };
 
   return {
@@ -68,7 +84,10 @@ function parseConciergeJson(text: string): ConciergeResult | null {
       reply?: string;
       suggestedActions?: string[];
     };
-    const intent = (json.intent ?? 'info') as ConciergeIntent;
+    const rawIntent = (json.intent ?? 'info') as string;
+    const intent = (
+      rawIntent === 'decline' ? 'soft_decline' : rawIntent
+    ) as ConciergeIntent;
     if (!json.reply?.trim()) return null;
     return {
       ok: true,
@@ -87,6 +106,11 @@ export async function runConcierge(params: {
   market?: 'fr' | 'mx';
 }): Promise<ConciergeResult> {
   const market = params.market ?? 'fr';
+  // Soft-no avant Claude : jamais de pitch essai sur un refus
+  if (isSoftDeclineText(params.inboundText)) {
+    return fallbackConcierge(params.inboundText, market);
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim();
   if (!apiKey) {
     return fallbackConcierge(params.inboundText, market);
@@ -119,7 +143,6 @@ export async function runConcierge(params: {
     });
     const body = await res.text();
     if (!res.ok) {
-      // Jamais de silence : si Claude tombe, on répond quand même (fallback).
       return fallbackConcierge(params.inboundText, market);
     }
     const json = JSON.parse(body) as { content?: Array<{ type?: string; text?: string }> };
@@ -130,6 +153,9 @@ export async function runConcierge(params: {
     const parsed = parseConciergeJson(text);
     if (!parsed || !parsed.ok) {
       return fallbackConcierge(params.inboundText, market);
+    }
+    if (parsed.intent === 'soft_decline') {
+      parsed.suggestedActions = [];
     }
     if (prefix) parsed.reply = prefix + parsed.reply;
     return parsed;

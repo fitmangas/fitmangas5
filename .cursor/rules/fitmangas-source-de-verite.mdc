@@ -20,6 +20,7 @@ alwaysApply: true
 - **Produit** : FitMangas (`fitmangas.com`) = Pilates & Barre en visio (coach Alejandra) + présentiel Nantes. Bilingue FR/ES. Marchés : France (primaire), Mexique (secondaire).
 - **Stack** : Next.js 15, Supabase Pro (`csamqilppttijrpnadtr`), Stripe (live), Vimeo, Jitsi/Jibri sur Hetzner (`178.104.206.202`, `live.fitmangas.com`), Resend, Printful, GA4 (`537748245`), Meta Pixel.
 - **Repo** : `/Users/kevinpicard/Projets/fitmangas5`
+- **Croissance / Acquisition** : lire `docs/STRATEGIE_CROISSANCE.md` avant toute tâche (soft-no, follow-gate, funnel, honnêteté data).
 - **Kevin n'est pas développeur.** Expliquer simple. Code écrit via Cursor.
 - **PAS DE SHOOTING PHOTO.** Décision définitive, répétée plusieurs fois. Ne jamais le proposer. La bibliothèque se construit par extraction d'images depuis les vidéos Reels déjà tournées.
 - Les dossiers commençant par un point (`.cursor/`) sont **cachés** dans le Finder macOS → `Cmd+Shift+.`
