@@ -282,7 +282,18 @@ test.describe('Hub membre — captures DA', () => {
       }
       if (section === 'evolution' && page.url().includes('filled=1')) {
         await expect(page.getByTestId('evolution-scene')).toBeVisible();
+        await expect(page.getByTestId('evolution-hero-number')).toBeVisible();
+        await expect(page.getByTestId('evolution-pastilles')).toBeVisible();
+        await expect(page.getByTestId('evolution-delta')).toBeVisible();
         await expect(page.getByTestId('fluid-evolution-curve')).toBeVisible();
+        await expect(page.getByTestId('advance-test-preview')).toBeVisible();
+        await expect(page.getByTestId('advance-health-preview')).toBeVisible();
+      }
+      if (section === 'tests' && page.url().includes('filled=1')) {
+        await expect(page.getByTestId('tests-history-list')).toBeVisible();
+        await expect(page.getByTestId('test-history-card').first()).toBeVisible();
+        await expect(page.getByTestId('mini-ocean-radar').first()).toBeVisible();
+        await expect(page.getByTestId('test-compare')).toBeVisible();
       }
       await page.waitForTimeout(400);
       await shot(page, `${String(n).padStart(2, '0')}-membre-${section}-filled`);

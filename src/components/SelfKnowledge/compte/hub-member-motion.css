@@ -106,6 +106,14 @@
     linear-gradient(160deg, #f3e8df 0%, #e8d5c8 45%, #dcc4b4 100%);
 }
 
+/* Pastilles plus compactes sur mobile */
+@media (max-width: 640px) {
+  .hub-pastille-sm {
+    height: 4.75rem !important;
+    width: 4.75rem !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hub-reveal,
   .hub-reveal-delay-1,

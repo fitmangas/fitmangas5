@@ -370,6 +370,28 @@ export async function listResultsForProfile(profileId: string): Promise<SelfTest
   return (data ?? []) as SelfTestResultRow[];
 }
 
+/** Une passation appartenant au profil (rapport membre). */
+export async function getResultByIdForProfile(
+  profileId: string,
+  resultId: string,
+): Promise<SelfTestResultRow | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('self_test_results')
+    .select(
+      'id, test_slug, locale, email, profile_id, answers, scores, analysis_teaser, analysis_full, analysis_mode, consent, consent_at, first_name, source_attribution, test_version, created_at',
+    )
+    .eq('id', resultId)
+    .eq('profile_id', profileId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[self-test] get result', error);
+    return null;
+  }
+  return (data as SelfTestResultRow | null) ?? null;
+}
+
 export async function saveHealthConsent(profileId: string): Promise<HealthConsentRow | null> {
   const admin = createAdminClient();
   const now = new Date().toISOString();

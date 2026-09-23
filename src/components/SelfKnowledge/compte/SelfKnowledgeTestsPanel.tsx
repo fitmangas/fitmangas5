@@ -2,12 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { OceanRadar, buildOceanSlices } from '@/components/SelfKnowledge/OceanRadar';
+import {
+  MiniOceanRadar,
+  TraitSparkline,
+} from '@/components/SelfKnowledge/compte/HubMiniViz';
 import { HubEmptyState, HubSectionHero } from '@/components/SelfKnowledge/compte/HubVisuals';
 import { ATTACHMENT_LABELS } from '@/lib/self-knowledge/ecr-short';
 import { BIG_FIVE_LABELS } from '@/lib/self-knowledge/ipip50';
+import { bandFromTraitScore, type BigFiveTraitKey } from '@/lib/self-knowledge/banks/big-five-traits';
+import { TRAIT_BAND_PHRASE } from '@/lib/self-knowledge/banks/practice-impact';
 import type { SelfTestResultRow } from '@/lib/self-knowledge/store';
 import type { ClientLang } from '@/lib/compte/i18n';
 import { getSelfTest } from '@/lib/self-knowledge/scoring';
@@ -28,9 +34,40 @@ function formatLabel(version: string | null | undefined, locale: 'fr' | 'es'): s
   return locale === 'es' ? 'Formato' : 'Format';
 }
 
-function formatDomainScore(slug: string, val: number): string {
-  if (slug === 'big-five') return `${val}/50`;
-  return `${Number(val).toFixed(1)}/7`;
+function dominantBigFive(scores: Record<string, number>): BigFiveTraitKey {
+  const keys: BigFiveTraitKey[] = ['E', 'A', 'C', 'ES', 'O'];
+  let best: BigFiveTraitKey = 'C';
+  let max = -1;
+  for (const k of keys) {
+    const v = scores[k] ?? 0;
+    if (v > max) {
+      max = v;
+      best = k;
+    }
+  }
+  return best;
+}
+
+function traitSeries(
+  history: SelfTestResultRow[],
+  trait: BigFiveTraitKey,
+  untilId: string,
+): number[] {
+  const same = history
+    .filter(
+      (r) =>
+        r.test_slug === 'big-five' &&
+        (r.test_version ?? '') ===
+          (history.find((h) => h.id === untilId)?.test_version ?? ''),
+    )
+    .slice()
+    .reverse();
+  const out: number[] = [];
+  for (const r of same) {
+    out.push((r.scores as Record<string, number>)[trait] ?? 0);
+    if (r.id === untilId) break;
+  }
+  return out;
 }
 
 const CARD_IMG: Record<string, string> = {
@@ -43,6 +80,18 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
   const [slugFilter, setSlugFilter] = useState<SelfTestSlug | 'all'>('all');
   const [idA, setIdA] = useState<string>('');
   const [idB, setIdB] = useState<string>('');
+
+  const bigFiveRows = useMemo(
+    () => history.filter((r) => r.test_slug === 'big-five'),
+    [history],
+  );
+
+  useEffect(() => {
+    if (bigFiveRows.length >= 2 && !idA && !idB) {
+      setIdA(bigFiveRows[0]!.id);
+      setIdB(bigFiveRows[1]!.id);
+    }
+  }, [bigFiveRows, idA, idB]);
 
   const t =
     locale === 'es'
@@ -66,6 +115,10 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
           radarThen: 'Antes',
           rapid: 'Rápido',
           deep: 'En profundidad',
+          openReport: 'Ver el informe',
+          rising: 'en alza',
+          falling: 'en baja',
+          steady: 'estable',
         }
       : {
           eyebrow: 'Mes tests',
@@ -87,6 +140,10 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
           radarThen: 'Avant',
           rapid: 'Rapide',
           deep: 'Approfondie',
+          openReport: 'Voir le rapport',
+          rising: 'en hausse',
+          falling: 'en baisse',
+          steady: 'stable',
         };
 
   const filtered = useMemo(() => {
@@ -211,7 +268,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
             />
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3" data-testid="tests-history-list">
             {filtered.map((row) => {
               const test = getSelfTest(
                 row.test_slug,
@@ -221,58 +278,72 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                     : 'ipip-50'
                   : undefined,
               );
+              const scores = row.scores as Record<string, number>;
+              const isBf = row.test_slug === 'big-five';
+              const dom = isBf ? dominantBigFive(scores) : null;
+              const band = dom ? bandFromTraitScore(scores[dom] ?? 0) : null;
+              const bandLabel =
+                dom && band ? TRAIT_BAND_PHRASE[dom][band][locale] : null;
+              const series = dom ? traitSeries(history, dom, row.id) : [];
+              const rising =
+                series.length >= 2
+                  ? series[series.length - 1]! > series[series.length - 2]!
+                    ? true
+                    : series[series.length - 1]! < series[series.length - 2]!
+                      ? false
+                      : null
+                  : null;
+              const trendLabel =
+                rising === true ? t.rising : rising === false ? t.falling : t.steady;
+
               return (
-                <article
+                <Link
                   key={row.id}
-                  className="rounded-[22px] border border-white/70 bg-[#FFFAF5] p-4 shadow-[0_12px_32px_rgba(60,40,30,0.09)] md:p-5"
+                  href={`/compte/connaissance-de-soi/tests/resultat/${row.id}`}
+                  className="hub-elevate block rounded-[22px] border border-white/70 bg-[#FFFAF5] p-4 shadow-[0_12px_32px_rgba(60,40,30,0.09)] md:p-5"
+                  data-testid="test-history-card"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium text-brand-ink">
-                      {test?.title[locale] ?? row.test_slug}
-                      <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]">
-                        {formatLabel(row.test_version, locale)}
-                      </span>
-                    </p>
-                    <span className="text-[11px] text-brand-ink/45">
-                      {dateFmt.format(new Date(row.created_at))}
-                    </span>
+                  <div className="flex gap-3 sm:gap-4">
+                    {isBf ? (
+                      <MiniOceanRadar scores={scores} size={80} />
+                    ) : (
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-[#e5d0c4] bg-white/80 font-serif text-xl italic text-[#c45d3e]">
+                        ◈
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-brand-ink">
+                          {test?.title[locale] ?? row.test_slug}
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]">
+                            {formatLabel(row.test_version, locale)}
+                          </span>
+                        </p>
+                        <span className="text-[11px] text-brand-ink/45">
+                          {dateFmt.format(new Date(row.created_at))}
+                        </span>
+                      </div>
+                      {bandLabel ? (
+                        <p className="mt-1.5 text-sm text-brand-ink/70">
+                          <span className="font-serif italic">{bandLabel}</span>
+                          {series.length >= 2 ? (
+                            <span className="ml-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#c45d3e]">
+                              · {trendLabel}
+                            </span>
+                          ) : null}
+                        </p>
+                      ) : row.analysis_teaser ? (
+                        <p className="mt-1.5 line-clamp-2 text-sm text-brand-ink/60">{row.analysis_teaser}</p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        {series.length >= 2 ? <TraitSparkline values={series} rising={rising} /> : null}
+                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]">
+                          {t.openReport} →
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  {row.analysis_teaser ? (
-                    <p className="mt-2 line-clamp-2 text-sm text-brand-ink/60">{row.analysis_teaser}</p>
-                  ) : null}
-                  <dl className="mt-3 grid gap-1.5 sm:grid-cols-2">
-                    {(test?.scoreKeys ?? Object.keys(row.scores)).map((key) => {
-                      const val = (row.scores as Record<string, number>)[key] ?? 0;
-                      const label =
-                        row.test_slug === 'big-five'
-                          ? BIG_FIVE_LABELS[key]?.[locale] ?? key
-                          : ATTACHMENT_LABELS[key]?.[locale] ?? key;
-                      return (
-                        <div
-                          key={key}
-                          className="flex justify-between rounded-xl bg-white/70 px-2.5 py-1.5 text-xs"
-                        >
-                          <dt className="text-brand-ink/55">{label}</dt>
-                          <dd className="font-semibold text-brand-ink">
-                            {formatDomainScore(row.test_slug, val)}
-                          </dd>
-                        </div>
-                      );
-                    })}
-                  </dl>
-                  <Link
-                    href={
-                      row.test_slug === 'big-five'
-                        ? `/compte/connaissance-de-soi/tests/big-five?format=${
-                            (row.test_version ?? '').includes('120') ? 'ipip-120' : 'ipip-50'
-                          }`
-                        : `/compte/connaissance-de-soi/tests/${row.test_slug}`
-                    }
-                    className="mt-3 inline-block text-[11px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]"
-                  >
-                    {t.retake} →
-                  </Link>
-                </article>
+                </Link>
               );
             })}
           </div>
