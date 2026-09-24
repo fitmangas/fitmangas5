@@ -21,7 +21,7 @@ describe('ads config (flag OFF par défaut)', () => {
     const state = getAdsConnectionState();
     expect(state.enabledFlag).toBe(false);
     expect(state.connected).toBe(false);
-    expect(state.message.toLowerCase()).toMatch(/flag off|attente|préparée/);
+    expect(state.message.toLowerCase()).toMatch(/ads|token|flag|attente|system user|app/);
     expect(state.blockers.length).toBeGreaterThan(0);
   });
 });

@@ -113,15 +113,24 @@ export function getAdsConnectionState(): AdsConnectionState {
   if (!enabledFlag) {
     blockers.push('META_ADS_ENABLED est OFF (défaut) — aucune écriture Ads.');
   }
-  if (!cfg.accessToken) blockers.push('Token Meta Ads manquant (META_ADS_ACCESS_TOKEN).');
-  if (!cfg.adAccountId) blockers.push('Ad Account ID manquant (META_ADS_AD_ACCOUNT_ID).');
+  if (!cfg.accessToken) {
+    blockers.push(
+      'Token Ads manquant : le token Page messaging a business_management mais PAS ads_read/ads_management. Il faut un System User Ads (voir docs/ADS-SETUP.md).',
+    );
+  }
+  if (!cfg.adAccountId) {
+    blockers.push('Ad Account ID manquant (META_ADS_AD_ACCOUNT_ID) — à créer/noter dans Business Manager.');
+  }
   if (!cfg.appId) blockers.push('App ID manquant (META_ADS_APP_ID ou META_APP_ID).');
 
   const configured = Boolean(cfg.accessToken && cfg.adAccountId);
   const connected = enabledFlag && configured;
 
   let message = 'En attente connexion Meta Ads';
-  if (!enabledFlag) {
+  if (!enabledFlag && cfg.appId && !cfg.accessToken) {
+    message =
+      'App Meta déjà branchée. Token messaging ≠ token Ads. Reste : System User + Ad Account + App Review ads_* + ton GO pour META_ADS_ENABLED=1.';
+  } else if (!enabledFlag) {
     message = 'API Meta Ads préparée — flag OFF. Aucune dépense possible.';
   } else if (!configured) {
     message = 'Flag ON mais accès incomplets — voir docs/ADS-SETUP.md';
