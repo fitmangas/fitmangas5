@@ -27,6 +27,28 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Meta Ads : token System User OK (spend toujours OFF)
+
+- OTP SMS validé → token System User « Conversions API » généré (app FitMangas Community 2, expiration Jamais).
+- Scopes confirmés via `debug_token` : `ads_management` + `ads_read` + `business_management` (+ `public_profile`). `expires_at: 0`, `data_access_expires_at: 0`.
+- Probe `/me/adaccounts` : **FitMangas Ads** `act_1070085439154384`, `account_status: 1` (ACTIVE).
+- `META_ADS_ACCESS_TOKEN` posé `.env.local` + Vercel (prod/preview/dev, encrypted). **`META_ADS_ENABLED` reste `0`**.
+- Doc `docs/ADS-SETUP.md` à jour. Reste Kevin : GO écrit `OK pour META_ADS_ENABLED=1` (+ carte BM optionnelle) pour dépenser.
+
+### 2026-09-24 — Meta Ads : token System User bloqué OTP SMS (+33784835972) — RÉSOLU
+
+- Wizard + OTP SMS admin ; entreprise BM déjà vérifiée. Voir entrée « token System User OK » ci-dessus.
+
+### 2026-09-24 — Meta Ads : Ad Account créé + admin capturé (spend toujours OFF)
+
+- Connecté admin FitMangas (`/admin/croissance?tab=ads`) : 3 brouillons + 5 créatives + bandeau « en attente » honnête. Captures → `docs/captures/ads/`.
+- BM Ale Mangas : **compte pub créé** « FitMangas Ads » → `act_1070085439154384` (EUR, Europe/Paris). Pas de carte ajoutée (volontaire).
+- `META_ADS_AD_ACCOUNT_ID` branché `.env.local` + Vercel. `META_ADS_ENABLED` reste `0`.
+- System User « Conversions API System User » **affecté** au Ad Account (accès total).
+- App Developers : cas d’utilisation **API Marketing** coché + Enregistrer lancé (scopes `ads_*` absents du token tant qu’App Review / cas pas actif).
+- Reste Kevin : finaliser App Review Marketing API → générer token `ads_*` → GO `META_ADS_ENABLED=1` + (optionnel) moyen de paiement.
+- Note : connexion admin via mot de passe temporaire pour captures — **réinitialiser** le mdp de `ale.mangas5@gmail.com` (mot de passe oublié).
+
 ### 2026-09-24 — Meta Ads : probe + seed réel (sans activer le spend)
 
 - Probe live : token Page = `business_management` OK, **pas** `ads_read`/`ads_management` → pas d’Ad Account via messaging.
