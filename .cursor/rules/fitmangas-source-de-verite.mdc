@@ -327,6 +327,7 @@ Sans ça, le système génère à l'aveugle et la semaine 12 est identique à la
 - [ ] Claude API pour le texte : clé à créer (`ANTHROPIC_API_KEY`).
 - [x] Meta tokens / Page ID ≠ IG User ID → **OK au 21/09/2026** (retester via `scripts/check-meta-tokens.ts` si doute).
 - [ ] WhatsApp : créer un template marketing `quiz_essai_fitmangas` dans Meta Business Manager (API refuse la création depuis ce WABA).
+- [x] Ads intelligence : sync quotidien + organique + coach (`docs/ADS_EXPERTISE.md`) — IG insights complets = ajouter `instagram_manage_insights`.
 
 ## 12. Leçons dures
 
