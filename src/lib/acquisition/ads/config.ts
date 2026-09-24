@@ -127,9 +127,12 @@ export function getAdsConnectionState(): AdsConnectionState {
   const connected = enabledFlag && configured;
 
   let message = 'En attente connexion Meta Ads';
-  if (!enabledFlag && cfg.appId && !cfg.accessToken) {
+  if (!enabledFlag && configured) {
     message =
-      'App Meta déjà branchée. Token messaging ≠ token Ads. Reste : System User + Ad Account + App Review ads_* + ton GO pour META_ADS_ENABLED=1.';
+      'Token + Ad Account OK — flag OFF. Aucune dépense. Attends ton GO pour META_ADS_ENABLED=1.';
+  } else if (!enabledFlag && cfg.appId && !cfg.accessToken) {
+    message =
+      'App Meta déjà branchée. Token messaging ≠ token Ads. Reste : System User Ads + ton GO pour META_ADS_ENABLED=1.';
   } else if (!enabledFlag) {
     message = 'API Meta Ads préparée — flag OFF. Aucune dépense possible.';
   } else if (!configured) {
