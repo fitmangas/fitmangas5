@@ -51,7 +51,7 @@ export async function adsCreateStrategyDrafts(): Promise<ActionResult> {
       const remote = await createMetaCampaignDraft({
         name: `FitMangas · ${bp.labelFr}`,
         dailyBudgetCents: budgetCents,
-        objectiveApi: bp.id === 'hot_trial' ? 'OUTCOME_SALES' : 'OUTCOME_LEADS',
+        objectiveApi: bp.id === 'hot_trial' ? 'OUTCOME_SALES' : bp.id === 'cold_quiz' ? 'OUTCOME_TRAFFIC' : 'OUTCOME_LEADS',
       });
       if (!remote.ok) {
         return {
@@ -82,6 +82,62 @@ export async function adsCreateStrategyDrafts(): Promise<ActionResult> {
       ? `${created.length} campagnes créées en BROUILLON Meta (PAUSED) + CRM.`
       : `${created.length} brouillons locaux créés (Meta non activé — voir ADS-SETUP.md).`,
     data: { names: created, pushedToMeta: pushToMeta },
+  };
+}
+
+/**
+ * Pousse UNIQUEMENT la campagne froide/quiz en PAUSED (8 €/j) — zéro activation.
+ * Idempotent si un brouillon cold_quiz avec meta_campaign_id existe déjà.
+ */
+export async function adsCreateColdQuizPausedDraft(): Promise<ActionResult> {
+  await requireAdmin();
+  if (!(await isAdsSchemaReady())) {
+    return { ok: false, error: 'Tables Ads absentes — appliquer la migration.' };
+  }
+  if (!isMetaAdsEnabled() || !getAdsConnectionState().configured) {
+    return {
+      ok: false,
+      error: 'META_ADS_ENABLED + token + Ad Account requis pour pousser un brouillon Meta.',
+    };
+  }
+
+  const bp = STRATEGY_CAMPAIGN_BLUEPRINTS.find((b) => b.id === 'cold_quiz');
+  if (!bp) return { ok: false, error: 'Blueprint cold_quiz introuvable.' };
+
+  const existing = await listAdCampaigns();
+  if (existing.ok) {
+    const cold = existing.items.find((c) => c.objective === 'cold_quiz' && c.metaCampaignId);
+    if (cold) {
+      return {
+        ok: true,
+        detail: `Campagne froide déjà liée à Meta (${cold.metaCampaignId}) — statut CRM ${cold.status}.`,
+        data: { campaignId: cold.id, metaCampaignId: cold.metaCampaignId },
+      };
+    }
+  }
+
+  const budgetCents = bp.suggestedDailyBudgetEur * 100;
+  const remote = await createMetaCampaignDraft({
+    name: `FitMangas · ${bp.labelFr}`,
+    dailyBudgetCents: budgetCents,
+    objectiveApi: 'OUTCOME_TRAFFIC',
+  });
+  if (!remote.ok) return { ok: false, error: remote.error };
+
+  const local = await insertDraftCampaign({
+    channel: 'meta',
+    name: `FitMangas · ${bp.labelFr}`,
+    objective: 'cold_quiz',
+    dailyBudgetCents: budgetCents,
+    metaCampaignId: remote.campaignId,
+    notes: `Meta PAUSED · ${bp.suggestedDailyBudgetEur} €/j · trafic quiz · audience froide FR — NE PAS ACTIVER sans double confirm Kevin.`,
+  });
+  if (!local.ok) return { ok: false, error: local.error };
+
+  return {
+    ok: true,
+    detail: `Brouillon froid PAUSED créé sur Meta (${remote.campaignId}) · ${bp.suggestedDailyBudgetEur} €/j · zéro diffusion.`,
+    data: { campaignId: local.campaign.id, metaCampaignId: remote.campaignId, dailyBudgetCents: budgetCents },
   };
 }
 
