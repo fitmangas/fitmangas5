@@ -12,6 +12,7 @@ import { fetchSupabaseAcquisitionMetrics } from '@/lib/acquisition/sources/supab
 import { getPerformanceLoopStatus } from '@/lib/acquisition/performance-loop';
 import { fetchAcqCrmFunnel } from '@/lib/acquisition/sources/acq-crm';
 import { getMetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
+import { summarizeAdsPerformance } from '@/lib/acquisition/ads/repository';
 import type {
   AcquisitionChannel,
   AcquisitionKpi,
@@ -137,7 +138,7 @@ export async function buildAcquisitionOverview(
   channel: AcquisitionChannel | 'all' = 'all',
 ): Promise<AcquisitionOverview> {
   const sourceErrors: SourceError[] = [];
-  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive, performanceLoop, followups] =
+  const [ga4, gsc, stripe, supa, pixel, schemaReady, acqCrm, metaLive, performanceLoop, followups, adsPerf] =
     await Promise.all([
       fetchGa4AcquisitionMetrics(),
       fetchGscAcquisitionMetrics(),
@@ -149,6 +150,7 @@ export async function buildAcquisitionOverview(
       getMetaLiveReadiness(),
       getPerformanceLoopStatus(),
       listUpcomingFollowups(12),
+      summarizeAdsPerformance(),
     ]);
 
   if (!ga4.ok) sourceErrors.push({ provider: ga4.provider, error: ga4.error });
@@ -291,6 +293,32 @@ export async function buildAcquisitionOverview(
       label: 'Contacts CRM',
       value: formatNum(crmContacts),
       hint: 'Pipeline Acquisition (DM / inbox).',
+    },
+    {
+      id: 'ads_cpl',
+      label: adsPerf.connected ? 'CPL Ads (30 j)' : 'CPL Ads',
+      value: adsPerf.connected
+        ? adsPerf.cplCents != null
+          ? formatEur(adsPerf.cplCents / 100)
+          : '—'
+        : 'En attente Meta Ads',
+      hint: adsPerf.connected
+        ? 'Réel — dépense Ads ÷ leads (ad_metrics_daily).'
+        : adsPerf.waitingMessage ?? 'En attente connexion Meta Ads — pas de chiffre inventé.',
+      tone: adsPerf.connected ? 'neutral' : 'watch',
+    },
+    {
+      id: 'ads_cac',
+      label: adsPerf.connected ? 'CAC Ads (30 j)' : 'CAC Ads',
+      value: adsPerf.connected
+        ? adsPerf.cacCents != null
+          ? formatEur(adsPerf.cacCents / 100)
+          : '—'
+        : 'En attente Meta Ads',
+      hint: adsPerf.connected
+        ? 'Réel — dépense Ads ÷ conversions payantes trackées.'
+        : 'Voir onglet ADS / Publicité · docs/ADS-SETUP.md',
+      tone: adsPerf.connected ? 'neutral' : 'watch',
     },
   ];
 
