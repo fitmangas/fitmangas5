@@ -57,9 +57,11 @@ export function buildMetaOAuthUrl(state: string) {
     'pages_manage_posts',
     'instagram_basic',
     'instagram_content_publish',
+    'instagram_manage_comments',
+    'instagram_manage_insights',
     'business_management',
   ].join(',');
-  return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${encodeURIComponent(appId || '')}&redirect_uri=${encodeURIComponent(redirect)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}&response_type=code`;
+  return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${encodeURIComponent(appId || '')}&redirect_uri=${encodeURIComponent(redirect)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}&response_type=code&auth_type=rerequest`;
 }
 
 export async function exchangeMetaCodeForConnection(code: string): Promise<MetaSocialConnection> {
