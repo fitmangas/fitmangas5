@@ -21,8 +21,13 @@ import {
 } from '@/app/admin/acquisition/actions';
 import {
   adsActivateCampaign,
+  adsBoostOrganicToPausedDraft,
+  adsCreateColdQuizPausedDraft,
+  adsCreateRefreshCreativeDraft,
   adsCreateStrategyDrafts,
   adsEnsureCreativeSeed,
+  adsLoadCoachAdvice,
+  adsRunIntelligenceSync,
   adsSyncInsights,
 } from '@/app/admin/croissance/ads-actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
@@ -32,7 +37,9 @@ import {
   resolveCroissanceTab,
   type CroissanceTabId,
 } from '@/components/Admin/croissance/croissance-tabs';
+import { generateCoachAdvice } from '@/lib/acquisition/ads/coach';
 import { getAdsConnectionState } from '@/lib/acquisition/ads/config';
+import { loadAdsIntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import {
   ensureAdCreativeSeed,
   isAdsSchemaReady,
@@ -157,12 +164,14 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
   let adsPanel: ReactNode = null;
   if (showAcquisition && tab === 'ads') {
     await ensureAdCreativeSeed();
-    const [schemaReady, campaignsRes, creativesRes, performance] = await Promise.all([
+    const [schemaReady, campaignsRes, creativesRes, performance, intelligence] = await Promise.all([
       isAdsSchemaReady(),
       listAdCampaigns(),
       listAdCreatives(),
       summarizeAdsPerformance(),
+      loadAdsIntelligenceBundle(),
     ]);
+    const coach = await generateCoachAdvice(intelligence);
     adsPanel = (
       <AdsPilotPanel
         connection={getAdsConnectionState()}
@@ -170,9 +179,17 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         campaigns={campaignsRes.ok ? campaignsRes.items : []}
         creatives={creativesRes.ok ? creativesRes.items : []}
         schemaReady={schemaReady}
+        intelligence={intelligence}
+        coachAdvice={coach.advice}
+        coachNote={coach.aiNote}
         onCreateDrafts={adsCreateStrategyDrafts}
         onSyncInsights={adsSyncInsights}
+        onFullSync={adsRunIntelligenceSync}
         onSeedCreatives={adsEnsureCreativeSeed}
+        onCreateColdDraft={adsCreateColdQuizPausedDraft}
+        onBoostOrganic={adsBoostOrganicToPausedDraft}
+        onRefreshCreative={adsCreateRefreshCreativeDraft}
+        onReloadCoach={adsLoadCoachAdvice}
         onActivate={adsActivateCampaign}
       />
     );
