@@ -79,8 +79,8 @@ export const STRATEGY_CAMPAIGN_BLUEPRINTS: StrategyCampaignBlueprint[] = [
     audience: 'Femmes 28–55 FR (puis ES), intérêts Pilates / bien-être / post-partum / bureau — jamais vues FitMangas.',
     offer: 'Quiz de personnalité gratuit → e-mail',
     objective: 'Leads / trafic vers /quiz',
-    suggestedDailyBudgetEur: 15,
-    why: 'Haut de funnel : aimant quiz. Mesure = CPL (coût par lead e-mail).',
+    suggestedDailyBudgetEur: 8,
+    why: 'Haut de funnel : aimant quiz. Mesure = CPL (coût par lead e-mail). Budget démarrage Kevin : 5–10 €/j.',
   },
   {
     id: 'warm_retarget',
@@ -90,7 +90,7 @@ export const STRATEGY_CAMPAIGN_BLUEPRINTS: StrategyCampaignBlueprint[] = [
     audience: 'A visité le site / quiz / IG (engageuses) sans s’inscrire à l’essai.',
     offer: 'Rappel quiz + essai 7j (bénéfice : ne plus être seule)',
     objective: 'Trafic / conversions soft',
-    suggestedDailyBudgetEur: 10,
+    suggestedDailyBudgetEur: 8,
     why: 'Milieu de funnel : elle connaît déjà. Mesure = coût par démarrage essai.',
   },
   {
