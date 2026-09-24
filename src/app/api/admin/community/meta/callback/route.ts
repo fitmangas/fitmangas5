@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
 
-import { completeMetaOAuthAction } from '@/app/admin/community/actions';
+import { exchangeMetaCodeForConnection } from '@/lib/admin/meta-social';
+import { saveMetaSocialConnection } from '@/lib/admin/social-comms';
 import { requireAdmin } from '@/lib/auth/require-admin';
 
+/**
+ * Échange le code Meta AVANT requireAdmin : le code OAuth est one-shot.
+ * Sans session admin, on perdait le code (redirect /login) et le token
+ * n’était jamais enregistré — cas typique d’un navigateur agent sans cookie.
+ */
 export async function GET(request: Request) {
-  try {
-    await requireAdmin();
-  } catch {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
+
   if (error) {
     return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=error', request.url));
   }
@@ -20,9 +21,26 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=missing_code', request.url));
   }
 
-  const result = await completeMetaOAuthAction(code);
-  if (!result.ok) {
-    return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=failed', request.url));
+  let ok = false;
+  try {
+    const connection = await exchangeMetaCodeForConnection(code);
+    await saveMetaSocialConnection(connection);
+    ok = true;
+  } catch {
+    ok = false;
   }
-  return NextResponse.redirect(new URL('/admin/croissance?tab=publications&meta=connected', request.url));
+
+  let isAdmin = false;
+  try {
+    await requireAdmin();
+    isAdmin = true;
+  } catch {
+    isAdmin = false;
+  }
+
+  const meta = ok ? 'connected' : 'failed';
+  if (!isAdmin) {
+    return NextResponse.redirect(new URL(`/login?meta=${meta}`, request.url));
+  }
+  return NextResponse.redirect(new URL(`/admin/croissance?tab=publications&meta=${meta}`, request.url));
 }
