@@ -22,7 +22,7 @@
 
 - Avec Advantage+ et conversion events fiables, **la créative EST le ciblage**.
 - Trop de micro-ciblages = volume trop bas pour apprendre + biais.
-- FitMangas froid : large FR femmes 30–55 + intérêts wellness soft, éviter intérêts ultra-étroits.
+- FitMangas froid : large FR femmes 30–55 + intérêts wellness soft, laisser intérêts ultra-étroits.
 
 ## Créative qui convertit (fitness / wellness femmes)
 
