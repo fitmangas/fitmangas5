@@ -1,6 +1,22 @@
 # Setup Meta Ads (FitMangas) — guide Kevin
 
-> **État live 24/09/2026 ~17h50** — token OK · `META_ADS_ENABLED=1` (lecture + brouillons PAUSED) · **aucune campagne ACTIVE** · funding Meta **absent** (carte à ajouter).
+> **État live 24/09/2026** — token Ads OK · `META_ADS_ENABLED=1` · **aucune campagne ACTIVE** · funding Meta **absent** · centre d’intelligence + cron sync 04:40.
+
+## Centre d’intelligence (nouveau)
+
+| Capacité | Accessible | Permission manquante |
+|---|---|---|
+| Ads Insights compte/campagne/adset/ad (spend, CTR, CPC, CPM, reach, freq, leads, thruplay…) | **OUI** | — |
+| Breakdowns âge / genre / publisher_platform / pays / heure | **OUI** | — |
+| Breakdown `platform_position` + `actions` | **NON** (combo API invalide) | N/A — non utilisé |
+| Liste médias IG (likes, comments) | **OUI** (Page token CM) | — |
+| Insights média IG (reach, views, saves, shares, watch) | **NON** | `instagram_manage_insights` |
+| Insights compte (vues profil, portée, clics bio) | **NON** | `instagram_manage_insights` |
+| Followers count (surface) | **OUI** | — |
+
+Sync auto : cron Vercel `ads-intelligence-sync` 04:40 · tables snapshots datées · UI « dernière synchro ».
+
+Coach : `docs/ADS_EXPERTISE.md` + panneau Conseils du jour (IA bornée). Actions = brouillons **PAUSED** uniquement.
 
 ## Déjà fait
 
