@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 
 import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
+import { waitHumanReplyDelay } from '@/lib/acquisition/engine/human-delay';
 import { runInboundTrigger } from '@/lib/acquisition/engine/orchestrator';
 import {
   bumpContactLeadScore,
@@ -15,6 +16,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { AcquisitionChannel, WorkflowTriggerType } from '@/lib/acquisition/types';
 
 export const dynamic = 'force-dynamic';
+/** after() + délai humain 30–90s + envoi Meta — besoin > 60s Vercel. */
+export const maxDuration = 120;
 
 type MetaMessagingEvent = {
   sender?: { id?: string };
@@ -113,7 +116,31 @@ async function ingestInbound(params: {
   handleOverride?: string | null;
   triggerType?: WorkflowTriggerType;
   commentId?: string | null;
-}): Promise<{ stored: boolean; workflowsRun: number; skippedDuplicate?: boolean }> {
+}): Promise<{
+  stored: boolean;
+  workflowsRun: number;
+  skippedDuplicate?: boolean;
+  deferredTrigger?: {
+    triggerType: WorkflowTriggerType;
+    conversation: {
+      id: string;
+      contactId: string;
+      channel: AcquisitionChannel;
+      status: 'open';
+      lifecycleStage: 'new';
+      subject: string | null;
+      lastMessageAt: string | null;
+      lastMessagePreview: string | null;
+      assignedTo: string | null;
+      contactHandle: string | null;
+      externalThreadId: string;
+    };
+    contactId: string;
+    inboundText: string;
+    market: 'fr' | 'mx';
+    commentId: string | null;
+  };
+}> {
   const admin = createAdminClient();
   const { channel, senderId, text } = params;
   const handle =
@@ -268,38 +295,39 @@ async function ingestInbound(params: {
     }
   }
 
-  const wfRes = await listWorkflows();
-  const workflows = wfRes.ok ? wfRes.items : [];
   const contact = await getContact(contactId);
   const { data: convRow } = await admin.from('acq_conversations').select('*').eq('id', conversationId).maybeSingle();
-  let workflowsRun = 0;
-  if (convRow && contact) {
-    const conversation = {
-      id: String(convRow.id),
-      contactId,
-      channel,
-      status: convRow.status as 'open',
-      lifecycleStage: (convRow.lifecycle_stage as 'new') ?? 'new',
-      subject: convRow.subject ? String(convRow.subject) : null,
-      lastMessageAt: convRow.last_message_at ? String(convRow.last_message_at) : null,
-      lastMessagePreview: convRow.last_message_preview ? String(convRow.last_message_preview) : null,
-      assignedTo: convRow.assigned_to ? String(convRow.assigned_to) : null,
-      contactHandle: contact.handle,
-      externalThreadId: senderId,
-    };
-    const results = await runInboundTrigger({
+  if (!convRow || !contact) {
+    return { stored: true, workflowsRun: 0 };
+  }
+
+  const conversation = {
+    id: String(convRow.id),
+    contactId,
+    channel,
+    status: convRow.status as 'open',
+    lifecycleStage: (convRow.lifecycle_stage as 'new') ?? 'new',
+    subject: convRow.subject ? String(convRow.subject) : null,
+    lastMessageAt: convRow.last_message_at ? String(convRow.last_message_at) : null,
+    lastMessagePreview: convRow.last_message_preview ? String(convRow.last_message_preview) : null,
+    assignedTo: convRow.assigned_to ? String(convRow.assigned_to) : null,
+    contactHandle: contact.handle,
+    externalThreadId: senderId,
+  };
+
+  // ACK rapide Meta (<20s) : workflows + délai humain en after()
+  return {
+    stored: true,
+    workflowsRun: 0,
+    deferredTrigger: {
       triggerType: params.triggerType ?? triggerForChannel(channel),
       conversation,
       contactId,
       inboundText: text,
       market: detectAcquisitionMarket(text),
       commentId: params.commentId ?? null,
-      workflows,
-    });
-    workflowsRun = results.length;
-  }
-
-  return { stored: true, workflowsRun };
+    },
+  };
 }
 
 export async function GET(request: Request) {
@@ -348,6 +376,7 @@ export async function POST(request: Request) {
 
     let stored = 0;
     let workflowsRun = 0;
+    const deferred: NonNullable<Awaited<ReturnType<typeof ingestInbound>>['deferredTrigger']>[] = [];
 
     for (const entry of body.entry ?? []) {
       for (const msg of entry.messaging ?? []) {
@@ -376,7 +405,7 @@ export async function POST(request: Request) {
               : triggerForChannel(channel),
         });
         if (r.stored) stored += 1;
-        workflowsRun += r.workflowsRun;
+        if (r.deferredTrigger) deferred.push(r.deferredTrigger);
       }
 
       if (body.object === 'instagram') {
@@ -398,7 +427,7 @@ export async function POST(request: Request) {
             commentId,
           });
           if (r.stored) stored += 1;
-          workflowsRun += r.workflowsRun;
+          if (r.deferredTrigger) deferred.push(r.deferredTrigger);
         }
       }
 
@@ -432,13 +461,32 @@ export async function POST(request: Request) {
               handleOverride: profileName ? `wa_${profileName.replace(/\s+/g, '_').slice(0, 24)}` : null,
             });
             if (r.stored) stored += 1;
-            workflowsRun += r.workflowsRun;
+            if (r.deferredTrigger) deferred.push(r.deferredTrigger);
           }
         }
       }
     }
 
-    return NextResponse.json({ ok: true, stored, workflowsRun });
+    if (deferred.length > 0) {
+      after(async () => {
+        const wfRes = await listWorkflows();
+        const workflows = wfRes.ok ? wfRes.items : [];
+        for (const job of deferred) {
+          try {
+            const delayMs = await waitHumanReplyDelay();
+            if (delayMs > 0) {
+              console.info(`[meta-webhook] délai humain ${Math.round(delayMs / 1000)}s avant réponse`);
+            }
+            const results = await runInboundTrigger({ ...job, workflows });
+            workflowsRun += results.length;
+          } catch (e) {
+            console.error('[meta-webhook] deferred trigger', e);
+          }
+        }
+      });
+    }
+
+    return NextResponse.json({ ok: true, stored, workflowsRun, deferred: deferred.length });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : 'Erreur webhook Meta' },

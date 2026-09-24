@@ -34,8 +34,10 @@ alwaysApply: true
 ### Acquisition (code clé)
 - **Stratégie permanente** : `docs/STRATEGIE_CROISSANCE.md` (relire avant toute tâche Croissance)
 - Catalog workflows : `src/lib/acquisition/engine/workflow-catalog.ts` (sync DB via `ensureWorkflowCatalog`)
+- Intentions conversation : `conversation-intents.ts` (thinking / factuel / support / warm / offtopic) + intercept orchestrateur
 - Soft-no / follow-gate intention : `soft-decline.ts` + `follow-gate.ts` + `orchestrator.ts`
-- Webhook Meta : `src/app/api/acquisition/webhooks/meta/route.ts` (anti-doublon mid + texte 2 min)
+- Délai humain 30–90s : `human-delay.ts` + `after()` webhook Meta (`maxDuration=120`)
+- Webhook Meta : `src/app/api/acquisition/webhooks/meta/route.ts` (anti-doublon mid + texte 2 min + ACK rapide)
 - Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + **1** relance J+5 + WA ; cancel soft_decline)
 - Cron : `/api/admin/acquisition/cron/run-followups`
 

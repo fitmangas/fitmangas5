@@ -7,6 +7,12 @@ import {
   type ActionContext,
 } from './actions';
 import {
+  classifyConversationIntent,
+  replyForIntent,
+  thinkingNudgeBody,
+  isSupportRequestText,
+} from './conversation-intents';
+import {
   inferPendingIntent,
   isExistingPayingMember,
   shouldAskFollowGate,
@@ -40,6 +46,7 @@ export type OrchestratorResult = {
 export const FOLLOW_GATE_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f601';
 export const SOFT_DECLINE_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f602';
 export const MEMBER_WARM_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f603';
+export const CONVERSATION_INTENT_INTERCEPT_ID = '00000000-0000-4000-8000-00000000f604';
 
 export function workflowMatchesInbound(
   workflow: AcqWorkflow,
@@ -92,12 +99,12 @@ export async function runWorkflow(
       : null;
   const fullCtx: ActionContext = { ...ctx, contact };
 
-  // Jamais de pitch essai / relance sur soft_decline ou membre payante
-  if (contact && ((contact.tags ?? []).includes(SOFT_DECLINE_TAG) || (contact.tags ?? []).includes('optout'))) {
+  const blockedTags = ['optout', SOFT_DECLINE_TAG, 'thinking_nudge_refused'] as const;
+  if (contact && blockedTags.some((t) => (contact.tags ?? []).includes(t))) {
     return {
       workflowId: workflow.id,
       ok: true,
-      steps: [{ type: 'workflow', ok: true, detail: 'Ignoré — soft_decline / optout.' }],
+      steps: [{ type: 'workflow', ok: true, detail: 'Ignoré — soft_decline / optout / thinking refusé.' }],
     };
   }
 
@@ -119,20 +126,44 @@ export async function runWorkflow(
       });
       continue;
     }
-    const result = await runWorkflowAction(action, fullCtx);
-    steps.push({ type: result.type, ok: result.ok, detail: result.detail });
-    if (!result.ok) allOk = false;
+    if (
+      contact &&
+      (contact.tags ?? []).includes('thinking') &&
+      (action.type === 'send_trial_link' ||
+        (action.type === 'schedule_followup' &&
+          String((action.config as { actionType?: string } | undefined)?.actionType ?? 'send_trial_link') ===
+            'send_trial_link'))
+    ) {
+      steps.push({
+        type: action.type,
+        ok: true,
+        detail: 'Ignoré — contact en réflexion (thinking), pas de tunnel essai.',
+      });
+      continue;
+    }
+
+    const step = await runWorkflowAction(action, fullCtx);
+    steps.push({ type: step.type, ok: step.ok, detail: step.detail });
+    if (!step.ok) allOk = false;
   }
 
   await recordWorkflowRun({
     workflowId: workflow.id,
-    contactId: contact?.id,
+    contactId: contact?.id ?? ctx.contactId,
     conversationId: ctx.conversation.id,
     status: allOk ? 'ok' : steps.some((s) => s.ok) ? 'partial' : 'error',
     log: steps,
   });
 
   return { workflowId: workflow.id, ok: allOk, steps };
+}
+
+function isThinkingNudgeRefusal(text: string | undefined): boolean {
+  if (!text?.trim()) return false;
+  const t = text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+  return /pas (la peine|besoin)|pas de rappel|ne (m['']?ecris|m['']?écris) plus|no hace falta|sin recordatorio|no me escribas|stop rappel/.test(
+    t,
+  );
 }
 
 export async function runInboundTrigger(params: {
@@ -162,7 +193,6 @@ export async function runInboundTrigger(params: {
   const softDeclined = (contact?.tags ?? []).includes(SOFT_DECLINE_TAG);
 
   // 1) Soft-no — avant follow-gate et avant tout pitch
-  //    Si elle revient avec une vraie demande, on laisse le flux normal (ré-engagement).
   if (contact && !optedOut && isSoftDeclineText(params.inboundText)) {
     await tagContact(contact.id, SOFT_DECLINE_TAG);
     await cancelScheduledFollowups(contact.id);
@@ -212,15 +242,56 @@ export async function runInboundTrigger(params: {
     return [{ workflowId: SOFT_DECLINE_INTERCEPT_ID, ok: true, steps }];
   }
 
-  // 2) Déjà cliente (essai / payante / membre) — jamais pitch essai
-  if (contact && isExistingPayingMember(contact) && !optedOut) {
-    const body = market === 'mx' ? memberWarmReplyEs() : memberWarmReplyFr();
+  // 1b) Refus du rappel « thinking » optionnel
+  if (
+    contact &&
+    !optedOut &&
+    (contact.tags ?? []).includes('thinking') &&
+    isThinkingNudgeRefusal(params.inboundText)
+  ) {
+    await tagContact(contact.id, 'thinking_nudge_refused');
+    await cancelScheduledFollowups(contact.id);
+    const body =
+      market === 'mx'
+        ? 'Perfecto 💛 No te escribo más. Cuídate.'
+        : 'Parfait 💛 Je n’écris plus. Prends soin de toi.';
     const send = await runWorkflowAction(
       { type: 'send_message', config: { body, appendTrialLink: false } },
       { contact, conversation: params.conversation, inboundText: params.inboundText, market },
     );
     const steps = [
-      { type: 'member_warm', ok: true, detail: `Lifecycle ${contact.lifecycleStage} — pas de pitch essai.` },
+      { type: 'thinking_nudge_refused', ok: true, detail: 'Rappel thinking refusé — silence.' },
+      { type: send.type, ok: send.ok, detail: send.detail },
+    ];
+    await recordWorkflowRun({
+      workflowId: CONVERSATION_INTENT_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: send.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: CONVERSATION_INTENT_INTERCEPT_ID, ok: send.ok, steps }];
+  }
+
+  // 2) Déjà cliente (essai / payante / membre) — jamais pitch essai
+  if (contact && isExistingPayingMember(contact) && !optedOut) {
+    const support = isSupportRequestText(params.inboundText);
+    const body = support
+      ? replyForIntent('support', market).body
+      : market === 'mx'
+        ? memberWarmReplyEs()
+        : memberWarmReplyFr();
+    const send = await runWorkflowAction(
+      { type: 'send_message', config: { body, appendTrialLink: false } },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    if (support) await tagContact(contact.id, 'support_request');
+    const steps = [
+      {
+        type: support ? 'member_support' : 'member_warm',
+        ok: true,
+        detail: `Lifecycle ${contact.lifecycleStage} — ${support ? 'aide support' : 'pas de pitch essai'}.`,
+      },
       { type: send.type, ok: send.ok, detail: send.detail },
     ];
     await recordWorkflowRun({
@@ -233,10 +304,56 @@ export async function runInboundTrigger(params: {
     return [{ workflowId: MEMBER_WARM_INTERCEPT_ID, ok: send.ok, steps }];
   }
 
-  // 3) Follow-gate — UNIQUEMENT vraie demande info/essai
+  // 3) Intentions conversationnelles — avant follow-gate
+  const intent = classifyConversationIntent(params.inboundText);
+  if (contact && intent && !optedOut) {
+    const packed = replyForIntent(intent, market);
+    await tagContact(contact.id, packed.tag);
+    const send = await runWorkflowAction(
+      {
+        type: 'send_message',
+        config: { body: packed.body, appendTrialLink: Boolean(packed.appendTrialLink) },
+      },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    const steps: OrchestratorResult['steps'] = [
+      { type: 'conversation_intent', ok: true, detail: `Intent ${intent} — tag ${packed.tag}.` },
+      { type: send.type, ok: send.ok, detail: send.detail },
+    ];
+
+    if (
+      packed.scheduleSoftNudge &&
+      !(contact.tags ?? []).includes('thinking_nudge_refused') &&
+      !(contact.tags ?? []).includes(SOFT_DECLINE_TAG)
+    ) {
+      const nudge = await runWorkflowAction(
+        {
+          type: 'schedule_followup',
+          config: {
+            delayHours: 72,
+            actionType: 'send_message',
+            body: thinkingNudgeBody(market),
+          },
+        },
+        { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+      );
+      steps.push({ type: nudge.type, ok: nudge.ok, detail: nudge.detail });
+    }
+
+    await recordWorkflowRun({
+      workflowId: CONVERSATION_INTENT_INTERCEPT_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: send.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: CONVERSATION_INTENT_INTERCEPT_ID, ok: send.ok, steps }];
+  }
+
+  // 4) Follow-gate — UNIQUEMENT vraie demande info/essai
   if (shouldAskFollowGate({ triggerType: params.triggerType, inboundText: params.inboundText, contact })) {
-    const intent = inferPendingIntent(params.inboundText);
-    await patchContactExternalIds(contact!.id, { pending_intent: intent });
+    const pendingIntent = inferPendingIntent(params.inboundText);
+    await patchContactExternalIds(contact!.id, { pending_intent: pendingIntent });
     contact = (await getContact(contact!.id)) ?? contact;
     const ask = await actionAskFollowGate({
       contact,
@@ -245,7 +362,7 @@ export async function runInboundTrigger(params: {
       market,
       commentId: params.commentId ?? null,
     });
-    const steps = [{ type: ask.type, ok: ask.ok, detail: `${ask.detail} · intent=${intent}` }];
+    const steps = [{ type: ask.type, ok: ask.ok, detail: `${ask.detail} · intent=${pendingIntent}` }];
     await recordWorkflowRun({
       workflowId: FOLLOW_GATE_INTERCEPT_ID,
       contactId: contact!.id,

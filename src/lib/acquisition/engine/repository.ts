@@ -959,6 +959,16 @@ export async function runDueFollowups(limit = 40): Promise<{
       details.push(`${id}: annulé — opt-out`);
       continue;
     }
+    if (contact && contact.tags.includes('soft_decline')) {
+      await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+      details.push(`${id}: annulé — soft_decline`);
+      continue;
+    }
+    if (contact && contact.tags.includes('thinking_nudge_refused')) {
+      await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+      details.push(`${id}: annulé — thinking_nudge_refused`);
+      continue;
+    }
     if (contact && (contact.lifecycleStage === 'trial' || contact.lifecycleStage === 'paid' || contact.lifecycleStage === 'member')) {
       await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
       details.push(`${id}: annulé — déjà ${contact.lifecycleStage}`);
@@ -1095,7 +1105,7 @@ export async function syncAcqLifecycleFromSubscriptions(): Promise<{
     const next: LifecycleStage = sub === 'trialing' ? 'trial' : 'member';
     const current = (c.lifecycle_stage as LifecycleStage) ?? 'new';
     if (current === next || current === 'member') continue;
-    if ((current === 'paid' || current === 'member') && next === 'trial') continue;
+    if (current === 'paid' && next === 'trial') continue;
     const nextScore = clampLeadScore(
       Number(c.lead_score ?? 0) + scoreForLifecycle(next === 'member' ? 'paid' : next),
     );
