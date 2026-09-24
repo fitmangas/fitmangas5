@@ -13,16 +13,23 @@ import {
 import { resolveCroissanceTab } from '@/components/Admin/croissance/croissance-tabs';
 
 describe('ads config (flag OFF par défaut)', () => {
-  it('META_ADS_ENABLED défaut = false', () => {
+  it('META_ADS_ENABLED lit l’env (absent = false)', () => {
+    const prev = process.env.META_ADS_ENABLED;
+    delete process.env.META_ADS_ENABLED;
     expect(isMetaAdsEnabled()).toBe(false);
+    if (prev !== undefined) process.env.META_ADS_ENABLED = prev;
   });
 
   it('état connexion honnête sans faux chiffres', () => {
+    const prev = process.env.META_ADS_ENABLED;
+    process.env.META_ADS_ENABLED = '0';
     const state = getAdsConnectionState();
     expect(state.enabledFlag).toBe(false);
     expect(state.connected).toBe(false);
-    expect(state.message.toLowerCase()).toMatch(/ads|token|flag|attente|system user|app/);
+    expect(state.message.toLowerCase()).toMatch(/ads|token|flag|attente|system user|app|go/);
     expect(state.blockers.length).toBeGreaterThan(0);
+    if (prev !== undefined) process.env.META_ADS_ENABLED = prev;
+    else delete process.env.META_ADS_ENABLED;
   });
 });
 
@@ -30,8 +37,8 @@ describe('garde-fou activation budget', () => {
   it('refuse sans double confirmation', async () => {
     const r = await activateMetaCampaign({
       metaCampaignId: '123',
-      confirmBudgetCents: 1500,
-      expectedDailyBudgetCents: 1500,
+      confirmBudgetCents: 800,
+      expectedDailyBudgetCents: 800,
       humanConfirmedTwice: false,
     });
     expect(r.ok).toBe(false);
@@ -41,8 +48,8 @@ describe('garde-fou activation budget', () => {
   it('refuse si budget ne matche pas', async () => {
     const r = await activateMetaCampaign({
       metaCampaignId: '123',
-      confirmBudgetCents: 1000,
-      expectedDailyBudgetCents: 1500,
+      confirmBudgetCents: 500,
+      expectedDailyBudgetCents: 800,
       humanConfirmedTwice: true,
     });
     expect(r.ok).toBe(false);
@@ -50,14 +57,18 @@ describe('garde-fou activation budget', () => {
   });
 
   it('refuse si flag OFF même avec confirmations', async () => {
+    const prev = process.env.META_ADS_ENABLED;
+    process.env.META_ADS_ENABLED = '0';
     const r = await activateMetaCampaign({
       metaCampaignId: '123',
-      confirmBudgetCents: 1500,
-      expectedDailyBudgetCents: 1500,
+      confirmBudgetCents: 800,
+      expectedDailyBudgetCents: 800,
       humanConfirmedTwice: true,
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/META_ADS_ENABLED|OFF/i);
+    if (prev !== undefined) process.env.META_ADS_ENABLED = prev;
+    else delete process.env.META_ADS_ENABLED;
   });
 });
 
@@ -69,6 +80,11 @@ describe('stratégie 3 campagnes + multi-canal', () => {
       'warm_retarget',
       'hot_trial',
     ]);
+  });
+
+  it('campagne froide = 8 €/j (fourchette 5–10)', () => {
+    const cold = STRATEGY_CAMPAIGN_BLUEPRINTS.find((b) => b.id === 'cold_quiz');
+    expect(cold?.suggestedDailyBudgetEur).toBe(8);
   });
 
   it('funnel Ad → quiz → essai → 39€', () => {
