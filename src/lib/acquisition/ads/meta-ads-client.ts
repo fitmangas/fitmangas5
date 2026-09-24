@@ -190,17 +190,67 @@ export async function createMetaCampaignDraft(
   const cfg = getMetaAdsConfig();
   const res = await graphPost(`/${cfg.adAccountId}/campaigns`, {
     name: spec.name,
-    objective: spec.objectiveApi ?? 'OUTCOME_LEADS',
+    objective: spec.objectiveApi ?? 'OUTCOME_TRAFFIC',
     status: 'PAUSED',
     special_ad_categories: [],
     daily_budget: String(spec.dailyBudgetCents),
     bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+    is_adset_budget_sharing_enabled: false,
   });
 
   if (!res.ok) return { ok: false, error: res.error };
   const json = res.json as { id?: string };
   if (!json.id) return { ok: false, error: 'Meta n’a pas renvoyé d’ID campagne.' };
   return { ok: true, campaignId: json.id };
+}
+
+/** Lit le status d’une campagne Meta (preuve PAUSED / ACTIVE). */
+export async function fetchMetaCampaignStatus(
+  metaCampaignId: string,
+): Promise<{ ok: true; status: string; name: string; dailyBudget: string | null } | { ok: false; error: string }> {
+  const res = await graphGet(`/${metaCampaignId}`, {
+    fields: 'id,name,status,effective_status,daily_budget,objective',
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  const json = res.json as {
+    name?: string;
+    status?: string;
+    effective_status?: string;
+    daily_budget?: string;
+  };
+  return {
+    ok: true,
+    status: String(json.effective_status ?? json.status ?? 'UNKNOWN'),
+    name: String(json.name ?? ''),
+    dailyBudget: json.daily_budget != null ? String(json.daily_budget) : null,
+  };
+}
+
+/** Liste campagnes du Ad Account (lecture seule). */
+export async function listMetaCampaigns(): Promise<
+  | { ok: true; campaigns: Array<{ id: string; name: string; status: string }> }
+  | { ok: false; error: string }
+> {
+  const cfg = getMetaAdsConfig();
+  if (!cfg.adAccountId || !cfg.accessToken) {
+    return { ok: false, error: 'Config Meta Ads incomplète.' };
+  }
+  const res = await graphGet(`/${cfg.adAccountId}/campaigns`, {
+    fields: 'id,name,status,effective_status',
+    limit: '25',
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  const data = res.json as {
+    data?: Array<{ id?: string; name?: string; status?: string; effective_status?: string }>;
+  };
+  return {
+    ok: true,
+    campaigns: (data.data ?? []).map((c) => ({
+      id: String(c.id ?? ''),
+      name: String(c.name ?? ''),
+      status: String(c.effective_status ?? c.status ?? ''),
+    })),
+  };
 }
 
 /**
