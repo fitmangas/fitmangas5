@@ -146,4 +146,113 @@ function alertToAdvice(a: AdsAlert): CoachAdvice {
   };
 }
 
-PLACEHOLDER_REST
+function summarizeBundleForAi(bundle: IntelligenceBundle): string {
+  const spend = bundle.campaigns.reduce((s, c) => s + c.spendCents, 0);
+  const leads = bundle.campaigns.reduce((s, c) => s + c.leads, 0);
+  const top: OrganicMediaRow[] = bundle.organicMedia.slice(0, 5);
+  return JSON.stringify(
+    {
+      lastSyncAt: bundle.lastSyncAt,
+      spendEur: spend / 100,
+      leads,
+      campaigns: bundle.campaigns.slice(0, 8).map((c) => ({
+        name: c.entityName,
+        spendEur: c.spendCents / 100,
+        leads: c.leads,
+        cplEur: c.cplCents != null ? c.cplCents / 100 : null,
+        frequency: c.frequency,
+        ctr: c.ctr,
+      })),
+      temperature: bundle.temperatureCompare,
+      alerts: bundle.alerts.slice(0, 5),
+      organicTop: top.map((m) => ({
+        id: m.igMediaId,
+        score: m.score,
+        boost: m.boostBadge,
+        likes: m.likeCount,
+        comments: m.commentsCount,
+        reach: m.reach,
+        caption: (m.caption ?? '').slice(0, 80),
+      })),
+      organicAccount: bundle.organicAccount
+        ? {
+            followers: bundle.organicAccount.followersCount,
+            profileViews: bundle.organicAccount.profileViews,
+            insightsAvailable: bundle.organicAccount.insightsAvailable,
+          }
+        : null,
+      capabilities: bundle.capabilities.map((c) => ({
+        id: c.id,
+        ok: c.accessible,
+        missing: c.missingPermission,
+      })),
+    },
+    null,
+    2,
+  );
+}
+
+/**
+ * Conseils = règles déterministes + (optionnel) reformulation IA bornée au corpus.
+ * L’IA ne peut pas inventer de chiffres : on lui passe UNIQUEMENT le JSON réel.
+ */
+export async function generateCoachAdvice(
+  bundle: IntelligenceBundle,
+): Promise<{ advice: CoachAdvice[]; aiNote: string | null }> {
+  const base = starterAdvice(bundle);
+  const corpus = await loadExpertiseCorpus();
+  const facts = summarizeBundleForAi(bundle);
+
+  const cascade = await runSocialTextCascade({
+    system: `Tu es le coach Ads FitMangas. Tu réponds en français, ton expert mais simple.
+Tu es STRICTEMENT borné au corpus expertise ci-dessous et aux FAITS JSON fournis.
+INTERDIT : inventer impressions, spend, CPL, ROAS, followers.
+Si une métrique manque → écris « trop tôt pour analyser ».
+Propose 2 à 4 conseils courts (titre + 1-2 phrases). Pas de markdown lourd.
+Corpus:\n${corpus}`,
+    user: `FAITS RÉELS (ne pas inventer hors de ce JSON) :\n${facts}\n\nRéponds en JSON array : [{"title":"...","body":"...","dataStatus":"ok|too_early|missing_permission"}]`,
+    temperature: 0.3,
+    maxOutputTokens: 900,
+  });
+
+  if (!cascade.ok) {
+    return { advice: base, aiNote: cascade.detail ?? 'IA indisponible — conseils règles uniquement.' };
+  }
+
+  let parsed: Array<{ title?: string; body?: string; dataStatus?: string }> = [];
+  try {
+    const raw = cascade.text.trim();
+    const start = raw.indexOf('[');
+    const end = raw.lastIndexOf(']');
+    if (start >= 0 && end > start) {
+      parsed = JSON.parse(raw.slice(start, end + 1)) as typeof parsed;
+    }
+  } catch {
+    return { advice: base, aiNote: 'Réponse IA non JSON — conseils règles conservés.' };
+  }
+
+  const aiAdvice: CoachAdvice[] = parsed.slice(0, 4).map((p, i) => ({
+    id: `ai-${i}`,
+    priority: i === 0 ? 'high' : 'medium',
+    title: String(p.title ?? 'Conseil').slice(0, 120),
+    body: String(p.body ?? '').slice(0, 500),
+    dataStatus:
+      p.dataStatus === 'ok' || p.dataStatus === 'missing_permission' || p.dataStatus === 'too_early'
+        ? p.dataStatus
+        : 'too_early',
+    source: 'ai' as const,
+    action: base[0]?.action ?? { type: 'sync_now' as const, label: 'Synchroniser' },
+  }));
+
+  // Merge : règles d’abord (actions fiables), puis IA sans doublon de titre
+  const titles = new Set(base.map((b) => b.title.toLowerCase()));
+  const merged = [...base];
+  for (const a of aiAdvice) {
+    if (titles.has(a.title.toLowerCase())) continue;
+    merged.push(a);
+  }
+  return {
+    advice: merged.slice(0, 8),
+    aiNote: `Généré via ${cascade.provider}/${cascade.model} — borné au corpus + faits sync.`,
+  };
+}
