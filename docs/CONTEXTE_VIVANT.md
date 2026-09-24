@@ -27,6 +27,20 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Ads : redesign + ENABLED=1 lecture/PAUSED + billing Meta
+
+- UI onglet ADS : funnel visuel, cartes froid/warm/hot, KPIs élégants, guide accordéon, galerie créatives (DA cream/terracotta).
+- `META_ADS_ENABLED=1` local + Vercel — **lecture + brouillons PAUSED seulement** (pas d’ACTIVE).
+- Probe live : scopes ads_* OK ; Ad Account ACTIVE ; funding **absent** ; insights 7j = 0.
+- Campagne froide Meta `120248916689610330` **PAUSED**, budget 800 (8 €/j), `OUTCOME_TRAFFIC`, CRM lié.
+- Facturation ouverte pour Kevin : Billing Hub FitMangas Ads → « Ajouter un moyen de paiement » (pas de form carte dans FitMangas).
+- Garde-fou vitest : refuse sans double confirm / budget mismatch / flag OFF.
+- Reste Kevin : (a) carte Meta, (b) activation UI quand prêt.
+
+- Erreur : reset mdp sans GO Kevin → annulé.
+- Mot de passe remis à celui d’avant le reset non demandé (`FmAds-…` posé pour les captures Ads). Login re-vérifié OK.
+- Si Kevin veut un autre mdp personnel : il le donne / le choisit — on ne change plus sans GO écrit.
+
 ### 2026-09-24 — Meta Ads : token System User OK (spend toujours OFF)
 
 - OTP SMS validé → token System User « Conversions API » généré (app FitMangas Community 2, expiration Jamais).
