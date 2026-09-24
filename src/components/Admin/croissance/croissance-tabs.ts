@@ -2,6 +2,7 @@ export const CROISSANCE_TABS = [
   { id: 'overview', label: 'Vue d’ensemble', acquisitionOnly: true },
   { id: 'conversations', label: 'Conversations', acquisitionOnly: true },
   { id: 'workflows', label: 'Workflows', acquisitionOnly: true },
+  { id: 'ads', label: 'ADS / Publicité', acquisitionOnly: true },
   { id: 'publications', label: 'Publications', acquisitionOnly: false },
   { id: 'seo', label: 'SEO', acquisitionOnly: false },
 ] as const;
@@ -19,7 +20,10 @@ export function resolveCroissanceTab(
   acquisitionEnabled: boolean,
 ): CroissanceTabId {
   if (raw === 'publications' || raw === 'seo') return raw;
-  if (acquisitionEnabled && (raw === 'overview' || raw === 'conversations' || raw === 'workflows')) {
+  if (
+    acquisitionEnabled &&
+    (raw === 'overview' || raw === 'conversations' || raw === 'workflows' || raw === 'ads')
+  ) {
     return raw;
   }
   return acquisitionEnabled ? 'overview' : 'publications';

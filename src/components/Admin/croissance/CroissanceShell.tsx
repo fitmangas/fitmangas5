@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BarChart3, Megaphone, MessageCircle, Rocket, Target, Workflow } from 'lucide-react';
+import { BarChart3, Megaphone, MessageCircle, Rocket, Target, Workflow, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { acq } from '@/components/acquisition/tokens';
@@ -12,6 +12,7 @@ const TAB_ICONS = {
   overview: BarChart3,
   conversations: MessageCircle,
   workflows: Workflow,
+  ads: Wallet,
   publications: Megaphone,
   seo: Rocket,
 } as const;

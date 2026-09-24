@@ -19,12 +19,27 @@ import {
   acquisitionCheckLiveReadiness,
   acquisitionEnsureWorkflowCatalog,
 } from '@/app/admin/acquisition/actions';
+import {
+  adsActivateCampaign,
+  adsCreateStrategyDrafts,
+  adsEnsureCreativeSeed,
+  adsSyncInsights,
+} from '@/app/admin/croissance/ads-actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
+import { AdsPilotPanel } from '@/components/Admin/croissance/AdsPilotPanel';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
 import {
   resolveCroissanceTab,
   type CroissanceTabId,
 } from '@/components/Admin/croissance/croissance-tabs';
+import { getAdsConnectionState } from '@/lib/acquisition/ads/config';
+import {
+  ensureAdCreativeSeed,
+  isAdsSchemaReady,
+  listAdCampaigns,
+  listAdCreatives,
+  summarizeAdsPerformance,
+} from '@/lib/acquisition/ads/repository';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { buildAcquisitionOverview } from '@/lib/acquisition/dashboard/build-overview';
 import {
@@ -64,7 +79,10 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
 
   if (
     !showAcquisition &&
-    (rawTab === 'overview' || rawTab === 'conversations' || rawTab === 'workflows')
+    (rawTab === 'overview' ||
+      rawTab === 'conversations' ||
+      rawTab === 'workflows' ||
+      rawTab === 'ads')
   ) {
     redirect('/admin/croissance?tab=publications');
   }
@@ -136,10 +154,36 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
     );
   }
 
+  let adsPanel: ReactNode = null;
+  if (showAcquisition && tab === 'ads') {
+    await ensureAdCreativeSeed();
+    const [schemaReady, campaignsRes, creativesRes, performance] = await Promise.all([
+      isAdsSchemaReady(),
+      listAdCampaigns(),
+      listAdCreatives(),
+      summarizeAdsPerformance(),
+    ]);
+    adsPanel = (
+      <AdsPilotPanel
+        connection={getAdsConnectionState()}
+        performance={performance}
+        campaigns={campaignsRes.ok ? campaignsRes.items : []}
+        creatives={creativesRes.ok ? creativesRes.items : []}
+        schemaReady={schemaReady}
+        onCreateDrafts={adsCreateStrategyDrafts}
+        onSyncInsights={adsSyncInsights}
+        onSeedCreatives={adsEnsureCreativeSeed}
+        onActivate={adsActivateCampaign}
+      />
+    );
+  }
+
   let tabPanel: ReactNode = null;
 
   if (tab === 'overview' || tab === 'conversations' || tab === 'workflows') {
     tabPanel = acquisitionPanel;
+  } else if (tab === 'ads') {
+    tabPanel = adsPanel;
   } else if (tab === 'publications') {
     tabPanel = <CommunityManagerSection />;
   } else if (tab === 'seo') {

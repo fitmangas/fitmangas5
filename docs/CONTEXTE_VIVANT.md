@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Onglet ADS / Publicité (stratégie + Meta flag OFF)
+
+- Nouvel onglet `/admin/croissance?tab=ads` : guide débutant, 3 campagnes froid/warm/hot, créatives UGC FR/ES, multi-canal (Meta ready, TikTok/Pinterest/Google phase 2).
+- API Meta Marketing préparée (`meta-ads-client.ts`) : lecture insights + brouillons PAUSED ; activation = double confirm + budget exact ; `META_ADS_ENABLED` défaut OFF.
+- Tables additives : `ad_campaigns`, `ad_metrics_daily`, `ad_creatives` (migration appliquée).
+- Dashboard Vue d’ensemble : KPIs CPL/CAC Ads honnêtes (« En attente Meta Ads » si non connecté).
+- Doc : `docs/ADS-SETUP.md` (permissions App Review + variables + étapes Kevin).
+
 ### 2026-09-24 — Affinage conversations Acquisition (intents + délai humain)
 
 - Nouveaux intents FR/ES : `thinking`, factuels (prix/horaires/replay/how), `trial_offer`, `support`, `warm_no_intent`, `offtopic` — `conversation-intents.ts` + intercept orchestrateur avant follow-gate.
