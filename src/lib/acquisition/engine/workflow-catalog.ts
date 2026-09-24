@@ -76,7 +76,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     actions: [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'dm_entrant' } },
-      { type: 'capture_email_optin' },
+      // Pas de capture_email au premier message vague (STRATEGIE_CROISSANCE — converses d’abord)
     ],
   },
   {
@@ -84,7 +84,10 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'Commentaire « INFO » / « PRIX » → tarif groupe 39€',
     enabled: true,
     triggerType: 'ig_comment_keyword',
-    triggerConfig: { keyword: 'info|prix|tarif|combien|cuesta|precio|costo', priority: 100 },
+    triggerConfig: {
+      keyword: 'prix|tarif|combien|cuesta|precio|costo|plus d\'info|des infos|más info|mas info',
+      priority: 100,
+    },
     conditions: {},
     actions: [
       {
@@ -105,7 +108,10 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     name: 'DM « prix / combien » → tarif groupe 39€',
     enabled: true,
     triggerType: 'ig_dm_inbound',
-    triggerConfig: { keyword: 'prix|tarif|combien|cuesta|precio|costo|info', priority: 100 },
+    triggerConfig: {
+      keyword: 'prix|tarif|combien|cuesta|precio|costo|plus d\'info|des infos|más info|mas info',
+      priority: 100,
+    },
     conditions: {},
     actions: [
       {
@@ -127,7 +133,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'ig_dm_inbound',
     triggerConfig: {
-      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      keyword:
+        'pas le temps|manque de temps|no tengo tiempo|falta de tiempo|trop busy|muy ocupad|pas le time|no time',
       priority: 60,
     },
     conditions: {},
@@ -605,7 +612,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'messenger_inbound',
     triggerConfig: {
-      keyword: 'prix|tarif|combien|cuesta|precio|costo|info|price_info|prix / info',
+      keyword:
+        'prix|tarif|combien|cuesta|precio|costo|plus d\'info|des infos|más info|mas info|price_info|prix / info',
       priority: 100,
     },
     conditions: {},
@@ -626,7 +634,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
 
   {
     id: '00000000-0000-4000-8000-000000000013',
-    name: 'Messenger catch-all → concierge + essai',
+    name: 'Messenger catch-all → concierge (converse d’abord)',
     enabled: true,
     triggerType: 'messenger_inbound',
     triggerConfig: { priority: 0 },
@@ -634,7 +642,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     actions: [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'messenger_entrant' } },
-      { type: 'capture_email_optin' },
     ],
   },
   {
@@ -723,7 +730,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'whatsapp_inbound',
     triggerConfig: {
-      keyword: 'prix|tarif|combien|cuesta|precio|costo|info|price_info|prix / info',
+      keyword:
+        'prix|tarif|combien|cuesta|precio|costo|plus d\'info|des infos|más info|mas info|price_info|prix / info',
       priority: 100,
     },
     conditions: {},
@@ -743,7 +751,7 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
   },
   {
     id: '00000000-0000-4000-8000-000000000017',
-    name: 'WhatsApp catch-all → concierge',
+    name: 'WhatsApp catch-all → concierge (converse d’abord)',
     enabled: true,
     triggerType: 'whatsapp_inbound',
     triggerConfig: { priority: 0 },
@@ -751,7 +759,6 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     actions: [
       { type: 'qualify_intent' },
       { type: 'tag_contact', config: { tag: 'wa_entrant' } },
-      { type: 'capture_email_optin' },
     ],
   },
   {
@@ -822,7 +829,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'messenger_inbound',
     triggerConfig: {
-      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      keyword:
+        'pas le temps|manque de temps|no tengo tiempo|falta de tiempo|trop busy|muy ocupad|pas le time|no time',
       priority: 60,
     },
     conditions: {},
@@ -902,7 +910,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'whatsapp_inbound',
     triggerConfig: {
-      keyword: 'temps|busy|occup|pas le temps|no tengo tiempo|agenda|no time',
+      keyword:
+        'pas le temps|manque de temps|no tengo tiempo|falta de tiempo|trop busy|muy ocupad|pas le time|no time',
       priority: 60,
     },
     conditions: {},
@@ -1254,7 +1263,8 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
     enabled: true,
     triggerType: 'ig_dm_inbound',
     triggerConfig: {
-      keyword: 'quiz|profil|test|energie|stress|discipline',
+      keyword:
+        'quiz|mon profil|mi perfil|test de profil|test personalidad|profil discipline|conocimiento de si|connaissance de soi|hub quiz',
       priority: 85,
     },
     conditions: {},
@@ -1291,7 +1301,11 @@ export const WORKFLOW_CATALOG: AcqWorkflow[] = [
 
 export const WORKFLOW_CATALOG_COUNT = WORKFLOW_CATALOG.length;
 
-/** Mot-clé composé (a|b|c) → true si le texte matche l’une des parties. */
+/**
+ * Mot-clé composé (a|b|c) → true si le texte matche l’une des parties.
+ * Tokens courts (≤4) : ancre de mot pour réduire les faux positifs (« info » dans « information » OK,
+ * mais on a retiré « info » / « temps » / « test » seuls du catalogue).
+ */
 export function textMatchesKeyword(text: string | undefined, keywordRaw: unknown): boolean {
   if (!text) return false;
   const kw = typeof keywordRaw === 'string' ? keywordRaw.trim().toLowerCase() : '';
@@ -1299,5 +1313,11 @@ export function textMatchesKeyword(text: string | undefined, keywordRaw: unknown
   const hay = text.toLowerCase();
   const parts = kw.split('|').map((p) => p.trim()).filter(Boolean);
   if (!parts.length) return true;
-  return parts.some((p) => hay.includes(p));
+  return parts.some((p) => {
+    if (p.length <= 4) {
+      const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:^|[^a-zà-ÿ0-9])${escaped}(?:[^a-zà-ÿ0-9]|$)`, 'i').test(hay);
+    }
+    return hay.includes(p);
+  });
 }

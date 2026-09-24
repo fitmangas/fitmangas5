@@ -77,11 +77,19 @@ export async function applyConciergeResult(
     }
   }
 
+  const noPitch =
+    concierge.intent === 'soft_decline' ||
+    concierge.intent === 'optout' ||
+    concierge.intent === 'thinking' ||
+    concierge.intent === 'support' ||
+    concierge.intent === 'warm_no_intent' ||
+    concierge.intent === 'offtopic' ||
+    concierge.intent === 'factual' ||
+    concierge.intent === 'info';
+
   const wantsTrialLink =
-    concierge.intent !== 'soft_decline' &&
-    concierge.intent !== 'optout' &&
+    !noPitch &&
     (concierge.intent === 'trial' ||
-      concierge.intent === 'info' ||
       concierge.suggestedActions.some((s) => s.toLowerCase().includes('trial')));
 
   // Une seule bulle : réponse + lien essai si besoin (pas de double DM)
@@ -105,9 +113,18 @@ export async function applyConciergeResult(
   }
 
   if (concierge.intent === 'trial' && ctx.contact) {
-    // Intérêt essai ≠ essai démarré (Stripe) → qualified
     await updateContactLifecycle(ctx.contact.id, 'qualified');
-    if (!emailCaptured) await runOnce('capture_email_optin');
+    // E-mail seulement si intérêt essai confirmé — pas au premier vague « info »
+  }
+
+  if (concierge.intent === 'thinking' && ctx.contact) {
+    await tagContact(ctx.contact.id, 'thinking');
+  }
+  if (concierge.intent === 'support' && ctx.contact) {
+    await tagContact(ctx.contact.id, 'support_request');
+  }
+  if (concierge.intent === 'warm_no_intent' && ctx.contact) {
+    await tagContact(ctx.contact.id, 'warm_no_intent');
   }
 
   if (concierge.intent === 'soft_decline' && ctx.contact) {
@@ -149,6 +166,8 @@ export async function applyConciergeResult(
     if (!type || type === 'send_message' || type === 'send_trial_link') continue;
     if (emailCaptured && type === 'capture_email_optin') continue;
     if (type === 'escalate_human') continue;
+    if (type === 'capture_email_optin' && noPitch) continue;
+    if (type === 'schedule_followup' && noPitch) continue;
     await runOnce(type);
   }
 
@@ -160,9 +179,8 @@ export async function applyConciergeResult(
       actions.push({
         type: 'escalate_human',
         ok: false,
-        detail: `Escalade reportée — lead « ${stage} » : propose d’abord l’essai 7 jours.`,
+        detail: `Escalade reportée — lead « ${stage} » : on converse d’abord.`,
       });
-      if (!executed.has('send_trial_link')) await runOnce('send_trial_link');
     }
   } else if (concierge.suggestedActions.some((s) => s.toLowerCase().includes('escalate'))) {
     const stage = ctx.contact?.lifecycleStage ?? ctx.conversation.lifecycleStage;

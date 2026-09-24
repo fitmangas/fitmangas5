@@ -24,7 +24,8 @@ export function isSoftDeclineText(text: string | undefined): boolean {
   ) {
     return true;
   }
-  if (/pas maintenant|plus tard|maybe later|otro momento|je passe|je decliner|je décline/.test(t)) {
+  // « plus tard / pas maintenant » = thinking (conversation-intents), pas un soft-no
+  if (/je passe|je decliner|je décline|déj[aà] (abonné|abonnée)|ya estoy apuntada/.test(t)) {
     return true;
   }
   // « Belle soirée » seul ≠ refus ; seulement si couplé à un mais / déjà
@@ -78,9 +79,9 @@ export function isRealInfoOrTrialRequest(text: string | undefined): boolean {
   const t = text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
   return (
     /essai|prueba|trial|7 jours|7 dias|lien|link|ressource|obtenir|inscri/.test(t) ||
-    /prix|tarif|combien|cuesta|precio|costo|info|price_/.test(t) ||
-    /horaire|creneau|créneau|quand|schedule|horario|quels jours|que dias/.test(t) ||
-    /nantes|presentiel|présentiel|visio|cours|clase|booking|reserv/.test(t) ||
+    /prix|tarif|combien|cuesta|precio|costo|price_|plus d['’]?info|des infos|mas info|más info/.test(t) ||
+    /horaire|creneau|créneau|schedule|horario|quels jours|que dias|qué días/.test(t) ||
+    /nantes|presentiel|présentiel|visio collective|booking|reserv/.test(t) ||
     /comment (ca|ça) marche|como funciona|c['’]?est quoi|que es fitmangas/.test(t)
   );
 }

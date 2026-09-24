@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Affinage conversations Acquisition (intents + délai humain)
+
+- Nouveaux intents FR/ES : `thinking`, factuels (prix/horaires/replay/how), `trial_offer`, `support`, `warm_no_intent`, `offtopic` — `conversation-intents.ts` + intercept orchestrateur avant follow-gate.
+- Soft-no : « plus tard / je réfléchis » → thinking (pas soft_decline) ; Léa soft-decline inchangé.
+- Triggers resserrés : plus de `info`/`temps`/`test`/`profil` seuls ; catch-all sans `capture_email` au 1er message.
+- Délai humain 30–90s via `after()` webhook Meta (`maxDuration=120`) + `human-delay.ts`.
+- Concierge Claude/fallback : route les nouveaux intents sans forcer l’essai ; anti-empilement soft_decline / thinking_nudge_refused.
+- Tests : `conversation-intents.test.ts` + Léa + follow-gate verts.
+
 ### 2026-09-24 — Croissance : stratégie + soft-no + dashboard honnête
 
 - Guide permanent : `docs/STRATEGIE_CROISSANCE.md` (funnel, soft-no, follow-gate, ads, honnêteté data).

@@ -1,6 +1,12 @@
 import type { AcqContact, WorkflowTriggerType } from '@/lib/acquisition/types';
 
 import { isRealInfoOrTrialRequest, isSoftDeclineText } from './soft-decline';
+import {
+  classifyConversationIntent,
+  isSupportRequestText,
+  isThinkingText,
+  isWarmNoIntentText,
+} from './conversation-intents';
 
 /** Tags = abonnement IG déjà validé (plus de frein). */
 export const FOLLOW_VERIFIED_TAGS = ['follow_verified', 'follow_gate_passed'] as const;
@@ -30,7 +36,18 @@ export function shouldAskFollowGate(params: {
   if (isContactFollowVerified(params.contact)) return false;
   if ((params.contact.tags ?? []).includes('optout')) return false;
   if ((params.contact.tags ?? []).includes('soft_decline')) return false;
+  if ((params.contact.tags ?? []).includes('thinking_nudge_refused')) return false;
+  if ((params.contact.tags ?? []).includes('thinking')) return false;
   if (isSoftDeclineText(params.inboundText)) return false;
+  if (isThinkingText(params.inboundText)) return false;
+  if (isSupportRequestText(params.inboundText)) return false;
+  if (isWarmNoIntentText(params.inboundText)) return false;
+  const intent = classifyConversationIntent(params.inboundText);
+  if (intent === 'thinking' || intent === 'support' || intent === 'warm_no_intent' || intent === 'offtopic') {
+    return false;
+  }
+  // factual_* / trial_offer : l’orchestrateur répond avant le gate ; ici on garde true
+  // pour isRealInfoOrTrialRequest (tests + reprise si intent non intercepté)
   if (isFollowGateBypassText(params.inboundText)) return false;
   if (isExistingPayingMember(params.contact)) return false;
   return isRealInfoOrTrialRequest(params.inboundText);

@@ -357,6 +357,9 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
   if (ctx.contact.tags.includes('soft_decline')) {
     return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — soft_decline.' };
   }
+  if (ctx.contact.tags.includes('thinking_nudge_refused')) {
+    return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — thinking_nudge_refused.' };
+  }
   const stage = ctx.contact.lifecycleStage;
   if (stage === 'trial' || stage === 'paid' || stage === 'member') {
     return { type: 'schedule_followup', ok: true, detail: 'Relance ignorée — déjà en essai / membre.' };
