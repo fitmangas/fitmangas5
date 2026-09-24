@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-24 — Ads : centre d’intelligence (sync + organique + coach)
+
+- Migration additive : `ads_sync_runs`, `ad_insights_daily`, `ad_breakdowns_daily`, `organic_media_snapshots`, `organic_account_snapshots`.
+- Cron quotidien `40 4 * * *` → `/api/admin/acquisition/cron/ads-intelligence-sync` (+ Sync manuel UI).
+- Permissions sondées : Ads insights + breakdowns **OUI** ; liste IG likes/comments **OUI** ; insights IG média/compte **NON** → ajouter `instagram_manage_insights`.
+- UI : hub intelligence (capabilities, coach, organique score/boost PAUSED, alertes fatigue/kill, tableaux + tendances zéros honnêtes).
+- Corpus `docs/ADS_EXPERTISE.md` ; coach Claude/Gemini borné (pas d’invention de chiffres).
+- Règle inchangée : 0 € / 0 ACTIVE sans double confirm.
+
 ### 2026-09-24 — Ads : redesign + ENABLED=1 lecture/PAUSED + billing Meta
 
 - UI onglet ADS : funnel visuel, cartes froid/warm/hot, KPIs élégants, guide accordéon, galerie créatives (DA cream/terracotta).
