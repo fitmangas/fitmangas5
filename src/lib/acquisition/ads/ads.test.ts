@@ -10,6 +10,7 @@ import {
   ADS_FUNNEL_STEPS,
   STRATEGY_CAMPAIGN_BLUEPRINTS,
 } from '@/lib/acquisition/ads/strategy-content';
+import { computeAdsAlerts } from '@/lib/acquisition/ads/alerts';
 import { resolveCroissanceTab } from '@/components/Admin/croissance/croissance-tabs';
 
 describe('ads config (flag OFF par défaut)', () => {
@@ -106,5 +107,48 @@ describe('onglet ADS dans Croissance', () => {
   it('resolveCroissanceTab accepte ads', () => {
     expect(resolveCroissanceTab('ads', true)).toBe('ads');
     expect(resolveCroissanceTab('publications', true)).toBe('publications');
+  });
+});
+
+describe('alertes fatigue / kill (zéros honnêtes)', () => {
+  it('sans données → trop tôt', () => {
+    const a = computeAdsAlerts([]);
+    expect(a.some((x) => /trop tôt/i.test(x.title))).toBe(true);
+  });
+
+  it('fréquence froide > 3.5 → fatigue', () => {
+    const a = computeAdsAlerts([
+      {
+        entityId: '1',
+        entityName: 'FitMangas · Froid quiz',
+        level: 'campaign',
+        spendCents: 2000,
+        frequency: 4.2,
+        leads: 1,
+        clicks: 10,
+        ctr: 1,
+        cplCents: 2000,
+        impressions: 500,
+      },
+    ]);
+    expect(a.some((x) => x.kind === 'fatigue')).toBe(true);
+  });
+
+  it('50 € + 0 lead + CTR bas → kill', () => {
+    const a = computeAdsAlerts([
+      {
+        entityId: '2',
+        entityName: 'Cold test',
+        level: 'ad',
+        spendCents: 6000,
+        frequency: 1,
+        leads: 0,
+        clicks: 2,
+        ctr: 0.2,
+        cplCents: null,
+        impressions: 1000,
+      },
+    ]);
+    expect(a.some((x) => x.kind === 'kill')).toBe(true);
   });
 });

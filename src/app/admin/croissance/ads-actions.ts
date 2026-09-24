@@ -7,6 +7,8 @@ import {
   fetchMetaAdsInsights,
 } from '@/lib/acquisition/ads/meta-ads-client';
 import { getAdsConnectionState, isMetaAdsEnabled } from '@/lib/acquisition/ads/config';
+import { generateCoachAdvice } from '@/lib/acquisition/ads/coach';
+import { loadAdsIntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import {
   ensureAdCreativeSeed,
   getCampaignById,
@@ -16,6 +18,7 @@ import {
   markCampaignActive,
   upsertDailyMetricsFromInsights,
 } from '@/lib/acquisition/ads/repository';
+import { runAdsIntelligenceSync } from '@/lib/acquisition/ads/sync-intelligence';
 import { STRATEGY_CAMPAIGN_BLUEPRINTS } from '@/lib/acquisition/ads/strategy-content';
 
 export type ActionResult = { ok: true; detail: string; data?: unknown } | { ok: false; error: string };
@@ -249,5 +252,117 @@ export async function adsSyncInsights(): Promise<ActionResult> {
         ? `${rows.length} campagne(s) syncées (insights 7 j).`
         : `${result.insights.length} insight(s) Meta lus — aucune campagne CRM liée (crée les brouillons d’abord).`,
     data: { insights: result.insights.length, synced: rows.length },
+  };
+}
+
+/** Sync complète Ads + organique → snapshots (cron manuel de secours). */
+export async function adsRunIntelligenceSync(): Promise<ActionResult> {
+  await requireAdmin();
+  const result = await runAdsIntelligenceSync('manual');
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: `Sync partielle · ${result.detail.errors.slice(0, 3).join(' · ') || 'voir logs'}`,
+    };
+  }
+  return {
+    ok: true,
+    detail: `Sync OK · ${result.detail.insightsRows} insights · ${result.detail.breakdownRows} breakdowns · ${result.detail.organicMedia} médias IG.`,
+    data: result,
+  };
+}
+
+export async function adsLoadCoachAdvice(): Promise<ActionResult> {
+  await requireAdmin();
+  const bundle = await loadAdsIntelligenceBundle();
+  const { advice, aiNote } = await generateCoachAdvice(bundle);
+  return { ok: true, detail: aiNote ?? 'Conseils règles.', data: { advice, aiNote } };
+}
+
+/**
+ * Transformer un média IG gagnant en brouillon campagne Meta PAUSED (0 € diffusion).
+ */
+export async function adsBoostOrganicToPausedDraft(params: {
+  igMediaId: string;
+  captionHint?: string;
+}): Promise<ActionResult> {
+  await requireAdmin();
+  if (!(await isAdsSchemaReady())) {
+    return { ok: false, error: 'Tables Ads absentes — migration requise.' };
+  }
+  if (!isMetaAdsEnabled() || !getAdsConnectionState().configured) {
+    return { ok: false, error: 'META_ADS_ENABLED + token Ads requis.' };
+  }
+
+  const hint = (params.captionHint ?? params.igMediaId).slice(0, 40).replace(/\s+/g, ' ');
+  const name = `FitMangas · Boost organique · ${hint}`.slice(0, 100);
+  const budgetCents = 800;
+
+  const remote = await createMetaCampaignDraft({
+    name,
+    dailyBudgetCents: budgetCents,
+    objectiveApi: 'OUTCOME_TRAFFIC',
+  });
+  if (!remote.ok) return { ok: false, error: remote.error };
+
+  const local = await insertDraftCampaign({
+    channel: 'meta',
+    name,
+    objective: 'cold_quiz',
+    dailyBudgetCents: budgetCents,
+    metaCampaignId: remote.campaignId,
+    notes: `Depuis IG media ${params.igMediaId} · Meta PAUSED · 8 €/j prévu · NE PAS ACTIVER sans double confirm. Créative à brancher manuellement sur le média source.`,
+  });
+  if (!local.ok) return { ok: false, error: local.error };
+
+  return {
+    ok: true,
+    detail: `Brouillon PAUSED créé (${remote.campaignId}) depuis le contenu organique — 0 € tant que non activé.`,
+    data: {
+      campaignId: local.campaign.id,
+      metaCampaignId: remote.campaignId,
+      igMediaId: params.igMediaId,
+    },
+  };
+}
+
+export async function adsCreateRefreshCreativeDraft(params: {
+  entityName?: string | null;
+}): Promise<ActionResult> {
+  await requireAdmin();
+  if (!(await isAdsSchemaReady())) {
+    return { ok: false, error: 'Tables Ads absentes.' };
+  }
+  const label = (params.entityName ?? 'créative').slice(0, 40);
+  const name = `FitMangas · Refresh · ${label}`.slice(0, 100);
+  const budgetCents = 800;
+  let metaId: string | null = null;
+
+  if (isMetaAdsEnabled() && getAdsConnectionState().configured) {
+    const remote = await createMetaCampaignDraft({
+      name,
+      dailyBudgetCents: budgetCents,
+      objectiveApi: 'OUTCOME_TRAFFIC',
+    });
+    if (!remote.ok) return { ok: false, error: remote.error };
+    metaId = remote.campaignId;
+  }
+
+  const local = await insertDraftCampaign({
+    channel: 'meta',
+    name,
+    objective: 'cold_quiz',
+    dailyBudgetCents: budgetCents,
+    metaCampaignId: metaId,
+    notes: 'Refresh créative (fatigue/kill) · PAUSED · double confirm obligatoire pour activer.',
+  });
+  if (!local.ok) return { ok: false, error: local.error };
+
+  return {
+    ok: true,
+    detail: metaId
+      ? `Brouillon refresh PAUSED sur Meta (${metaId}).`
+      : `Brouillon refresh local créé (Meta non connecté).`,
+    data: { campaignId: local.campaign.id, metaCampaignId: metaId },
   };
 }

@@ -129,6 +129,10 @@
       "schedule": "30 4 * * *"
     },
     {
+      "path": "/api/admin/acquisition/cron/ads-intelligence-sync",
+      "schedule": "40 4 * * *"
+    },
+    {
       "path": "/api/admin/blog/cron/generate-articles",
       "schedule": "30 6 * * 1"
     },

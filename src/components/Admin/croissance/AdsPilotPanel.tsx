@@ -16,6 +16,8 @@ import {
 
 import { acq } from '@/components/acquisition/tokens';
 import type { AdCampaign, AdCreative, AdsConnectionState, AdsPerformanceSummary } from '@/lib/acquisition/ads/config';
+import type { CoachAdvice } from '@/lib/acquisition/ads/coach';
+import type { IntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import {
   ADS_BEGINNER_GUIDE,
   ADS_CHANNEL_CARDS,
@@ -24,6 +26,7 @@ import {
   STRATEGY_CAMPAIGN_BLUEPRINTS,
 } from '@/lib/acquisition/ads/strategy-content';
 import type { ActionResult } from '@/app/admin/croissance/ads-actions';
+import { AdsIntelligenceHub } from '@/components/Admin/croissance/AdsIntelligenceHub';
 
 type Props = {
   connection: AdsConnectionState;
@@ -31,9 +34,17 @@ type Props = {
   campaigns: AdCampaign[];
   creatives: AdCreative[];
   schemaReady: boolean;
+  intelligence: IntelligenceBundle;
+  coachAdvice: CoachAdvice[];
+  coachNote: string | null;
   onCreateDrafts: () => Promise<ActionResult>;
   onSyncInsights: () => Promise<ActionResult>;
+  onFullSync: () => Promise<ActionResult>;
   onSeedCreatives: () => Promise<ActionResult>;
+  onCreateColdDraft: () => Promise<ActionResult>;
+  onBoostOrganic: (params: { igMediaId: string; captionHint?: string }) => Promise<ActionResult>;
+  onRefreshCreative: (params: { entityName?: string | null }) => Promise<ActionResult>;
+  onReloadCoach: () => Promise<ActionResult>;
   onActivate: (params: {
     campaignId: string;
     confirmStep1: boolean;
@@ -134,9 +145,17 @@ export function AdsPilotPanel({
   campaigns,
   creatives,
   schemaReady,
+  intelligence,
+  coachAdvice,
+  coachNote,
   onCreateDrafts,
   onSyncInsights,
+  onFullSync,
   onSeedCreatives,
+  onCreateColdDraft,
+  onBoostOrganic,
+  onRefreshCreative,
+  onReloadCoach,
   onActivate,
 }: Props) {
   const [pending, startTransition] = useTransition();
@@ -271,11 +290,20 @@ export function AdsPilotPanel({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => run(onSyncInsights)}
+                onClick={() => run(onFullSync)}
                 className="rounded-full px-4 py-2.5 text-xs font-semibold transition hover:-translate-y-0.5 disabled:opacity-50"
                 style={{ backgroundColor: acq.warmBeige, color: acq.ink }}
               >
-                Sync insights
+                Sync intelligence
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(onSyncInsights)}
+                className="rounded-full px-4 py-2.5 text-xs font-semibold transition hover:-translate-y-0.5 disabled:opacity-50"
+                style={{ backgroundColor: '#fff', color: acq.ink, boxShadow: acq.shadowCard }}
+              >
+                Sync CRM (legacy)
               </button>
             </div>
           </div>
@@ -286,6 +314,17 @@ export function AdsPilotPanel({
           ) : null}
         </div>
       </FloatingSection>
+
+      <AdsIntelligenceHub
+        intelligence={intelligence}
+        coachAdvice={coachAdvice}
+        coachNote={coachNote}
+        onFullSync={onFullSync}
+        onBoostOrganic={onBoostOrganic}
+        onRefreshCreative={onRefreshCreative}
+        onCreateColdDraft={onCreateColdDraft}
+        onReloadCoach={onReloadCoach}
+      />
 
       {/* Funnel visuel */}
       <FloatingSection testId="ads-funnel-visual">
