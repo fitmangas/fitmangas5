@@ -679,6 +679,16 @@ export async function runAdsIntelligenceSync(
     errors.push(e instanceof Error ? e.message : 'log sync_runs échoué');
   }
 
+  // Régénération auto des conseils + plan (dédupliqués) après chaque sync réussie
+  try {
+    const { loadAdsIntelligenceBundle } = await import('./intelligence-repository');
+    const { regenerateAndPersistCoach } = await import('./coach-persist');
+    const bundle = await loadAdsIntelligenceBundle();
+    await regenerateAndPersistCoach(bundle);
+  } catch (e) {
+    errors.push(e instanceof Error ? `coach regen: ${e.message}` : 'coach regen échoué');
+  }
+
   return {
     ok,
     source,
