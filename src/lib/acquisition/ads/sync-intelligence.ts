@@ -7,11 +7,13 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getMetaSocialConnection } from '@/lib/admin/social-comms';
 import { getAdsConnectionState, getMetaAdsConfig, isMetaAdsEnabled } from './config';
 import { listAdCampaigns, upsertDailyMetricsFromInsights } from './repository';
+import { mapWithConcurrency, pageGraphGet } from './meta-page-graph';
+import { syncOrganicRich, type OrganicRichSyncResult } from './organic-rich-sync';
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 
 const INSIGHT_FIELDS =
-  'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,reach,frequency,clicks,ctr,cpc,cpm,actions,inline_link_clicks,video_thruplay_watched_actions';
+  'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,reach,frequency,clicks,ctr,cpc,cpm,actions,action_values,inline_link_clicks,video_thruplay_watched_actions';
 
 export type CapabilityProbe = {
   id: string;
@@ -32,6 +34,8 @@ export type SyncIntelligenceResult = {
     breakdownRows: number;
     organicMedia: number;
     organicAccount: boolean;
+    organicDays?: number;
+    demographicsRows?: number;
     capabilities: CapabilityProbe[];
     errors: string[];
   };
@@ -102,32 +106,6 @@ async function adsGraphGet(
   }
 }
 
-async function pageGraphGet(
-  path: string,
-  token: string,
-  params: Record<string, string>,
-): Promise<{ ok: true; json: unknown } | { ok: false; error: string; code?: number }> {
-  const url = new URL(`${GRAPH}${path}`);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  url.searchParams.set('access_token', token);
-  try {
-    const res = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
-    const json = (await res.json()) as {
-      error?: { message?: string; code?: number; error_subcode?: number };
-    };
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: json.error?.message ?? `Meta HTTP ${res.status}`,
-        code: json.error?.code,
-      };
-    }
-    return { ok: true, json };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Erreur réseau Meta' };
-  }
-}
-
 function scoreOrganic(row: {
   like_count: number;
   comments_count: number;
@@ -161,7 +139,9 @@ export function buildStaticCapabilities(params: {
   igInsightsOk: boolean;
   igAccountInsightsOk: boolean;
   igInsightsError?: string | null;
+  rich?: OrganicRichSyncResult | null;
 }): CapabilityProbe[] {
+  const rich = params.rich ?? null;
   const igMissing =
     params.igInsightsOk || params.igAccountInsightsOk
       ? null
@@ -205,6 +185,55 @@ export function buildStaticCapabilities(params: {
       missingPermission: igMissing,
       note: 'followers_count via /{ig-user-id} sans insights ; métriques profil = scope insights.',
     },
+    {
+      id: 'organic_account_daily',
+      label: 'Séries quotidiennes compte 90 j (vues, portée, interactions, clics, follows)',
+      accessible: Boolean(rich?.dailyOk),
+      missingPermission: rich?.dailyOk ? null : igMissing ?? 'Erreur API (voir journal sync)',
+      note: 'Meta limite total_value à 30 j par appel → collecte jour par jour.',
+    },
+    {
+      id: 'organic_follower_gain',
+      label: 'Followers gagnés par jour (follower_count)',
+      accessible: Boolean(rich?.followerSeriesOk),
+      missingPermission: rich?.followerSeriesOk ? null : igMissing ?? 'Erreur API',
+      note: 'Meta ne fournit que les 30 derniers jours pour cette série.',
+    },
+    {
+      id: 'organic_demographics',
+      label: 'Démographie followers (âge, genre, pays, ville)',
+      accessible: Boolean(rich?.demographicsOk),
+      missingPermission: rich?.demographicsOk ? null : igMissing ?? 'Erreur API',
+      note: 'Photo instantanée (lifetime) — requiert ≥ 100 followers.',
+    },
+    {
+      id: 'organic_reached_demographics',
+      label: 'Démographie des spectateurs / comptes engagés',
+      accessible: false,
+      missingPermission: 'Réponse vide côté Meta sur ce compte (API OK, aucune donnée renvoyée)',
+      note: 'engaged_audience_demographics / reached_audience_demographics testés le 26/09/2026.',
+    },
+    {
+      id: 'organic_online_followers',
+      label: 'Heures où les followers sont en ligne',
+      accessible: false,
+      missingPermission: 'Réponse vide côté Meta (online_followers)',
+      note: 'Visible dans l’app Instagram uniquement pour l’instant.',
+    },
+    {
+      id: 'organic_reel_completion',
+      label: 'Taux de complétion vidéo (%)',
+      accessible: false,
+      missingPermission: 'Non exposé par l’API (durée vidéo absente)',
+      note: 'On affiche le temps moyen de visionnage (ig_reels_avg_watch_time), pas un % inventé.',
+    },
+    {
+      id: 'organic_returning_viewers',
+      label: 'Spectateurs récurrents / nouveaux',
+      accessible: false,
+      missingPermission: 'Non exposé par l’API Graph (Business Suite uniquement)',
+      note: 'Approximation disponible : comptes engagés ÷ portée.',
+    },
   ];
 }
 
@@ -224,6 +253,7 @@ type InsightRow = {
   cpc?: string;
   cpm?: string;
   actions?: Array<{ action_type?: string; value?: string }>;
+  action_values?: Array<{ action_type?: string; value?: string }>;
   inline_link_clicks?: string;
   video_thruplay_watched_actions?: Array<{ action_type?: string; value?: string }>;
   date_start?: string;
@@ -516,7 +546,7 @@ async function syncOrganic(metricDate: string, errors: string[]): Promise<{
   const mediaRes = await pageGraphGet(`/${igUserId}/media`, token, {
     fields:
       'id,caption,media_type,media_product_type,permalink,thumbnail_url,timestamp,like_count,comments_count',
-    limit: '30',
+    limit: '50',
   });
   if (!mediaRes.ok) {
     errors.push(`IG media list: ${mediaRes.error}`);
@@ -551,17 +581,24 @@ async function syncOrganic(metricDate: string, errors: string[]): Promise<{
     row: Record<string, unknown>;
   }> = [];
 
-  for (const m of mediaData.data ?? []) {
+  const mediaList = (mediaData.data ?? []).filter((m) => Boolean(m.id));
+  const insightsByMedia = await mapWithConcurrency(mediaList, 6, async (m) => {
+    const isReel = m.media_product_type === 'REELS';
+    const metrics = isReel
+      ? 'reach,views,saved,shares,total_interactions,ig_reels_avg_watch_time,ig_reels_video_view_total_time'
+      : 'reach,views,saved,shares,total_interactions,profile_visits,follows';
+    let ins = await pageGraphGet(`/${m.id}/insights`, token, { metric: metrics });
+    if (!ins.ok) ins = await pageGraphGet(`/${m.id}/insights`, token, { metric: 'reach,views,saved,shares' });
+    return ins;
+  });
+
+  for (let idx = 0; idx < mediaList.length; idx++) {
+    const m = mediaList[idx]!;
     if (!m.id) continue;
-    let reachM: number | null = null;
-    let viewsM: number | null = null;
-    let savedM: number | null = null;
-    let sharesM: number | null = null;
+    const v: Record<string, number | null> = {};
     let mediaInsightsAvailable = false;
 
-    const ins = await pageGraphGet(`/${m.id}/insights`, token, {
-      metric: 'reach,views,saved,shares',
-    });
+    const ins = insightsByMedia[idx]!;
     if (ins.ok) {
       mediaInsightsAvailable = true;
       insightsOk = true;
@@ -569,15 +606,15 @@ async function syncOrganic(metricDate: string, errors: string[]): Promise<{
         data?: Array<{ name?: string; values?: Array<{ value?: number }> }>;
       };
       for (const row of d.data ?? []) {
-        const v = row.values?.[0]?.value ?? null;
-        if (row.name === 'reach') reachM = v;
-        if (row.name === 'views') viewsM = v;
-        if (row.name === 'saved') savedM = v;
-        if (row.name === 'shares') sharesM = v;
+        if (row.name) v[row.name] = row.values?.[0]?.value ?? null;
       }
     } else if (!insightsError) {
       insightsError = ins.error;
     }
+    const reachM = v.reach ?? null;
+    const viewsM = v.views ?? null;
+    const savedM = v.saved ?? null;
+    const sharesM = v.shares ?? null;
 
     const likeCount = Number(m.like_count ?? 0) || 0;
     const commentsCount = Number(m.comments_count ?? 0) || 0;
@@ -591,6 +628,11 @@ async function syncOrganic(metricDate: string, errors: string[]): Promise<{
     });
 
     const row = {
+      total_interactions: v.total_interactions ?? null,
+      profile_visits: v.profile_visits ?? null,
+      follows: v.follows ?? null,
+      avg_watch_time_ms: v.ig_reels_avg_watch_time ?? null,
+      total_watch_time_ms: v.ig_reels_video_view_total_time ?? null,
       snapshot_date: metricDate,
       ig_media_id: m.id,
       media_type: m.media_type ?? null,
@@ -647,6 +689,19 @@ export async function runAdsIntelligenceSync(
   const ads = await syncAdsInsights(metricDate, errors);
   const organic = await syncOrganic(metricDate, errors);
 
+  let rich: OrganicRichSyncResult | null = null;
+  if (organic.accountInsightsOk) {
+    const meta = await getMetaSocialConnection();
+    if (meta.accessToken && meta.igUserId) {
+      rich = await syncOrganicRich({
+        igUserId: meta.igUserId,
+        token: meta.accessToken,
+        snapshotDate: metricDate,
+      });
+      errors.push(...rich.errors);
+    }
+  }
+
   const capabilities = buildStaticCapabilities({
     adsConfigured: adsState.configured && isMetaAdsEnabled(),
     adsInsightsOk: ads.insightsOk,
@@ -655,6 +710,7 @@ export async function runAdsIntelligenceSync(
     igInsightsOk: organic.insightsOk,
     igAccountInsightsOk: organic.accountInsightsOk,
     igInsightsError: organic.insightsError,
+    rich,
   });
 
   const ok = errors.length === 0 || ads.insightsOk || organic.listOk;
@@ -663,6 +719,8 @@ export async function runAdsIntelligenceSync(
     breakdownRows: ads.breakdownRows,
     organicMedia: organic.mediaCount,
     organicAccount: organic.accountOk,
+    organicDays: rich?.daysSynced ?? 0,
+    demographicsRows: rich?.demographicsRows ?? 0,
     capabilities,
     errors,
   };
@@ -683,8 +741,10 @@ export async function runAdsIntelligenceSync(
   try {
     const { loadAdsIntelligenceBundle } = await import('./intelligence-repository');
     const { regenerateAndPersistCoach } = await import('./coach-persist');
+    const { regenerateAndPersistSituationBrief } = await import('./situation-brief');
     const bundle = await loadAdsIntelligenceBundle();
-    await regenerateAndPersistCoach(bundle);
+    const coach = await regenerateAndPersistCoach(bundle);
+    await regenerateAndPersistSituationBrief(bundle, coach.plan);
   } catch (e) {
     errors.push(e instanceof Error ? `coach regen: ${e.message}` : 'coach regen échoué');
   }
