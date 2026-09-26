@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-26 (soir) — Ads : Mes stats niveau Business Suite + cockpit Exécution
+
+- Migration additive `organic_account_daily` (90 j : vues, portée, interactions, comptes engagés, visites profil, clics lien/bio, follows/unfollows, follower_count) + `organic_audience_demographics` (âge/genre/pays/ville followers) + colonnes médias (`total_interactions`, `profile_visits`, `follows`, `avg_watch_time_ms`, `total_watch_time_ms`).
+- Sync `organic-rich-sync.ts` : Meta limite `total_value` à 30 j → 1 appel/jour (manquants + 3 derniers jours rafraîchis) ; 50 médias ; 1er run réel = 90 jours + 100 lignes démo, 0 erreur.
+- Non exposé par l’API (affiché en rouge, jamais estimé) : % complétion Reels, spectateurs récurrents, démographie spectateurs/engagés (vide), heures en ligne (vide). ROAS = vrai calcul via `action_values` (pixel Purchase), « Non mesurable » tant que 0 € dépensé.
+- Mes stats : période 7/28/90, KPIs cliquables + courbe, audience (donut genre, barres âge, pays FR/MX, villes), table contenus triable/filtrable (engagement, visionnage), pub CTR/CPM/fréquence/CAC mixte, section « non accessibles ».
+- Exécution : lecture de situation Claude (bornée docs + chiffres, `ads_situation_brief_v1`, régénérée à chaque sync), prochaine action unique (`computeNextAction`), alertes fatigue/kill/budget, 3 campagnes reliées aux insights, pipeline créatives (statut auto + manuel `ads_creative_pipeline_v1`), double confirmation inchangée.
+- Marché + Plan : **contenu inchangé**, style seulement. Lien direct : `?tab=ads&sub=stats|execution|marche|plan`.
+
 ### 2026-09-26 — Ads : 4 sous-onglets + docs conversion / marché
 
 - Docs : `docs/ADS_EXPERTISE.md` (conversion ≠ organique, PAS/H-P-S-P, thumb-stop, broad, kill 48–72h) + `docs/MARCHE_FEMMES.md` (FR/MX, sources datées).
@@ -83,7 +92,7 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 - System User « Conversions API System User » **affecté** au Ad Account (accès total).
 - App Developers : cas d’utilisation **API Marketing** coché + Enregistrer lancé (scopes `ads_*` absents du token tant qu’App Review / cas pas actif).
 - Reste Kevin : finaliser App Review Marketing API → générer token `ads_*` → GO `META_ADS_ENABLED=1` + (optionnel) moyen de paiement.
-- Note : connexion admin via mot de passe temporaire pour captures — **réinitialiser** le mdp de `ale.mangas5@gmail.com` (mot de passe oublié).
+- Note : connexion admin via mot de passe temporaire pour captures — **réinitialiser** le mdp du compte admin d’Alejandra (mot de passe oublié).
 
 ### 2026-09-24 — Meta Ads : probe + seed réel (sans activer le spend)
 
@@ -200,7 +209,7 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 ### 2026-09-22 — Self-knowledge : hub aéré + PDF serveur full-bleed + fond questions
 - Hub : respiration V1 (nuage dispersé, titres/cartes espacés, portraits plus hauts).
 - PDF unifié : `/quiz/print-report` + `/api/self-knowledge/pdf` (Playwright local / Sparticuz Vercel) — fond crème full-bleed `@page margin:0` ; bouton client = même moteur.
-- Fond questions : `public/tests/questions-bg.jpg` (101 710 o) + voile cream ~36 % sur toute la page.
+- Fond questions : `public/tests/questions-bg.jpg` (101 710 o) + voile cream ~36 % sur toute la page.
 - Label Extraversion radar décalé ; capture `14-pdf-print-report-preview` + `rapport-client-api-ipip50.pdf`.
 
 ### 2026-09-22 — Self-knowledge : PDF print + questions 5/écran + fond
