@@ -180,7 +180,11 @@ export async function generateActionPlan(
   });
 
   const cascade = await runSocialTextCascade({
-    system: `Tu es stratège Ads FitMangas. Français simple. Borné au corpus + FAITS JSON.\nINTERDIT inventer des métriques. Chaque idée = HYPOTHÈSE À TESTER (pas certitude).\nFocus : QUOI CRÉER pour convertir (talking-head, UGC, image, carousel) avec frameworks PAS ou Hook-Problème-Solution-Preuve.\nOrganique = signal d'angle seulement, pas « booster tel quel ».\nCorpus:\n${corpus}`,
+    system: `Tu es stratège Ads FitMangas. Français simple. Borné au corpus + FAITS JSON.
+INTERDIT inventer des métriques. Chaque idée = HYPOTHÈSE À TESTER (pas certitude).
+Focus : QUOI CRÉER pour convertir (talking-head, UGC, image, carousel) avec frameworks PAS ou Hook-Problème-Solution-Preuve.
+Organique = signal d'angle seulement, pas « booster tel quel ».
+Corpus:\n${corpus}`,
     user: `FAITS:\n${facts}\n\nJSON array 2-3 items: [{"title":"...","hypothesis":"...","creativeType":"talking_head|ugc_temoignage|image_forte|carousel","framework":"PAS|Hook-Problème-Solution-Preuve","market":"FR|MX"}]`,
     temperature: 0.35,
     maxOutputTokens: 1000,
