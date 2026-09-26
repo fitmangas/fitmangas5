@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { ChevronDown, Info, Plus } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 
 import { acq } from '@/components/acquisition/tokens';
+import {
+  ADS_GLOSSARY,
+  type AdsSubTab,
+  type AdsUiLang,
+  type GlossaryKey,
+  glossaryText,
+} from '@/lib/acquisition/ads/ads-glossary';
 
 export const adsTone = {
   good: '#15803d',
@@ -141,7 +148,7 @@ export function DeltaBadge({ delta, invert = false }: { delta: number | null; in
   if (delta == null) {
     return (
       <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: acq.warmBeige, color: acq.muted }}>
-        n/d
+        —
       </span>
     );
   }
@@ -308,6 +315,142 @@ export function HBar({ label, value, pctValue, color = acq.terracotta, right }: 
         <div className="h-full rounded-full" style={{ width: `${Math.max(2, Math.min(100, pctValue))}%`, backgroundColor: color }} />
       </div>
     </div>
+  );
+}
+
+const LANG_KEY = 'fitmangas-ads-ui-lang';
+
+export function useAdsUiLang(): [AdsUiLang, (lang: AdsUiLang) => void] {
+  const [lang, setLang] = useState<AdsUiLang>('fr');
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LANG_KEY);
+      if (saved === 'es' || saved === 'fr') setLang(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function persist(next: AdsUiLang) {
+    setLang(next);
+    try {
+      window.localStorage.setItem(LANG_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }
+  return [lang, persist];
+}
+
+/** Petit « i » à côté d’un terme anglais obligatoire. */
+export function AdsTermHint({
+  term,
+  lang,
+  children,
+}: {
+  term: GlossaryKey;
+  lang: AdsUiLang;
+  children?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const entry = ADS_GLOSSARY[term];
+  return (
+    <span className="relative inline-flex items-center gap-0.5">
+      {children ?? <span>{entry.short}</span>}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        aria-label={lang === 'es' ? `¿Qué significa ${entry.short}?` : `Que signifie ${entry.short} ?`}
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setOpen(false)}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold leading-none"
+        style={{ backgroundColor: acq.terracottaSoft, color: acq.terracotta }}
+        data-testid={`ads-term-${term}`}
+      >
+        <Info size={10} strokeWidth={2.6} />
+      </button>
+      {open ? (
+        <span
+          id={id}
+          role="tooltip"
+          className="absolute left-0 top-[140%] z-30 w-64 rounded-2xl border px-3 py-2 text-left text-[11px] font-normal leading-relaxed shadow-lg sm:w-72"
+          style={{ borderColor: acq.warmBeigeDeep, backgroundColor: '#fff', color: acq.ink, boxShadow: acq.shadowCard }}
+        >
+          <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
+            {entry.short}
+          </span>
+          {glossaryText(term, lang)}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+export function AdsLangSwitch({ lang, onChange }: { lang: AdsUiLang; onChange: (l: AdsUiLang) => void }) {
+  return (
+    <div className="inline-flex rounded-full border p-0.5" style={{ borderColor: acq.warmBeigeDeep, backgroundColor: '#fff' }} data-testid="ads-lang-switch">
+      {(['fr', 'es'] as const).map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => onChange(l)}
+          className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+          style={{ backgroundColor: lang === l ? acq.ink : 'transparent', color: lang === l ? '#fff' : acq.muted }}
+          data-testid={`ads-lang-${l}`}
+        >
+          {l === 'fr' ? 'FR' : 'ES'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const JOURNEY: Array<{ id: AdsSubTab; emoji: string; fr: string; es: string }> = [
+  { id: 'marche', emoji: '🌍', fr: 'Marché', es: 'Mercado' },
+  { id: 'stats', emoji: '📊', fr: 'Mes stats', es: 'Mis cifras' },
+  { id: 'plan', emoji: '📋', fr: 'Plan', es: 'Plan' },
+  { id: 'execution', emoji: '⚡', fr: 'Exécution', es: 'Ejecución' },
+];
+
+export function AdsJourney({
+  current,
+  lang,
+  onGo,
+}: {
+  current: AdsSubTab;
+  lang: AdsUiLang;
+  onGo: (id: AdsSubTab) => void;
+}) {
+  return (
+    <ol className="flex flex-wrap items-center gap-1.5" data-testid="ads-journey" aria-label={lang === 'es' ? 'Camino de las 4 pestañas' : 'Chemin des 4 sous-onglets'}>
+      {JOURNEY.map((step, i) => {
+        const active = step.id === current;
+        const done = JOURNEY.findIndex((s) => s.id === current) > i;
+        return (
+          <li key={step.id} className="flex items-center gap-1.5">
+            {i > 0 ? (
+              <span className="text-[11px]" style={{ color: acq.mutedLight }} aria-hidden>
+                →
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onGo(step.id)}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                backgroundColor: active ? acq.terracotta : done ? acq.terracottaSoft : acq.cream,
+                color: active ? '#fff' : acq.ink,
+              }}
+              data-testid={`ads-journey-${step.id}`}
+            >
+              <span aria-hidden>{step.emoji}</span>
+              {lang === 'es' ? step.es : step.fr}
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

@@ -27,9 +27,11 @@ import { AdsMarchePanel } from '@/components/Admin/croissance/ads/AdsMarchePanel
 import { AdsStatsPanel } from '@/components/Admin/croissance/ads/AdsStatsPanel';
 import { AdsPlanPanel } from '@/components/Admin/croissance/ads/AdsPlanPanel';
 import { AdsExecutionPanel } from '@/components/Admin/croissance/ads/AdsExecutionPanel';
-import { eur, num } from '@/components/Admin/croissance/ads/ads-ui';
+import { AdsLangSwitch, AdsTermHint, eur, num, useAdsUiLang } from '@/components/Admin/croissance/ads/ads-ui';
+import { type AdsSubTab } from '@/lib/acquisition/ads/ads-glossary';
+import { buildCreativePipeline, computeNextAction } from '@/lib/acquisition/ads/stats-compute';
 
-export type AdsSubTab = 'marche' | 'stats' | 'plan' | 'execution';
+export type { AdsSubTab };
 
 type Props = {
   connection: AdsConnectionState;
@@ -63,12 +65,26 @@ type Props = {
   }) => Promise<ActionResult>;
 };
 
-const SUB_TABS: Array<{ id: AdsSubTab; label: string; hint: string; icon: ReactNode }> = [
-  { id: 'marche', label: 'Marché', hint: 'Ce que veulent les femmes', icon: <Globe2 size={15} /> },
-  { id: 'stats', label: 'Mes stats', hint: 'Compte, audience, contenus, pub', icon: <BarChart3 size={15} /> },
-  { id: 'plan', label: 'Plan d’action', hint: 'Quoi créer, quoi tester', icon: <ClipboardList size={15} /> },
-  { id: 'execution', label: 'Exécution', hint: 'Cockpit & prochaine action', icon: <Zap size={15} /> },
+const SUB_TABS: Array<{
+  id: AdsSubTab;
+  emoji: string;
+  label: { fr: string; es: string };
+  hint: { fr: string; es: string };
+  icon: ReactNode;
+}> = [
+  { id: 'marche', emoji: '🌍', label: { fr: 'Marché', es: 'Mercado' }, hint: { fr: 'Ce que veulent les femmes', es: 'Lo que quieren las mujeres' }, icon: <Globe2 size={15} /> },
+  { id: 'stats', emoji: '📊', label: { fr: 'Mes stats', es: 'Mis cifras' }, hint: { fr: 'Compte, audience, contenus, pub', es: 'Cuenta, audiencia, contenidos, anuncios' }, icon: <BarChart3 size={15} /> },
+  { id: 'plan', emoji: '📋', label: { fr: 'Plan d’action', es: 'Plan de acción' }, hint: { fr: 'Quoi créer, quoi tester', es: 'Qué crear, qué probar' }, icon: <ClipboardList size={15} /> },
+  { id: 'execution', emoji: '⚡', label: { fr: 'Exécution', es: 'Ejecución' }, hint: { fr: 'Tableau de bord & prochaine action', es: 'Cuadro de mando y siguiente acción' }, icon: <Zap size={15} /> },
 ];
+
+function persistSub(sub: AdsSubTab) {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', 'ads');
+  url.searchParams.set('sub', sub);
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+}
 
 function formatSync(iso: string | null): string {
   if (!iso) return 'jamais';
@@ -106,14 +122,38 @@ export function AdsPilotPanel({
   onActivate,
 }: Props) {
   const [subTab, setSubTab] = useState<AdsSubTab>(initialSubTab);
+  const [lang, setLang] = useAdsUiLang();
   const [capsOpen, setCapsOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  function goTo(next: AdsSubTab) {
+    setSubTab(next);
+    persistSub(next);
+  }
+
   const missingCaps = intelligence.capabilities.filter((c) => !c.accessible);
   const hasCapAlert = missingCaps.length > 0 || intelligence.capabilities.length === 0;
   const activeCampaigns = campaigns.filter((c) => c.status === 'active').length;
+
+  const nextAction = useMemo(
+    () =>
+      computeNextAction({
+        lastSyncAt: intelligence.lastSyncAt,
+        alerts: intelligence.alerts,
+        campaigns,
+        pipeline: buildCreativePipeline({
+          plan: actionPlan,
+          campaigns,
+          insights: intelligence.campaigns,
+          alerts: intelligence.alerts,
+          manualStatuses: creativeStatuses,
+        }),
+        totalSpendCents: intelligence.adsTotals.spendCents,
+      }),
+    [intelligence, campaigns, actionPlan, creativeStatuses],
+  );
 
   const displayCreatives = useMemo<AdCreative[]>(() => {
     if (creatives.length > 0) return creatives;
@@ -164,14 +204,19 @@ export function AdsPilotPanel({
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl" style={{ background: acq.terracotta }} aria-hidden />
         <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-8 sm:py-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-              Pilotage publicité
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
+                {lang === 'es' ? 'Pilotaje de anuncios' : 'Pilotage publicité'}
+              </p>
+              <AdsLangSwitch lang={lang} onChange={setLang} />
+            </div>
             <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl" style={{ color: acq.ink }}>
-              ADS / Publicité
+              {lang === 'es' ? 'Publicidad' : 'Publicité'}
             </h1>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: acq.muted }}>
-              Aucune dépense sans double confirmation humaine.
+              {lang === 'es'
+                ? 'Ningún gasto sin doble confirmación humana.'
+                : 'Aucune dépense sans double confirmation humaine.'}
             </p>
             <div className="mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3" style={{ borderColor: 'rgba(196,93,62,0.22)', backgroundColor: acq.terracottaSoft }}>
               {connection.connected ? (
@@ -181,7 +226,27 @@ export function AdsPilotPanel({
               )}
               <div>
                 <p className="text-sm font-semibold" style={{ color: acq.ink }}>
-                  {connection.connected ? 'Meta Ads connecté (lecture + brouillons PAUSED)' : 'En attente connexion Meta Ads'}
+                  {connection.connected ? (
+                    lang === 'es' ? (
+                      <>
+                        <AdsTermHint term="meta" lang={lang}>
+                          Meta
+                        </AdsTermHint>{' '}
+                        conectado (lectura + borradores <AdsTermHint term="paused" lang={lang} />)
+                      </>
+                    ) : (
+                      <>
+                        <AdsTermHint term="meta" lang={lang}>
+                          Meta
+                        </AdsTermHint>{' '}
+                        connecté (lecture + brouillons <AdsTermHint term="paused" lang={lang} />)
+                      </>
+                    )
+                  ) : lang === 'es' ? (
+                    'En espera de conexión Meta'
+                  ) : (
+                    'En attente connexion Meta'
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed" style={{ color: acq.muted }}>
                   {connection.message}
@@ -192,9 +257,9 @@ export function AdsPilotPanel({
           <div className="flex flex-col gap-3 lg:items-end">
             <dl className="grid grid-cols-3 gap-2 text-center">
               {[
-                ['Abonnés', num(intelligence.organicAccount?.followersCount ?? null)],
-                ['Dépense 30 j', eur(intelligence.adsTotals.spendCents)],
-                ['Campagnes actives', String(activeCampaigns)],
+                [lang === 'es' ? 'Seguidoras' : 'Abonnées', num(intelligence.organicAccount?.followersCount ?? null)],
+                [lang === 'es' ? 'Gasto 30 d' : 'Dépense 30 j', eur(intelligence.adsTotals.spendCents)],
+                [lang === 'es' ? 'Campañas activas' : 'Campagnes actives', String(activeCampaigns)],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-2xl border bg-white/80 px-3 py-2.5" style={{ borderColor: acq.warmBeigeDeep }}>
                   <dt className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: acq.muted }}>
@@ -215,16 +280,17 @@ export function AdsPilotPanel({
                 style={{ backgroundColor: acq.terracotta }}
                 data-testid="ads-sync-intelligence"
               >
-                <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Sync intelligence
+                <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> {lang === 'es' ? 'Sincronizar datos' : 'Synchroniser les données'}
               </button>
               <button type="button" disabled={pending || !schemaReady} onClick={() => run(onCreateDrafts)} className="rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: acq.active }}>
-                Créer 3 brouillons
+                {lang === 'es' ? 'Crear 3 borradores' : 'Créer 3 brouillons'}
               </button>
               <button type="button" disabled={pending} onClick={() => run(onSyncInsights)} className="rounded-full border bg-white px-4 py-2.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
-                Sync CRM
+                {lang === 'es' ? 'Actualizar fichas' : 'Actualiser les fiches'}{' '}
+                <AdsTermHint term="crm" lang={lang} />
               </button>
               <button type="button" disabled={pending || !schemaReady} onClick={() => run(onSeedCreatives)} className="rounded-full border bg-white px-4 py-2.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
-                Seed créatives
+                {lang === 'es' ? 'Preparar modelos de anuncios' : 'Préparer les modèles de pubs'}
               </button>
             </div>
           </div>
@@ -255,13 +321,16 @@ export function AdsPilotPanel({
             )}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold" style={{ color: acq.ink }}>
-                Données connectées
+                {lang === 'es' ? 'Datos conectados' : 'Données connectées'}
                 {hasCapAlert ? (
-                  <span className="ml-2 text-xs font-semibold text-red-700">· {missingCaps.length} source(s) non accessible(s)</span>
+                  <span className="ml-2 text-xs font-semibold text-red-700">
+                    · {missingCaps.length} {lang === 'es' ? 'fuente(s) no accesible(s)' : 'source(s) non accessible(s)'}
+                  </span>
                 ) : null}
               </p>
               <p className="text-xs" style={{ color: acq.muted }}>
-                Dernière synchro : {formatSync(intelligence.lastSyncAt)} · auto chaque jour 04:40 (Paris) · conseils régénérés à chaque synchro
+                {lang === 'es' ? 'Última sincro' : 'Dernière synchro'} : {formatSync(intelligence.lastSyncAt)} ·{' '}
+                {lang === 'es' ? 'auto cada día 04:40 (París)' : 'auto chaque jour 04:40 (Paris)'}
               </p>
             </div>
           </div>
@@ -306,7 +375,7 @@ export function AdsPilotPanel({
               type="button"
               data-testid={`ads-subnav-${t.id}`}
               aria-current={active ? 'page' : undefined}
-              onClick={() => setSubTab(t.id)}
+              onClick={() => goTo(t.id)}
               className="flex items-center gap-2.5 rounded-[1.1rem] px-3 py-2.5 text-left transition"
               style={{ backgroundColor: active ? acq.ink : 'transparent', color: active ? '#fff' : acq.ink }}
             >
@@ -314,12 +383,15 @@ export function AdsPilotPanel({
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
                 style={{ backgroundColor: active ? acq.terracotta : acq.warmBeige, color: active ? '#fff' : acq.terracotta }}
               >
-                {t.icon}
+                <span className="sm:hidden" aria-hidden>
+                  {t.emoji}
+                </span>
+                <span className="hidden sm:inline">{t.icon}</span>
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold leading-tight">{t.label}</span>
+                <span className="block text-sm font-semibold leading-tight">{t.label[lang]}</span>
                 <span className="hidden truncate text-[10px] leading-tight sm:block" style={{ color: active ? 'rgba(255,255,255,0.65)' : acq.muted }}>
-                  {t.hint}
+                  {t.hint[lang]}
                 </span>
               </span>
             </button>
@@ -327,14 +399,22 @@ export function AdsPilotPanel({
         })}
       </nav>
 
-      {subTab === 'marche' ? <AdsMarchePanel intelligence={intelligence} /> : null}
-      {subTab === 'stats' ? <AdsStatsPanel intelligence={intelligence} performance={performance} /> : null}
+      {subTab === 'marche' ? (
+        <AdsMarchePanel intelligence={intelligence} plan={actionPlan} lang={lang} onGoTo={goTo} />
+      ) : null}
+      {subTab === 'stats' ? (
+        <AdsStatsPanel intelligence={intelligence} performance={performance} lang={lang} onGoTo={goTo} />
+      ) : null}
       {subTab === 'plan' ? (
         <AdsPlanPanel
           plan={actionPlan}
           planNote={planNote}
           coachAdvice={coachAdvice}
           coachNote={coachNote}
+          intelligence={intelligence}
+          nextAction={nextAction}
+          lang={lang}
+          onGoTo={goTo}
           onReload={onReloadCoach}
           onCreateColdDraft={onCreateColdDraft}
           onBoostOrganic={onBoostOrganic}
@@ -351,6 +431,8 @@ export function AdsPilotPanel({
           situationBrief={situationBrief}
           creativeStatuses={creativeStatuses}
           pending={pending}
+          lang={lang}
+          onGoTo={goTo}
           run={run}
           onFullSync={onFullSync}
           onCreateColdDraft={onCreateColdDraft}

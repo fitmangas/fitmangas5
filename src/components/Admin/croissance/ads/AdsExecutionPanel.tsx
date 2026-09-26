@@ -39,7 +39,8 @@ import {
   ADS_FUNNEL_STEPS,
   STRATEGY_CAMPAIGN_BLUEPRINTS,
 } from '@/lib/acquisition/ads/strategy-content';
-import { AdsCard, Collapsible, adsTone, eur, num, pct } from './ads-ui';
+import type { AdsSubTab, AdsUiLang } from '@/lib/acquisition/ads/ads-glossary';
+import { AdsCard, AdsJourney, AdsTermHint, Collapsible, adsTone, eur, num, pct } from './ads-ui';
 
 type Props = {
   intelligence: IntelligenceBundle;
@@ -64,12 +65,14 @@ type Props = {
     budgetCentsExact: number;
   }) => Promise<ActionResult>;
   onError: (msg: string) => void;
+  lang?: AdsUiLang;
+  onGoTo?: (sub: AdsSubTab) => void;
 };
 
 const TEMP: Record<CampaignTemperature, { accent: string; soft: string; label: string; fatigue: number; fatigueLabel: string }> = {
-  froid: { accent: '#3B6EA8', soft: 'rgba(59,110,168,0.09)', label: 'Froid', fatigue: 4, fatigueLabel: 'fatigue > 3–4' },
-  warm: { accent: '#C98A1E', soft: 'rgba(201,138,30,0.10)', label: 'Warm', fatigue: 7, fatigueLabel: 'fatigue > 5–7' },
-  hot: { accent: acq.terracotta, soft: 'rgba(196,93,62,0.10)', label: 'Hot', fatigue: 7, fatigueLabel: 'fatigue > 5–7' },
+  froid: { accent: '#3B6EA8', soft: 'rgba(59,110,168,0.09)', label: 'Froid', fatigue: 4, fatigueLabel: 'usure > 3–4' },
+  warm: { accent: '#C98A1E', soft: 'rgba(201,138,30,0.10)', label: 'Tiède', fatigue: 7, fatigueLabel: 'usure > 5–7' },
+  hot: { accent: acq.terracotta, soft: 'rgba(196,93,62,0.10)', label: 'Chaude', fatigue: 7, fatigueLabel: 'usure > 5–7' },
 };
 
 const BLUEPRINT_TEMP: Record<string, CampaignTemperature> = {
@@ -89,8 +92,8 @@ const STATUS_STYLE: Record<CreativeStatus, { bg: string; color: string; dot: str
 function CampaignStatusPill({ status }: { status: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
     draft: { label: 'Brouillon local', bg: 'rgba(120,113,108,0.14)', color: acq.muted },
-    paused: { label: 'PAUSED · 0 €', bg: 'rgba(245,158,11,0.16)', color: '#b45309' },
-    active: { label: 'ACTIVE · dépense', bg: 'rgba(34,197,94,0.14)', color: '#15803d' },
+    paused: { label: 'En pause · 0 €', bg: 'rgba(245,158,11,0.16)', color: '#b45309' },
+    active: { label: 'Allumée · dépense', bg: 'rgba(34,197,94,0.14)', color: '#15803d' },
     archived: { label: 'Archivée', bg: 'rgba(120,113,108,0.1)', color: acq.mutedLight },
   };
   const m = map[status] ?? map.draft!;
@@ -194,6 +197,8 @@ export function AdsExecutionPanel({
   onSetCreativeStatus,
   onActivate,
   onError,
+  lang = 'fr',
+  onGoTo,
 }: Props) {
   const [brief, setBrief] = useState<SituationBrief | null>(situationBrief);
   const [statuses, setStatuses] = useState<Record<string, CreativeStatus>>(creativeStatuses);
@@ -254,7 +259,7 @@ export function AdsExecutionPanel({
 
   const nextCtaLabel: Record<typeof next.cta, string | null> = {
     sync: 'Synchroniser maintenant',
-    create_cold_draft: 'Créer le brouillon PAUSED',
+    create_cold_draft: 'Créer le brouillon en pause',
     refresh: 'Préparer une créative de remplacement',
     plan: 'Régénérer le plan',
     activate: 'Ouvrir la double confirmation',
@@ -280,12 +285,14 @@ export function AdsExecutionPanel({
       {/* ── 1. Lecture de situation ───────────────────────── */}
       <AdsCard
         tone="ink"
-        eyebrow="Cockpit · lecture de situation"
-        title="Où tu en es, ce que dit le marché, ce qui compte"
+        eyebrow={lang === 'es' ? 'Paso 4 · Tablero' : 'Étape 4 · Tableau de bord'}
+        title={lang === 'es' ? 'Dónde estás, qué dice el mercado, qué cuenta' : 'Où tu en es, ce que dit le marché, ce qui compte'}
         subtitle={
           brief
-            ? `${brief.source === 'ai' ? `Rédigé par ${brief.provider}` : 'Lecture automatique (règles)'} · borné à ADS_EXPERTISE + MARCHE_FEMMES + tes chiffres · ${new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(brief.updatedAt))}`
-            : 'Pas encore de lecture — lance une synchro.'
+            ? `${brief.source === 'ai' ? (lang === 'es' ? `Redactado por ${brief.provider}` : `Rédigé par ${brief.provider}`) : lang === 'es' ? 'Lectura automática' : 'Lecture automatique'} · ${lang === 'es' ? 'acotado a tus documentos + cifras' : 'borné à tes documents + tes chiffres'} · ${new Intl.DateTimeFormat(lang === 'es' ? 'es-MX' : 'fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(brief.updatedAt))}`
+            : lang === 'es'
+              ? 'Aún no hay lectura — lanza una sincro.'
+              : 'Pas encore de lecture — lance une synchro.'
         }
         right={
           <button
@@ -306,6 +313,11 @@ export function AdsExecutionPanel({
         }
         testId="ads-exec-brief"
       >
+        {onGoTo ? (
+          <div className="mb-4">
+            <AdsJourney current="execution" lang={lang} onGo={onGoTo} />
+          </div>
+        ) : null}
         {brief ? (
           <>
             <div className="grid gap-3 md:grid-cols-3">
@@ -377,8 +389,12 @@ export function AdsExecutionPanel({
       {/* ── 4. Alertes live ───────────────────────────────── */}
       <AdsCard
         eyebrow="Alertes live"
-        title="Fatigue · kill · budget"
-        subtitle="Seuils ADS_EXPERTISE : fréquence froid > 3–4, retarget > 5–7 · kill après 48–72 h ou 50–100 € sans résultat."
+        title={lang === 'es' ? 'Desgaste · cortar · presupuesto' : 'Usure · couper · budget'}
+        subtitle={
+          lang === 'es'
+            ? 'Frecuencia frío > 3–4, reimpacto > 5–7 · cortar a las 48–72 h o 50–100 € sin resultado.'
+            : 'Fréquence froid > 3–4, reciblage > 5–7 · couper après 48–72 h ou 50–100 € sans résultat.'
+        }
         icon={<Gauge size={18} />}
         testId="ads-execution-alerts"
       >
@@ -401,7 +417,7 @@ export function AdsExecutionPanel({
                 </p>
                 {a.kind === 'fatigue' || a.kind === 'kill' ? (
                   <button type="button" className="mt-2 text-xs font-semibold underline" style={{ color: acq.terracotta }} onClick={() => run(() => onRefreshCreative({ entityName: a.entityName }))}>
-                    Préparer une créative PAUSED de remplacement
+                    {lang === 'es' ? 'Preparar un anuncio de recambio (0 €)' : 'Préparer un film de remplacement (0 €)'}
                   </button>
                 ) : null}
               </li>
@@ -414,11 +430,21 @@ export function AdsExecutionPanel({
       <div id="ads-exec-campaigns">
         <AdsCard
           eyebrow="Campagnes · données réelles 30 j"
-          title="Froid → Warm → Hot"
-          subtitle="Chaque carte croise la campagne CRM, son brouillon Meta et les chiffres Meta synchronisés. Activation = double confirmation humaine."
+          title={lang === 'es' ? 'Frío → Tibio → Caliente' : 'Froid → Tiède → Chaude'}
+          subtitle={
+            lang === 'es'
+              ? 'Cada tarjeta cruza la campaña, su borrador Meta y las cifras. Activar = doble confirmación humana.'
+              : 'Chaque carte croise la campagne, son brouillon Meta et les chiffres. Activation = double confirmation humaine.'
+          }
           icon={<Megaphone size={18} />}
           testId="ads-campaign-cards"
         >
+          <p className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: acq.muted }}>
+            <AdsTermHint term="cpl" lang={lang} />
+            <AdsTermHint term="ctr" lang={lang} />
+            <AdsTermHint term="paused" lang={lang} />
+            <AdsTermHint term="retarget" lang={lang} />
+          </p>
           <div className="grid gap-4 lg:grid-cols-3">
             {STRATEGY_CAMPAIGN_BLUEPRINTS.map((bp) => {
               const temp = BLUEPRINT_TEMP[bp.id] ?? 'froid';
@@ -441,7 +467,7 @@ export function AdsExecutionPanel({
                           {vibe.label}
                         </p>
                         <h4 className="mt-1 font-serif text-lg font-semibold leading-snug" style={{ color: acq.ink }}>
-                          {bp.labelFr.replace(/^(Froid|Warm|Hot)\s*[—–-]\s*/i, '')}
+                          {(lang === 'es' ? bp.labelEs : bp.labelFr).replace(/^(Froid|Warm|Hot|Frío|Tibio|Caliente)\s*[—–-]\s*/i, '')}
                         </h4>
                       </div>
                       <CampaignStatusPill status={crm?.status ?? 'draft'} />

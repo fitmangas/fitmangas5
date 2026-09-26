@@ -27,6 +27,18 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-26 (nuit) — Ads : Marché + Plan reliés, français clair, glossaire
+
+- Auto-analyse : le fond Marché/Plan était bon — pas de refonte éditoriale. Manques : jargon anglais, chiffres Marché trop vieux (snapshot vs démographie 90 j), Plan déconnecté des stats riches, pas de fil entre les 4 onglets.
+- Bug corrigé : la lecture prenait l’âge `13-17` (1er de la liste alphabétique) au lieu de `25-34` (vrai n°1 : 984 vs 7). `topDemo()` ignore l’ordre.
+- Audience réelle (followers Meta) : ~48 % femmes / 33 % hommes / 19 % non renseigné · âge n°1 25–34 · pays FR puis MX (~22 %). Le plan MX remonte si part MX ≥ 15 %.
+- Le plan stocké en base garde les anciens titres jusqu’à « Régénérer ».
+- Fil cliquable Marché → Mes stats → Plan → Exécution (URL `?sub=` mise à jour).
+- Marché : titres FR/ES, émojis, portrait biblio, croise visites 28 j + âge/genre/pays réels, pastilles « déjà dans le plan ».
+- Plan : chaque hypothèse a une preuve chiffrée + un besoin Marché ; s’adapte (profil qui n’envoie pas vers le site, part MX) ; prochaine action Exécution en haut.
+- Glossaire (`ads-glossary.ts`) + petit « i » sur CPL/CAC/CTR/CPM/ROAS/UGC/PAS/Hook/CTA/PAUSED/Meta/Pixel/CRM… Sélecteur FR/ES pour le chrome (l’admin n’a pas de locale site).
+- Warm/Hot → Tiède/Chaude ; Followers → Abonnées ; Sync intelligence → Synchroniser les données.
+
 ### 2026-09-26 (soir) — Ads : Mes stats niveau Business Suite + cockpit Exécution
 
 - Migration additive `organic_account_daily` (90 j : vues, portée, interactions, comptes engagés, visites profil, clics lien/bio, follows/unfollows, follower_count) + `organic_audience_demographics` (âge/genre/pays/ville followers) + colonnes médias (`total_interactions`, `profile_visits`, `follows`, `avg_watch_time_ms`, `total_watch_time_ms`).

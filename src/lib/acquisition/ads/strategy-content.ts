@@ -54,7 +54,7 @@ export const ADS_BEGINNER_GUIDE = [
   },
   {
     title: '3. Trois campagnes, pas trente',
-    body: 'Froid = découverte quiz · Warm = retarget visiteuses/engageuses · Hot = retarget essai non terminé. On mesure CPL et coût/essai.',
+    body: 'Froid = découverte quiz · Tiède = reciblage visiteuses/engageuses · Chaude = reciblage essai non terminé. On mesure le coût par inscription et le coût par essai.',
   },
   {
     title: '4. Copy = bénéfice / émotion',
@@ -84,8 +84,8 @@ export const STRATEGY_CAMPAIGN_BLUEPRINTS: StrategyCampaignBlueprint[] = [
   },
   {
     id: 'warm_retarget',
-    labelFr: 'Warm — Retarget visiteuses',
-    labelEs: 'Warm — Retarget visitantes',
+    labelFr: 'Tiède — Reciblage visiteuses',
+    labelEs: 'Tibia — Reimpacto visitantes',
     temperature: 'chaud',
     audience: 'A visité le site / quiz / IG (engageuses) sans s’inscrire à l’essai.',
     offer: 'Rappel quiz + essai 7j (bénéfice : ne plus être seule)',
@@ -95,8 +95,8 @@ export const STRATEGY_CAMPAIGN_BLUEPRINTS: StrategyCampaignBlueprint[] = [
   },
   {
     id: 'hot_trial',
-    labelFr: 'Hot — Essai non terminé',
-    labelEs: 'Hot — Prueba incompleta',
+    labelFr: 'Chaude — Essai non terminé',
+    labelEs: 'Caliente — Prueba incompleta',
     temperature: 'brûlant',
     audience: 'A commencé l’essai / checkout sans finaliser, ou a quitté le parcours paiement.',
     offer: 'Essai 7 jours — « viens vivre un vrai cours avec moi »',

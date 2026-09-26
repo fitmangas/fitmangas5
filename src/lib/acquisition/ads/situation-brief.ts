@@ -117,7 +117,7 @@ export function buildDeterministicBrief(
     f.audience.women != null
       ? `Ton audience actuelle : ${f.audience.women.toFixed(0)} % de femmes, âges dominants ${f.audience.topAges.join(', ')}, pays ${f.audience.topCountries.join(', ')}.`
       : 'Démographie non synchronisée.';
-  const market = `${aud} Le marché dit : ${MARCHE_POSITIONING.rule} ${MARCHE_PUB_CONCLUSION[1]}`;
+  const market = `${aud} Le marché dit : ${MARCHE_POSITIONING.rule.fr} ${MARCHE_PUB_CONCLUSION[1]?.fr ?? ''}`;
   const priority =
     bundle.alerts.find((a) => a.kind === 'kill' || a.kind === 'fatigue')?.title ??
     (f.planTop[0] ? `Produire la créative « ${f.planTop[0]} » puis tester en froid FR.` : 'Synchroniser puis régénérer le plan.');

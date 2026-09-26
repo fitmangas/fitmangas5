@@ -31,9 +31,12 @@ import {
   type OrganicMetric,
   type PeriodDays,
 } from '@/lib/acquisition/ads/stats-compute';
+import type { AdsSubTab, AdsUiLang } from '@/lib/acquisition/ads/ads-glossary';
 import {
   ADS_CHART_PALETTE,
   AdsCard,
+  AdsJourney,
+  AdsTermHint,
   Collapsible,
   HBar,
   KpiTile,
@@ -50,6 +53,8 @@ import {
 type Props = {
   intelligence: IntelligenceBundle;
   performance: AdsPerformanceSummary;
+  lang?: AdsUiLang;
+  onGoTo?: (sub: AdsSubTab) => void;
 };
 
 type ChartMetric = OrganicMetric | 'linkClicks' | 'net';
@@ -61,8 +66,8 @@ const METRIC_DEFS: Array<{ id: ChartMetric; label: string; hint: string }> = [
   { id: 'accountsEngaged', label: 'Comptes engagés', hint: 'Comptes ayant interagi, additionnés jour par jour' },
   { id: 'profileViews', label: 'Visites du profil', hint: 'Passages sur @fit.mangas' },
   { id: 'linkClicks', label: 'Clics sur lien', hint: 'Lien en bio + boutons du profil' },
-  { id: 'follows', label: 'Followers gagnés', hint: 'Nouveaux abonnements (Meta follows_and_unfollows)' },
-  { id: 'unfollows', label: 'Followers perdus', hint: 'Désabonnements (Meta follows_and_unfollows)' },
+  { id: 'follows', label: 'Abonnées gagnées', hint: 'Nouveaux abonnements' },
+  { id: 'unfollows', label: 'Abonnées perdues', hint: 'Désabonnements' },
   { id: 'net', label: 'Croissance nette', hint: 'Gagnés − perdus sur la période' },
 ];
 
@@ -136,7 +141,7 @@ const tooltipStyle = {
   boxShadow: '0 12px 32px rgba(35,32,29,0.08)',
 };
 
-export function AdsStatsPanel({ intelligence, performance }: Props) {
+export function AdsStatsPanel({ intelligence, performance, lang = 'fr', onGoTo }: Props) {
   const [period, setPeriod] = useState<PeriodDays>(28);
   const [metric, setMetric] = useState<ChartMetric>('views');
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
@@ -187,16 +192,28 @@ export function AdsStatsPanel({ intelligence, performance }: Props) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-              Mes stats · Instagram @fit.mangas + Meta Ads
+              {lang === 'es' ? 'Paso 2 · Mis cifras · Instagram @fit.mangas + anuncios' : 'Étape 2 · Mes stats · Instagram @fit.mangas + pubs'}{' '}
+              <AdsTermHint term="meta" lang={lang} />
             </p>
             <h2 className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: acq.ink }}>
-              {account?.followersCount != null ? `${num(account.followersCount)} abonnés` : 'Résultats du compte'}
+              {account?.followersCount != null
+                ? `${num(account.followersCount)} ${lang === 'es' ? 'seguidoras' : 'abonnées'}`
+                : lang === 'es'
+                  ? 'Resultados de la cuenta'
+                  : 'Résultats du compte'}
             </h2>
             <p className="mt-1 text-sm" style={{ color: acq.muted }}>
               {summary.coveredDays > 0
-                ? `${summary.coveredDays} jour(s) de données Meta${lastDay ? ` · jusqu’au ${shortDate(lastDay)}` : ''} · comparé aux ${period} jours précédents${comparable ? '' : ' (historique insuffisant pour comparer)'}.`
-                : 'Aucune série quotidienne encore — lance « Sync intelligence ».'}
+                ? `${summary.coveredDays} ${lang === 'es' ? 'día(s) de datos' : 'jour(s) de données'}${lastDay ? ` · ${lang === 'es' ? 'hasta el' : 'jusqu’au'} ${shortDate(lastDay)}` : ''} · ${lang === 'es' ? 'comparado con los' : 'comparé aux'} ${period} ${lang === 'es' ? 'días anteriores' : 'jours précédents'}${comparable ? '' : lang === 'es' ? ' (histórico insuficiente)' : ' (historique insuffisant pour comparer)'}.`
+                : lang === 'es'
+                  ? 'Aún no hay serie diaria — pulsa « Sincronizar los datos ».'
+                  : 'Aucune série quotidienne encore — lance « Synchroniser les données ».'}
             </p>
+            {onGoTo ? (
+              <div className="mt-3">
+                <AdsJourney current="stats" lang={lang} onGo={onGoTo} />
+              </div>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               <SourceTag kind="visuel" />
               <span className="text-[11px]" style={{ color: acq.muted }}>
@@ -543,10 +560,23 @@ export function AdsStatsPanel({ intelligence, performance }: Props) {
         icon={<Megaphone size={18} />}
         testId="ads-stats-invisibles"
       >
+        <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]" style={{ color: acq.muted }}>
+          <AdsTermHint term="cpl" lang={lang} />
+          <AdsTermHint term="cac" lang={lang} />
+          <AdsTermHint term="ctr" lang={lang} />
+          <AdsTermHint term="cpm" lang={lang} />
+          <AdsTermHint term="roas" lang={lang} />
+          <AdsTermHint term="pixel" lang={lang} />
+        </p>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4" data-testid="ads-stats-ads-kpis">
-          <KpiTile big label="Dépense" value={eur(ads.spendCents)} hint={`${num(ads.impressions)} impressions`} />
+          <KpiTile big label="Dépense" value={eur(ads.spendCents)} hint={`${num(ads.impressions)} affichages`} />
           <KpiTile big label="Leads" value={num(ads.leads)} hint="Formulaires / quiz attribués par Meta" />
-          <KpiTile big label="CPL" value={eur(ads.cplCents)} hint={ads.cplCents == null ? 'Pas de lead → pas de coût par lead' : 'Repère froid FR : 8–18 €'} />
+          <KpiTile
+            big
+            label="CPL"
+            value={eur(ads.cplCents)}
+            hint={ads.cplCents == null ? (lang === 'es' ? 'Sin lead → sin coste por lead' : 'Pas de lead → pas de coût par lead') : lang === 'es' ? 'Referencia frío FR : 8–18 €' : 'Repère froid FR : 8–18 €'}
+          />
           <KpiTile
             big
             label="CAC"
@@ -561,7 +591,11 @@ export function AdsStatsPanel({ intelligence, performance }: Props) {
           />
           <KpiTile label="CTR" value={pct(ads.ctr, 2)} hint="Clics ÷ impressions · repère ≥ 1 %" />
           <KpiTile label="CPM" value={eur(ads.cpmCents)} hint="Coût pour 1 000 impressions" />
-          <KpiTile label="Fréquence" value={ads.frequency != null ? ads.frequency.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '—'} hint="Alerte fatigue : froid > 3–4 · retarget > 5–7" />
+          <KpiTile
+            label="Fréquence"
+            value={ads.frequency != null ? ads.frequency.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : '—'}
+            hint={lang === 'es' ? 'Alerta desgaste : frío > 3–4 · reimpacto > 5–7' : 'Alerte usure : froid > 3–4 · reciblage > 5–7'}
+          />
           <KpiTile
             label="ROAS"
             value={ads.roas != null ? `× ${ads.roas.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}` : 'Non mesurable'}
@@ -577,7 +611,7 @@ export function AdsStatsPanel({ intelligence, performance }: Props) {
           <KpiTile label="Coût / essai" value={eur(performance.costPerTrialCents)} hint="CRM : dépense ÷ essais démarrés" />
           <KpiTile label="Clics lien" value={num(ads.linkClicks)} />
           <KpiTile label="Portée pub" value={num(ads.reach)} />
-          <KpiTile label="ThruPlays" value={num(ads.thruplays)} hint="Vidéos vues ≥ 15 s" />
+          <KpiTile label={lang === 'es' ? 'Vistas ≥ 15 s' : 'Vues ≥ 15 s'} value={num(ads.thruplays)} hint={lang === 'es' ? 'Vídeos vistos al menos 15 s' : 'Vidéos vues au moins 15 secondes'} />
         </div>
 
         {intelligence.trends.length > 1 ? (
