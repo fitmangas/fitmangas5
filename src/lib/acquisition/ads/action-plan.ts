@@ -9,6 +9,7 @@ import path from 'node:path';
 import { runSocialTextCascade } from '@/lib/admin/social-text-ai';
 import type { CoachAdvice, CoachAction } from './coach';
 import type { IntelligenceBundle } from './intelligence-repository';
+import { demoShare, summarizeOrganicPeriod, topDemo } from './stats-compute';
 
 export type ActionPlanItem = {
   id: string;
@@ -22,7 +23,44 @@ export type ActionPlanItem = {
   honesty: string;
   action: CoachAction | null;
   source: 'rules' | 'ai';
+  /** Id d’un besoin Marché (constance, etre-vue…). */
+  wantId?: string;
+  /** Phrase appuyée sur les chiffres réels (jamais inventée). */
+  evidence?: string;
+  emoji?: string;
 };
+
+const COUNTRY_NAME: Record<string, string> = { FR: 'France', MX: 'Mexique', ES: 'Espagne', US: 'États-Unis' };
+
+export function planEvidenceFromBundle(bundle: IntelligenceBundle): string {
+  const daily = bundle.organicDaily ?? [];
+  const p = summarizeOrganicPeriod(daily, 28);
+  const gender = demoShare(bundle.demographics?.gender ?? []);
+  const age = demoShare(bundle.demographics?.age ?? []);
+  const country = demoShare(bundle.demographics?.country ?? []);
+  const parts: string[] = [];
+  if (p.coveredDays > 0) {
+    if (p.totals.profileViews != null) {
+      parts.push(`${p.totals.profileViews.toLocaleString('fr-FR')} visites de profil (28 j)`);
+    }
+    if (p.netFollowers != null) {
+      parts.push(`croissance nette ${p.netFollowers >= 0 ? '+' : ''}${p.netFollowers}`);
+    }
+    const clicks = (p.totals.websiteClicks ?? 0) + (p.totals.profileLinksTaps ?? 0);
+    if (p.totals.profileViews != null && p.totals.profileViews > 0) {
+      parts.push(`${clicks.toLocaleString('fr-FR')} clics vers le site`);
+    }
+  }
+  const topG = topDemo(gender);
+  if (topG) parts.push(`${Math.round(topG.pct)} % ${topG.key === 'F' ? 'femmes' : topG.key === 'M' ? 'hommes' : 'non renseigné'}`);
+  const topA = topDemo(age);
+  if (topA) parts.push(`âge le plus présent : ${topA.key} (${Math.round(topA.pct)} %)`);
+  const topC = topDemo(country);
+  if (topC) parts.push(`pays n°1 des abonnées : ${COUNTRY_NAME[topC.key] ?? topC.key}`);
+  const spend = bundle.adsTotals?.spendCents ?? 0;
+  if (spend === 0) parts.push('0 € dépensé en pub — à tester, pas une certitude');
+  return parts.length ? parts.join(' · ') : 'Pas encore assez de chiffres — synchronise les données.';
+}
 
 async function loadDocs(): Promise<string> {
   const parts: string[] = [];
@@ -39,114 +77,173 @@ async function loadDocs(): Promise<string> {
 
 export function buildDeterministicActionPlan(bundle: IntelligenceBundle): ActionPlanItem[] {
   const topOrganic = bundle.organicMedia.find((m) => m.boostBadge) ?? bundle.organicMedia[0];
-  const hasSpend = bundle.campaigns.some((c) => c.spendCents > 0);
+  const hasSpend = bundle.campaigns.some((c) => c.spendCents > 0) || (bundle.adsTotals?.spendCents ?? 0) > 0;
   const followers = bundle.organicAccount?.followersCount ?? null;
-  const ageTop = bundle.breakdowns.age[0];
-  const countryTop = bundle.breakdowns.country[0];
+  const evidence = planEvidenceFromBundle(bundle);
+  const daily = bundle.organicDaily ?? [];
+  const period = summarizeOrganicPeriod(daily, 28);
+  const countryShare = demoShare(bundle.demographics?.country ?? []);
+  const mxShare = countryShare.find((c) => c.key === 'MX')?.pct ?? 0;
+  const profileViews = period.totals.profileViews;
+  const siteClicks = (period.totals.websiteClicks ?? 0) + (period.totals.profileLinksTaps ?? 0);
+  const leakyBio = profileViews != null && profileViews >= 80 && siteClicks < profileViews * 0.04;
 
   const items: ActionPlanItem[] = [
     {
       id: 'create-th-pas-dos',
       priority: 1,
-      title: 'Créative #1 — talking-head 15–30 s (PAS · dos 15h)',
+      emoji: '🎥',
+      wantId: 'mind-body',
+      evidence,
+      title: 'Film #1 — elle parle à la caméra, 15–30 s (dos à 15h)',
       hypothesis:
-        'Hypothèse : un hook « À 15h ton dos te lâche ? » + agitation solitude YouTube + solution cours collectifs + CTA essai 7 j convertit mieux qu’un exo technique.',
+        'Hypothèse : une accroche « À 15h ton dos te lâche ? » + la solitude de YouTube + les cours collectifs + essai 7 jours convertit mieux qu’un exercice technique.',
       creativeType: 'talking_head',
       framework: 'PAS',
       market: 'FR',
-      budgetHint: hasSpend ? 'Tester en froid 8–15 €/j après double confirm' : 'Brouillon PAUSED d’abord · activer 8 €/j après double confirm',
-      honesty: 'Hypothèse à tester — pas une certitude. Kill si 48–72 h / 50–100 € sans lead + CTR mort.',
-      action: { type: 'create_cold_draft', label: 'Créer brouillon froid PAUSED' },
+      budgetHint: hasSpend
+        ? 'Tester en froid 8–15 €/j après double confirmation'
+        : 'Brouillon en pause d’abord · activer 8 €/j après double confirmation',
+      honesty:
+        'Hypothèse à tester — pas une certitude. Couper si 48–72 h ou 50–100 € sans inscription et presque aucun clic.',
+      action: { type: 'create_cold_draft', label: 'Créer le brouillon froid (0 €)' },
       source: 'rules',
     },
     {
       id: 'create-ugc-preuve',
       priority: 2,
-      title: 'Créative #2 — UGC preuve (Hook-Problème-Solution-Preuve)',
+      emoji: '🤳',
+      wantId: 'etre-vue',
+      evidence,
+      title: 'Film #2 — preuve en vrai (correction / tableau de bord)',
       hypothesis:
-        'Hypothèse : montrer correction en direct / dashboard (preuve produit) + essai 7 j anti-risque bat une pub « studio léché ».',
+        'Hypothèse : montrer la correction en direct ou le tableau de bord + essai 7 jours sans risque bat une pub « studio trop beau ».',
       creativeType: 'ugc_temoignage',
       framework: 'Hook-Problème-Solution-Preuve',
       market: 'FR',
-      budgetHint: '2ᵉ créative dans la même campagne froide (A/B hooks)',
-      honesty: 'À tester en parallèle de #1 — un seul message par pub.',
-      action: { type: 'create_cold_draft', label: 'Préparer variation PAUSED' },
+      budgetHint: '2ᵉ film dans la même campagne froide (deux accroches à comparer)',
+      honesty: 'À tester en parallèle du #1 — un seul message par pub.',
+      action: { type: 'create_cold_draft', label: 'Préparer une variation (0 €)' },
       source: 'rules',
     },
     {
       id: 'signal-organique',
       priority: 3,
+      emoji: '📡',
+      wantId: 'constance',
+      evidence: topOrganic
+        ? [
+            `Note ${topOrganic.score.toFixed(0)}`,
+            topOrganic.reach != null ? `portée ${topOrganic.reach.toLocaleString('fr-FR')}` : null,
+            topOrganic.avgWatchTimeMs != null
+              ? `visionnage moyen ${(topOrganic.avgWatchTimeMs / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} s`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : evidence,
       title: topOrganic
-        ? `Signal organique · score ${topOrganic.score.toFixed(0)} → adapter en pub`
-        : 'Signal organique · sync pour scorer',
+        ? `Un Reel a déjà résonné (note ${topOrganic.score.toFixed(0)}) — en extraire l’angle`
+        : 'Synchroniser Instagram pour voir quels Reels résonnent',
       hypothesis: topOrganic
-        ? `Ce Reel/post a résonné (${(topOrganic.caption ?? 'sans légende').slice(0, 90)}…). Ce n’est PAS un ordre de booster tel quel : en extraire l’angle / hook, reformater 15–30 s + CTA essai.`
-        : 'Sans tops organiques, prioriser les angles Marché FR (dos, essai, correction).',
+        ? `Ce Reel/post a parlé (${(topOrganic.caption ?? 'sans légende').slice(0, 90)}…). Ce n’est pas un ordre de le « booster » tel quel : on en tire l’angle, on refait 15–30 s + essai 7 jours.`
+        : 'Sans tops Instagram, prioriser les angles Marché France (dos, essai, correction).',
       creativeType: 'talking_head',
       framework: 'signal_organique',
       market: 'FR',
-      budgetHint: 'Brouillon PAUSED depuis le média = zéro €',
-      honesty: 'Organique = signal secondaire (angles), pas preuve de conversion ads.',
+      budgetHint: 'Brouillon en pause depuis le média = zéro €',
+      honesty: 'Instagram sans pub = signal d’angle, pas une preuve que ça vendra.',
       action: topOrganic
         ? {
             type: 'boost_organic',
-            label: 'Adapter en brouillon PAUSED',
+            label: 'Adapter en brouillon (0 €)',
             igMediaId: topOrganic.igMediaId,
             captionHint: (topOrganic.caption ?? '').slice(0, 80),
           }
-        : { type: 'sync_now', label: 'Synchroniser organique' },
+        : { type: 'sync_now', label: 'Synchroniser Instagram' },
       source: 'rules',
     },
     {
       id: 'structure-froid',
       priority: 4,
-      title: 'Structure — 1 campagne froide, broad, 3–6 créatives',
+      emoji: '🧭',
+      wantId: 'constance',
+      evidence,
+      title: 'Organisation — 1 campagne froide, ciblage large, 3–6 films',
       hypothesis:
-        'À ~8–30 €/j, broad femmes 30–55 bat l’interest stacking. Volume cible : 15–40 créatives/mois, refresh 10–14 j.',
+        'À 8–30 €/j, un ciblage large femmes 30–55 marche mieux que d’empiler trop de centres d’intérêt. Objectif : 15–40 films/mois, nouvelle version tous les 10–14 jours.',
       creativeType: 'autre',
       framework: 'structure',
       market: 'FR',
-      budgetHint: '8 €/j démarrage · monter seulement si CPL dans 4–18 €',
+      budgetHint: '8 €/j au démarrage · monter seulement si le coût par inscription est entre 4 et 18 €',
       honesty: hasSpend
-        ? 'Spend déjà présent — lire CPL/CTR/fréquence avant de scaler.'
-        : 'Sans spend, toute analyse CPL est « trop tôt ».',
-      action: { type: 'create_cold_draft', label: 'Vérifier brouillon froid PAUSED' },
+        ? 'De l’argent a déjà été dépensé — lire coût par inscription, taux de clic et fréquence avant d’augmenter.'
+        : 'Sans dépense, tout coût par inscription est « trop tôt ».',
+      action: { type: 'create_cold_draft', label: 'Vérifier le brouillon froid (0 €)' },
       source: 'rules',
     },
     {
       id: 'mx-later',
-      priority: 5,
-      title: 'MX — créative ES dédiée (pas calque FR)',
+      priority: mxShare >= 15 ? 3 : 5,
+      emoji: '🇲🇽',
+      wantId: 'etre-vue',
+      evidence:
+        mxShare > 0
+          ? `${Math.round(mxShare)} % des abonnées sont au Mexique — film ES dédié, pas une copie FR.`
+          : evidence,
+      title: 'Mexique — film en espagnol (pas une copie du français)',
       hypothesis:
-        'Hypothèse secondaire : « no estás sola » + corrección en vivo + WhatsApp filet. Lancer après signal FR.',
+        'Hypothèse secondaire : « no estás sola » + corrección en vivo + filet WhatsApp. Lancer après un premier signal France.',
       creativeType: 'talking_head',
       framework: 'PAS',
       market: 'MX',
-      budgetHint: 'Après validation FR — budget test séparé',
-      honesty: 'Marché secondaire — ne pas diluer le test FR trop tôt.',
+      budgetHint: 'Après un test France — budget à part',
+      honesty: 'Marché secondaire — ne pas diluer le test France trop tôt.',
       action: null,
       source: 'rules',
     },
   ];
 
-  if (followers != null || ageTop || countryTop) {
+  if (leakyBio) {
+    items.push({
+      id: 'bio-leak',
+      priority: 2,
+      emoji: '🔗',
+      wantId: 'at-home',
+      evidence: `${profileViews!.toLocaleString('fr-FR')} visites de profil vs ${siteClicks.toLocaleString('fr-FR')} clics vers le site (28 j).`,
+      title: 'Le profil attire, le lien convertit peu',
+      hypothesis:
+        'Hypothèse : plus de visites que de clics vers le site — reforger l’accroche + le bouton « essai 7 jours » dans la bio, et le dire dans le film.',
+      creativeType: 'autre',
+      framework: 'structure',
+      market: 'FR',
+      budgetHint: '0 € — à faire avant d’allumer la pub',
+      honesty: 'Lecture des visites Instagram, pas une preuve pub.',
+      action: null,
+      source: 'rules',
+    });
+  }
+
+  if (followers != null || (bundle.demographics?.age?.length ?? 0) > 0) {
     items.push({
       id: 'demo-cross',
       priority: 3,
-      title: 'Croiser audience réelle vs message large',
+      emoji: '🎯',
+      wantId: 'pour-la-vie',
+      evidence,
+      title: 'Qui te suit vraiment vs le message large',
       hypothesis: [
-        followers != null ? `Compte ~${followers.toLocaleString('fr-FR')} abonnés.` : null,
-        ageTop ? `Breakdown âge top (ads) : ${ageTop.key}.` : 'Pas encore de breakdown âge ads (zéros si 0 spend).',
-        countryTop ? `Pays top : ${countryTop.key}.` : null,
-        'Ne pas cibler uniquement « fans Pilates » — message large (constance / être vue).',
+        followers != null ? `Compte ~${followers.toLocaleString('fr-FR')} abonnées.` : null,
+        evidence,
+        'Ne pas viser seulement « les fans de Pilates » — message large (constance / être vue).',
       ]
         .filter(Boolean)
         .join(' '),
       creativeType: 'autre',
       framework: 'structure',
       market: 'FR+MX',
-      budgetHint: 'Ajuster hooks, pas micro-intérêts',
-      honesty: 'Démographie ads vide tant que pas de dépense — organique compte pour tendance.',
+      budgetHint: 'Ajuster les accroches, pas micro-cibler',
+      honesty: 'La répartition pub est vide tant que 0 € — les abonnées Instagram donnent la tendance.',
       action: null,
       source: 'rules',
     });
@@ -180,12 +277,13 @@ export async function generateActionPlan(
   });
 
   const cascade = await runSocialTextCascade({
-    system: `Tu es stratège Ads FitMangas. Français simple. Borné au corpus + FAITS JSON.
-INTERDIT inventer des métriques. Chaque idée = HYPOTHÈSE À TESTER (pas certitude).
-Focus : QUOI CRÉER pour convertir (talking-head, UGC, image, carousel) avec frameworks PAS ou Hook-Problème-Solution-Preuve.
-Organique = signal d'angle seulement, pas « booster tel quel ».
+    system: `Tu es stratège pub FitMangas. Français simple, zéro jargon anglais non expliqué.
+Borné au corpus + FAITS JSON. INTERDIT inventer des métriques.
+Chaque idée = HYPOTHÈSE À TESTER. Titres concrets (scène + durée), pas « talking-head » / « UGC » / « hook ».
+Focus : QUOI FILMER pour convertir (elle parle à la caméra, témoignage téléphone, image, carrousel).
+Instagram sans pub = signal d'angle seulement, pas « booster tel quel ».
 Corpus:\n${corpus}`,
-    user: `FAITS:\n${facts}\n\nJSON array 2-3 items: [{"title":"...","hypothesis":"...","creativeType":"talking_head|ugc_temoignage|image_forte|carousel","framework":"PAS|Hook-Problème-Solution-Preuve","market":"FR|MX"}]`,
+    user: `FAITS:\n${facts}\n\nJSON array 2-3 items: [{"title":"...","hypothesis":"...","creativeType":"talking_head|ugc_temoignage|image_forte|carousel","framework":"PAS|Hook-Problème-Solution-Preuve","market":"FR|MX","wantId":"constance|etre-vue|mind-body|at-home"}]`,
     temperature: 0.35,
     maxOutputTokens: 1000,
   });
@@ -215,10 +313,13 @@ Corpus:\n${corpus}`,
               : 'talking_head') as ActionPlanItem['creativeType'],
             framework: (p.framework === 'PAS' ? 'PAS' : 'Hook-Problème-Solution-Preuve') as ActionPlanItem['framework'],
             market: p.market === 'MX' ? 'MX' : 'FR',
-            budgetHint: 'Brouillon PAUSED → test budget bas après double confirm',
-            honesty: 'Hypothèse IA à tester — pas une certitude.',
-            action: { type: 'create_cold_draft', label: 'Créer brouillon PAUSED' },
+            budgetHint: 'Brouillon en pause → petit budget après double confirmation',
+            honesty: 'Hypothèse à tester — pas une certitude.',
+            action: { type: 'create_cold_draft', label: 'Créer le brouillon (0 €)' },
             source: 'ai',
+            wantId: p.wantId,
+            evidence: planEvidenceFromBundle(bundle),
+            emoji: '✨',
           });
           titles.add(title.toLowerCase());
         }

@@ -137,6 +137,12 @@ export function demoShare(rows: DemoRow[]): Array<DemoRow & { pct: number }> {
   return rows.map((r) => ({ ...r, pct: total > 0 ? (r.value / total) * 100 : 0 }));
 }
 
+/** Plus grande part — ne pas prendre `rows[0]` : l’âge est trié chronologiquement (13-17 en premier). */
+export function topDemo<T extends { value: number }>(rows: T[]): T | undefined {
+  if (!rows.length) return undefined;
+  return rows.reduce((best, r) => (r.value > best.value ? r : best), rows[0]!);
+}
+
 // ─── Exécution ─────────────────────────────────────────────────────────────────────────────
 
 export type CampaignTemperature = 'froid' | 'warm' | 'hot';
@@ -222,7 +228,7 @@ export function buildCreativePipeline(params: {
       id: p.id,
       kind: 'plan',
       title: p.title,
-      detail: `${p.creativeType.replace(/_/g, ' ')} · ${p.framework} · ${p.market}`,
+      detail: [p.market, p.framework === 'PAS' ? 'Problème → Solution' : p.framework].join(' · '),
       status: manual ?? 'a_creer',
       statusSource: manual ? 'manuel' : 'auto',
       spendCents: null,
@@ -243,7 +249,7 @@ export function buildCreativePipeline(params: {
       kind: 'campaign',
       title: c.name.replace(/^FitMangas\s*·\s*/, ''),
       detail: c.metaCampaignId
-        ? `Brouillon Meta PAUSED · ${c.metaCampaignId}`
+        ? `Brouillon Meta en pause · ${c.metaCampaignId}`
         : 'Brouillon local uniquement — pas encore poussé sur Meta',
       status: manual ?? deriveCampaignCreativeStatus(c, ins, params.alerts, ins?.entityId ?? c.metaCampaignId),
       statusSource: manual ? 'manuel' : 'auto',
@@ -314,8 +320,8 @@ export function computeNextAction(params: {
   if (!cold) {
     return {
       id: 'cold-draft',
-      title: 'Créer le brouillon froid PAUSED sur Meta',
-      why: 'Sans campagne froide, pas de nouvelles personnes dans le funnel. Brouillon = 0 € tant que tu n’actives pas.',
+      title: 'Créer le brouillon froid (en pause) sur Meta',
+      why: 'Sans campagne froide, pas de nouvelles personnes dans l’entonnoir. Brouillon = 0 € tant que tu n’actives pas.',
       cta: 'create_cold_draft',
     };
   }

@@ -153,6 +153,17 @@ describe('alertes fatigue / kill (zéros honnêtes)', () => {
   });
 });
 
+describe('glossaire ads FR/ES', () => {
+  it('chaque terme anglais a une explication FR et ES', async () => {
+    const { ADS_GLOSSARY } = await import('@/lib/acquisition/ads/ads-glossary');
+    for (const [key, entry] of Object.entries(ADS_GLOSSARY)) {
+      expect(entry.fr.length).toBeGreaterThan(20);
+      expect(entry.es.length).toBeGreaterThan(20);
+      expect(entry.fr).not.toMatch(/TODO/);
+    }
+  });
+});
+
 describe('ads marche + plan docs', () => {
   it('MARCHE content a FR et MX', async () => {
     const { MARCHE_MARKETS, MARCHE_WANTS, MARCHE_PUB_CONCLUSION } = await import(
@@ -160,6 +171,7 @@ describe('ads marche + plan docs', () => {
     );
     expect(MARCHE_MARKETS.map((m) => m.id)).toEqual(['fr', 'mx']);
     expect(MARCHE_WANTS.length).toBeGreaterThanOrEqual(5);
+    expect(MARCHE_WANTS.every((w) => w.title.fr && w.title.es && !/mind-body|at-home/i.test(w.title.fr))).toBe(true);
     expect(MARCHE_PUB_CONCLUSION.length).toBeGreaterThanOrEqual(4);
   });
 
@@ -185,5 +197,55 @@ describe('ads marche + plan docs', () => {
     expect(items.some((i) => i.framework === 'PAS' || i.framework === 'Hook-Problème-Solution-Preuve')).toBe(
       true,
     );
+    expect(items[0]?.title.toLowerCase()).not.toMatch(/talking-head|ugc|paused/i);
+  });
+
+  it('les preuves du plan viennent des chiffres (jamais inventées)', async () => {
+    const { planEvidenceFromBundle, buildDeterministicActionPlan } = await import('@/lib/acquisition/ads/action-plan');
+    const empty = {
+      organicDaily: [],
+      demographics: { snapshotDate: null, age: [], gender: [], country: [], city: [] },
+      adsTotals: { spendCents: 0 },
+      organicAccount: null,
+      organicMedia: [],
+      campaigns: [],
+    };
+    expect(planEvidenceFromBundle(empty as never)).toMatch(/pas encore|0 €/i);
+    const rich = {
+      ...empty,
+      organicDaily: [
+        {
+          date: '2026-09-01',
+          views: 100,
+          reach: 50,
+          accountsEngaged: 3,
+          totalInteractions: 10,
+          likes: 8,
+          comments: 1,
+          shares: 1,
+          saves: 0,
+          profileViews: 200,
+          websiteClicks: 2,
+          profileLinksTaps: 1,
+          follows: 10,
+          unfollows: 2,
+          followerGain: null,
+        },
+      ],
+      demographics: {
+        snapshotDate: '2026-09-26',
+        age: [{ key: '35-44', value: 80 }],
+        gender: [{ key: 'F', value: 90 }],
+        country: [{ key: 'FR', value: 70 }, { key: 'MX', value: 20 }],
+        city: [],
+      },
+      organicAccount: { followersCount: 1200 },
+    };
+    const ev = planEvidenceFromBundle(rich as never);
+    expect(ev).toMatch(/visites de profil/);
+    expect(ev).toMatch(/femmes/);
+    const items = buildDeterministicActionPlan(rich as never);
+    expect(items.some((i) => i.id === 'bio-leak')).toBe(true);
+    expect(items.find((i) => i.id === 'mx-later')?.priority).toBeLessThanOrEqual(3);
   });
 });
