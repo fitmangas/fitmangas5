@@ -152,3 +152,38 @@ describe('alertes fatigue / kill (zéros honnêtes)', () => {
     expect(a.some((x) => x.kind === 'kill')).toBe(true);
   });
 });
+
+describe('ads marche + plan docs', () => {
+  it('MARCHE content a FR et MX', async () => {
+    const { MARCHE_MARKETS, MARCHE_WANTS, MARCHE_PUB_CONCLUSION } = await import(
+      '@/lib/acquisition/ads/marche-content'
+    );
+    expect(MARCHE_MARKETS.map((m) => m.id)).toEqual(['fr', 'mx']);
+    expect(MARCHE_WANTS.length).toBeGreaterThanOrEqual(5);
+    expect(MARCHE_PUB_CONCLUSION.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('plan d’action déterministe = hypothèses + brouillon PAUSED', async () => {
+    const { buildDeterministicActionPlan } = await import('@/lib/acquisition/ads/action-plan');
+    const empty = {
+      lastSyncAt: '2026-09-26T00:00:00Z',
+      lastSyncOk: true,
+      capabilities: [],
+      campaigns: [],
+      trends: [],
+      breakdowns: { age: [], gender: [], publisher_platform: [], country: [], hour: [] },
+      organicMedia: [],
+      organicAccount: null,
+      organicAccountHistory: [],
+      alerts: [],
+      temperatureCompare: [],
+    };
+    const items = buildDeterministicActionPlan(empty as never);
+    expect(items.length).toBeGreaterThanOrEqual(3);
+    expect(items[0]?.honesty.toLowerCase()).toMatch(/hypoth|test/);
+    expect(items.some((i) => i.action?.type === 'create_cold_draft')).toBe(true);
+    expect(items.some((i) => i.framework === 'PAS' || i.framework === 'Hook-Problème-Solution-Preuve')).toBe(
+      true,
+    );
+  });
+});
