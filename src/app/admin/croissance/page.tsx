@@ -27,11 +27,13 @@ import {
   adsCreateStrategyDrafts,
   adsEnsureCreativeSeed,
   adsLoadCoachAdvice,
+  adsRegenerateSituationBrief,
   adsRunIntelligenceSync,
+  adsSetCreativeStatus,
   adsSyncInsights,
 } from '@/app/admin/croissance/ads-actions';
 import { AcquisitionBoard } from '@/components/acquisition/AcquisitionBoard';
-import { AdsPilotPanel } from '@/components/Admin/croissance/AdsPilotPanel';
+import { AdsPilotPanel, type AdsSubTab } from '@/components/Admin/croissance/AdsPilotPanel';
 import { CroissanceShell } from '@/components/Admin/croissance/CroissanceShell';
 import {
   resolveCroissanceTab,
@@ -184,6 +186,15 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
       actionPlan = regen.plan;
       planNote = regen.planNote;
     }
+    const { loadStoredSituationBrief, regenerateAndPersistSituationBrief } = await import(
+      '@/lib/acquisition/ads/situation-brief'
+    );
+    const { loadCreativeStatuses } = await import('@/lib/acquisition/ads/pipeline-persist');
+    const [storedBrief, creativeStatuses] = await Promise.all([loadStoredSituationBrief(), loadCreativeStatuses()]);
+    const situationBrief = storedBrief ?? (await regenerateAndPersistSituationBrief(intelligence, actionPlan));
+    const rawSub = firstParam(params.sub);
+    const initialSubTab: AdsSubTab =
+      rawSub === 'marche' || rawSub === 'stats' || rawSub === 'plan' || rawSub === 'execution' ? rawSub : 'plan';
     adsPanel = (
       <AdsPilotPanel
         connection={getAdsConnectionState()}
@@ -196,6 +207,11 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         coachNote={coachNote}
         actionPlan={actionPlan}
         planNote={planNote}
+        situationBrief={situationBrief}
+        creativeStatuses={creativeStatuses}
+        initialSubTab={initialSubTab}
+        onSetCreativeStatus={adsSetCreativeStatus}
+        onRegenerateBrief={adsRegenerateSituationBrief}
         onCreateDrafts={adsCreateStrategyDrafts}
         onSyncInsights={adsSyncInsights}
         onFullSync={adsRunIntelligenceSync}

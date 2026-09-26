@@ -50,7 +50,7 @@ export function computeAdsAlerts(entities: InsightEntity[]): AdsAlert[] {
       kind: 'data',
       title: 'Trop tôt pour analyser',
       detail:
-        'Aucune ligne insights syncée. Lance une sync ou attends le cron quotidien. Zéros honnêtes — pas de faux CPL.',
+        'Meta ne renvoie aucune ligne tant qu’aucune pub n’a diffusé (0 €). Zéros honnêtes — pas de faux CPL. Si une campagne tourne déjà, relance une sync.',
       entityId: null,
       entityName: null,
     });

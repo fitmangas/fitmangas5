@@ -33,6 +33,58 @@ export type IntelligenceBundle = {
   organicAccountHistory: OrganicAccountRow[];
   alerts: AdsAlert[];
   temperatureCompare: TemperatureRow[];
+  /** Séries quotidiennes compte IG (≤ 90 j, ordre chronologique). */
+  organicDaily: OrganicDailyRow[];
+  demographics: AudienceDemographics;
+  /** Totaux pub 30 j (niveau campagne agrégé). */
+  adsTotals: AdsTotals;
+  /** Nouvelles abonnées payantes 30 j (toutes sources) — base du CAC mixte. */
+  newPaidSubs30d: number | null;
+};
+
+export type OrganicDailyRow = {
+  date: string;
+  views: number | null;
+  reach: number | null;
+  accountsEngaged: number | null;
+  totalInteractions: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  saves: number | null;
+  profileViews: number | null;
+  websiteClicks: number | null;
+  profileLinksTaps: number | null;
+  follows: number | null;
+  unfollows: number | null;
+  followerGain: number | null;
+};
+
+export type DemoRow = { key: string; value: number };
+
+export type AudienceDemographics = {
+  snapshotDate: string | null;
+  age: DemoRow[];
+  gender: DemoRow[];
+  country: DemoRow[];
+  city: DemoRow[];
+};
+
+export type AdsTotals = {
+  spendCents: number;
+  impressions: number;
+  reach: number;
+  clicks: number;
+  linkClicks: number;
+  leads: number;
+  thruplays: number;
+  /** Valeur des achats attribués par Meta (pixel Purchase), en centimes. */
+  purchaseValueCents: number;
+  roas: number | null;
+  ctr: number | null;
+  cpmCents: number | null;
+  cplCents: number | null;
+  frequency: number | null;
 };
 
 export type BreakdownRow = {
@@ -61,6 +113,11 @@ export type OrganicMediaRow = {
   score: number;
   boostBadge: boolean;
   insightsAvailable: boolean;
+  totalInteractions: number | null;
+  profileVisits: number | null;
+  follows: number | null;
+  avgWatchTimeMs: number | null;
+  totalWatchTimeMs: number | null;
 };
 
 export type OrganicAccountRow = {
@@ -108,7 +165,44 @@ function emptyBundle(): IntelligenceBundle {
       { temperature: 'warm', label: 'Warm', spendCents: 0, leads: 0, cplCents: null, ctr: null, frequency: null, campaigns: 0 },
       { temperature: 'hot', label: 'Hot', spendCents: 0, leads: 0, cplCents: null, ctr: null, frequency: null, campaigns: 0 },
     ],
+    organicDaily: [],
+    demographics: { snapshotDate: null, age: [], gender: [], country: [], city: [] },
+    adsTotals: {
+      spendCents: 0,
+      impressions: 0,
+      reach: 0,
+      clicks: 0,
+      linkClicks: 0,
+      leads: 0,
+      thruplays: 0,
+      purchaseValueCents: 0,
+      roas: null,
+      ctr: null,
+      cpmCents: null,
+      cplCents: null,
+      frequency: null,
+    },
+    newPaidSubs30d: null,
   };
+}
+
+const PURCHASE_ACTION_TYPES = ['omni_purchase', 'purchase', 'offsite_conversion.fb_pixel_purchase'];
+
+/** Meta compte le même achat sous plusieurs action_type → on prend le plus élevé, sans additionner. */
+export function purchaseValueCents(raw: unknown): number {
+  const values = (raw as { action_values?: Array<{ action_type?: string; value?: string }> } | null)?.action_values;
+  if (!Array.isArray(values)) return 0;
+  let best = 0;
+  for (const v of values) {
+    if (v.action_type && PURCHASE_ACTION_TYPES.includes(v.action_type)) {
+      best = Math.max(best, Math.round((Number(v.value ?? 0) || 0) * 100));
+    }
+  }
+  return best;
+}
+
+function numOrNull(v: unknown): number | null {
+  return v != null ? Number(v) : null;
 }
 
 function tempOf(name: string | null): 'froid' | 'warm' | 'hot' {
@@ -170,6 +264,17 @@ export async function loadAdsIntelligenceBundle(): Promise<IntelligenceBundle> {
       const cplCents = r.cpl_cents != null ? Number(r.cpl_cents) : null;
       const metricDate = String(r.metric_date);
 
+      const tot = bundle.adsTotals;
+      tot.spendCents += spendCents;
+      tot.impressions += impressions;
+      tot.reach += Number(r.reach ?? 0);
+      tot.clicks += clicks;
+      tot.linkClicks += Number(r.inline_link_clicks ?? 0);
+      tot.leads += leads;
+      tot.thruplays += Number(r.video_thruplay ?? 0);
+      tot.purchaseValueCents += purchaseValueCents(r.raw);
+      if (frequency != null) tot.frequency = Math.max(tot.frequency ?? 0, frequency);
+
       const prev = byEntity.get(entityId);
       if (!prev) {
         byEntity.set(entityId, {
@@ -220,6 +325,14 @@ export async function loadAdsIntelligenceBundle(): Promise<IntelligenceBundle> {
         day.ctrN += 1;
       }
       byDate.set(metricDate, day);
+    }
+
+    {
+      const tot = bundle.adsTotals;
+      tot.ctr = tot.impressions > 0 ? (tot.clicks / tot.impressions) * 100 : null;
+      tot.cpmCents = tot.impressions > 0 ? Math.round((tot.spendCents / tot.impressions) * 1000) : null;
+      tot.cplCents = tot.leads > 0 ? Math.round(tot.spendCents / tot.leads) : null;
+      tot.roas = tot.spendCents > 0 ? tot.purchaseValueCents / tot.spendCents : null;
     }
 
     bundle.campaigns = [...byEntity.values()].map(({ dates: _d, ...rest }) => rest);
@@ -294,7 +407,7 @@ export async function loadAdsIntelligenceBundle(): Promise<IntelligenceBundle> {
       .from('organic_media_snapshots')
       .select('*')
       .order('snapshot_date', { ascending: false })
-      .limit(80);
+      .limit(120);
 
     // latest snapshot date only
     const latestOrgDate = orgMedia?.[0] ? String((orgMedia[0] as { snapshot_date: string }).snapshot_date) : null;
@@ -319,6 +432,11 @@ export async function loadAdsIntelligenceBundle(): Promise<IntelligenceBundle> {
           score: Number(r.score ?? 0),
           boostBadge: Boolean(r.boost_badge),
           insightsAvailable: Boolean(r.insights_available),
+          totalInteractions: numOrNull(r.total_interactions),
+          profileVisits: numOrNull(r.profile_visits),
+          follows: numOrNull(r.follows),
+          avgWatchTimeMs: numOrNull(r.avg_watch_time_ms),
+          totalWatchTimeMs: numOrNull(r.total_watch_time_ms),
         };
       })
       .sort((a, b) => b.score - a.score);
@@ -343,6 +461,69 @@ export async function loadAdsIntelligenceBundle(): Promise<IntelligenceBundle> {
       };
     });
     bundle.organicAccount = bundle.organicAccountHistory[0] ?? null;
+
+    const { data: dailyRows } = await admin
+      .from('organic_account_daily')
+      .select('*')
+      .order('metric_date', { ascending: true })
+      .limit(120);
+    bundle.organicDaily = (dailyRows ?? []).slice(-90).map((raw) => {
+      const r = raw as Record<string, unknown>;
+      return {
+        date: String(r.metric_date),
+        views: numOrNull(r.views),
+        reach: numOrNull(r.reach),
+        accountsEngaged: numOrNull(r.accounts_engaged),
+        totalInteractions: numOrNull(r.total_interactions),
+        likes: numOrNull(r.likes),
+        comments: numOrNull(r.comments),
+        shares: numOrNull(r.shares),
+        saves: numOrNull(r.saves),
+        profileViews: numOrNull(r.profile_views),
+        websiteClicks: numOrNull(r.website_clicks),
+        profileLinksTaps: numOrNull(r.profile_links_taps),
+        follows: numOrNull(r.follows),
+        unfollows: numOrNull(r.unfollows),
+        followerGain: numOrNull(r.follower_gain),
+      };
+    });
+
+    const { data: demoLatest } = await admin
+      .from('organic_audience_demographics')
+      .select('snapshot_date')
+      .eq('audience', 'follower')
+      .order('snapshot_date', { ascending: false })
+      .limit(1);
+    const demoDate = demoLatest?.[0] ? String((demoLatest[0] as { snapshot_date: string }).snapshot_date) : null;
+    if (demoDate) {
+      const { data: demoRows } = await admin
+        .from('organic_audience_demographics')
+        .select('dimension, dimension_key, value')
+        .eq('audience', 'follower')
+        .eq('snapshot_date', demoDate);
+      const pick = (dim: string) =>
+        (demoRows ?? [])
+          .filter((r) => (r as { dimension: string }).dimension === dim)
+          .map((r) => ({
+            key: String((r as { dimension_key: string }).dimension_key),
+            value: Number((r as { value: number }).value ?? 0),
+          }))
+          .sort((a, b) => b.value - a.value);
+      bundle.demographics = {
+        snapshotDate: demoDate,
+        age: pick('age').sort((a, b) => a.key.localeCompare(b.key)),
+        gender: pick('gender'),
+        country: pick('country'),
+        city: pick('city'),
+      };
+    }
+
+    const { count: paidCount, error: paidErr } = await admin
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .gte('created_at', sinceIso);
+    bundle.newPaidSubs30d = paidErr ? null : (paidCount ?? 0);
 
     bundle.alerts = computeAdsAlerts(bundle.campaigns);
     return bundle;

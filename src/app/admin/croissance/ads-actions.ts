@@ -266,8 +266,40 @@ export async function adsRunIntelligenceSync(): Promise<ActionResult> {
   }
   return {
     ok: true,
-    detail: `Sync OK · ${result.detail.insightsRows} insights · ${result.detail.breakdownRows} breakdowns · ${result.detail.organicMedia} médias IG.`,
+    detail: `Sync OK · ${result.detail.insightsRows} insights · ${result.detail.breakdownRows} breakdowns · ${result.detail.organicMedia} médias IG · ${result.detail.organicDays ?? 0} jours compte · ${result.detail.demographicsRows ?? 0} lignes démographie.`,
     data: result,
+  };
+}
+
+export async function adsSetCreativeStatus(params: { itemId: string; status: string | null }): Promise<ActionResult> {
+  await requireAdmin();
+  const { CREATIVE_STATUSES } = await import('@/lib/acquisition/ads/stats-compute');
+  const { saveCreativeStatus } = await import('@/lib/acquisition/ads/pipeline-persist');
+  if (params.status != null && !(CREATIVE_STATUSES as readonly string[]).includes(params.status)) {
+    return { ok: false, error: 'Statut inconnu.' };
+  }
+  try {
+    const statuses = await saveCreativeStatus(
+      params.itemId.slice(0, 120),
+      params.status as (typeof CREATIVE_STATUSES)[number] | null,
+    );
+    return { ok: true, detail: 'Statut créative enregistré.', data: { statuses } };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Enregistrement impossible.' };
+  }
+}
+
+export async function adsRegenerateSituationBrief(): Promise<ActionResult> {
+  await requireAdmin();
+  const bundle = await loadAdsIntelligenceBundle();
+  const { loadStoredActionPlan } = await import('@/lib/acquisition/ads/coach-persist');
+  const { regenerateAndPersistSituationBrief } = await import('@/lib/acquisition/ads/situation-brief');
+  const plan = (await loadStoredActionPlan())?.items ?? [];
+  const brief = await regenerateAndPersistSituationBrief(bundle, plan);
+  return {
+    ok: true,
+    detail: brief.source === 'ai' ? `Lecture régénérée (${brief.provider}).` : (brief.note ?? 'Lecture automatique.'),
+    data: { brief },
   };
 }
 

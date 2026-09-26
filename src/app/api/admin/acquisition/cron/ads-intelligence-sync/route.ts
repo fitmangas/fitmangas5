@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { runAdsIntelligenceSync } from '@/lib/acquisition/ads/sync-intelligence';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 
+export const maxDuration = 300;
+
 /** Sync quotidienne Ads + organique → snapshots (lecture seule, 0 €). */
 export async function GET(request: Request) {
   return handle(request);
