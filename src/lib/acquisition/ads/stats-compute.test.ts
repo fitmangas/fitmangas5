@@ -11,6 +11,7 @@ import {
   matchCampaignInsight,
   mediaEngagementRate,
   summarizeOrganicPeriod,
+  topDemo,
 } from './stats-compute';
 
 function day(date: string, views: number, follows = 1, unfollows = 0): OrganicDailyRow {
@@ -135,6 +136,15 @@ describe('contenu', () => {
     ]);
     expect(s[0]!.pct).toBe(75);
   });
+
+  it('topDemo ignore l’ordre (âge 13-17 en premier ≠ le plus nombreux)', () => {
+    const top = topDemo([
+      { key: '13-17', value: 7 },
+      { key: '25-34', value: 984 },
+      { key: '35-44', value: 649 },
+    ]);
+    expect(top?.key).toBe('25-34');
+  });
 });
 
 describe('exécution', () => {
@@ -212,7 +222,7 @@ describe('exécution', () => {
       manualStatuses: {},
     });
     expect(p).toHaveLength(1);
-    expect(p[0]!.detail).toMatch(/Meta PAUSED/);
+    expect(p[0]!.detail).toMatch(/en pause/);
   });
 
   it('une seule prochaine action : kill avant tout', () => {
