@@ -1,128 +1,117 @@
-# FitMangas — Expertise Ads (corpus coach)
+# FitMangas — Expertise Ads (conversion, pas vanity)
 
-> Source de vérité pour le panneau **Conseils du jour**. L’IA (Claude / Gemini) est **bornée** à ce document + aux métriques réelles du compte. Interdit d’inventer des chiffres. Si données insuffisantes → « trop tôt pour analyser ».
+> Corpus pour le **Plan d’action** et les Conseils. L’IA est **bornée** à ce document + `docs/MARCHE_FEMMES.md` + métriques réelles. Interdit d’inventer des chiffres.  
+> **Règle absolue** : aucune dépense / activation sans **double confirmation humaine**. Création = brouillons `PAUSED` uniquement.
 
-## Principes absolus FitMangas
+## Organique qui engage ≠ créative pub qui convertit
 
-- **Aucune dépense automatique.** Création = brouillons `PAUSED` uniquement. Activation = double confirmation humaine + garde-fou budget.
-- Produit réel = ne pas être seule (cours collectifs à horaires fixes + correction en direct), pas du Pilates YouTube gratuit.
-- Funnel : **contenu / pub → quiz ou essai 7 jours → Stripe**. Copy : pas « Mangitas » ; prix groupe **39 €** d’abord.
-- Landing = promesse de l’annonce (cohérence ad → page).
+| | Contenu organique | Créative publicitaire |
+|---|---|---|
+| But | Portée, saves, communauté, marque | **Lead / essai / paiement** |
+| Signal | Likes, comments, watch time | CPL, coût essai, CTR, fréquence |
+| Angle | Souvent lifestyle / exo / vibe | **Un seul message** + CTA anti-risque |
+| Usage FitMangas | Signal secondaire (« quels angles ont résonné ») | À **adapter** en pub, jamais « booster tel quel » |
 
-## Poids des leviers (ordre d’impact)
+Un Reel qui explose en organique peut être un mauvais ad (trop long, pas de CTA, audience déjà chaude). Un ad gagnant est souvent **moins « beau »** et plus **direct**.
 
-1. **Créative ~56 %** de la performance (Meta / industry consensus). Le ciblage Advantage+ augmente le poids de la créative.
-2. **Offre / landing** (~20–25 %).
-3. **Audience / structure** (~15–20 %).
-4. **Budget / bid** (~5–10 %).
+## Principes FitMangas
 
-→ Priorité : tester et rafraîchir les créatives avant de « optimiser le ciblage ».
+- Produit réel = ne pas être seule (cours collectifs à horaires fixes + correction en direct).
+- Funnel : **pub → quiz ou essai 7 j → Stripe**. Copy : pas « Mangitas » ; prix groupe **39 €** d’abord.
+- Landing = promesse de l’annonce.
+- Trash-talk : industrie / excuse / absurde — **jamais** corps, âge, poids.
 
-## Advantage+ / ciblage large
+## Créative froide qui convertit (priorité)
 
-- Avec Advantage+ et conversion events fiables, **la créative EST le ciblage**.
-- Trop de micro-ciblages = volume trop bas pour apprendre + biais.
-- FitMangas froid : large FR femmes 30–55 + intérêts wellness soft, éviter intérêts ultra-étroits.
+| Règle | Détail | Sources |
+|---|---|---|
+| **Vidéo courte 15–30 s** talking-head **sous-titrée** | Format #1 trafic froid fitness/wellness ; mobile sans son | Meta Creative Best Practices (MAI 2025–2026) ; Motion / UGC industry 2025 |
+| **UGC > léché** | Téléphone, voix réelle, correction live, dashboard — pas stock studio | Meta Advantage+ creative weight ~50–60 % (industry consensus 2024–2026) |
+| **Hook 3 s** | Self-sélectionne l’audience ; thumb-stop | Meta Ads Manager : thumb-stop ratio / 3-sec views |
+| **Thumb-stop > ~30 %** | Si < 30 % → hook mort, ne pas « optimiser le ciblage » | Benchmarks Meta + agences performance wellness 2025 |
+| **Hook rate** | 3s views / impressions — diagnostic créative avant budget | Même famille métriques Meta |
+| **Un seul message / pub** | Une promesse, un CTA | Direct response classique |
+| **CTA anti-risque** | « Essai gratuit 7 jours », pas « Abonne-toi » | FitMangas acquis produit |
 
-## Créative qui convertit (fitness / wellness femmes)
+### Frameworks de script (à utiliser dans le Plan d’action)
 
-| Règle | Détail |
+1. **PAS** — Problème → Agitation → Solution  
+2. **Hook → Problème → Solution → Preuve** (témoignage / dashboard / correction live)
+
+Exemple PAS FitMangas (froid) :  
+*Hook* « À 15h ton dos te lâche ? » → agitation solitude YouTube → solution cours collectifs + correction → CTA essai 7 j.
+
+## Ciblage & budget
+
+- **Broad targeting > interest stacking** à budgets **~30–100 €/j** : la créative filtre ; trop d’intérêts = volume trop bas pour apprendre (Advantage+ / Meta 2024–2026).
+- FitMangas froid démarrage : **8 €/j** PAUSED jusqu’à GO humain — puis monter seulement si signal.
+- Ne pas micro-cibler « Pilates Nantes 45 ans » au départ.
+
+## Volume de test & kill
+
+| Règle | Valeur |
 |---|---|
-| UGC > léché | Téléphone, voix réelle, correction en direct, dashboard — pas stock « studio parfait » |
-| Hook 1,5 s | Première phrase / overlay stop scroll (problème concret + retournement) |
-| Règle 3-3-3 | 3 concepts × 3 hooks × 3 formats (ou itérations) avant de juger un angle |
-| Mobile-first sans son | Vertical 9:16, text overlays, sous-titres |
-| Preuve produit | Visio, reprise, essai 7j explicite — pas exo générique YouTube |
-| Trash-talk | Industrie / excuse / absurde — JAMAIS corps, âge, poids |
+| Créatives testées | **15–40 / mois** (hooks × formats) |
+| Kill | **48–72 h** OU **50–100 €** (premier atteint) si 0 lead + CTR mort |
+| Refresh gagnantes | **10–14 jours** (nouvelles variations, même angle ou nouvel angle) |
+| Fatigue froid | Fréquence **> 3–4** → refresh |
+| Fatigue retarget | Fréquence **> 5–7** → alerte |
 
-## Volume de test
+## Intelligence concurrentielle
 
-- **20–40 variations / mois** (hooks, opens, CTA).
-- **2–4 concepts / semaine** en phase de découverte.
-- Un concept = une promesse claire (ex. « dos 15h », « essai sans pression », « correction live »).
+- **Meta Ad Library** : espionner angles / formats des studios Pilates & wellness (hooks, CTA, lengths).  
+  URL : https://www.facebook.com/ads/library/  
+- Ne pas copier : extraire **patterns** (durée, UGC, promesse).
 
-## Fatigue & refresh
+## Poids des leviers
 
-- Fréquence **froid > 3–4** → alerte fatigue → refresh créative.
-- Fréquence **retarget > 5–7** → alerte forte.
-- Cycle refresh typique **10–14 jours** sur les gagnantes (nouvelles variations, même angle ou nouvel angle).
-- Ne pas tuer une créative au jour 1 : laisser l’apprentissage, sauf kill criteria.
+1. Créative ~50–60 %  
+2. Offre / landing ~20–25 %  
+3. Audience / structure ~15–20 %  
+4. Budget / bid ~5–10 %
 
-## Kill criteria (honnêtes)
+## Funnel & structure compte
 
-Après **48–72 h** OU **50–100 €** dépensés (le premier atteint) :
-- CPL / coût par essai **largement** au-dessus du benchmark froid sans signal positif (CTR très bas, 0 lead) → pause + nouvelle créative.
-- Ne pas scaler une créative perdante « pour voir ».
+```
+Portée / Ads froid → Quiz ou landing essai 7j → Nurture → Checkout 39 €
+```
 
-## Test → scale
+| Campagne | Rôle |
+|---|---|
+| Froid | Acquisition quiz / essai |
+| Warm | Engagé IG / site |
+| Hot | Essai / panier |
 
-1. Test budget bas (brouillon → GO humain → petit budget).
-2. Mesurer CPL / coût essai / CTR / fréquence.
-3. Dupliquer / augmenter **uniquement** les gagnantes.
-4. Retirer ou refresh les perdantes (kill).
+## Métriques (ordre de lecture)
 
-## Retargeting
-
-- En général **meilleur ROAS** que le froid (audience engagée / site / quiz).
-- Budgets plus bas, fréquences surveillées, créatives « suite d’histoire » (pas la même pub froide en boucle).
+1. Spend + leads → **CPL / coût essai** (chiffres invisibles)  
+2. CTR + CPC (créative)  
+3. CPM + fréquence (coût & fatigue)  
+4. ROAS seulement si tracking achat fiable  
+5. Breakdowns âge / genre / pays / placement — pour **apprendre**, pas sur-cibler trop tôt
 
 ## Benchmarks CPL fitness FR (ordres de grandeur)
 
-| Funnel | CPL / coût lead approximatif |
+| Funnel | CPL approx. |
 |---|---|
 | Froid | **4–18 €** |
-| Warm / engagé | **2–9 €** |
+| Warm | **2–9 €** |
 
-Hors fourchette haute froide de façon durable → problème créative ou offre, pas « Meta qui marche mal ».
+Lead utile FitMangas = quiz complété ou essai démarré — pas un like.
 
-FitMangas : lead utile = **quiz complété** ou **essai démarré**, pas un like.
+## Sources (datées)
 
-## Funnel FitMangas
-
-```
-Portée organique / Ads froid
-    → Quiz (aimant) ou landing essai 7j
-        → Nurture / DM / email
-            → Checkout Stripe 39 € groupe
-```
-
-Quiz = aimant de connaissance de soi + lead ; Ads froides doivent parler problème concret + essai, pas jargon Pilates.
-
-## Structure compte (recommandée)
-
-| Campagne | Température | Rôle |
+| Source | Date / période | Usage |
 |---|---|---|
-| Froid | Cold | Acquisition quiz / essai |
-| Warm | Engagé IG / site | Relance douce |
-| Hot | Essai / panier | Conversion |
-
-Comparer CPL / CTR / fréquence **par température**, pas mélanger.
-
-## Métriques à lire (dans l’ordre)
-
-1. Spend + leads → **CPL / coût essai**
-2. CTR + CPC (signal créative)
-3. CPM + fréquence (coût & fatigue)
-4. ROAS si tracking achat fiable (sinon ne pas inventer)
-5. Breakdowns : âge, genre, plateforme, pays, heure — pour **apprendre**, pas pour sur-cibler trop tôt
-
-## Organique → Ads
-
-- Les Reels / posts à **score élevé** (vues, saves, partages, engagement) = candidats « à booster ».
-- « Transformer en pub » = brouillon **PAUSED** (0 €) à partir du média gagnant.
-- Insights organiques complets (reach, saves, watch time) nécessitent le scope Meta `instagram_manage_insights`.
-
-## Démarrage sans données (conseils par défaut)
-
-1. Activer le **paiement** sur le compte pub Meta (billing).
-2. Lancer **une** campagne froide quiz à budget bas (ex. 8 €/j) après double confirm.
-3. Préparer **3–6 créatives** UGC / Reels (hooks différents) avant de scaler.
-4. Sync quotidienne ON → attendre **≥ 48–72 h** + spend min avant d’analyser CPL.
-5. Brancher le pixel / CAPI + event quiz si pas déjà le cas.
+| Meta Business Help — Creative best practices / Advantage+ | MAJ continues 2025–2026 | UGC, vidéo courte, creative as targeting |
+| Meta Ads Manager metrics (thumb-stop, 3-sec video plays, frequency) | 2025–2026 | Hook rate, fatigue |
+| Meta Ad Library | permanente | Concurrent watch |
+| Industry performance marketing wellness/fitness (agences DR) | synthèses 2024–2025 | 15–40 créatives/mois, kill 48–72h / 50–100 €, refresh 10–14 j |
+| FitMangas source de vérité produit | 2026 | Essai 7 j, 39 €, pas Mangitas, pas shooting |
 
 ## Interdits coach
 
-- Inventer impressions, spend, CPL, ROAS.
-- Proposer d’activer une campagne sans rappeler double confirm.
-- Conseiller shooting photo (décision FitMangas : extraction Reels uniquement).
-- Pollutions copy (fillers melodramatiques, jugement corps).
+- Inventer impressions, spend, CPL, ROAS.  
+- Proposer d’activer sans rappeler double confirm.  
+- Traiter un score organique comme un ordre de « booster ».  
+- Shooting photo ; jugement corps / âge / poids.

@@ -27,6 +27,19 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-26 — Ads : 4 sous-onglets + docs conversion / marché
+
+- Docs : `docs/ADS_EXPERTISE.md` (conversion ≠ organique, PAS/H-P-S-P, thumb-stop, broad, kill 48–72h) + `docs/MARCHE_FEMMES.md` (FR/MX, sources datées).
+- UI `/admin/croissance?tab=ads` : Marché · Mes stats · Plan d’action · Exécution.
+- Capabilities repliées (+) ; alerte rouge si source NON ; coach auto à chaque sync + dédup titres.
+- Plan = hypothèses à tester → brouillons PAUSED uniquement.
+
+### 2026-09-24 — Meta : `instagram_manage_insights` OK
+
+- Permission Developers + OAuth rerequest OK ; bug callback sans session admin corrigé (#31).
+- Token CM rafraîchi : scope `instagram_manage_insights` présent ; IG `reach` / `follower_count` → 200.
+- Sync intelligence manuelle : **organicOk** · 30 médias IG · insights média + compte **accessibles** (0 insights ads = normal, pas de spend).
+
 ### 2026-09-24 — Ads : centre d’intelligence (sync + organique + coach)
 
 - Migration additive : `ads_sync_runs`, `ad_insights_daily`, `ad_breakdowns_daily`, `organic_media_snapshots`, `organic_account_snapshots`.

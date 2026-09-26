@@ -37,7 +37,7 @@ alwaysApply: true
 - Intentions conversation : `conversation-intents.ts` (thinking / factuel / support / warm / offtopic) + intercept orchestrateur
 - Soft-no / follow-gate intention : `soft-decline.ts` + `follow-gate.ts` + `orchestrator.ts`
 - Délai humain 30–90s : `human-delay.ts` + `after()` webhook Meta (`maxDuration=120`)
-- **ADS / Publicité** : onglet `tab=ads` · centre d’intelligence + cron `ads-intelligence-sync` · corpus `docs/ADS_EXPERTISE.md` · Ad Account `act_1070085439154384` · token System User Ads OK (`ads_*`) · `META_ADS_ENABLED=1` (lecture + PAUSED) · campagne froide Meta PAUSED `120248916689610330` (8 €/j) · IG insights complets = `instagram_manage_insights` · activation ACTIVE = double confirm · `docs/ADS-SETUP.md` · tables `ad_*` + snapshots
+- **ADS / Publicité** : onglet `tab=ads` · **4 sous-onglets** Marché / Mes stats / Plan d’action / Exécution · docs `ADS_EXPERTISE.md` + `MARCHE_FEMMES.md` · cron `ads-intelligence-sync` (+ regen coach dédup) · Ad Account `act_1070085439154384` · `META_ADS_ENABLED=1` (lecture + PAUSED) · campagne froide PAUSED `120248916689610330` (8 €/j) · `instagram_manage_insights` **OK** · activation = double confirm · capabilities **repliées** (+ alerte rouge si source NON)
 - Webhook Meta : `src/app/api/acquisition/webhooks/meta/route.ts` (anti-doublon mid + texte 2 min + ACK rapide)
 - Nurture quiz : `src/lib/quiz/lead-nurture.ts` (email immédiat + **1** relance J+5 + WA ; cancel soft_decline)
 - Cron : `/api/admin/acquisition/cron/run-followups`

@@ -37,7 +37,6 @@ import {
   resolveCroissanceTab,
   type CroissanceTabId,
 } from '@/components/Admin/croissance/croissance-tabs';
-import { generateCoachAdvice } from '@/lib/acquisition/ads/coach';
 import { getAdsConnectionState } from '@/lib/acquisition/ads/config';
 import { loadAdsIntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import {
@@ -171,7 +170,20 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
       summarizeAdsPerformance(),
       loadAdsIntelligenceBundle(),
     ]);
-    const coach = await generateCoachAdvice(intelligence);
+    const coachStored = await import('@/lib/acquisition/ads/coach-persist').then((m) => m.loadStoredCoachAdvice());
+    const planStored = await import('@/lib/acquisition/ads/coach-persist').then((m) => m.loadStoredActionPlan());
+    let coachAdvice = coachStored?.advice ?? [];
+    let coachNote = coachStored?.aiNote ?? null;
+    let actionPlan = planStored?.items ?? [];
+    let planNote = planStored?.aiNote ?? null;
+    if (!coachAdvice.length || !actionPlan.length) {
+      const { regenerateAndPersistCoach } = await import('@/lib/acquisition/ads/coach-persist');
+      const regen = await regenerateAndPersistCoach(intelligence);
+      coachAdvice = regen.advice;
+      coachNote = regen.aiNote;
+      actionPlan = regen.plan;
+      planNote = regen.planNote;
+    }
     adsPanel = (
       <AdsPilotPanel
         connection={getAdsConnectionState()}
@@ -180,8 +192,10 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         creatives={creativesRes.ok ? creativesRes.items : []}
         schemaReady={schemaReady}
         intelligence={intelligence}
-        coachAdvice={coach.advice}
-        coachNote={coach.aiNote}
+        coachAdvice={coachAdvice}
+        coachNote={coachNote}
+        actionPlan={actionPlan}
+        planNote={planNote}
         onCreateDrafts={adsCreateStrategyDrafts}
         onSyncInsights={adsSyncInsights}
         onFullSync={adsRunIntelligenceSync}
