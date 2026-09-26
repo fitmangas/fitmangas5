@@ -7,7 +7,6 @@ import {
   fetchMetaAdsInsights,
 } from '@/lib/acquisition/ads/meta-ads-client';
 import { getAdsConnectionState, isMetaAdsEnabled } from '@/lib/acquisition/ads/config';
-import { generateCoachAdvice } from '@/lib/acquisition/ads/coach';
 import { loadAdsIntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import {
   ensureAdCreativeSeed,
@@ -275,8 +274,25 @@ export async function adsRunIntelligenceSync(): Promise<ActionResult> {
 export async function adsLoadCoachAdvice(): Promise<ActionResult> {
   await requireAdmin();
   const bundle = await loadAdsIntelligenceBundle();
-  const { advice, aiNote } = await generateCoachAdvice(bundle);
-  return { ok: true, detail: aiNote ?? 'Conseils règles.', data: { advice, aiNote } };
+  const { regenerateAndPersistCoach } = await import('@/lib/acquisition/ads/coach-persist');
+  const { advice, aiNote, plan, planNote } = await regenerateAndPersistCoach(bundle, { force: true });
+  return {
+    ok: true,
+    detail: aiNote ?? planNote ?? 'Conseils + plan régénérés (dédup off en manuel).',
+    data: { advice, aiNote, plan, planNote },
+  };
+}
+
+export async function adsLoadActionPlan(): Promise<ActionResult> {
+  await requireAdmin();
+  const { loadStoredActionPlan, regenerateAndPersistCoach } = await import('@/lib/acquisition/ads/coach-persist');
+  const stored = await loadStoredActionPlan();
+  if (stored?.items?.length) {
+    return { ok: true, detail: stored.aiNote ?? 'Plan stocké.', data: { plan: stored.items, planNote: stored.aiNote } };
+  }
+  const bundle = await loadAdsIntelligenceBundle();
+  const { plan, planNote } = await regenerateAndPersistCoach(bundle, { force: true });
+  return { ok: true, detail: planNote ?? 'Plan généré.', data: { plan, planNote } };
 }
 
 /**
