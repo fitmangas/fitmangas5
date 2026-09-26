@@ -30,9 +30,14 @@ export type CoachAdvice = {
 
 async function loadExpertiseCorpus(): Promise<string> {
   try {
-    const p = path.join(process.cwd(), 'docs', 'ADS_EXPERTISE.md');
-    const text = await readFile(p, 'utf8');
-    return text.slice(0, 12_000);
+    const expertise = await readFile(path.join(process.cwd(), 'docs', 'ADS_EXPERTISE.md'), 'utf8');
+    let marche = '';
+    try {
+      marche = await readFile(path.join(process.cwd(), 'docs', 'MARCHE_FEMMES.md'), 'utf8');
+    } catch {
+      marche = '';
+    }
+    return `${expertise.slice(0, 9_000)}\n\n---\n\n${marche.slice(0, 5_000)}`;
   } catch {
     return 'Corpus ADS_EXPERTISE indisponible — règles embarquées uniquement.';
   }
@@ -80,15 +85,15 @@ function starterAdvice(bundle: IntelligenceBundle): CoachAdvice[] {
     out.push({
       id: `boost-${topOrganic.igMediaId}`,
       priority: 'medium',
-      title: `Meilleur contenu organique · score ${topOrganic.score.toFixed(0)}`,
+      title: `Signal organique · score ${topOrganic.score.toFixed(0)} (à adapter)`,
       body: topOrganic.insightsAvailable
-        ? `Candidat « à booster » : ${(topOrganic.caption ?? 'sans légende').slice(0, 120)}… Transformer en pub = brouillon PAUSED (zéro €).`
-        : `Engagement de surface (likes/comments) disponible. Reach/saves/shares incomplets tant que le scope instagram_manage_insights n’est pas ajouté. Tu peux quand même créer un brouillon PAUSED.`,
+        ? `Angle qui a résonné : ${(topOrganic.caption ?? 'sans légende').slice(0, 120)}… Ce n’est PAS un ordre de booster tel quel — reformater en créative pub (15–30 s + CTA essai) via brouillon PAUSED.`
+        : `Engagement de surface dispo. Adapter l’angle en pub (PAUSED), ne pas booster le post organique tel quel.`,
       dataStatus: topOrganic.insightsAvailable ? 'ok' : 'missing_permission',
       source: 'rules',
       action: {
         type: 'boost_organic',
-        label: 'Transformer en pub (PAUSED)',
+        label: 'Adapter en pub (PAUSED)',
         igMediaId: topOrganic.igMediaId,
         captionHint: (topOrganic.caption ?? '').slice(0, 80),
       },
@@ -205,10 +210,11 @@ export async function generateCoachAdvice(
 
   const cascade = await runSocialTextCascade({
     system: `Tu es le coach Ads FitMangas. Tu réponds en français, ton expert mais simple.
-Tu es STRICTEMENT borné au corpus expertise ci-dessous et aux FAITS JSON fournis.
+Tu es STRICTEMENT borné au corpus expertise (ADS_EXPERTISE + MARCHE_FEMMES) et aux FAITS JSON fournis.
 INTERDIT : inventer impressions, spend, CPL, ROAS, followers.
 Si une métrique manque → écris « trop tôt pour analyser ».
-Propose 2 à 4 conseils courts (titre + 1-2 phrases). Pas de markdown lourd.
+Organique = signal d'angle à adapter en créative pub, pas « booster tel quel ».
+Chaque conseil = hypothèse à tester. Propose 2 à 4 conseils courts (titre + 1-2 phrases). Pas de markdown lourd.
 Corpus:\n${corpus}`,
     user: `FAITS RÉELS (ne pas inventer hors de ce JSON) :\n${facts}\n\nRéponds en JSON array : [{"title":"...","body":"...","dataStatus":"ok|too_early|missing_permission"}]`,
     temperature: 0.3,
