@@ -18,20 +18,32 @@ function Section({
   title,
   children,
   testId,
+  index,
+  accent,
 }: {
   title: string;
   children: ReactNode;
   testId?: string;
+  index?: number;
+  accent?: string;
 }) {
   return (
     <section
       data-testid={testId}
-      className="rounded-[1.5rem] border bg-white/90 p-5 sm:p-6"
-      style={{ borderColor: acq.warmBeigeDeep, boxShadow: acq.shadowCard }}
+      className="relative overflow-hidden rounded-[1.75rem] border p-5 sm:p-6"
+      style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard, background: 'linear-gradient(165deg,#FFFFFF 0%,#FFFAF5 100%)' }}
     >
-      <h3 className="font-serif text-lg font-semibold sm:text-xl" style={{ color: acq.ink }}>
-        {title}
-      </h3>
+      {accent ? <div className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: accent }} aria-hidden /> : null}
+      <div className="flex items-center gap-3">
+        {index != null ? (
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-serif text-sm font-semibold" style={{ backgroundColor: acq.terracottaSoft, color: acq.terracotta }}>
+            {String(index).padStart(2, '0')}
+          </span>
+        ) : null}
+        <h3 className="font-serif text-xl font-semibold tracking-tight sm:text-[1.4rem]" style={{ color: acq.ink }}>
+          {title}
+        </h3>
+      </div>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -45,10 +57,10 @@ export function AdsMarchePanel({ intelligence }: Props) {
 
   return (
     <div className="space-y-5 sm:space-y-6" data-testid="ads-tab-marche">
-      <Section title="Ce que veulent les femmes" testId="ads-marche-wants">
+      <Section index={1} title="Ce que veulent les femmes" testId="ads-marche-wants">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {MARCHE_WANTS.map((w) => (
-            <div key={w.id} className="rounded-2xl border px-4 py-3" style={{ borderColor: acq.warmBeigeDeep, background: acq.cream }}>
+            <div key={w.id} className="rounded-2xl border border-l-4 bg-white px-4 py-3.5" style={{ borderColor: acq.warmBeigeDeep, borderLeftColor: acq.terracotta }}>
               <p className="text-sm font-semibold" style={{ color: acq.terracotta }}>
                 {w.title}
               </p>
@@ -60,10 +72,10 @@ export function AdsMarchePanel({ intelligence }: Props) {
         </div>
       </Section>
 
-      <Section title="Tendances Pilates / wellness 2025–2026" testId="ads-marche-trends">
-        <ul className="space-y-3">
+      <Section index={2} title="Tendances Pilates / wellness 2025–2026" testId="ads-marche-trends">
+        <ul className="grid gap-3 md:grid-cols-2">
           {MARCHE_TRENDS.map((t) => (
-            <li key={t.title} className="rounded-2xl border px-4 py-3" style={{ borderColor: acq.warmBeigeDeep }}>
+            <li key={t.title} className="rounded-2xl border bg-white px-4 py-3.5" style={{ borderColor: acq.warmBeigeDeep }}>
               <p className="text-sm font-semibold" style={{ color: acq.ink }}>
                 {t.title}
               </p>
@@ -75,7 +87,7 @@ export function AdsMarchePanel({ intelligence }: Props) {
         </ul>
       </Section>
 
-      <Section title="Positionnement : large vs niche" testId="ads-marche-positioning">
+      <Section index={3} title="Positionnement : large vs niche" testId="ads-marche-positioning">
         <p className="text-sm" style={{ color: acq.muted }}>
           <span className="font-semibold text-red-700">Trop niche : </span>
           {MARCHE_POSITIONING.tooNiche}
@@ -91,7 +103,7 @@ export function AdsMarchePanel({ intelligence }: Props) {
 
       <div className="grid gap-5 lg:grid-cols-2" data-testid="ads-marche-fr-mx">
         {MARCHE_MARKETS.map((m) => (
-          <Section key={m.id} title={m.label} testId={`ads-marche-${m.id}`}>
+          <Section key={m.id} title={m.label} testId={`ads-marche-${m.id}`} accent={m.id === 'fr' ? acq.terracotta : '#C98A1E'}>
             <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
               Codes culturels
             </p>
@@ -116,7 +128,7 @@ export function AdsMarchePanel({ intelligence }: Props) {
         ))}
       </div>
 
-      <Section title="Qui te suit vraiment (Meta) vs qui tu pourrais toucher" testId="ads-marche-demo">
+      <Section index={4} title="Qui te suit vraiment (Meta) vs qui tu pourrais toucher" testId="ads-marche-demo">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border p-4" style={{ borderColor: acq.warmBeigeDeep, background: acq.cream }}>
             <p className="text-xs font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
@@ -157,7 +169,7 @@ export function AdsMarchePanel({ intelligence }: Props) {
         </p>
       </Section>
 
-      <Section title="Conclusion — comment te vendre par la pub" testId="ads-marche-conclusion">
+      <Section index={5} title="Conclusion — comment te vendre par la pub" testId="ads-marche-conclusion">
         <ol className="list-inside list-decimal space-y-2 text-sm leading-relaxed" style={{ color: acq.ink }}>
           {MARCHE_PUB_CONCLUSION.map((c) => (
             <li key={c}>{c}</li>

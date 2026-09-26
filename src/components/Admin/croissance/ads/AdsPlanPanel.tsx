@@ -77,12 +77,15 @@ export function AdsPlanPanel({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        className="flex flex-col gap-3 rounded-[1.75rem] border p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6"
+        style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard, background: 'linear-gradient(160deg,rgba(196,93,62,0.10) 0%,#FFFAF5 55%,#FFFFFF 100%)' }}
+      >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: acq.terracotta }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
             Cœur expert
           </p>
-          <h2 className="font-serif text-2xl font-semibold" style={{ color: acq.ink }}>
+          <h2 className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: acq.ink }}>
             Plan d&apos;action — hypothèses à tester
           </h2>
           <p className="mt-1 max-w-2xl text-sm" style={{ color: acq.muted }}>
@@ -113,9 +116,10 @@ export function AdsPlanPanel({
           <li
             key={item.id}
             data-testid={`ads-plan-item-${item.id}`}
-            className="rounded-[1.5rem] border bg-white p-5 transition hover:-translate-y-0.5"
-            style={{ borderColor: acq.warmBeigeDeep, boxShadow: acq.shadowCard }}
+            className="relative overflow-hidden rounded-[1.5rem] border bg-white p-5 pl-6 transition hover:-translate-y-0.5 sm:p-6 sm:pl-7"
+            style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard, background: 'linear-gradient(165deg,#FFFFFF 0%,#FFFAF5 100%)' }}
           >
+            <span className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: item.priority <= 2 ? acq.terracotta : '#E7AE98' }} aria-hidden />
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -133,7 +137,7 @@ export function AdsPlanPanel({
                 Hypothèse
               </span>
             </div>
-            <h3 className="mt-3 font-serif text-lg font-semibold" style={{ color: acq.ink }}>
+            <h3 className="mt-3 font-serif text-xl font-semibold leading-snug" style={{ color: acq.ink }}>
               {item.title}
             </h3>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: acq.muted }}>
@@ -163,7 +167,7 @@ export function AdsPlanPanel({
         </p>
       ) : null}
 
-      <section className="rounded-[1.5rem] border p-5" style={{ borderColor: acq.warmBeigeDeep }} data-testid="ads-plan-coach-mirror">
+      <section className="rounded-[1.75rem] border bg-white p-5 sm:p-6" style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard }} data-testid="ads-plan-coach-mirror">
         <div className="flex items-center gap-2">
           <Lightbulb size={18} style={{ color: acq.terracotta }} />
           <h3 className="font-serif text-lg font-semibold" style={{ color: acq.ink }}>
@@ -177,7 +181,7 @@ export function AdsPlanPanel({
         ) : null}
         <ul className="mt-3 space-y-2">
           {advice.slice(0, 5).map((a) => (
-            <li key={a.id} className="rounded-xl border px-3 py-2 text-sm" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
+            <li key={a.id} className="rounded-2xl border px-4 py-3 text-sm leading-relaxed" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink, backgroundColor: acq.cream }}>
               <strong>{a.title}</strong> — {a.body.slice(0, 160)}
               {a.body.length > 160 ? '…' : ''}
             </li>
