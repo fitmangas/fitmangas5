@@ -32,7 +32,7 @@ export const MARCHE_WANTS = [
     },
   },
   {
-    id: 'être-vue',
+    id: 'etre-vue',
     emoji: '👁️',
     title: { fr: 'Être vue', es: 'Ser vista' },
     detail: {
