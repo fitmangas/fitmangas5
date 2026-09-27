@@ -333,6 +333,7 @@ export async function adsLoadActionPlan(): Promise<ActionResult> {
 export async function adsBoostOrganicToPausedDraft(params: {
   igMediaId: string;
   captionHint?: string;
+  planItemId?: string;
 }): Promise<ActionResult> {
   await requireAdmin();
   if (!(await isAdsSchemaReady())) {
@@ -363,14 +364,72 @@ export async function adsBoostOrganicToPausedDraft(params: {
   });
   if (!local.ok) return { ok: false, error: local.error };
 
+  if (params.planItemId) {
+    const { markPlanCreativeBoosted } = await import('@/lib/acquisition/ads/pipeline-sync');
+    await markPlanCreativeBoosted(params.planItemId);
+  }
+
   return {
     ok: true,
-    detail: `Brouillon PAUSED créé (${remote.campaignId}) depuis le contenu organique — 0 € tant que non activé.`,
+    detail: `Brouillon PAUSED créé (${remote.campaignId}) depuis le contenu organique — 0 € tant que non activé. Créative passée à « En test ».`,
     data: {
       campaignId: local.campaign.id,
       metaCampaignId: remote.campaignId,
       igMediaId: params.igMediaId,
     },
+  };
+}
+
+/**
+ * Crée un brouillon Programmation & Publication pré-rempli (comme un post manuel)
+ * depuis une inspiration du Plan. Idempotent si le post existe déjà.
+ */
+export async function adsCreateCmDraftFromPlanItem(params: {
+  planItemId: string;
+  item?: import('@/lib/acquisition/ads/action-plan').ActionPlanItem;
+}): Promise<ActionResult> {
+  await requireAdmin();
+  const { loadStoredActionPlan } = await import('@/lib/acquisition/ads/coach-persist');
+  const { adsPlanSourceRef, buildCmDraftFromPlanItem } = await import('@/lib/acquisition/ads/plan-to-cm');
+  const { syncPipelineFromSocialPost } = await import('@/lib/acquisition/ads/pipeline-sync');
+  const { getSocialCommsBoard, saveSocialCommsBoard } = await import('@/lib/admin/social-comms');
+  const { revalidatePath } = await import('next/cache');
+
+  const planItemId = params.planItemId.trim();
+  if (!planItemId) return { ok: false, error: 'Inspiration Plan introuvable.' };
+
+  const stored = await loadStoredActionPlan();
+  const item = params.item?.id === planItemId ? params.item : stored?.items.find((i) => i.id === planItemId);
+  if (!item) {
+    return { ok: false, error: 'Cette idée n’est plus dans le Plan — régénère le Plan puis réessaie.' };
+  }
+
+  const board = await getSocialCommsBoard();
+  const sourceRef = adsPlanSourceRef(item.id);
+  const existing = board.posts.find((p) => p.sourceRef === sourceRef);
+  if (existing) {
+    await syncPipelineFromSocialPost(existing);
+    revalidatePath('/admin/croissance');
+    revalidatePath('/admin/community');
+    return {
+      ok: true,
+      detail: `Brouillon déjà dans Programmation & Publication (« ${existing.title || 'sans titre'} »). Ouvre l’onglet Publications.`,
+      data: { postId: existing.id, already: true, href: '/admin/croissance?tab=publications' },
+    };
+  }
+
+  const post = buildCmDraftFromPlanItem(item, new Date().toISOString());
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [post, ...board.posts].slice(0, 80),
+  });
+  await syncPipelineFromSocialPost(post);
+  revalidatePath('/admin/croissance');
+  revalidatePath('/admin/community');
+  return {
+    ok: true,
+    detail: `Brouillon créé dans Programmation & Publication (« ${post.title} ») — overlay + brief pré-remplis. Complète le Reel puis publie.`,
+    data: { postId: post.id, already: false, href: '/admin/croissance?tab=publications' },
   };
 }
 
