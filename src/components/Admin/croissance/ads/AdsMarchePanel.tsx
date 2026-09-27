@@ -20,7 +20,7 @@ import {
 } from '@/lib/acquisition/ads/marche-content';
 import type { IntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import { demoShare, summarizeOrganicPeriod, topDemo } from '@/lib/acquisition/ads/stats-compute';
-import { AdsCard, AdsJourney, AdsTermHint, HBar, num } from './ads-ui';
+import { AdsTermHint, HBar, num } from './ads-ui';
 
 type Props = {
   intelligence: IntelligenceBundle;
@@ -98,35 +98,25 @@ export function AdsMarchePanel({ intelligence, plan, lang, onGoTo }: Props) {
 
   return (
     <div className="space-y-5 sm:space-y-6" data-testid="ads-tab-marche">
-      <AdsCard
-        tone="warm"
-        eyebrow={lang === 'es' ? 'Paso 1 · Mercado' : 'Étape 1 · Marché'}
-        title={lang === 'es' ? 'A quién le hablas — y quién te sigue de verdad' : 'À qui tu parles — et qui te suit vraiment'}
-        subtitle={
-          lang === 'es'
-            ? 'El mercado dice qué quieren. Tus cifras dicen quién ya está aquí. El plan convierte eso en películas a probar.'
-            : 'Le marché dit ce qu’elles veulent. Tes chiffres disent qui est déjà là. Le plan transforme ça en films à tester.'
-        }
-        testId="ads-marche-hero"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <AdsJourney current="marche" lang={lang} onGo={onGoTo} />
-          <div className="flex items-center gap-3">
-            <Image
-              src="/library/portraits/portrait-05-1x1.webp"
-              alt=""
-              width={56}
-              height={56}
-              className="h-14 w-14 rounded-2xl object-cover"
-            />
-            <p className="max-w-xs text-xs leading-relaxed" style={{ color: acq.muted }}>
-              {lang === 'es'
-                ? 'Alejandra en cámara: eso es lo que la publicidad debe parecerse, no un estudio de stock.'
-                : 'Alejandra à la caméra : c’est ça que la pub doit ressembler — pas un studio de banque d’images.'}
-            </p>
-          </div>
+      <div className="flex items-center justify-between gap-3 px-1" data-testid="ads-marche-hero">
+        <div className="min-w-0">
+          <h2 className="font-serif text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: acq.ink }}>
+            {lang === 'es' ? 'A quién le hablas' : 'À qui tu parles'}
+          </h2>
+          <p className="mt-0.5 text-sm" style={{ color: acq.muted }}>
+            {lang === 'es'
+              ? 'El mercado dice qué quieren. Tus cifras dicen quién ya está aquí.'
+              : 'Le marché dit ce qu’elles veulent. Tes chiffres disent qui est déjà là.'}
+          </p>
         </div>
-      </AdsCard>
+        <Image
+          src="/library/portraits/portrait-05-1x1.webp"
+          alt=""
+          width={44}
+          height={44}
+          className="hidden h-11 w-11 shrink-0 rounded-2xl object-cover sm:block"
+        />
+      </div>
 
       <Section
         index={1}
