@@ -5,7 +5,7 @@ Dernière MAJ : 2026-09-28.
 | Zone | Chemin | Rôle |
 |---|---|---|
 | Acquisition | `/admin/acquisition` | Inbox DM IG/Messenger/WA, workflows, followups, readiness Meta |
-| Community | `/admin/community` | CM Instagram (génération posts) + miroirs FB / TikTok / **YouTube Shorts**. Bouton **Copier prompt Claude Code** : pipeline HyperFrames local + **étape 13 miniature** Template A (`make-reel-cover.py`, titre = overlay). |
+| Community | `/admin/community` | CM Instagram (génération posts) + miroirs FB / TikTok / **YouTube Shorts**. Bouton **Copier prompt Claude Code** : pipeline HyperFrames local + **étape 13 miniature** Template A (`make-reel-cover.py`, titre = overlay). Champ **Miniature** Reel (`coverImagePath`) : upload ou chemin public ; cover API IG + FB (TikTok = timestamp seulement). Brouillons depuis Plan Ads (`sourceRef=ads-plan:`). |
 | Marketing | `/admin/marketing` | Alias / surface CM |
 | Blog | `/admin/blog` (+ articles, calendar, validation, newsletter, stats) | Contenu SEO |
 | Clients | `/admin/clients` | Fiches membres |
