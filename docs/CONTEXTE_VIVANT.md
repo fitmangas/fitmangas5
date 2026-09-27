@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-27 (après-midi) — Ads : marché externe + aide pipeline
+
+- Marché : section **Le marché en ligne (données externes)** avant « Ton audience » — FR ~33 %/an, monde ~44 Md$ 2026 (projection), LatAm ~22 %/an. Sources datées `docs/MARCHE_EXTERNE.md`. Repères, pas un recensement.
+- Deux blocs distincts : potentiel externe (encadré encre) vs Instagram réel (terracotta).
+- Pipeline créatives : légende dépliable « Comment ça marche ? » (Exécution + Plan) + petit « i » sur Statut. Auto (campagnes Meta) vs manuel (créatives du Plan).
+- Mes stats / contenu du Plan / lecture Exécution : inchangés.
+
 ### 2026-09-27 — Ads : chrome allégé (4 encadrés trop lourds)
 
 - Les 4 premiers blocs (hero Publicité, Données connectées, sous-nav, hero Étape 1 Marché) répétaient le même fil et la même synchro.
@@ -116,7 +123,7 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 ### 2026-09-24 — Meta Ads : probe + seed réel (sans activer le spend)
 
 - Probe live : token Page = `business_management` OK, **pas** `ads_read`/`ads_management` → pas d’Ad Account via messaging.
-- Seed DB : 5 créatives + 3 brouillons locaux (froid/warm/hot).
+- Seed DB : 5 créatives + 3 brouillons locaux (charge/warm/hot).
 - `.env.local` + Vercel : `META_ADS_ENABLED=0`, `META_ADS_APP_ID` (= App messaging). Doc ADS-SETUP mise à jour (déjà fait / reste Kevin).
 
 - Nouvel onglet `/admin/croissance?tab=ads` : guide débutant, 3 campagnes froid/warm/hot, créatives UGC FR/ES, multi-canal (Meta ready, TikTok/Pinterest/Google phase 2).
