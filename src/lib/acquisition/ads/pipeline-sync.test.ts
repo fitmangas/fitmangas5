@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { shouldAdvanceCreativeStatus } from './pipeline-sync';
 
 describe('pipeline-sync', () => {
-  it('éavance À créer → Brouillon → Publiée organique → En test', () => {
+  it('avance À créer → Brouillon → Publiée organique → En test', () => {
     expect(shouldAdvanceCreativeStatus(undefined, 'brouillon')).toBe(true);
     expect(shouldAdvanceCreativeStatus('a_creer', 'brouillon')).toBe(true);
     expect(shouldAdvanceCreativeStatus('brouillon', 'publiee_organique')).toBe(true);
