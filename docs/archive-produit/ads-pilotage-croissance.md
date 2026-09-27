@@ -7,7 +7,8 @@
 - UI : `AdsPilotPanel.tsx` + 4 panels `ads/Ads*Panel.tsx`
 - Chrome (2026-09-27) : 1 barre compacte (chiffres + Sync + +) · sous-nav 1 ligne · détail connexion/sources derrière le +
 - Marché (27/09) : **Le marché en ligne** (externe) vs **Ton audience** (IG réel) — `docs/MARCHE_EXTERNE.md`
-- Pipeline créatives : panneau « Comment ça marche ? » + i sur Statut (auto Meta / manuel Plan)
+- Pipeline créatives : panneau « Comment ça marche ? » + i sur Statut · 6 statuts dont Publiée organique
+- Plan → CM : « créer le brouillon » pré-remplit Programmation (`plan-to-cm.ts`, `adsCreateCmDraftFromPlanItem`)
 - Lib : `src/lib/acquisition/ads/` (config, meta client, repository, strategy-content)
 - Actions : `src/app/admin/croissance/ads-actions.ts`
 - Doc setup : `docs/ADS-SETUP.md`
