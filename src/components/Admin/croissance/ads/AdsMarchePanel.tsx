@@ -12,6 +12,7 @@ import {
 } from '@/lib/acquisition/ads/ads-glossary';
 import {
   DOC_SOURCES_NOTE,
+  MARCHE_EXTERNE,
   MARCHE_MARKETS,
   MARCHE_POSITIONING,
   MARCHE_PUB_CONCLUSION,
@@ -224,10 +225,72 @@ export function AdsMarchePanel({ intelligence, plan, lang, onGoTo }: Props) {
 
       <Section
         index={4}
+        emoji="🌐"
+        title={lang === 'es' ? 'El mercado online (datos externos)' : 'Le marché en ligne (données externes)'}
+        testId="ads-marche-externe"
+        accent="#2A2521"
+      >
+        <p className="mb-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: acq.ink, color: '#FFFAF5' }}>
+          {lang === 'es' ? 'El mercado · potencial externo' : 'Le marché · potentiel externe'}
+        </p>
+        <p className="rounded-2xl border px-4 py-3 text-xs leading-relaxed" style={{ borderColor: acq.warmBeigeDeep, background: acq.cream, color: acq.muted }}>
+          {pickLang(MARCHE_EXTERNE.honesty, lang)}
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[MARCHE_EXTERNE.world, MARCHE_EXTERNE.fr, MARCHE_EXTERNE.mx].map((b) => (
+            <div key={pickLang(b.title, 'fr')} className="rounded-2xl border bg-white px-4 py-3.5" style={{ borderColor: acq.warmBeigeDeep }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
+                {pickLang(b.title, lang)}
+              </p>
+              <p className="mt-1 font-serif text-2xl font-semibold tabular-nums" style={{ color: acq.ink }}>
+                {pickLang(b.figure, lang)}
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: acq.muted }}>
+                {pickLang(b.caption, lang)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
+          {lang === 'es' ? 'Compradora tipo en línea' : 'Acheteuse type en ligne'}
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+          {MARCHE_EXTERNE.buyer.map((b) => (
+            <div key={pickLang(b.title, 'fr')} className="rounded-2xl border bg-white px-4 py-3.5" style={{ borderColor: acq.warmBeigeDeep }}>
+              <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+                <span className="mr-1" aria-hidden>
+                  {b.emoji}
+                </span>
+                {pickLang(b.title, lang)}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: acq.muted }}>
+                {pickLang(b.detail, lang)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 rounded-2xl border-l-4 px-4 py-3.5" style={{ borderColor: acq.terracotta, background: acq.terracottaSoft }} data-testid="ads-marche-externe-opp">
+          <p className="text-sm font-semibold" style={{ color: acq.ink }}>
+            {pickLang(MARCHE_EXTERNE.opportunity.title, lang)}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed" style={{ color: acq.ink }}>
+            {pickLang(MARCHE_EXTERNE.opportunity.aligned, lang)}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: acq.muted }}>
+            {pickLang(MARCHE_EXTERNE.opportunity.beyond, lang)}
+          </p>
+        </div>
+      </Section>
+
+      <Section
+        index={5}
         emoji="📊"
-        title={lang === 'es' ? 'Quién te sigue de verdad vs a quién podrías llegar' : 'Qui te suit vraiment vs qui tu pourrais toucher'}
+        title={lang === 'es' ? 'Tu audiencia (quién te sigue ya)' : 'Ton audience (qui te suit déjà)'}
         testId="ads-marche-demo"
       >
+        <p className="mb-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: acq.terracottaSoft, color: acq.terracotta }}>
+          {lang === 'es' ? 'Tu audiencia · Instagram real' : 'Ton audience · Instagram réel'}
+        </p>
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-2xl border p-4" style={{ borderColor: acq.warmBeigeDeep, background: acq.cream }}>
             <p className="text-xs font-bold uppercase tracking-wider" style={{ color: acq.terracotta }}>
@@ -297,7 +360,7 @@ export function AdsMarchePanel({ intelligence, plan, lang, onGoTo }: Props) {
       </Section>
 
       <Section
-        index={5}
+        index={6}
         emoji="📣"
         title={lang === 'es' ? 'Conclusión — cómo venderte en anuncio' : 'Conclusion — comment te vendre par la pub'}
         testId="ads-marche-conclusion"
