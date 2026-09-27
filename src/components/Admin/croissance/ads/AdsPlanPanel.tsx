@@ -17,7 +17,7 @@ import type { CoachAdvice } from '@/lib/acquisition/ads/coach';
 import { MARCHE_WANTS } from '@/lib/acquisition/ads/marche-content';
 import type { IntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import type { NextAction } from '@/lib/acquisition/ads/stats-compute';
-import { AdsTermHint } from './ads-ui';
+import { AdsTermHint, Collapsible, CreativePipelineHelp } from './ads-ui';
 
 type Props = {
   plan: ActionPlanItem[];
@@ -118,6 +118,22 @@ export function AdsPlanPanel({
           {lang === 'es' ? 'Regenerar' : 'Régénérer'}
         </button>
       </div>
+
+      <Collapsible
+        title={lang === 'es' ? '¿Cómo se sigue una creativa?' : 'Comment on suit une créative ?'}
+        meta={lang === 'es' ? 'Los estados del tablero Ejecución' : 'Les statuts du tableau Exécution'}
+        testId="ads-plan-pipeline-help"
+      >
+        <CreativePipelineHelp lang={lang} compact />
+        <button
+          type="button"
+          onClick={() => onGoTo('execution')}
+          className="mt-2 text-xs font-semibold underline"
+          style={{ color: acq.terracotta }}
+        >
+          {lang === 'es' ? 'Abrir el seguimiento en Ejecución →' : 'Ouvrir le suivi dans Exécution →'}
+        </button>
+      </Collapsible>
 
       <section
         className="relative overflow-hidden rounded-[1.75rem] border-2 p-5 sm:p-6"

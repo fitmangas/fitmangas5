@@ -40,7 +40,7 @@ import {
   STRATEGY_CAMPAIGN_BLUEPRINTS,
 } from '@/lib/acquisition/ads/strategy-content';
 import type { AdsSubTab, AdsUiLang } from '@/lib/acquisition/ads/ads-glossary';
-import { AdsCard, AdsTermHint, Collapsible, adsTone, eur, num, pct } from './ads-ui';
+import { AdsCard, AdsTermHint, Collapsible, CreativePipelineHelp, adsTone, eur, num, pct } from './ads-ui';
 
 type Props = {
   intelligence: IntelligenceBundle;
@@ -620,6 +620,15 @@ export function AdsExecutionPanel({
               </span>
             ))}
           </div>
+          <div className="mt-3">
+            <Collapsible
+              title={lang === 'es' ? '¿Cómo funciona?' : 'Comment ça marche ?'}
+              meta={lang === 'es' ? 'Los 5 estados, en una línea' : 'Les 5 statuts, en une ligne'}
+              testId="ads-exec-pipeline-help"
+            >
+              <CreativePipelineHelp lang={lang} />
+            </Collapsible>
+          </div>
           <ul className="mt-4 grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
             {pipeline.map((p) => (
               <li key={p.id} className="flex flex-col rounded-[1.25rem] border bg-white p-4" style={{ borderColor: acq.warmBeigeDeep }} data-testid={`ads-exec-creative-${p.id}`}>
@@ -644,7 +653,9 @@ export function AdsExecutionPanel({
                   </p>
                 ) : null}
                 <label className="mt-auto flex items-center gap-2 pt-3 text-[11px] font-semibold" style={{ color: acq.muted }}>
-                  Statut
+                  <AdsTermHint term="statut" lang={lang}>
+                    {lang === 'es' ? 'Estado' : 'Statut'}
+                  </AdsTermHint>
                   <select
                     className="flex-1 rounded-full border bg-white px-2.5 py-1 text-xs"
                     style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}

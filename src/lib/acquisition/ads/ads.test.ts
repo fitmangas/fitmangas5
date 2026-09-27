@@ -175,6 +175,32 @@ describe('ads marche + plan docs', () => {
     expect(MARCHE_PUB_CONCLUSION.length).toBeGreaterThanOrEqual(4);
   });
 
+  it('marché externe = repères FR+MX, honnêtes, pas un recensement', async () => {
+    const { MARCHE_EXTERNE } = await import('@/lib/acquisition/ads/marche-content');
+    expect(MARCHE_EXTERNE.honesty.fr.toLowerCase()).toMatch(/ordre|repère/);
+    expect(MARCHE_EXTERNE.fr.figure.fr).toMatch(/~/);
+    expect(MARCHE_EXTERNE.mx.figure.fr).toMatch(/~/);
+    expect(MARCHE_EXTERNE.world.figure.fr).toMatch(/~/);
+    expect(MARCHE_EXTERNE.buyer).toHaveLength(3);
+    expect(MARCHE_EXTERNE.opportunity.beyond.fr).toMatch(/Pilates/);
+    expect(MARCHE_EXTERNE.honesty.fr).not.toMatch(/\d{4}\s*€/);
+  });
+
+  it('légende pipeline : 5 statuts FR/ES + auto vs manuel', async () => {
+    const { CREATIVE_STATUS_HELP, CREATIVE_STATUS_SOURCE_HELP, ADS_GLOSSARY } = await import(
+      '@/lib/acquisition/ads/ads-glossary'
+    );
+    expect(Object.keys(CREATIVE_STATUS_HELP)).toEqual(['a_creer', 'brouillon', 'en_test', 'gagnante', 'a_couper']);
+    for (const row of Object.values(CREATIVE_STATUS_HELP)) {
+      expect(row.help.fr.length).toBeGreaterThan(12);
+      expect(row.help.es.length).toBeGreaterThan(12);
+    }
+    expect(CREATIVE_STATUS_SOURCE_HELP.auto.fr).toMatch(/Meta/i);
+    expect(CREATIVE_STATUS_SOURCE_HELP.manuel.fr).toMatch(/Plan/i);
+    expect(ADS_GLOSSARY.statut.fr.length).toBeGreaterThan(20);
+    expect(ADS_GLOSSARY.statut.es.length).toBeGreaterThan(20);
+  });
+
   it('plan d’action déterministe = hypothèses + brouillon PAUSED', async () => {
     const { buildDeterministicActionPlan } = await import('@/lib/acquisition/ads/action-plan');
     const empty = {
