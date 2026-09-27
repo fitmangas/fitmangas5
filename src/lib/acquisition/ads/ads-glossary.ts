@@ -105,6 +105,11 @@ export const ADS_GLOSSARY = {
     fr: 'Reciblage : montrer une pub à celles qui sont déjà venues sur le site, le quiz ou Instagram — pas à des inconnues.',
     es: 'Reimpacto: mostrar un anuncio a quienes ya vinieron a la web, al quiz o a Instagram — no a desconocidas.',
   },
+  statut: {
+    short: 'Statut',
+    fr: 'Où en est le film : à tourner, prêt à 0 €, en test, gagnant ou à arrêter. Campagnes = calculé tout seul sur Meta. Créatives du Plan = tu changes le statut à la main.',
+    es: 'Dónde va el vídeo: por filmar, listo a 0 €, en prueba, ganador o a cortar. Campañas = lo calcula Meta. Creativas del Plan = tú cambias el estado a mano.',
+  },
 } as const satisfies Record<string, GlossaryEntry>;
 
 export type GlossaryKey = keyof typeof ADS_GLOSSARY;
@@ -149,3 +154,38 @@ export function glossaryText(key: GlossaryKey, lang: AdsUiLang): string {
 export function pickLang(pair: { fr: string; es: string }, lang: AdsUiLang): string {
   return pair[lang];
 }
+
+/** Légende pipeline créatives — FR/ES simple. */
+export const CREATIVE_STATUS_HELP = {
+  a_creer: {
+    label: { fr: 'À créer', es: 'Por crear' },
+    help: { fr: 'Idée à tourner — pas encore de film.', es: 'Idea por filmar — todavía no hay vídeo.' },
+  },
+  brouillon: {
+    label: { fr: 'Brouillon 0 €', es: 'Borrador 0 €' },
+    help: { fr: 'Prête, en pause chez Meta — zéro dépense.', es: 'Lista, en pausa en Meta — cero gasto.' },
+  },
+  en_test: {
+    label: { fr: 'En test', es: 'En prueba' },
+    help: { fr: 'Ça tourne : on mesure (clics, leads, coût).', es: 'Está rodando: medimos (clics, leads, coste).' },
+  },
+  gagnante: {
+    label: { fr: 'Gagnante', es: 'Ganadora' },
+    help: { fr: 'Ça marche (≥ 3 clientes à ≤ 12 € le lead) — à investir.', es: 'Funciona (≥ 3 clientas a ≤ 12 € el lead) — hay que invertir.' },
+  },
+  a_couper: {
+    label: { fr: 'À couper', es: 'A cortar' },
+    help: { fr: 'Ça ne marche pas — on arrête.', es: 'No funciona — se para.' },
+  },
+} as const;
+
+export const CREATIVE_STATUS_SOURCE_HELP = {
+  auto: {
+    fr: 'Auto = campagne : calculé sur les chiffres Meta (dépense, leads, règles d’arrêt).',
+    es: 'Auto = campaña: se calcula con las cifras de Meta (gasto, leads, reglas de corte).',
+  },
+  manuel: {
+    fr: 'Manuel = créative du Plan : c’est toi qui changes le statut (tournage → prêt → test).',
+    es: 'Manual = creativa del Plan: tú cambias el estado (filmar → lista → prueba).',
+  },
+} as const;
