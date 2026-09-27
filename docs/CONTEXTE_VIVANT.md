@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-09-27 — Ads : chrome allégé (4 encadrés trop lourds)
+
+- Les 4 premiers blocs (hero Publicité, Données connectées, sous-nav, hero Étape 1 Marché) répétaient le même fil et la même synchro.
+- **Visible** : titre Publicité · FR/ES · pastille Meta · 3 chiffres (abonnées / dépense 30 j / actives) · Synchroniser · date de synchro · sous-nav 1 ligne.
+- **Derrière le +** : message connexion, règle 0 €, 3 boutons secondaires (brouillons / fiches CRM / modèles), grille des sources accessibles. Badge rouge si une source est NON.
+- Fil Marché → Stats → Plan → Exécution = uniquement la barre d’onglets (plus de 2e fil `AdsJourney` dans chaque page). Hero Marché remplacé par une ligne de titre.
+
 ### 2026-09-26 (nuit) — Ads : Marché + Plan reliés, français clair, glossaire
 
 - Auto-analyse : le fond Marché/Plan était bon — pas de refonte éditoriale. Manques : jargon anglais, chiffres Marché trop vieux (snapshot vs démographie 90 j), Plan déconnecté des stats riches, pas de fil entre les 4 onglets.

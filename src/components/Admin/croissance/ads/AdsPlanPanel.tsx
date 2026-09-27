@@ -17,7 +17,7 @@ import type { CoachAdvice } from '@/lib/acquisition/ads/coach';
 import { MARCHE_WANTS } from '@/lib/acquisition/ads/marche-content';
 import type { IntelligenceBundle } from '@/lib/acquisition/ads/intelligence-repository';
 import type { NextAction } from '@/lib/acquisition/ads/stats-compute';
-import { AdsCard, AdsJourney, AdsTermHint } from './ads-ui';
+import { AdsTermHint } from './ads-ui';
 
 type Props = {
   plan: ActionPlanItem[];
@@ -41,7 +41,6 @@ export function AdsPlanPanel({
   planNote: initialPlanNote,
   coachAdvice: initialAdvice,
   coachNote,
-  intelligence,
   nextAction,
   lang,
   onGoTo,
@@ -92,47 +91,33 @@ export function AdsPlanPanel({
         </p>
       ) : null}
 
-      <AdsCard
-        tone="warm"
-        eyebrow={lang === 'es' ? 'Paso 3 · Plan' : 'Étape 3 · Plan'}
-        title={lang === 'es' ? 'Hipótesis a probar — no certezas' : 'Hypothèses à tester — pas des certitudes'}
-        subtitle={
-          lang === 'es'
-            ? 'Nace del Mercado + tus cifras. Cada idea → borrador en pausa (0 €). Ningún gasto sin doble confirmación.'
-            : 'Né du Marché + tes chiffres. Chaque idée → brouillon en pause (0 €). Aucune dépense sans double confirmation.'
-        }
-        testId="ads-plan-hero"
-        right={
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(onReload)}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
-            style={{ backgroundColor: acq.terracotta }}
-            data-testid="ads-plan-regen"
-          >
-            <RefreshCw size={14} className={pending ? 'animate-spin' : ''} />
-            {lang === 'es' ? 'Regenerar' : 'Régénérer'}
-          </button>
-        }
-      >
-        <AdsJourney current="plan" lang={lang} onGo={onGoTo} />
-        {planNote ? (
-          <p className="mt-3 text-xs" style={{ color: acq.mutedLight }}>
-            {planNote}
-          </p>
-        ) : null}
-        <p className="mt-2 text-xs" style={{ color: acq.muted }}>
-          {lang === 'es' ? 'Última sincro' : 'Dernière synchro'} :{' '}
-          {intelligence.lastSyncAt
-            ? new Intl.DateTimeFormat(lang === 'es' ? 'es-MX' : 'fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(
-                new Date(intelligence.lastSyncAt),
-              )
-            : lang === 'es'
-              ? 'nunca'
-              : 'jamais'}
-        </p>
-      </AdsCard>
+      <div className="flex flex-wrap items-start justify-between gap-3 px-1" data-testid="ads-plan-hero">
+        <div className="min-w-0">
+          <h2 className="font-serif text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: acq.ink }}>
+            {lang === 'es' ? 'Hipótesis a probar' : 'Hypothèses à tester'}
+          </h2>
+          {planNote ? (
+            <p className="mt-1 text-xs" style={{ color: acq.mutedLight }}>
+              {planNote}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm" style={{ color: acq.muted }}>
+              {lang === 'es' ? 'Nace del Mercado + tus cifras. Cada idea → borrador a 0 €.' : 'Né du Marché + tes chiffres. Chaque idée → brouillon à 0 €.'}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(onReload)}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
+          style={{ backgroundColor: acq.terracotta }}
+          data-testid="ads-plan-regen"
+        >
+          <RefreshCw size={14} className={pending ? 'animate-spin' : ''} />
+          {lang === 'es' ? 'Regenerar' : 'Régénérer'}
+        </button>
+      </div>
 
       <section
         className="relative overflow-hidden rounded-[1.75rem] border-2 p-5 sm:p-6"

@@ -7,7 +7,6 @@ import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { acq } from '@/components/acquisition/tokens';
 import {
   ADS_GLOSSARY,
-  type AdsSubTab,
   type AdsUiLang,
   type GlossaryKey,
   glossaryText,
@@ -403,54 +402,6 @@ export function AdsLangSwitch({ lang, onChange }: { lang: AdsUiLang; onChange: (
         </button>
       ))}
     </div>
-  );
-}
-
-const JOURNEY: Array<{ id: AdsSubTab; emoji: string; fr: string; es: string }> = [
-  { id: 'marche', emoji: '🌍', fr: 'Marché', es: 'Mercado' },
-  { id: 'stats', emoji: '📊', fr: 'Mes stats', es: 'Mis cifras' },
-  { id: 'plan', emoji: '📋', fr: 'Plan', es: 'Plan' },
-  { id: 'execution', emoji: '⚡', fr: 'Exécution', es: 'Ejecución' },
-];
-
-export function AdsJourney({
-  current,
-  lang,
-  onGo,
-}: {
-  current: AdsSubTab;
-  lang: AdsUiLang;
-  onGo: (id: AdsSubTab) => void;
-}) {
-  return (
-    <ol className="flex flex-wrap items-center gap-1.5" data-testid="ads-journey" aria-label={lang === 'es' ? 'Camino de las 4 pestañas' : 'Chemin des 4 sous-onglets'}>
-      {JOURNEY.map((step, i) => {
-        const active = step.id === current;
-        const done = JOURNEY.findIndex((s) => s.id === current) > i;
-        return (
-          <li key={step.id} className="flex items-center gap-1.5">
-            {i > 0 ? (
-              <span className="text-[11px]" style={{ color: acq.mutedLight }} aria-hidden>
-                →
-              </span>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => onGo(step.id)}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-              style={{
-                backgroundColor: active ? acq.terracotta : done ? acq.terracottaSoft : acq.cream,
-                color: active ? '#fff' : acq.ink,
-              }}
-              data-testid={`ads-journey-${step.id}`}
-            >
-              <span aria-hidden>{step.emoji}</span>
-              {lang === 'es' ? step.es : step.fr}
-            </button>
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 

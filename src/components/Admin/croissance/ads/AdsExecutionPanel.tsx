@@ -40,7 +40,7 @@ import {
   STRATEGY_CAMPAIGN_BLUEPRINTS,
 } from '@/lib/acquisition/ads/strategy-content';
 import type { AdsSubTab, AdsUiLang } from '@/lib/acquisition/ads/ads-glossary';
-import { AdsCard, AdsJourney, AdsTermHint, Collapsible, adsTone, eur, num, pct } from './ads-ui';
+import { AdsCard, AdsTermHint, Collapsible, adsTone, eur, num, pct } from './ads-ui';
 
 type Props = {
   intelligence: IntelligenceBundle;
@@ -198,7 +198,6 @@ export function AdsExecutionPanel({
   onActivate,
   onError,
   lang = 'fr',
-  onGoTo,
 }: Props) {
   const [brief, setBrief] = useState<SituationBrief | null>(situationBrief);
   const [statuses, setStatuses] = useState<Record<string, CreativeStatus>>(creativeStatuses);
@@ -285,11 +284,10 @@ export function AdsExecutionPanel({
       {/* ── 1. Lecture de situation ───────────────────────── */}
       <AdsCard
         tone="ink"
-        eyebrow={lang === 'es' ? 'Paso 4 · Tablero' : 'Étape 4 · Tableau de bord'}
-        title={lang === 'es' ? 'Dónde estás, qué dice el mercado, qué cuenta' : 'Où tu en es, ce que dit le marché, ce qui compte'}
+        title={lang === 'es' ? 'Dónde estás' : 'Où tu en es'}
         subtitle={
           brief
-            ? `${brief.source === 'ai' ? (lang === 'es' ? `Redactado por ${brief.provider}` : `Rédigé par ${brief.provider}`) : lang === 'es' ? 'Lectura automática' : 'Lecture automatique'} · ${lang === 'es' ? 'acotado a tus documentos + cifras' : 'borné à tes documents + tes chiffres'} · ${new Intl.DateTimeFormat(lang === 'es' ? 'es-MX' : 'fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(brief.updatedAt))}`
+            ? `${brief.source === 'ai' ? (lang === 'es' ? `Redactado por ${brief.provider}` : `Rédigé par ${brief.provider}`) : lang === 'es' ? 'Lectura automática' : 'Lecture automatique'} · ${new Intl.DateTimeFormat(lang === 'es' ? 'es-MX' : 'fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(brief.updatedAt))}`
             : lang === 'es'
               ? 'Aún no hay lectura — lanza una sincro.'
               : 'Pas encore de lecture — lance une synchro.'
@@ -313,11 +311,6 @@ export function AdsExecutionPanel({
         }
         testId="ads-exec-brief"
       >
-        {onGoTo ? (
-          <div className="mb-4">
-            <AdsJourney current="execution" lang={lang} onGo={onGoTo} />
-          </div>
-        ) : null}
         {brief ? (
           <>
             <div className="grid gap-3 md:grid-cols-3">
@@ -386,7 +379,7 @@ export function AdsExecutionPanel({
         </div>
       </section>
 
-      {/* ── 4. Alertes live ───────────────────────────────── */}
+      {/* ── 4. Alertes live ───────────────────────────── */}
       <AdsCard
         eyebrow="Alertes live"
         title={lang === 'es' ? 'Desgaste · cortar · presupuesto' : 'Usure · couper · budget'}
