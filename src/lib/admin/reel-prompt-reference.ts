@@ -88,3 +88,193 @@ AVANT TOUT — lis et applique STRICTEMENT, dans l'ordre :
       ajouter --reel <dossier_du_reel> --source frame pour extraire une frame nette du cara.mp4.
     - POSITION du bloc titre = ALÉATOIRE (haut / centre / bas) à chaque génération → couvertures variées dans la grille.
     - SORTIE : FitMangas-Reels/exports/reel-{{SLUG}}_cover.png (à côté du MP4). Donne le chemin.`;
+
+export type ReelPromptTokenMap = {
+  CHEMIN_MP4: string;
+  SLUG: string;
+  LANGUE: string;
+  HOOK: string;
+  IDEE_1: string;
+  IDEE_2: string;
+  IDEE_3: string;
+  LEGENDE: string;
+  OVERLAY_OU_EXCEPTION: string;
+};
+
+export type ReelPromptPostFields = {
+  hookTitle?: string | null;
+  overlayText?: string | null;
+  title?: string | null;
+  reelScript?: string | null;
+  caption?: string | null;
+  locale?: string | null;
+  rawVideoPath?: string | null;
+  /** Exception audio / overlay (ex. « son d'origine seul »). Vide → standard. */
+  overlayOrException?: string | null;
+};
+
+/** dolor-espalda-oficina-es.MOV → dolor-espalda */
+export function slugFromMp4Filename(pathOrName: string | null | undefined): string {
+  if (!pathOrName?.trim()) return '';
+  const base = pathOrName.trim().split(/[/\\]/).pop() || '';
+  const withoutExt = base.replace(/\.(mp4|mov|webm|m4v)$/i, '');
+  const noLocale = withoutExt.replace(/[-_](fr|es|en|fr-FR|es-ES|es-MX)$/i, '');
+  const parts = noLocale
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .split('-')
+    .filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return parts.slice(0, 2).join('-');
+}
+
+/** Extrait jusqu’à 3 idées du brief tournage (numérotées ou puces). */
+export function extractReelIdeas(reelScript: string | null | undefined): [string, string, string] {
+  const empty: [string, string, string] = ['', '', ''];
+  const text = asText(reelScript).trim();
+  if (!text) return empty;
+
+  // Section avant BRIEF si présente
+  const beforeBrief = text.split(/\n\s*BRIEF\b/i)[0] ?? text;
+
+  const numbered: string[] = [];
+  for (const line of beforeBrief.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:\*{0,2})?(\d+)\s*[).:\-–—]\s*(.+?)\s*$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (n < 1 || n > 3) continue;
+    const idea = m[2].replace(/\*+/g, '').trim();
+    if (idea) numbered[n - 1] = idea;
+  }
+  if (numbered.filter(Boolean).length > 0) {
+    return [numbered[0] || '', numbered[1] || '', numbered[2] || ''];
+  }
+
+  const bullets: string[] = [];
+  for (const line of beforeBrief.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^ID[EÉ]ES?\b/i.test(trimmed)) continue; // en-tête « IDÉES : » / « IDÉES CLÉS : »
+    if (/^BRIEF\b/i.test(trimmed)) break;
+    const bullet = trimmed.match(/^(?:[-–—•*]+|\d+[).])\s*(.+)$/);
+    if (bullet?.[1]?.trim()) {
+      bullets.push(bullet[1].trim());
+      if (bullets.length >= 3) break;
+    }
+  }
+  if (bullets.length > 0) {
+    return [bullets[0] || '', bullets[1] || '', bullets[2] || ''];
+  }
+
+  return empty;
+}
+
+function asText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return '';
+}
+
+function tokenOrKeep(key: keyof ReelPromptTokenMap, value: string): string {
+  const v = value.trim();
+  return v || `{{${key}}}`;
+}
+
+export function buildReelPromptTokenMap(post: ReelPromptPostFields): ReelPromptTokenMap {
+  const [i1, i2, i3] = extractReelIdeas(asText(post.reelScript));
+  const hook = (asText(post.overlayText) || asText(post.hookTitle) || asText(post.title)).trim();
+  const caption = asText(post.caption).trim();
+  const locale = asText(post.locale || 'fr').toLowerCase();
+  const langue = locale === 'es' ? 'espagnol' : 'français';
+  const chemin = asText(post.rawVideoPath).trim();
+  const slug = slugFromMp4Filename(chemin);
+  const exception = asText(post.overlayOrException).trim() || 'standard';
+
+  return {
+    CHEMIN_MP4: tokenOrKeep('CHEMIN_MP4', chemin),
+    SLUG: tokenOrKeep('SLUG', slug),
+    LANGUE: langue,
+    HOOK: tokenOrKeep('HOOK', hook),
+    IDEE_1: tokenOrKeep('IDEE_1', i1),
+    IDEE_2: tokenOrKeep('IDEE_2', i2),
+    IDEE_3: tokenOrKeep('IDEE_3', i3),
+    // Légende vide → consignes « génère-la » (pas le token brut)
+    LEGENDE: caption || 'génère-la',
+    OVERLAY_OU_EXCEPTION: exception,
+  };
+}
+
+export function fillReelPromptReference(tokens: ReelPromptTokenMap): string {
+  return TEMPLATE_REFERENCE.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
+    const k = key as keyof ReelPromptTokenMap;
+    const value = tokens[k];
+    // Remplacement via fonction : les `$` éventuels dans le contenu ne cassent pas le prompt.
+    return value != null && value !== '' ? value : `{{${key}}}`;
+  });
+}
+
+/** Prompt prêt à coller dans Claude Code pour un post CM. */
+export function buildClaudeCodeReelPrompt(post: ReelPromptPostFields): string {
+  return fillReelPromptReference(buildReelPromptTokenMap(post));
+}
+
+/**
+ * Fallback execCommand. Safari peut renvoyer true sans rien mettre
+ * dans le presse-papiers — ne pas s’y fier seul pour le feedback UI.
+ */
+export function copyTextToClipboardSync(text: string): boolean {
+  const value = typeof text === 'string' ? text : String(text ?? '');
+  if (!value || typeof document === 'undefined') return false;
+
+  const ta = document.createElement('textarea');
+  ta.value = value;
+  // Pas de readonly : Safari ignore parfois la sélection sinon.
+  ta.style.cssText =
+    'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;margin:0;border:0;outline:none;opacity:0.01;z-index:2147483647;';
+  document.body.appendChild(ta);
+
+  ta.focus({ preventScroll: true });
+  ta.select();
+  ta.setSelectionRange(0, value.length);
+
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+
+  // Laisser le temps à Safari d’écrire avant de retirer le nœud.
+  window.setTimeout(() => {
+    ta.remove();
+  }, 120);
+
+  return ok;
+}
+
+/**
+ * Copie depuis un geste utilisateur (pointerdown / click).
+ * writeText d’abord (synchrone dans le geste) ; execCommand en secours silencieux
+ * uniquement si l’API Clipboard est absente — jamais de faux « Copié ! » via execCommand seul.
+ */
+export async function copyTextFromUserGesture(text: string): Promise<void> {
+  const value = typeof text === 'string' ? text : String(text ?? '');
+  if (!value) throw new Error('Prompt vide — rien à copier.');
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (copyTextToClipboardSync(value)) return;
+
+  throw new Error('Impossible de copier dans le presse-papiers (autorise le site dans Safari).');
+}
+
+/** Alias historique — même chaîne que copyTextFromUserGesture. */
+export async function copyTextToClipboard(text: string): Promise<void> {
+  return copyTextFromUserGesture(text);
+}
