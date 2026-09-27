@@ -1,6 +1,6 @@
 /**
- * Contenu actionnable issu de docs/MARCHE_FEMMES.md (UI onglet Marché).
- * Ne remplace pas le MD — le MD reste la source éditoriale avec sources datées.
+ * Contenu actionnable issu de docs/MARCHE_FEMMES.md + docs/MARCHE_EXTERNE.md (UI onglet Marché).
+ * Ne remplace pas les MD — les MD restent la source éditoriale avec sources datées.
  */
 
 export type MarcheMarketBlock = {
@@ -32,7 +32,7 @@ export const MARCHE_WANTS = [
     },
   },
   {
-    id: 'etre-vue',
+    id: 'être-vue',
     emoji: '👁️',
     title: { fr: 'Être vue', es: 'Ser vista' },
     detail: {
@@ -196,6 +196,75 @@ export const MARCHE_PUB_CONCLUSION = [
 ] as const;
 
 export const DOC_SOURCES_NOTE = {
-  fr: 'Chiffres et sources datées 2024–2026 (documents internes Marché femmes + Expertise pub).',
-  es: 'Cifras y fuentes fechadas 2024–2026 (documentos internos Mercado mujeres + Pericia anuncios).',
+  fr: 'Chiffres et sources datées 2024–2026 (Marché femmes + Marché externe + Expertise pub).',
+  es: 'Cifras y fuentes fechadas 2024–2026 (Mercado mujeres + Mercado externo + Pericia anuncios).',
 };
+
+/** Benchmarks externes — docs/MARCHE_EXTERNE.md. Ordres de grandeur, jamais un recensement. */
+export const MARCHE_EXTERNE = {
+  honesty: {
+    fr: 'Repères de marché (ordres de grandeur). Les cabinets ne mesurent pas le même périmètre. Ce n’est pas « combien de Françaises paieront FitMangas ».',
+    es: 'Referencias de mercado (órdenes de magnitud). Los informes no miden lo mismo. No es « cuántas mexicanas o francesas pagarán FitMangas ».',
+  },
+  world: {
+    title: { fr: 'Monde', es: 'Mundo' },
+    figure: { fr: '~44 Md$', es: '~44 mil M$' },
+    caption: {
+      fr: 'Fitness virtuel : ~34 Md$ en 2025, ~28 %/an → autour de 44 Md$ en 2026 (projection). Autre étude : ~36 Md$ online en 2026.',
+      es: 'Fitness virtual: ~34 mil M$ en 2025, ~28 %/año → alrededor de 44 mil M$ en 2026 (proyección). Otro informe: ~36 mil M$ online en 2026.',
+    },
+  },
+  fr: {
+    title: { fr: 'France', es: 'Francia' },
+    figure: { fr: '~33 %/an', es: '~33 %/año' },
+    caption: {
+      fr: 'Parmi les plus fortes croissances des pays riches (online fitness ~33–34 %/an). Le digital wellness accélère encore — pas un marché plat.',
+      es: 'De los crecimientos más fuertes entre países ricos (online fitness ~33–34 %/año). El wellness digital sigue acelerando.',
+    },
+  },
+  mx: {
+    title: { fr: 'Mexique / LatAm', es: 'México / LatAm' },
+    figure: { fr: '~22 %/an', es: '~22 %/año' },
+    caption: {
+      fr: 'Apps fitness & santé LatAm : ~3,8 Md$ en 2025, ~22 %/an. Plus jeune, plus mobile. WhatsApp + Instagram.',
+      es: 'Apps de fitness y salud LatAm: ~3,8 mil M$ en 2025, ~22 %/año. Más joven, más móvil. WhatsApp + Instagram.',
+    },
+  },
+  buyer: [
+    {
+      emoji: '👩',
+      title: { fr: 'Femme, souvent majoritaire', es: 'Mujer, a menudo mayoría' },
+      detail: {
+        fr: 'Autour de la moitié des utilisatrices d’apps — souvent plus. Repère MX : ~56 % de femmes parmi les passionnées fitness. Pas 55 % exact partout.',
+        es: 'Alrededor de la mitad de las usuarias de apps — a menudo más. México: ~56 % mujeres entre entusiastas fitness. No es un 55 % exacto en todos lados.',
+      },
+    },
+    {
+      emoji: '🏙️',
+      title: { fr: '25–40 ans, urbaine', es: '25–40 años, urbana' },
+      detail: {
+        fr: 'Cœur d’âge 25–40 ; pic d’usage apps santé chez les 35–44. Revenus moyens-supérieurs, smartphone — assez pour un abo, pas un luxe inaccessible.',
+        es: 'Núcleo 25–40; pico de uso de apps de salud en 35–44. Ingresos medios-altos, móvil — suficiente para una suscripción.',
+      },
+    },
+    {
+      emoji: '💛',
+      title: { fr: 'Holistique + communauté + suivi', es: 'Holístico + comunidad + seguimiento' },
+      detail: {
+        fr: 'Elle cherche à tenir, être vue, pas un exo YouTube anonyme. Séances souvent 20–30 min (format cours visio / maison).',
+        es: 'Quiere sostenerse y ser vista, no un ejercicio anónimo de YouTube. Sesiones a menudo 20–30 min (clase en vídeo / casa).',
+      },
+    },
+  ],
+  opportunity: {
+    title: { fr: 'Où est le potentiel', es: 'Dónde está el potencial' },
+    aligned: {
+      fr: 'Collectif, être vue, corps + tête : c’est exactement ce que le marché en ligne paie — YouTube ne le donne pas.',
+      es: 'Colectivo, ser vista, cuerpo + cabeza: es justo lo que el mercado online paga — YouTube no lo da.',
+    },
+    beyond: {
+      fr: 'Le gisement n’est pas « les fans de Pilates ». C’est celles qui ont déjà lâché seules (dos 15h, post-partum, 45+, stress). Tes 2 300 abonnées ≠ le marché.',
+      es: 'El filón no son « las fans de Pilates ». Son las que ya lo dejaron solas (espalda a las 15h, posparto, +45, estrés). Tus seguidoras ≠ el mercado.',
+    },
+  },
+} as const;
