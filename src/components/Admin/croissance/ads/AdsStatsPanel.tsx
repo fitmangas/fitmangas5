@@ -35,7 +35,6 @@ import type { AdsSubTab, AdsUiLang } from '@/lib/acquisition/ads/ads-glossary';
 import {
   ADS_CHART_PALETTE,
   AdsCard,
-  AdsJourney,
   AdsTermHint,
   Collapsible,
   HBar,
@@ -141,7 +140,7 @@ const tooltipStyle = {
   boxShadow: '0 12px 32px rgba(35,32,29,0.08)',
 };
 
-export function AdsStatsPanel({ intelligence, performance, lang = 'fr', onGoTo }: Props) {
+export function AdsStatsPanel({ intelligence, performance, lang = 'fr' }: Props) {
   const [period, setPeriod] = useState<PeriodDays>(28);
   const [metric, setMetric] = useState<ChartMetric>('views');
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
@@ -189,13 +188,9 @@ export function AdsStatsPanel({ intelligence, performance, lang = 'fr', onGoTo }
     <div className="space-y-5 sm:space-y-6" data-testid="ads-tab-stats">
       {/* ── En-tête + période ─────────────────────────────── */}
       <AdsCard tone="warm" testId="ads-stats-header">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-              {lang === 'es' ? 'Paso 2 · Mis cifras · Instagram @fit.mangas + anuncios' : 'Étape 2 · Mes stats · Instagram @fit.mangas + pubs'}{' '}
-              <AdsTermHint term="meta" lang={lang} />
-            </p>
-            <h2 className="mt-1 font-serif text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: acq.ink }}>
+            <h2 className="font-serif text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: acq.ink }}>
               {account?.followersCount != null
                 ? `${num(account.followersCount)} ${lang === 'es' ? 'seguidoras' : 'abonnées'}`
                 : lang === 'es'
@@ -204,26 +199,11 @@ export function AdsStatsPanel({ intelligence, performance, lang = 'fr', onGoTo }
             </h2>
             <p className="mt-1 text-sm" style={{ color: acq.muted }}>
               {summary.coveredDays > 0
-                ? `${summary.coveredDays} ${lang === 'es' ? 'día(s) de datos' : 'jour(s) de données'}${lastDay ? ` · ${lang === 'es' ? 'hasta el' : 'jusqu’au'} ${shortDate(lastDay)}` : ''} · ${lang === 'es' ? 'comparado con los' : 'comparé aux'} ${period} ${lang === 'es' ? 'días anteriores' : 'jours précédents'}${comparable ? '' : lang === 'es' ? ' (histórico insuficiente)' : ' (historique insuffisant pour comparer)'}.`
+                ? `${summary.coveredDays} ${lang === 'es' ? 'día(s) de datos' : 'jour(s) de données'}${lastDay ? ` · ${shortDate(lastDay)}` : ''}${comparable ? '' : lang === 'es' ? ' (histórico insuficiente)' : ' (historique insuffisant)'}`
                 : lang === 'es'
-                  ? 'Aún no hay serie diaria — pulsa « Sincronizar los datos ».'
-                  : 'Aucune série quotidienne encore — lance « Synchroniser les données ».'}
+                  ? 'Aún no hay serie diaria — pulsa « Sincronizar ».'
+                  : 'Aucune série quotidienne encore — lance « Synchroniser ».'}
             </p>
-            {onGoTo ? (
-              <div className="mt-3">
-                <AdsJourney current="stats" lang={lang} onGo={onGoTo} />
-              </div>
-            ) : null}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <SourceTag kind="visuel" />
-              <span className="text-[11px]" style={{ color: acq.muted }}>
-                = ce que ta communication produit (vues, audience, contenus)
-              </span>
-              <SourceTag kind="invisible" />
-              <span className="text-[11px]" style={{ color: acq.muted }}>
-                = ce qui se passe derrière (argent, leads, coût)
-              </span>
-            </div>
           </div>
           <Segmented
             testId="ads-stats-period"
