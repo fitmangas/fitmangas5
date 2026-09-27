@@ -79,7 +79,15 @@ AVANT TOUT — lis et applique STRICTEMENT, dans l'ordre :
 11. Studio localhost (npm run dev), ATTENDS mon OK visuel. Sur mon OK : npm run render LOCAL (jamais cloud) →
     copie H.264 SDR Rec.709 (bt709, faststart, audio inchangé) dans le VRAI dossier local
     FitMangas-Reels/exports/ : « reel-{{SLUG}}_1080x1920_30fps.mp4 ». Donne le chemin.
-12. Propose la légende. Zones mortes IG respectées (150/400/100 px). Face cam dominant.`;
+12. Propose la légende. Zones mortes IG respectées (150/400/100 px). Face cam dominant.
+13. MINIATURE (couverture du Reel — À LA TOUTE FIN, après le rendu/export MP4) : génère automatiquement la
+    couverture via le Template A :
+    python3 FitMangas-Reels/templates/make-reel-cover.py --slug {{SLUG}} --hook "{{HOOK}}"
+    - TITRE de la couverture = le texte de l'OVERLAY VIDÉO (le {{HOOK}}), en gros mot condensé terracotta (Anton).
+    - PHOTO = une belle photo portrait de la bibliothèque (public/…) choisie automatiquement ; si aucune ne convient,
+      ajouter --reel <dossier_du_reel> --source frame pour extraire une frame nette du cara.mp4.
+    - POSITION du bloc titre = ALÉATOIRE (haut / centre / bas) à chaque génération → couvertures variées dans la grille.
+    - SORTIE : FitMangas-Reels/exports/reel-{{SLUG}}_cover.png (à côté du MP4). Donne le chemin.`;
 
 export type ReelPromptTokenMap = {
   CHEMIN_MP4: string;

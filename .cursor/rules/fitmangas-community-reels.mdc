@@ -35,6 +35,7 @@ alwaysApply: false
 - **Sound design varié** (skill 05) : clic souris, clavier, obturateur, tick, pop, chime — chaque animation a son micro-son (~−20 dB sous la voix) ; pas d’animation muette
 - Follow IG chaque Reel : block `instagram-follow` + avatar `hero.jpg` crop visage + badge vérifié bleu + handle **`@fit.mangas`** + bouton **Seguir** fixe
 - CTA chaque Reel : pile 3 cartes desktop (dashboard + blog + replays) en zone sombre haute, **APRÈS recadrage du visage en bas** — **PAS de float** (float **INTERDIT**) ; jamais mobile plein cadre
+- **Après export MP4** : miniature Template A (`FitMangas-Reels/templates/make-reel-cover.py`) — titre = overlay/hook, photo biblio (sinon frame `cara.mp4`), position titre aléatoire, sortie `exports/reel-{{SLUG}}_cover.png`
 
 ## Admin
 

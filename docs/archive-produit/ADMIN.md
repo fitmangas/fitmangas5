@@ -1,11 +1,11 @@
 # Archive — Admin (`/admin`)
 
-Dernière MAJ : 2026-09-21.
+Dernière MAJ : 2026-09-28.
 
 | Zone | Chemin | Rôle |
 |---|---|---|
 | Acquisition | `/admin/acquisition` | Inbox DM IG/Messenger/WA, workflows, followups, readiness Meta |
-| Community | `/admin/community` | CM Instagram (génération posts) + miroirs FB / TikTok / **YouTube Shorts** |
+| Community | `/admin/community` | CM Instagram (génération posts) + miroirs FB / TikTok / **YouTube Shorts**. Bouton **Copier prompt Claude Code** : pipeline HyperFrames local + **étape 13 miniature** Template A (`make-reel-cover.py`, titre = overlay). |
 | Marketing | `/admin/marketing` | Alias / surface CM |
 | Blog | `/admin/blog` (+ articles, calendar, validation, newsletter, stats) | Contenu SEO |
 | Clients | `/admin/clients` | Fiches membres |
