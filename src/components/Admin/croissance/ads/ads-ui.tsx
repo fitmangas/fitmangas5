@@ -7,10 +7,14 @@ import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { acq } from '@/components/acquisition/tokens';
 import {
   ADS_GLOSSARY,
+  CREATIVE_STATUS_HELP,
+  CREATIVE_STATUS_SOURCE_HELP,
   type AdsUiLang,
   type GlossaryKey,
   glossaryText,
+  pickLang,
 } from '@/lib/acquisition/ads/ads-glossary';
+import { CREATIVE_STATUSES } from '@/lib/acquisition/ads/stats-compute';
 
 export const adsTone = {
   good: '#15803d',
@@ -401,6 +405,28 @@ export function AdsLangSwitch({ lang, onChange }: { lang: AdsUiLang; onChange: (
           {l === 'fr' ? 'FR' : 'ES'}
         </button>
       ))}
+    </div>
+  );
+}
+
+export function CreativePipelineHelp({ lang, compact }: { lang: AdsUiLang; compact?: boolean }) {
+  return (
+    <div data-testid="ads-pipeline-help">
+      <ul className={`grid gap-2 ${compact ? '' : 'sm:grid-cols-2 lg:grid-cols-5'}`}>
+        {CREATIVE_STATUSES.map((s) => (
+          <li key={s} className="rounded-xl border bg-white px-3 py-2.5" style={{ borderColor: acq.warmBeigeDeep }}>
+            <p className="text-xs font-semibold" style={{ color: acq.ink }}>
+              {pickLang(CREATIVE_STATUS_HELP[s].label, lang)}
+            </p>
+            <p className="mt-0.5 text-[11px] leading-snug" style={{ color: acq.muted }}>
+              {pickLang(CREATIVE_STATUS_HELP[s].help, lang)}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11px] leading-relaxed" style={{ color: acq.muted }}>
+        {pickLang(CREATIVE_STATUS_SOURCE_HELP.auto, lang)} {pickLang(CREATIVE_STATUS_SOURCE_HELP.manuel, lang)}
+      </p>
     </div>
   );
 }
