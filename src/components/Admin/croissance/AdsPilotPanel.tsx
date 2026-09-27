@@ -1,17 +1,13 @@
 'use client';
 
-import { useMemo, useState, useTransition, type ReactNode } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import {
   AlertTriangle,
-  BarChart3,
   CheckCircle2,
   ChevronDown,
-  ClipboardList,
-  Globe2,
   Lock,
   Plus,
   RefreshCw,
-  Zap,
 } from 'lucide-react';
 
 import { acq } from '@/components/acquisition/tokens';
@@ -69,13 +65,11 @@ const SUB_TABS: Array<{
   id: AdsSubTab;
   emoji: string;
   label: { fr: string; es: string };
-  hint: { fr: string; es: string };
-  icon: ReactNode;
 }> = [
-  { id: 'marche', emoji: '🌍', label: { fr: 'Marché', es: 'Mercado' }, hint: { fr: 'Ce que veulent les femmes', es: 'Lo que quieren las mujeres' }, icon: <Globe2 size={15} /> },
-  { id: 'stats', emoji: '📊', label: { fr: 'Mes stats', es: 'Mis cifras' }, hint: { fr: 'Compte, audience, contenus, pub', es: 'Cuenta, audiencia, contenidos, anuncios' }, icon: <BarChart3 size={15} /> },
-  { id: 'plan', emoji: '📋', label: { fr: 'Plan d’action', es: 'Plan de acción' }, hint: { fr: 'Quoi créer, quoi tester', es: 'Qué crear, qué probar' }, icon: <ClipboardList size={15} /> },
-  { id: 'execution', emoji: '⚡', label: { fr: 'Exécution', es: 'Ejecución' }, hint: { fr: 'Tableau de bord & prochaine action', es: 'Cuadro de mando y siguiente acción' }, icon: <Zap size={15} /> },
+  { id: 'marche', emoji: '🌍', label: { fr: 'Marché', es: 'Mercado' } },
+  { id: 'stats', emoji: '📊', label: { fr: 'Mes stats', es: 'Mis cifras' } },
+  { id: 'plan', emoji: '📋', label: { fr: 'Plan d’action', es: 'Plan de acción' } },
+  { id: 'execution', emoji: '⚡', label: { fr: 'Exécution', es: 'Ejecución' } },
 ];
 
 function persistSub(sub: AdsSubTab) {
@@ -123,7 +117,7 @@ export function AdsPilotPanel({
 }: Props) {
   const [subTab, setSubTab] = useState<AdsSubTab>(initialSubTab);
   const [lang, setLang] = useAdsUiLang();
-  const [capsOpen, setCapsOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -195,174 +189,136 @@ export function AdsPilotPanel({
         </div>
       )}
 
-      {/* Hero */}
       <section
         data-testid="ads-connection-banner"
-        className="relative overflow-hidden rounded-[1.75rem] border"
-        style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard, background: 'linear-gradient(160deg,#FFFFFF 0%,#FFFAF5 60%,#FBEDE5 100%)' }}
+        className="overflow-hidden rounded-[1.35rem] border bg-white"
+        style={{ borderColor: hasCapAlert ? 'rgba(185,28,28,0.28)' : 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard }}
       >
-        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-30 blur-3xl" style={{ background: acq.terracotta }} aria-hidden />
-        <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-8 sm:py-7 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
-                {lang === 'es' ? 'Pilotaje de anuncios' : 'Pilotage publicité'}
-              </p>
-              <AdsLangSwitch lang={lang} onChange={setLang} />
-            </div>
-            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl" style={{ color: acq.ink }}>
+        <div className="flex flex-col gap-3 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="font-serif text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: acq.ink }}>
               {lang === 'es' ? 'Publicidad' : 'Publicité'}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: acq.muted }}>
-              {lang === 'es'
-                ? 'Ningún gasto sin doble confirmación humana.'
-                : 'Aucune dépense sans double confirmation humaine.'}
-            </p>
-            <div className="mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3" style={{ borderColor: 'rgba(196,93,62,0.22)', backgroundColor: acq.terracottaSoft }}>
+            <AdsLangSwitch lang={lang} onChange={setLang} />
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              style={{
+                backgroundColor: connection.connected ? 'rgba(21,128,61,0.10)' : acq.terracottaSoft,
+                color: connection.connected ? '#15803d' : acq.terracotta,
+              }}
+            >
+              {connection.connected ? <CheckCircle2 size={13} /> : <Lock size={13} />}
               {connection.connected ? (
-                <CheckCircle2 className="mt-0.5 shrink-0" size={18} style={{ color: '#15803d' }} />
+                <>
+                  <AdsTermHint term="meta" lang={lang}>
+                    Meta
+                  </AdsTermHint>
+                  {' · '}
+                  {lang === 'es' ? 'lectura' : 'lecture'}
+                </>
+              ) : lang === 'es' ? (
+                'Meta no conectado'
               ) : (
-                <Lock className="mt-0.5 shrink-0" size={18} style={{ color: acq.terracotta }} />
+                'Meta non connecté'
               )}
-              <div>
-                <p className="text-sm font-semibold" style={{ color: acq.ink }}>
-                  {connection.connected ? (
-                    lang === 'es' ? (
-                      <>
-                        <AdsTermHint term="meta" lang={lang}>
-                          Meta
-                        </AdsTermHint>{' '}
-                        conectado (lectura + borradores <AdsTermHint term="paused" lang={lang} />)
-                      </>
-                    ) : (
-                      <>
-                        <AdsTermHint term="meta" lang={lang}>
-                          Meta
-                        </AdsTermHint>{' '}
-                        connecté (lecture + brouillons <AdsTermHint term="paused" lang={lang} />)
-                      </>
-                    )
-                  ) : lang === 'es' ? (
-                    'En espera de conexión Meta'
-                  ) : (
-                    'En attente connexion Meta'
-                  )}
-                </p>
-                <p className="mt-0.5 text-xs leading-relaxed" style={{ color: acq.muted }}>
-                  {connection.message}
-                </p>
-              </div>
-            </div>
+            </span>
+            {hasCapAlert ? (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white" data-testid="ads-caps-alert">
+                {missingCaps.length || '!'}
+              </span>
+            ) : null}
+            <span className="text-[11px]" style={{ color: acq.muted }} data-testid="ads-sync-status">
+              {formatSync(intelligence.lastSyncAt)}
+            </span>
           </div>
-          <div className="flex flex-col gap-3 lg:items-end">
-            <dl className="grid grid-cols-3 gap-2 text-center">
-              {[
-                [lang === 'es' ? 'Seguidoras' : 'Abonnées', num(intelligence.organicAccount?.followersCount ?? null)],
-                [lang === 'es' ? 'Gasto 30 d' : 'Dépense 30 j', eur(intelligence.adsTotals.spendCents)],
-                [lang === 'es' ? 'Campañas activas' : 'Campagnes actives', String(activeCampaigns)],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded-2xl border bg-white/80 px-3 py-2.5" style={{ borderColor: acq.warmBeigeDeep }}>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: acq.muted }}>
-                    {k}
-                  </dt>
-                  <dd className="mt-0.5 font-serif text-lg font-semibold tabular-nums" style={{ color: acq.ink }}>
-                    {v}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => run(onFullSync)}
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
-                style={{ backgroundColor: acq.terracotta }}
-                data-testid="ads-sync-intelligence"
-              >
-                <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> {lang === 'es' ? 'Sincronizar datos' : 'Synchroniser les données'}
-              </button>
-              <button type="button" disabled={pending || !schemaReady} onClick={() => run(onCreateDrafts)} className="rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: acq.active }}>
-                {lang === 'es' ? 'Crear 3 borradores' : 'Créer 3 brouillons'}
-              </button>
-              <button type="button" disabled={pending} onClick={() => run(onSyncInsights)} className="rounded-full border bg-white px-4 py-2.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
-                {lang === 'es' ? 'Actualizar fichas' : 'Actualiser les fiches'}{' '}
-                <AdsTermHint term="crm" lang={lang} />
-              </button>
-              <button type="button" disabled={pending || !schemaReady} onClick={() => run(onSeedCreatives)} className="rounded-full border bg-white px-4 py-2.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
-                {lang === 'es' ? 'Preparar modelos de anuncios' : 'Préparer les modèles de pubs'}
-              </button>
-            </div>
+          <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            {[
+              [lang === 'es' ? 'Seguidoras' : 'Abonnées', num(intelligence.organicAccount?.followersCount ?? null)],
+              [lang === 'es' ? 'Gasto 30 d' : 'Dépense 30 j', eur(intelligence.adsTotals.spendCents)],
+              [lang === 'es' ? 'Activas' : 'Actives', String(activeCampaigns)],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-baseline gap-1.5">
+                <dt className="text-[10px] font-bold uppercase tracking-wider" style={{ color: acq.muted }}>
+                  {k}
+                </dt>
+                <dd className="font-serif text-base font-semibold tabular-nums" style={{ color: acq.ink }}>
+                  {v}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(onFullSync)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              style={{ backgroundColor: acq.terracotta }}
+              data-testid="ads-sync-intelligence"
+            >
+              <RefreshCw size={13} className={pending ? 'animate-spin' : ''} />
+              {lang === 'es' ? 'Sincronizar' : 'Synchroniser'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMoreOpen((o) => !o)}
+              aria-expanded={moreOpen}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border"
+              style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}
+              data-testid="ads-caps-toggle"
+            >
+              {moreOpen ? <ChevronDown size={16} className="rotate-180" /> : <Plus size={16} />}
+            </button>
           </div>
         </div>
+        {moreOpen ? (
+          <div className="space-y-3 border-t px-4 py-4 sm:px-5" style={{ borderColor: acq.warmBeigeDeep }} data-testid="ads-caps-panel">
+            <p className="text-xs leading-relaxed" style={{ color: acq.muted }}>
+              {lang === 'es' ? 'Última sincro' : 'Dernière synchro'} : {formatSync(intelligence.lastSyncAt)}
+              {' · '}
+              {connection.message}{' '}
+              {lang === 'es' ? 'Ningún gasto sin doble confirmación humana.' : 'Aucune dépense sans double confirmation humaine.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={pending || !schemaReady} onClick={() => run(onCreateDrafts)} className="rounded-full px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ backgroundColor: acq.active }}>
+                {lang === 'es' ? 'Crear 3 borradores' : 'Créer 3 brouillons'}
+              </button>
+              <button type="button" disabled={pending} onClick={() => run(onSyncInsights)} className="rounded-full border bg-white px-3.5 py-2 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
+                {lang === 'es' ? 'Actualizar fichas' : 'Actualiser les fiches'} <AdsTermHint term="crm" lang={lang} />
+              </button>
+              <button type="button" disabled={pending || !schemaReady} onClick={() => run(onSeedCreatives)} className="rounded-full border bg-white px-3.5 py-2 text-xs font-semibold disabled:opacity-50" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }}>
+                {lang === 'es' ? 'Preparar modelos' : 'Préparer les modèles'}
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {(intelligence.capabilities.length
+                ? intelligence.capabilities
+                : [{ id: 'pending', label: 'Lance une sync pour sonder', accessible: false, missingPermission: null, note: 'Pas encore de run.' }]
+              ).map((c) => (
+                <div key={c.id} className="flex items-start gap-2 rounded-xl border px-3 py-2.5" style={{ borderColor: c.accessible ? acq.warmBeigeDeep : 'rgba(185,28,28,0.35)', backgroundColor: c.accessible ? '#fff' : 'rgba(254,226,226,0.5)' }}>
+                  {c.accessible ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: '#15803d' }} /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-700" />}
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: acq.ink }}>
+                      {c.accessible ? 'OUI' : 'NON'} · {c.label}
+                    </p>
+                    <p className="mt-0.5 text-[11px]" style={{ color: acq.muted }}>
+                      {c.accessible ? c.note : c.missingPermission ? `Manquant : ${c.missingPermission}` : c.note}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         {!schemaReady ? (
-          <p className="relative flex items-center gap-2 px-5 pb-5 text-sm sm:px-8" style={{ color: '#b91c1c' }}>
+          <p className="flex items-center gap-2 px-4 pb-3 text-sm sm:px-5" style={{ color: '#b91c1c' }}>
             <AlertTriangle size={16} /> Tables Ads absentes — migration additive requise.
           </p>
         ) : null}
       </section>
 
-      {/* Capabilities (repliées) */}
-      <section data-testid="ads-sync-status" className="overflow-hidden rounded-[1.5rem] border bg-white" style={{ borderColor: hasCapAlert ? 'rgba(185,28,28,0.3)' : 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard }}>
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left sm:px-6"
-          onClick={() => setCapsOpen((o) => !o)}
-          aria-expanded={capsOpen}
-          data-testid="ads-caps-toggle"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            {hasCapAlert ? (
-              <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white" data-testid="ads-caps-alert">
-                {missingCaps.length || '!'}
-              </span>
-            ) : (
-              <CheckCircle2 className="shrink-0" size={20} style={{ color: '#15803d' }} />
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold" style={{ color: acq.ink }}>
-                {lang === 'es' ? 'Datos conectados' : 'Données connectées'}
-                {hasCapAlert ? (
-                  <span className="ml-2 text-xs font-semibold text-red-700">
-                    · {missingCaps.length} {lang === 'es' ? 'fuente(s) no accesible(s)' : 'source(s) non accessible(s)'}
-                  </span>
-                ) : null}
-              </p>
-              <p className="text-xs" style={{ color: acq.muted }}>
-                {lang === 'es' ? 'Última sincro' : 'Dernière synchro'} : {formatSync(intelligence.lastSyncAt)} ·{' '}
-                {lang === 'es' ? 'auto cada día 04:40 (París)' : 'auto chaque jour 04:40 (Paris)'}
-              </p>
-            </div>
-          </div>
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: acq.warmBeigeDeep, color: acq.ink }} aria-hidden>
-            {capsOpen ? <ChevronDown size={16} className="rotate-180" /> : <Plus size={16} />}
-          </span>
-        </button>
-        {capsOpen ? (
-          <div className="grid gap-2 border-t px-4 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3" style={{ borderColor: acq.warmBeigeDeep }} data-testid="ads-caps-panel">
-            {(intelligence.capabilities.length
-              ? intelligence.capabilities
-              : [{ id: 'pending', label: 'Lance une sync pour sonder', accessible: false, missingPermission: null, note: 'Pas encore de run.' }]
-            ).map((c) => (
-              <div key={c.id} className="flex items-start gap-2 rounded-xl border px-3 py-2.5" style={{ borderColor: c.accessible ? acq.warmBeigeDeep : 'rgba(185,28,28,0.35)', backgroundColor: c.accessible ? '#fff' : 'rgba(254,226,226,0.5)' }}>
-                {c.accessible ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: '#15803d' }} /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-700" />}
-                <div>
-                  <p className="text-xs font-semibold" style={{ color: acq.ink }}>
-                    {c.accessible ? 'OUI' : 'NON'} · {c.label}
-                  </p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: acq.muted }}>
-                    {c.accessible ? c.note : c.missingPermission ? `Manquant : ${c.missingPermission}` : c.note}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      {/* Sous-navigation */}
       <nav
-        className="sticky top-2 z-20 grid grid-cols-2 gap-1.5 rounded-[1.5rem] border bg-white/90 p-1.5 backdrop-blur sm:grid-cols-4"
+        className="sticky top-2 z-20 grid grid-cols-4 gap-1 rounded-2xl border bg-white/90 p-1 backdrop-blur"
         style={{ borderColor: 'rgba(232,223,212,0.9)', boxShadow: acq.shadowCard }}
         data-testid="ads-subnav"
         aria-label="Sous-catégories Ads"
@@ -376,24 +332,13 @@ export function AdsPilotPanel({
               data-testid={`ads-subnav-${t.id}`}
               aria-current={active ? 'page' : undefined}
               onClick={() => goTo(t.id)}
-              className="flex items-center gap-2.5 rounded-[1.1rem] px-3 py-2.5 text-left transition"
+              className="flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center sm:justify-start sm:px-3"
               style={{ backgroundColor: active ? acq.ink : 'transparent', color: active ? '#fff' : acq.ink }}
             >
-              <span
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-                style={{ backgroundColor: active ? acq.terracotta : acq.warmBeige, color: active ? '#fff' : acq.terracotta }}
-              >
-                <span className="sm:hidden" aria-hidden>
-                  {t.emoji}
-                </span>
-                <span className="hidden sm:inline">{t.icon}</span>
+              <span aria-hidden className="text-sm">
+                {t.emoji}
               </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold leading-tight">{t.label[lang]}</span>
-                <span className="hidden truncate text-[10px] leading-tight sm:block" style={{ color: active ? 'rgba(255,255,255,0.65)' : acq.muted }}>
-                  {t.hint[lang]}
-                </span>
-              </span>
+              <span className="text-xs font-semibold sm:text-sm">{t.label[lang]}</span>
             </button>
           );
         })}
