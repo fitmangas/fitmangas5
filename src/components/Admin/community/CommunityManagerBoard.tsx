@@ -23,6 +23,7 @@ import {
 
 import {
   attachSocialEditedVideoAction,
+  attachSocialReelCoverAction,
   confirmMetaAppLiveAction,
   createManualSocialPostAction,
   deleteSocialPostAction,
@@ -83,6 +84,11 @@ import {
   buildClaudeCodeReelPrompt,
   copyTextFromUserGesture,
 } from '@/lib/admin/reel-prompt-reference';
+import {
+  isLocalHyperFramesCoverPath,
+  reelCoverPublicUrl,
+  REEL_COVER_API_SUPPORT,
+} from '@/lib/admin/reel-cover';
 import { resolveGenerationNetworks, weekPlanSummary } from '@/lib/admin/social-week-planner';
 import type { AlejandraDoubleProfile } from '@/lib/admin/alejandra-double';
 import {
@@ -2184,6 +2190,101 @@ function PostCard({
                   )
                 }
               />
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">
+                Miniature (cover Reel)
+              </label>
+              <input
+                className={ADMIN_FIELD_CLASS}
+                key={`cover-${post.id}-${post.updatedAt}`}
+                defaultValue={post.coverImagePath ?? ''}
+                placeholder="FitMangas-Reels/exports/reel-mon-slug_cover.png ou URL publique"
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  run(
+                    () => updateSocialPostReelBriefAction(post.id, { coverImagePath: v ? v : null }),
+                    'Miniature enregistrée.',
+                  );
+                }}
+              />
+              <p className="text-[11px] leading-snug text-luxury-soft">
+                {REEL_COVER_API_SUPPORT.instagram.how} · {REEL_COVER_API_SUPPORT.facebook.how} ·{' '}
+                {REEL_COVER_API_SUPPORT.tiktok.how}
+              </p>
+              {post.coverImagePath && isLocalHyperFramesCoverPath(post.coverImagePath) ? (
+                <p className="text-[11px] text-amber-800">
+                  Chemin HyperFrames sur ton Mac : Meta ne peut pas le lire — importe le PNG ci-dessous ou colle une URL
+                  publique.
+                </p>
+              ) : null}
+              {reelCoverPublicUrl(post.coverImagePath) ? (
+                <div className="relative mt-1 h-28 w-[4.5rem] overflow-hidden rounded-lg border border-[#E8D9C8]/80">
+                  <img
+                    src={reelCoverPublicUrl(post.coverImagePath)!}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : null}
+              <label className="btn-luxury-ghost inline-flex min-h-[36px] cursor-pointer items-center gap-2 px-3 text-[11px]">
+                Importer une miniature (PNG/JPEG)
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  disabled={reelUploadPending || pending}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    startReelUpload(async () => {
+                      try {
+                        const signRes = await fetch('/api/admin/community/upload-reel', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            postId: post.id,
+                            kind: 'cover',
+                            fileName: file.name,
+                            contentType: file.type || 'image/png',
+                            byteSize: file.size,
+                          }),
+                        });
+                        const signJson = (await signRes.json()) as {
+                          ok: boolean;
+                          signedUrl?: string;
+                          publicUrl?: string;
+                          error?: string;
+                        };
+                        if (!signJson.ok || !signJson.signedUrl || !signJson.publicUrl) {
+                          setMessage(signJson.error || 'Signature upload miniature échouée.');
+                          return;
+                        }
+                        const putRes = await fetch(signJson.signedUrl, {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': file.type || 'image/png',
+                            'x-upsert': 'true',
+                          },
+                          body: file,
+                        });
+                        if (!putRes.ok) {
+                          setMessage(`Upload miniature échoué (HTTP ${putRes.status}).`);
+                          return;
+                        }
+                        const attached = await attachSocialReelCoverAction(post.id, signJson.publicUrl);
+                        if (!attached.ok) {
+                          setMessage(attached.error || 'Enregistrement miniature échoué.');
+                          return;
+                        }
+                        setMessage(attached.message || 'Miniature importée — prête pour Instagram / Facebook.');
+                        router.refresh();
+                      } catch (err) {
+                        setMessage(err instanceof Error ? err.message : 'Import miniature impossible.');
+                      }
+                    });
+                  }}
+                />
+              </label>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   type="button"
