@@ -162,11 +162,21 @@ export const CREATIVE_STATUS_HELP = {
     help: { fr: 'Idée à tourner — pas encore de film.', es: 'Idea por filmar — todavía no hay vídeo.' },
   },
   brouillon: {
-    label: { fr: 'Brouillon 0 €', es: 'Borrador 0 €' },
-    help: { fr: 'Prête, en pause chez Meta — zéro dépense.', es: 'Lista, en pausa en Meta — cero gasto.' },
+    label: { fr: 'Brouillon CM', es: 'Borrador CM' },
+    help: {
+      fr: 'Brouillon dans Programmation & Publication (Plan lié) — pas encore publié en organique.',
+      es: 'Borrador en Programación y publicación (Plan enlazado) — aún no publicado en orgánico.',
+    },
+  },
+  publiee_organique: {
+    label: { fr: 'Publiée organique', es: 'Publicada orgánico' },
+    help: {
+      fr: 'Post CM lié publié sur Instagram (organique) — prêt à tester en pub.',
+      es: 'Post CM enlazado publicado en Instagram (orgánico) — listo para probar en anuncios.',
+    },
   },
   en_test: {
-    label: { fr: 'En test', es: 'En prueba' },
+    label: { fr: 'En test pub', es: 'En prueba pub' },
     help: { fr: 'Ça tourne : on mesure (clics, leads, coût).', es: 'Está rodando: medimos (clics, leads, coste).' },
   },
   gagnante: {
@@ -185,7 +195,7 @@ export const CREATIVE_STATUS_SOURCE_HELP = {
     es: 'Auto = campaña: se calcula con las cifras de Meta (gasto, leads, reglas de corte).',
   },
   manuel: {
-    fr: 'Manuel = créative du Plan : c’est toi qui changes le statut (tournage → prêt → test).',
-    es: 'Manual = creativa del Plan: tú cambias el estado (filmar → lista → prueba).',
+    fr: 'Plan lié au CM : le statut avance seul (brouillon CM → publiée organique → en test pub si boost). Tu peux aussi forcer un statut.',
+    es: 'Plan enlazado al CM: el estado avanza solo (borrador → orgánico → prueba pub si boost). También puedes forzarlo.',
   },
 } as const;

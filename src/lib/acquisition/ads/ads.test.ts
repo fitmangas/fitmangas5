@@ -186,11 +186,18 @@ describe('ads marche + plan docs', () => {
     expect(MARCHE_EXTERNE.honesty.fr).not.toMatch(/\d{4}\s*€/);
   });
 
-  it('légende pipeline : 5 statuts FR/ES + auto vs manuel', async () => {
+  it('légende pipeline : 6 statuts FR/ES + auto vs manuel', async () => {
     const { CREATIVE_STATUS_HELP, CREATIVE_STATUS_SOURCE_HELP, ADS_GLOSSARY } = await import(
       '@/lib/acquisition/ads/ads-glossary'
     );
-    expect(Object.keys(CREATIVE_STATUS_HELP)).toEqual(['a_creer', 'brouillon', 'en_test', 'gagnante', 'a_couper']);
+    expect(Object.keys(CREATIVE_STATUS_HELP)).toEqual([
+      'a_creer',
+      'brouillon',
+      'publiee_organique',
+      'en_test',
+      'gagnante',
+      'a_couper',
+    ]);
     for (const row of Object.values(CREATIVE_STATUS_HELP)) {
       expect(row.help.fr.length).toBeGreaterThan(12);
       expect(row.help.es.length).toBeGreaterThan(12);
