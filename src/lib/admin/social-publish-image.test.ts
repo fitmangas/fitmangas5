@@ -28,6 +28,7 @@ const fixturePost = (overrides: Partial<SocialPost> = {}): SocialPost =>
     shotList: '',
     rawVideoPath: null,
     editedVideoPath: null,
+    coverImagePath: null,
     videoStatus: null,
     carouselPaths: ['/logo.png'],
     carouselSlideTitles: ['5 RAISONS', "1. PERSONNE NE T'ATTEND", '2. TU NE VOIS PAS TES ERREURS', '', '', ''],
