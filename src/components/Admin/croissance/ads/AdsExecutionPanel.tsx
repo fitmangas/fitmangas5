@@ -84,6 +84,7 @@ const BLUEPRINT_TEMP: Record<string, CampaignTemperature> = {
 const STATUS_STYLE: Record<CreativeStatus, { bg: string; color: string; dot: string }> = {
   a_creer: { bg: acq.warmBeige, color: acq.ink, dot: '#B9A89A' },
   brouillon: { bg: 'rgba(245,158,11,0.14)', color: '#92400e', dot: '#F59E0B' },
+  publiee_organique: { bg: 'rgba(34,197,94,0.12)', color: '#15803d', dot: '#22C55E' },
   en_test: { bg: 'rgba(59,110,168,0.12)', color: '#1e3a8a', dot: '#3B6EA8' },
   gagnante: { bg: adsTone.goodSoft, color: adsTone.good, dot: adsTone.good },
   a_couper: { bg: adsTone.badSoft, color: adsTone.bad, dot: adsTone.bad },
@@ -608,7 +609,7 @@ export function AdsExecutionPanel({
         <AdsCard
           eyebrow="Créatives · depuis le Plan d’action"
           title="Du tournage au verdict"
-          subtitle="Statut auto pour les campagnes (chiffres Meta + critères de kill) ; statut manuel pour les créatives du plan. Gagnante = ≥ 3 leads à ≤ 12 € le lead."
+          subtitle="Campagnes : statut auto (Meta). Créatives du Plan : avance liée au post CM (brouillon → publiée organique → en test pub). Gagnante = ≥ 3 leads à ≤ 12 € le lead."
           icon={<Flame size={18} />}
           testId="ads-exec-pipeline"
         >
@@ -623,7 +624,7 @@ export function AdsExecutionPanel({
           <div className="mt-3">
             <Collapsible
               title={lang === 'es' ? '¿Cómo funciona?' : 'Comment ça marche ?'}
-              meta={lang === 'es' ? 'Los 5 estados, en una línea' : 'Les 5 statuts, en une ligne'}
+              meta={lang === 'es' ? 'Los 6 estados, en una línea' : 'Les 6 statuts, en une ligne'}
               testId="ads-exec-pipeline-help"
             >
               <CreativePipelineHelp lang={lang} />
