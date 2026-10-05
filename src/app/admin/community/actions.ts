@@ -122,6 +122,15 @@ function revalidateCommunity() {
   revalidatePath('/admin');
 }
 
+async function syncAdsPipelineFromCmPost(post: Pick<SocialPost, 'status' | 'sourceRef'>) {
+  try {
+    const { syncPipelineFromSocialPost } = await import('@/lib/acquisition/ads/pipeline-sync');
+    await syncPipelineFromSocialPost(post);
+  } catch (e) {
+    console.error('[cm] ads pipeline sync', e);
+  }
+}
+
 function patchCarouselOrFeedImage(
   item: SocialPost,
   slideIndex: number,
@@ -1279,7 +1288,7 @@ export async function refreshAlejandraPhotaStatusAction() {
 
 export async function updateSocialPostReelBriefAction(
   postId: string,
-  input: { hookTitle?: string; reelScript?: string; shotList?: string },
+  input: { hookTitle?: string; reelScript?: string; shotList?: string; coverImagePath?: string | null },
 ) {
   await requireAdmin();
   const board = await getSocialCommsBoard();
@@ -1298,6 +1307,12 @@ export async function updateSocialPostReelBriefAction(
               input.shotList !== undefined
                 ? enforceFaceCamShotList(input.shotList.trim(), post.locale ?? 'fr').slice(0, 800)
                 : post.shotList,
+            coverImagePath:
+              input.coverImagePath !== undefined
+                ? input.coverImagePath
+                  ? input.coverImagePath.trim().slice(0, 800)
+                  : null
+                : post.coverImagePath ?? null,
             updatedAt: new Date().toISOString(),
           }
         : post,
@@ -1305,6 +1320,27 @@ export async function updateSocialPostReelBriefAction(
   });
   revalidateCommunity();
   return { ok: true as const };
+}
+
+export async function attachSocialReelCoverAction(postId: string, coverImagePath: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((p) => p.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.format !== 'reel') return { ok: false as const, error: 'Miniature réservée aux Reels.' };
+  const path = coverImagePath.trim().slice(0, 800);
+  if (!path) return { ok: false as const, error: 'Chemin miniature vide.' };
+
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? { ...item, coverImagePath: path, updatedAt: new Date().toISOString() }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const, message: 'Miniature Reel enregistrée.', coverImagePath: path };
 }
 
 export async function updateSocialPostFacebookMirrorAction(postId: string, alsoPublishFacebook: boolean) {
@@ -1428,6 +1464,7 @@ export async function toggleLinkedInAdaptationAction(postId: string, enabled: bo
     shotList: '',
     rawVideoPath: null,
     editedVideoPath: null,
+    coverImagePath: null,
     videoStatus: null,
     carouselPaths: source.carouselPaths ?? [],
     plannedAt: source.plannedAt,
@@ -1906,28 +1943,31 @@ export async function publishSocialPostNowAction(postId: string) {
       notes.push('Facebook');
     }
 
+    const publishedPost: SocialPost = {
+      ...post,
+      status: 'published',
+      metaExternalId: externalId,
+      facebookExternalId,
+      tiktokExternalId,
+      youtubeExternalId,
+      igContainerId: null,
+      publishError: null,
+      publishAttemptAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     await saveSocialCommsBoard({
       ...board,
-      posts: board.posts.map((item) =>
-        item.id === postId
-          ? {
-              ...item,
-              status: 'published',
-              metaExternalId: externalId,
-              facebookExternalId,
-              tiktokExternalId,
-              youtubeExternalId,
-              igContainerId: null,
-              publishError: null,
-              publishAttemptAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
+      posts: board.posts.map((item) => (item.id === postId ? publishedPost : item)),
     });
+    await syncAdsPipelineFromCmPost(publishedPost);
     revalidateCommunity();
     const fbOk = Boolean(facebookExternalId);
-    const baseMessage = `Publié : ${notes.join(' · ')}.`;
+    const { reelCoverPublishNotes } = await import('@/lib/admin/reel-cover');
+    const coverNotes =
+      post.format === 'reel'
+        ? reelCoverPublishNotes(post.coverImagePath, { includeTikTok: post.alsoPublishTikTok })
+        : [];
+    const baseMessage = [`Publié : ${notes.join(' · ')}.`, ...coverNotes].filter(Boolean).join(' ');
     return {
       ok: true as const,
       externalId,
@@ -2241,6 +2281,10 @@ export async function processDueSocialPostsAction() {
       );
       published += 1;
       await saveSocialCommsBoard({ ...board, posts: nextPosts });
+      const publishedRow = nextPosts.find((p) => p.id === post.id);
+      if (publishedRow?.status === 'published') {
+        await syncAdsPipelineFromCmPost(publishedRow);
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Publication Instagram échouée.';
       console.error('[processDueSocialPostsAction]', post.id, e);
@@ -2373,6 +2417,7 @@ export async function createManualSocialPostAction(input: {
     shotList: '',
     rawVideoPath: null,
     editedVideoPath: null,
+    coverImagePath: null,
     videoStatus: isReel ? 'brief' : null,
     carouselPaths: isCarousel ? Array.from({ length: CAROUSEL_SLIDE_COUNT }, () => '') : [],
     carouselSlideTitles: isCarousel ? Array.from({ length: CAROUSEL_SLIDE_COUNT }, () => '') : [],
@@ -2686,6 +2731,7 @@ export async function initWeekPlanAction(
         shotList: '',
         rawVideoPath: null,
         editedVideoPath: null,
+        coverImagePath: null,
         videoStatus: slot.mediaKind === 'video_brief' ? 'brief' : null,
         carouselPaths: [],
         plannedAt: plannedAtParis(slot.network, slot.dayOffset, slot.slotIndex),
@@ -3144,6 +3190,7 @@ Pas de gabarit figé. Une idée concrète, langage plat, CTA essai 7 jours fitma
 
     rawVideoPath: null,
     editedVideoPath: null,
+    coverImagePath: null,
     videoStatus: 'brief',
     carouselPaths: [],
     carouselSlideTitles: [],

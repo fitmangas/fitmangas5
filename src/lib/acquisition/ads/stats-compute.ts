@@ -169,13 +169,21 @@ export function matchCampaignInsight(
   return insights.find((i) => (i.entityName ?? '').toLowerCase().trim() === n) ?? null;
 }
 
-export const CREATIVE_STATUSES = ['a_creer', 'brouillon', 'en_test', 'gagnante', 'a_couper'] as const;
+export const CREATIVE_STATUSES = [
+  'a_creer',
+  'brouillon',
+  'publiee_organique',
+  'en_test',
+  'gagnante',
+  'a_couper',
+] as const;
 export type CreativeStatus = (typeof CREATIVE_STATUSES)[number];
 
 export const CREATIVE_STATUS_LABELS: Record<CreativeStatus, string> = {
   a_creer: 'À créer',
-  brouillon: 'Brouillon · 0 €',
-  en_test: 'En test',
+  brouillon: 'Brouillon CM',
+  publiee_organique: 'Publiée organique',
+  en_test: 'En test pub',
   gagnante: 'Gagnante',
   a_couper: 'À couper',
 };

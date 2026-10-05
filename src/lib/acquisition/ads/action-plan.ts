@@ -106,7 +106,7 @@ export function buildDeterministicActionPlan(bundle: IntelligenceBundle): Action
         : 'Brouillon en pause d’abord · activer 8 €/j après double confirmation',
       honesty:
         'Hypothèse à tester — pas une certitude. Couper si 48–72 h ou 50–100 € sans inscription et presque aucun clic.',
-      action: { type: 'create_cold_draft', label: 'Créer le brouillon froid (0 €)' },
+      action: { type: 'create_cm_draft', label: 'Créer le brouillon', planItemId: 'create-th-pas-dos' },
       source: 'rules',
     },
     {
@@ -123,7 +123,7 @@ export function buildDeterministicActionPlan(bundle: IntelligenceBundle): Action
       market: 'FR',
       budgetHint: '2ᵉ film dans la même campagne froide (deux accroches à comparer)',
       honesty: 'À tester en parallèle du #1 — un seul message par pub.',
-      action: { type: 'create_cold_draft', label: 'Préparer une variation (0 €)' },
+      action: { type: 'create_cm_draft', label: 'Créer le brouillon', planItemId: 'create-ugc-preuve' },
       source: 'rules',
     },
     {
@@ -315,7 +315,11 @@ Corpus:\n${corpus}`,
             market: p.market === 'MX' ? 'MX' : 'FR',
             budgetHint: 'Brouillon en pause → petit budget après double confirmation',
             honesty: 'Hypothèse à tester — pas une certitude.',
-            action: { type: 'create_cold_draft', label: 'Créer le brouillon (0 €)' },
+            action: {
+              type: 'create_cm_draft',
+              label: 'Créer le brouillon',
+              planItemId: `ai-plan-${idx}`,
+            },
             source: 'ai',
             wantId: p.wantId,
             evidence: planEvidenceFromBundle(bundle),

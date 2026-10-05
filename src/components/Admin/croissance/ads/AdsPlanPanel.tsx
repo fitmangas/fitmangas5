@@ -30,6 +30,7 @@ type Props = {
   onGoTo: (sub: AdsSubTab) => void;
   onReload: () => Promise<ActionResult>;
   onCreateColdDraft: () => Promise<ActionResult>;
+  onCreateCmDraft: (params: { planItemId: string }) => Promise<ActionResult>;
   onBoostOrganic: (params: { igMediaId: string; captionHint?: string }) => Promise<ActionResult>;
   onFullSync: () => Promise<ActionResult>;
 };
@@ -46,6 +47,7 @@ export function AdsPlanPanel({
   onGoTo,
   onReload,
   onCreateColdDraft,
+  onCreateCmDraft,
   onBoostOrganic,
   onFullSync,
 }: Props) {
@@ -69,16 +71,19 @@ export function AdsPlanPanel({
   }
 
   function runItemAction(item: ActionPlanItem) {
-    if (!item.action) return;
-    if (item.action.type === 'create_cold_draft') run(onCreateColdDraft);
-    else if (item.action.type === 'boost_organic')
+    const action = item.action;
+    if (!action) return;
+    if (action.type === 'create_cm_draft') {
+      run(() => onCreateCmDraft({ planItemId: action.planItemId || item.id }));
+    } else if (action.type === 'create_cold_draft') run(onCreateColdDraft);
+    else if (action.type === 'boost_organic')
       run(() =>
         onBoostOrganic({
-          igMediaId: item.action && item.action.type === 'boost_organic' ? item.action.igMediaId : '',
-          captionHint: item.action && item.action.type === 'boost_organic' ? item.action.captionHint : '',
+          igMediaId: action.igMediaId,
+          captionHint: action.captionHint,
         }),
       );
-    else if (item.action.type === 'sync_now') run(onFullSync);
+    else if (action.type === 'sync_now') run(onFullSync);
   }
 
   const want = (id?: string) => (id ? WANT_BY_ID[id] : undefined);

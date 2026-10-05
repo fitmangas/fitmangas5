@@ -36,6 +36,8 @@ export type SocialPost = {
   shotList: string;
   rawVideoPath: string | null;
   editedVideoPath: string | null;
+  /** Miniature Reel (upload Supabase, /library… ou chemin local HyperFrames à uploader avant publish). */
+  coverImagePath: string | null;
   videoStatus: SocialVideoStatus | null;
   carouselPaths: string[];
   /** Titres overlay par slide (carousel, longueur 7). */
@@ -358,6 +360,10 @@ function normalizePost(raw: unknown, _index = 0): SocialPost | null {
     shotList: typeof row.shotList === 'string' ? row.shotList : '',
     rawVideoPath: typeof row.rawVideoPath === 'string' ? row.rawVideoPath : null,
     editedVideoPath: typeof row.editedVideoPath === 'string' ? row.editedVideoPath : null,
+    coverImagePath:
+      typeof row.coverImagePath === 'string' && row.coverImagePath.trim()
+        ? row.coverImagePath.trim().slice(0, 800)
+        : null,
     videoStatus: normalizeVideoStatus(row.videoStatus) ?? (isReel ? 'brief' : null),
     carouselPaths,
     carouselSlideTitles: Array.isArray(row.carouselSlideTitles)

@@ -1,6 +1,15 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { getSocialCommsBoard, saveSocialCommsBoard } from '@/lib/admin/social-comms';
+import {
+  buildCmDraftFromPlanItem,
+  indexPlanCmLinks,
+  planItemIdFromSourceRef,
+} from '@/lib/acquisition/ads/plan-to-cm';
+import { advancePlanCreativeStatus } from '@/lib/acquisition/ads/pipeline-sync';
 import {
   activateMetaCampaign,
   createMetaCampaignDraft,
@@ -330,6 +339,59 @@ export async function adsLoadActionPlan(): Promise<ActionResult> {
 /**
  * Transformer un média IG gagnant en brouillon campagne Meta PAUSED (0 € diffusion).
  */
+/** Crée un brouillon CM pré-rempli depuis une inspiration du Plan d’action Ads. */
+export async function adsCreateCmDraftFromPlan(params: { planItemId: string }): Promise<ActionResult> {
+  await requireAdmin();
+  const planItemId = params.planItemId.trim();
+  if (!planItemId) return { ok: false, error: 'Id Plan manquant.' };
+
+  const { loadStoredActionPlan, regenerateAndPersistCoach } = await import('@/lib/acquisition/ads/coach-persist');
+  let items = (await loadStoredActionPlan())?.items ?? [];
+  let item = items.find((i) => i.id === planItemId);
+  if (!item) {
+    const bundle = await loadAdsIntelligenceBundle();
+    const regen = await regenerateAndPersistCoach(bundle, { force: false });
+    items = regen.plan;
+    item = items.find((i) => i.id === planItemId);
+  }
+  if (!item) {
+    return { ok: false, error: 'Inspiration Plan introuvable — régénère le plan puis réessaie.' };
+  }
+  if (item.creativeType === 'autre') {
+    return { ok: false, error: 'Cette ligne n’est pas une créative à tourner dans le CM.' };
+  }
+
+  const board = await getSocialCommsBoard();
+  const links = indexPlanCmLinks(board.posts);
+  const existing = links[planItemId];
+  if (existing) {
+    await advancePlanCreativeStatus(planItemId, 'brouillon');
+    revalidatePath('/admin/croissance');
+    revalidatePath('/admin/community');
+    return {
+      ok: true,
+      detail: `Brouillon CM déjà présent : « ${existing.title ?? item.title} » — onglet Programmation & Publication.`,
+      data: { postId: existing.postId, planItemId, alreadyExists: true },
+    };
+  }
+
+  const now = new Date().toISOString();
+  const post = buildCmDraftFromPlanItem(item, now);
+  await saveSocialCommsBoard({
+    ...board,
+    posts: [post, ...board.posts].slice(0, 80),
+  });
+  await advancePlanCreativeStatus(planItemId, 'brouillon');
+  revalidatePath('/admin/croissance');
+  revalidatePath('/admin/community');
+
+  return {
+    ok: true,
+    detail: `Brouillon créé dans Programmation & Publication — thème, angle, overlay et brief tournage pré-remplis.`,
+    data: { postId: post.id, planItemId },
+  };
+}
+
 export async function adsBoostOrganicToPausedDraft(params: {
   igMediaId: string;
   captionHint?: string;
@@ -362,6 +424,22 @@ export async function adsBoostOrganicToPausedDraft(params: {
     notes: `Depuis IG media ${params.igMediaId} · Meta PAUSED · 8 €/j prévu · NE PAS ACTIVER sans double confirm. Créative à brancher manuellement sur le média source.`,
   });
   if (!local.ok) return { ok: false, error: local.error };
+
+  try {
+    const board = await getSocialCommsBoard();
+    for (const post of board.posts) {
+      if (post.metaExternalId !== params.igMediaId) continue;
+      const planId = planItemIdFromSourceRef(post.sourceRef);
+      if (planId) {
+        const { markPlanCreativeBoosted } = await import('@/lib/acquisition/ads/pipeline-sync');
+        await markPlanCreativeBoosted(planId);
+      }
+    }
+  } catch (e) {
+    console.error('[adsBoostOrganic] pipeline sync', e);
+  }
+
+  revalidatePath('/admin/croissance');
 
   return {
     ok: true,

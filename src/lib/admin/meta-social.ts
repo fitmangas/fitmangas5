@@ -7,6 +7,7 @@ import {
 import type { MetaSocialConnection } from '@/lib/admin/social-comms';
 import { captionForPublish } from '@/lib/admin/social-cm-playbook';
 import { resolveMetaPublishImageUrls } from '@/lib/admin/social-publish-image';
+import { reelCoverPublicUrl } from '@/lib/admin/reel-cover';
 
 export { captionForPublish } from '@/lib/admin/social-cm-playbook';
 export { META_APP_LIVE_WARNING };
@@ -293,16 +294,19 @@ export async function publishInstagramWithResume(
   // Reel vidéo (MP4 monté public)
   if (post.format === 'reel' && post.editedVideoPath) {
     const videoUrl = absolutePublicUrl(post.editedVideoPath);
+    const coverUrl = reelCoverPublicUrl(post.coverImagePath);
+    const createBody: Record<string, unknown> = {
+      media_type: 'REELS',
+      video_url: videoUrl,
+      caption,
+      share_to_feed: true,
+      access_token: token,
+    };
+    if (coverUrl) createBody.cover_url = coverUrl;
     const create = await graphJson(`${GRAPH}/${connection.igUserId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type: 'REELS',
-        video_url: videoUrl,
-        caption,
-        share_to_feed: true,
-        access_token: token,
-      }),
+      body: JSON.stringify(createBody),
     });
     const creationId = String(create.id || '');
     if (!creationId) throw new Error('Création Reel Instagram échouée.');
@@ -573,6 +577,23 @@ async function publishFacebookReel(
       throw new Error(
         'Facebook Reels : timeout — publishing_phase non confirmée. Vérifie Meta Business Suite / mode Live de l’app.',
       );
+    }
+  }
+
+  const coverUrl = reelCoverPublicUrl(post.coverImagePath);
+  if (coverUrl && videoId) {
+    try {
+      await graphJson(`${GRAPH}/${videoId}/thumbnails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: token,
+          is_preferred: true,
+          source: coverUrl,
+        }),
+      });
+    } catch (coverErr) {
+      console.error('[meta-social] Facebook Reel cover', coverErr);
     }
   }
 

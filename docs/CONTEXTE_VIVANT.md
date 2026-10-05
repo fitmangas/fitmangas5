@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-05 — Ads Plan → CM + pipeline + miniature Reel
+
+- **Plan d’action** : bouton « Créer le brouillon » (`create_cm_draft`) → `adsCreateCmDraftFromPlan` → post manuel pré-rempli dans Programmation & Publication (`sourceRef=ads-plan:{id}`, thème/angle/overlay/brief). Dédup si brouillon déjà lié.
+- **Pipeline Exécution** : statut `publiee_organique` ; sync auto via `pipeline-sync` à la publication CM et `en_test` au boost organique (post CM `metaExternalId` = IG media).
+- **CM Reels** : champ `coverImagePath` + upload PNG/JPEG ; publication IG `cover_url` + FB `/thumbnails` ; TikTok = timestamp seulement (message explicite). Fichiers : `plan-to-cm.ts`, `pipeline-sync.ts`, `ads-actions.ts`, `CommunityManagerBoard.tsx`, `meta-social.ts`, `reel-cover.ts`.
+- Build vert (`npm run build`) après purge cache `.next` (disque Mac quasi plein).
+
 ### 2026-09-27 (après-midi) — Ads : marché externe + aide pipeline
 
 - Marché : section **Le marché en ligne (données externes)** avant « Ton audience » — FR ~33 %/an, monde ~44 Md$ 2026 (projection), LatAm ~22 %/an. Sources datées `docs/MARCHE_EXTERNE.md`. Repères, pas un recensement.

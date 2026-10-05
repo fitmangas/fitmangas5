@@ -34,6 +34,7 @@ function stubPost(partial: Partial<SocialPost> & Pick<SocialPost, 'id' | 'imageP
     shotList: '',
     rawVideoPath: null,
     editedVideoPath: null,
+    coverImagePath: null,
     videoStatus: null,
     plannedAt: null,
     status: 'ready',

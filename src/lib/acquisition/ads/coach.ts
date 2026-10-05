@@ -12,6 +12,7 @@ import type { IntelligenceBundle, OrganicMediaRow } from './intelligence-reposit
 
 export type CoachAction =
   | { type: 'create_cold_draft'; label: string }
+  | { type: 'create_cm_draft'; label: string; planItemId: string }
   | { type: 'boost_organic'; label: string; igMediaId: string; captionHint: string }
   | { type: 'refresh_creative'; label: string; entityName: string | null }
   | { type: 'sync_now'; label: string }

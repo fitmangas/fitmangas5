@@ -48,6 +48,7 @@ type Props = {
   onFullSync: () => Promise<ActionResult>;
   onSeedCreatives: () => Promise<ActionResult>;
   onCreateColdDraft: () => Promise<ActionResult>;
+  onCreateCmDraft: (params: { planItemId: string }) => Promise<ActionResult>;
   onBoostOrganic: (params: { igMediaId: string; captionHint?: string }) => Promise<ActionResult>;
   onRefreshCreative: (params: { entityName?: string | null }) => Promise<ActionResult>;
   onReloadCoach: () => Promise<ActionResult>;
@@ -108,6 +109,7 @@ export function AdsPilotPanel({
   onFullSync,
   onSeedCreatives,
   onCreateColdDraft,
+  onCreateCmDraft,
   onBoostOrganic,
   onRefreshCreative,
   onReloadCoach,
@@ -362,6 +364,7 @@ export function AdsPilotPanel({
           onGoTo={goTo}
           onReload={onReloadCoach}
           onCreateColdDraft={onCreateColdDraft}
+          onCreateCmDraft={onCreateCmDraft}
           onBoostOrganic={onBoostOrganic}
           onFullSync={onFullSync}
         />

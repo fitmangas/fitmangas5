@@ -251,6 +251,7 @@ export async function publishTikTokReel(
         disable_duet: false,
         disable_comment: false,
         disable_stitch: false,
+        // Content Posting API : pas d’image cover custom — frame à 1 s. Miniature manuelle dans l’app TikTok.
         video_cover_timestamp_ms: 1000,
       },
       source_info: {
