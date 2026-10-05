@@ -22,6 +22,7 @@ import {
 import {
   adsActivateCampaign,
   adsBoostOrganicToPausedDraft,
+  adsCreateCmDraftFromPlan,
   adsCreateColdQuizPausedDraft,
   adsCreateRefreshCreativeDraft,
   adsCreateStrategyDrafts,
@@ -217,6 +218,7 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         onFullSync={adsRunIntelligenceSync}
         onSeedCreatives={adsEnsureCreativeSeed}
         onCreateColdDraft={adsCreateColdQuizPausedDraft}
+        onCreateCmDraft={adsCreateCmDraftFromPlan}
         onBoostOrganic={adsBoostOrganicToPausedDraft}
         onRefreshCreative={adsCreateRefreshCreativeDraft}
         onReloadCoach={adsLoadCoachAdvice}
