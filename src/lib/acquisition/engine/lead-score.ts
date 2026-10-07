@@ -44,3 +44,31 @@ export function extractEmailFromText(text: string | undefined | null): string | 
 export function clampLeadScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
+
+/** Seuil KPI « leads chauds » (vue d’ensemble + liste Conversations). */
+export const HOT_LEAD_SCORE_MIN = 40;
+
+const INTERNAL_HANDLES = new Set([
+  '@kevpicard_',
+  '@alexispicard_',
+  '@fit.mangas',
+  '@fitmangas',
+  'fit.mangas',
+]);
+
+/** Démo / @meta_ / comptes équipe — pas à relancer manuellement. */
+export function isHotLeadNoiseHandle(handle: string | null | undefined): boolean {
+  const h = (handle ?? '').trim().toLowerCase();
+  if (!h) return false;
+  if (
+    h.includes('demo') ||
+    h.includes('sandbox') ||
+    h.startsWith('@meta_') ||
+    h === 'test' ||
+    h.startsWith('test ') ||
+    /@meta_t\d|@meta_final|@meta_test|test_sig/.test(h)
+  ) {
+    return true;
+  }
+  return INTERNAL_HANDLES.has(h) || INTERNAL_HANDLES.has(h.startsWith('@') ? h : `@${h}`);
+}
