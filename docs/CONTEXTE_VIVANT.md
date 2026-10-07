@@ -27,6 +27,23 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-07 — Leads chauds Conversations + TikTok App Review
+
+- **Croissance → Conversations** : panneau « Leads chauds » sous inbox + détail (score ≥40, exclut @meta_/démo/équipe/payant). Clic → ouvre le fil. `listHotLeads`, `HotLeadsPanel.tsx`.
+- **TikTok** : refus Production = usage « personal/internal » au sens TikTok (outil mono-équipe), pas « pro vs hobby ». Guide resoumission créateurs : `docs/TIKTOK_APP_REVIEW.md`. OAuth optionnel `TIKTOK_REQUEST_VIDEO_PUBLISH=1` pour demander `video.publish` après approbation. Message CM clarifié.
+
+### 2026-10-05 — Préparation lancement pubs (copy + tracking + TVA)
+
+- Landing : titre « Le Pilates en visio, avec une coach qui te voit » / ES équivalent.
+- Offre : bibliothèque **50h+** ; bonus lives ES reformulé ; mention **TVA art. 293 B** sous le prix (landing, modal inscription, CGV) — jamais « TTC ».
+- Rappels cours FR en tutoiement ; quiz hub : « Questionnaires scientifiques (IPIP, ECR-S) » ; retrait « personnes ayant validé le test ».
+- E-mails onboarding **day0** + **day3** : ligne fin d’essai via `trial_end` Stripe + lien Profil > Facturation > Désabonnement.
+- Meta Pixel (si cookies OK) : `InitiateCheckout` au clic essai ; `Lead` à la complétion quiz avec e-mail ; StartTrial/Purchase inchangés.
+- UTM + fbclid → sessionStorage → metadata Stripe Checkout.
+- Proposition rétractation 14 j dans `docs/PROPOSITION_RETRACTATION.md` (CGV non modifiées pour ça).
+- `.gitignore` : `scripts/vsl-capture/`.
+- Tests 390 OK · build OK. **Pas déployé** — attendre GO Kevin.
+
 ### 2026-10-05 — Ads Plan → CM + pipeline + miniature Reel
 
 - **Plan d’action** : bouton « Créer le brouillon » (`create_cm_draft`) → `adsCreateCmDraftFromPlan` → post manuel pré-rempli dans Programmation & Publication (`sourceRef=ads-plan:{id}`, thème/angle/overlay/brief). Dédup si brouillon déjà lié.

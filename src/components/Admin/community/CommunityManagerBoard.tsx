@@ -899,6 +899,11 @@ export function CommunityManagerBoard({
               <div className="mt-3 border-t border-[#E8D9C8]/80 pt-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7a2e1a]">TikTok (miroir Reels)</p>
                 <p className="mt-1 text-[11px] text-luxury-muted">{tiktokStatusMessage}</p>
+                <p className="mt-1 text-[10px] leading-snug text-luxury-soft">
+                  Si Production TikTok est refusée (« personal / internal use »), ce n’est pas un bug OAuth :
+                  il faut resoumettre avec le texte créateurs — guide{' '}
+                  <code className="text-[10px]">docs/TIKTOK_APP_REVIEW.md</code>.
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {tiktokAppReady ? (
                     <button

@@ -46,7 +46,7 @@ export async function fetchAcqCrmFunnel(
       trial: rows.filter((r) => r.lifecycle_stage === 'trial').length,
       paid: rows.filter((r) => r.lifecycle_stage === 'paid').length,
       member: rows.filter((r) => r.lifecycle_stage === 'member').length,
-      hotLeads: scores.filter((s) => s >= 40).length,
+      hotLeads: scores.filter((s) => s >= 40).length, // seuil = HOT_LEAD_SCORE_MIN (lead-score.ts)
       avgLeadScore,
     };
     return { ok: true, data: funnel };

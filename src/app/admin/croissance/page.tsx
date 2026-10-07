@@ -54,6 +54,7 @@ import { buildAcquisitionOverview } from '@/lib/acquisition/dashboard/build-over
 import {
   getConversationWithMessages,
   listConversations,
+  listHotLeads,
   listRecentWorkflowRuns,
   listWorkflows,
 } from '@/lib/acquisition/engine/repository';
@@ -105,9 +106,10 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
   let acquisitionPanel: ReactNode = null;
 
   if (needsAcquisition) {
-    const [overview, convList, wfList, runsList] = await Promise.all([
+    const [overview, convList, hotList, wfList, runsList] = await Promise.all([
       buildAcquisitionOverview(channel),
       listConversations(40),
+      listHotLeads(30),
       listWorkflows(),
       listRecentWorkflowRuns(20),
     ]);
@@ -126,6 +128,8 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
 
     const conversations = convList.ok ? convList.items : [];
     const conversationsError = convList.ok ? null : convList.error;
+    const hotLeads = hotList.ok ? hotList.items : [];
+    const hotLeadsError = hotList.ok ? null : hotList.error;
     const workflows = wfList.ok ? wfList.items : [];
     const recentWorkflowRuns = runsList.ok ? runsList.items : [];
     const sandboxLog = getSandboxLog(30);
@@ -137,6 +141,8 @@ export default async function AdminCroissancePage({ searchParams }: PageProps) {
         routeBase="/admin/croissance"
         overview={overview}
         conversations={conversations}
+        hotLeads={hotLeads}
+        hotLeadsError={hotLeadsError}
         workflows={workflows}
         recentWorkflowRuns={recentWorkflowRuns}
         conversationsError={conversationsError}

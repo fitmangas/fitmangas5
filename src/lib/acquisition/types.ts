@@ -70,6 +70,21 @@ export type AcqConversation = {
   externalThreadId?: string | null;
 };
 
+/** Contact score ≥40 prêt à relancer manuellement (onglet Conversations). */
+export type HotLeadRow = {
+  contactId: string;
+  handle: string | null;
+  email: string | null;
+  channel: AcquisitionChannel;
+  lifecycleStage: LifecycleStage;
+  leadScore: number;
+  conversationId: string | null;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  /** Exclu UI (démo / @meta_ / équipe) — utile pour debug compte KPI */
+  actionable: boolean;
+};
+
 export type AcqMessage = {
   id: string;
   conversationId: string;
