@@ -45,11 +45,23 @@ function tiktokRedirectUri() {
   return `${(process.env.NEXT_PUBLIC_APP_URL || 'https://fitmangas.com').replace(/\/$/, '')}/api/admin/community/tiktok/callback`;
 }
 
+export function tiktokHasDirectPostScope(connection: TikTokSocialConnection): boolean {
+  const scope = (connection.scope || '').toLowerCase();
+  return scope.split(/[,\s]+/).includes('video.publish');
+}
+
 export function buildTikTokOAuthUrl(state: string) {
   const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim() || '';
-  // Live app scopes today: user.info.basic + video.upload.
-  // video.publish (Direct Post) requires a TikTok app revision — do not request it until Live.
-  const scopes = ['user.info.basic', 'video.upload'].join(',');
+  // video.publish = Direct Post public. Ne le demander que si le scope est ouvert sur l’app TikTok
+  // (sinon OAuth peut échouer). Voir docs/TIKTOK_APP_REVIEW.md.
+  const requestPublish =
+    process.env.TIKTOK_REQUEST_VIDEO_PUBLISH?.trim() === '1' ||
+    process.env.TIKTOK_REQUEST_VIDEO_PUBLISH?.trim()?.toLowerCase() === 'true';
+  const scopes = [
+    'user.info.basic',
+    'video.upload',
+    ...(requestPublish ? (['video.publish'] as const) : []),
+  ].join(',');
   const params = new URLSearchParams({
     client_key: clientKey,
     scope: scopes,
@@ -317,12 +329,16 @@ export async function publishTikTokReel(
 export function tiktokConnectorStatusMessage(connection: TikTokSocialConnection): string {
   const missing = tiktokMissingConnectors();
   if (missing.length) {
-    return `Connecteurs TikTok manquants : ${missing.join(', ')} (Vercel + .env.local). Puis app developers.tiktok.com → Content Posting API + scopes video.upload / video.publish (audit TikTok requis pour le public).`;
+    return `Connecteurs TikTok manquants : ${missing.join(', ')} (Vercel + .env.local). Puis app developers.tiktok.com → Content Posting API + scopes video.upload / video.publish (audit TikTok requis pour le public). Voir docs/TIKTOK_APP_REVIEW.md.`;
   }
   if (!connection.connected) {
-    return 'Clés TikTok présentes — connecte le compte @FitMangas via OAuth TikTok.';
+    return 'Clés TikTok présentes — connecte @fit.mangas via OAuth. Pour le Direct Post public : faire approuver Production (pas « internal use ») puis TIKTOK_REQUEST_VIDEO_PUBLISH=1 + reconnecter. docs/TIKTOK_APP_REVIEW.md';
   }
-  return `TikTok connecté${connection.displayName ? ` (${connection.displayName})` : ''}.`;
+  const name = connection.displayName ? ` (${connection.displayName})` : '';
+  if (!tiktokHasDirectPostScope(connection)) {
+    return `TikTok connecté${name} — scope video.publish absent : miroir auto public = pas comme IG/YT tant que App Review Production n’est pas approuvée (docs/TIKTOK_APP_REVIEW.md).`;
+  }
+  return `TikTok connecté${name} — Direct Post (video.publish) OK.`;
 }
 
 export async function getTikTokSocialConnection(): Promise<TikTokSocialConnection> {
