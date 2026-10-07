@@ -13,6 +13,8 @@ import type {
 } from '@/lib/acquisition/types';
 import { WORKFLOW_CATALOG, WORKFLOW_CATALOG_COUNT } from './workflow-catalog';
 
+export { listHotLeads } from './list-hot-leads';
+
 type DbError = { ok: false; error: string; schemaReady: boolean };
 
 function mapContact(row: Record<string, unknown>): AcqContact {
