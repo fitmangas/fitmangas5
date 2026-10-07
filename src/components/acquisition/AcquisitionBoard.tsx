@@ -11,6 +11,7 @@ import type {
   AcqWorkflow,
   AcquisitionChannel,
   AcquisitionOverview,
+  HotLeadRow,
   WorkflowActionType,
 } from '@/lib/acquisition/types';
 
@@ -28,6 +29,7 @@ import { JourneyActionCluster } from './JourneyActionCluster';
 import { JourneyBoard } from './JourneyParts';
 import { MetaLiveReadinessPanel } from './MetaLiveReadinessPanel';
 import { AcquisitionOpsPanel } from './AcquisitionOpsPanel';
+import { HotLeadsPanel } from './HotLeadsPanel';
 import { WorkflowManager } from './WorkflowManager';
 
 type TabId = 'overview' | 'conversations' | 'workflows';
@@ -36,6 +38,8 @@ type Props = {
   overview: AcquisitionOverview;
   conversations: AcqConversation[];
   workflows: AcqWorkflow[];
+  hotLeads?: HotLeadRow[];
+  hotLeadsError?: string | null;
   conversationsError: string | null;
   schemaReady: boolean;
   selectedConversationId: string | null;
@@ -107,6 +111,8 @@ export function AcquisitionBoard({
   overview,
   conversations,
   workflows,
+  hotLeads = [],
+  hotLeadsError = null,
   conversationsError,
   schemaReady,
   selectedConversationId,
@@ -706,6 +712,15 @@ export function AcquisitionBoard({
                 </div>
               )}
             </JourneyBoard>
+
+            <div className="lg:col-span-2">
+              <HotLeadsPanel
+                leads={hotLeads}
+                error={hotLeadsError}
+                selectedConversationId={selectedConversationId}
+                onOpenConversation={handleSelectConversation}
+              />
+            </div>
           </div>
         ) : null}
 
