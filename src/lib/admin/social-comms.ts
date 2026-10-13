@@ -7,6 +7,60 @@ import {
 export type SocialNetwork = 'instagram' | 'whatsapp' | 'facebook' | 'linkedin' | 'tiktok';
 export type SocialPostFormat = 'feed' | 'story' | 'reel' | 'carousel' | 'text';
 export type SocialPostStatus = 'idea' | 'ready' | 'scheduled' | 'published' | 'skipped';
+
+/** Paramètres Direct Post TikTok (audit Content Sharing — consentement créateur). */
+export type TikTokDirectPostSettings = {
+  privacyLevel: string | null;
+  allowComment: boolean;
+  allowDuet: boolean;
+  allowStitch: boolean;
+  commercialDisclosure: boolean;
+  brandOrganic: boolean;
+  brandContent: boolean;
+  musicUsageConsent: boolean;
+  titleOverride: string | null;
+  consentedAt: string | null;
+};
+
+export const EMPTY_TIKTOK_DIRECT_POST: TikTokDirectPostSettings = {
+  privacyLevel: null,
+  allowComment: false,
+  allowDuet: false,
+  allowStitch: false,
+  commercialDisclosure: false,
+  brandOrganic: false,
+  brandContent: false,
+  musicUsageConsent: false,
+  titleOverride: null,
+  consentedAt: null,
+};
+
+export function isTikTokDirectPostReady(settings: TikTokDirectPostSettings | null | undefined): boolean {
+  if (!settings) return false;
+  if (!settings.privacyLevel) return false;
+  if (!settings.musicUsageConsent) return false;
+  if (settings.commercialDisclosure && !settings.brandOrganic && !settings.brandContent) return false;
+  if (settings.brandContent && settings.privacyLevel === 'SELF_ONLY') return false;
+  return true;
+}
+
+export function parseTikTokDirectPostSettings(raw: unknown): TikTokDirectPostSettings | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const row = raw as Record<string, unknown>;
+  return {
+    privacyLevel: typeof row.privacyLevel === 'string' && row.privacyLevel ? row.privacyLevel : null,
+    allowComment: Boolean(row.allowComment),
+    allowDuet: Boolean(row.allowDuet),
+    allowStitch: Boolean(row.allowStitch),
+    commercialDisclosure: Boolean(row.commercialDisclosure),
+    brandOrganic: Boolean(row.brandOrganic),
+    brandContent: Boolean(row.brandContent),
+    musicUsageConsent: Boolean(row.musicUsageConsent),
+    titleOverride: typeof row.titleOverride === 'string' ? row.titleOverride : null,
+    consentedAt: typeof row.consentedAt === 'string' ? row.consentedAt : null,
+  };
+}
+
 export type SocialPostSource = 'manual' | 'ai' | 'blog' | 'pillar' | 'course';
 export type SocialLocale = 'fr' | 'es';
 
@@ -72,6 +126,8 @@ export type SocialPost = {
   alsoPublishFacebook: boolean;
   /** Instagram → aussi publier sur TikTok (Reels MP4 uniquement). */
   alsoPublishTikTok: boolean;
+  /** Consentement + métadonnées Direct Post (obligatoire avant publish TT public). */
+  tiktokDirectPost?: TikTokDirectPostSettings | null;
   /** Instagram → aussi publier sur YouTube Shorts (Reels MP4 uniquement). */
   alsoPublishYouTube: boolean;
   /** Post LinkedIn créé depuis un autre post (id source). */
@@ -404,6 +460,7 @@ function normalizePost(raw: unknown, _index = 0): SocialPost | null {
       row.alsoPublishTikTok === undefined
         ? row.network === 'instagram' && row.format === 'reel'
         : Boolean(row.alsoPublishTikTok),
+    tiktokDirectPost: parseTikTokDirectPostSettings(row.tiktokDirectPost),
     alsoPublishYouTube:
       row.alsoPublishYouTube === undefined
         ? row.network === 'instagram' && row.format === 'reel'

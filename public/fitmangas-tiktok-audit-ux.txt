@@ -1,0 +1,29 @@
+FitMangas — TikTok Direct Post UX demo notes (screen recording companion)
+
+App: https://fitmangas.com
+Admin CM: https://fitmangas.com/admin/community
+App ID: 7685356596200900629
+
+1) OAuth Login Kit — creator connects THEIR OWN TikTok
+   Scopes: user.info.basic, video.upload, video.publish
+
+2) Post to TikTok page loads /v2/post/publish/creator_info/query/
+   - Displays creator_nickname + avatar
+   - privacy_level_options populate dropdown with NO default
+   - Blocks if options empty or max_video_post_duration_sec = 0 (Retry)
+
+3) Playable 9:16 video preview + editable title/caption
+
+4) Allow Comment / Duet / Stitch — unchecked by default; greyed if creator_info says disabled
+
+5) Commercial disclosure toggle OFF by default
+   - Your brand / Branded content when ON
+   - Branded content cannot combine with SELF_ONLY
+
+6) Required checkbox: TikTok Music Usage Confirmation
+   (+ Branded Content Policy link when branded content selected)
+
+7) Explicit Post / Save — only then FILE_UPLOAD Direct Post
+   Poll /v2/post/publish/status/fetch/ until terminal status
+   No watermark on creator media
+

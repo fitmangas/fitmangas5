@@ -59,6 +59,7 @@ import {
   updateSocialPostCaptionAction,
   updateSocialPostFacebookMirrorAction,
   updateSocialPostTikTokMirrorAction,
+  updateSocialPostTikTokDirectPostAction,
   updateSocialPostYouTubeMirrorAction,
   updateSocialPostImageAction,
   updateSocialPostImageFeedbackAction,
@@ -106,6 +107,7 @@ import {
   type SocialPost,
 } from '@/lib/admin/social-comms';
 import type { TikTokSocialConnection } from '@/lib/admin/tiktok-social';
+import { TikTokDirectPostComposer } from '@/components/Admin/community/TikTokDirectPostComposer';
 import type { YouTubeSocialConnection } from '@/lib/admin/youtube-social';
 import { META_APP_LIVE_WARNING } from '@/lib/admin/social-comms';
 import {
@@ -2050,6 +2052,19 @@ function PostCard({
                   />
                   Aussi TikTok (même Reel)
                 </label>
+              ) : null}
+              {post.network === 'instagram' && post.format === 'reel' && post.alsoPublishTikTok ? (
+                <TikTokDirectPostComposer
+                  videoUrl={post.editedVideoPath}
+                  caption={captionForPublish(post)}
+                  initial={post.tiktokDirectPost || null}
+                  onSave={async (settings) => {
+                    await run(
+                      () => updateSocialPostTikTokDirectPostAction(post.id, settings),
+                      'Paramètres TikTok Direct Post enregistrés.',
+                    );
+                  }}
+                />
               ) : null}
               {post.network === 'instagram' && post.format === 'reel' ? (
                 <label className="inline-flex items-center gap-2 text-xs text-luxury-ink">

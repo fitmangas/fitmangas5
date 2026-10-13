@@ -203,6 +203,56 @@ async function ensureFreshToken(
   return next;
 }
 
+export type TikTokCreatorInfo = {
+  nickname: string;
+  avatarUrl: string | null;
+  privacyLevelOptions: string[];
+  maxVideoPostDurationSec: number;
+  commentDisabled: boolean;
+  duetDisabled: boolean;
+  stitchDisabled: boolean;
+};
+
+/** Infos créateur fraîches (audit Direct Post — pas de cache UI). */
+export async function queryTikTokCreatorInfo(
+  connection: TikTokSocialConnection,
+  onTokenRefreshed?: (next: TikTokSocialConnection) => Promise<void>,
+): Promise<{ info: TikTokCreatorInfo; connection: TikTokSocialConnection }> {
+  let conn = await ensureFreshToken(connection, onTokenRefreshed);
+  const token = conn.accessToken!;
+  const creator = await tiktokJson(`${TIKTOK_API}/v2/post/publish/creator_info/query/`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: '{}',
+  });
+  const data = (creator.data || {}) as {
+    creator_nickname?: string;
+    creator_username?: string;
+    creator_avatar_url?: string;
+    privacy_level_options?: string[];
+    max_video_post_duration_sec?: number;
+    comment_disabled?: boolean;
+    duet_disabled?: boolean;
+    stitch_disabled?: boolean;
+  };
+  return {
+    connection: conn,
+    info: {
+      nickname: String(data.creator_nickname || data.creator_username || connection.displayName || 'TikTok'),
+      avatarUrl: typeof data.creator_avatar_url === 'string' ? data.creator_avatar_url : null,
+      privacyLevelOptions: Array.isArray(data.privacy_level_options) ? data.privacy_level_options : [],
+      maxVideoPostDurationSec:
+        typeof data.max_video_post_duration_sec === 'number' ? data.max_video_post_duration_sec : 0,
+      commentDisabled: Boolean(data.comment_disabled),
+      duetDisabled: Boolean(data.duet_disabled),
+      stitchDisabled: Boolean(data.stitch_disabled),
+    },
+  };
+}
+
 /** Publie un Reel FitMangas sur TikTok (Direct Post, FILE_UPLOAD). */
 export async function publishTikTokReel(
   connection: TikTokSocialConnection,
@@ -232,6 +282,18 @@ export async function publishTikTokReel(
   if (!tiktokHasDirectPostScope(connection)) {
     throw new Error(
       `TikTok sans scope video.publish — reconnecte OAuth (Direct Post). ${tiktokConnectorStatusMessage(connection)}`,
+    );
+  }
+
+  const settings = post.tiktokDirectPost;
+  if (
+    !settings?.privacyLevel ||
+    !settings.musicUsageConsent ||
+    (settings.commercialDisclosure && !settings.brandOrganic && !settings.brandContent) ||
+    (settings.brandContent && settings.privacyLevel === 'SELF_ONLY')
+  ) {
+    throw new Error(
+      'TikTok Direct Post : ouvre le panneau consentement sous « Aussi TikTok », choisis la visibilité, coche Music Usage, puis Enregistrer.',
     );
   }
 
@@ -265,35 +327,23 @@ export async function publishTikTokReel(
       totalChunkCount = Math.ceil(videoSize / chunkSize);
     }
   }
-  const title = captionForPublish(post).slice(0, 2200);
+  const title = (settings.titleOverride?.trim() || captionForPublish(post)).slice(0, 2200);
   const maxPollAttempts = Math.max(1, options?.maxPollAttempts ?? 45);
   const acceptProcessingAsSuccess = options?.acceptProcessingAsSuccess !== false;
 
-  const creator = await tiktokJson(`${TIKTOK_API}/v2/post/publish/creator_info/query/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: '{}',
-  });
-  const creatorData = (creator.data || {}) as {
-    privacy_level_options?: string[];
-  };
-  const privacyOptions = Array.isArray(creatorData.privacy_level_options)
-    ? creatorData.privacy_level_options
-    : [];
-  const preferredOrder = [
-    'PUBLIC_TO_EVERYONE',
-    'MUTUAL_FOLLOW_FRIENDS',
-    'FOLLOWER_OF_CREATOR',
-    'SELF_ONLY',
-  ];
-  const privacyCandidates = [
-    ...preferredOrder.filter((p) => privacyOptions.includes(p)),
-    ...privacyOptions.filter((p) => !preferredOrder.includes(p)),
-    ...(privacyOptions.length ? [] : (['SELF_ONLY'] as const)),
-  ];
+  const { info: creatorInfo, connection: connAfterCreator } = await queryTikTokCreatorInfo(conn);
+  conn = connAfterCreator;
+  if (
+    creatorInfo.privacyLevelOptions.length === 0 ||
+    creatorInfo.maxVideoPostDurationSec === 0
+  ) {
+    throw new Error('TikTok : ce compte ne peut pas publier pour le moment (réessaie plus tard).');
+  }
+  if (!creatorInfo.privacyLevelOptions.includes(settings.privacyLevel)) {
+    throw new Error(
+      `TikTok : visibilité « ${settings.privacyLevel} » indisponible pour ce compte. Rouvre le panneau consentement.`,
+    );
+  }
 
   const sourceInfo = {
     source: 'FILE_UPLOAD' as const,
@@ -304,53 +354,39 @@ export async function publishTikTokReel(
 
   let publishId = '';
   let uploadUrl = '';
-  let privacyLevel = privacyCandidates[0] || 'SELF_ONLY';
+  let privacyLevel = settings.privacyLevel;
   let lastInitError: Error | null = null;
 
-  for (const candidate of privacyCandidates) {
-    try {
-      const init = await tiktokJson(`${TIKTOK_API}/v2/post/publish/video/init/`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
+  try {
+    const init = await tiktokJson(`${TIKTOK_API}/v2/post/publish/video/init/`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        post_info: {
+          title,
+          privacy_level: settings.privacyLevel,
+          disable_duet: !settings.allowDuet,
+          disable_comment: !settings.allowComment,
+          disable_stitch: !settings.allowStitch,
+          brand_organic_toggle: Boolean(settings.commercialDisclosure && settings.brandOrganic),
+          brand_content_toggle: Boolean(settings.commercialDisclosure && settings.brandContent),
+          // Content Posting API : pas d’image cover custom — frame à 1 s.
+          video_cover_timestamp_ms: 1000,
         },
-        body: JSON.stringify({
-          post_info: {
-            title,
-            privacy_level: candidate,
-            disable_duet: false,
-            disable_comment: false,
-            disable_stitch: false,
-            // Content Posting API : pas d’image cover custom — frame à 1 s.
-            video_cover_timestamp_ms: 1000,
-          },
-          source_info: sourceInfo,
-        }),
-      });
-      const initData = (init.data || {}) as { publish_id?: string; upload_url?: string };
-      publishId = String(initData.publish_id || '');
-      uploadUrl = String(initData.upload_url || '');
-      if (publishId && uploadUrl) {
-        privacyLevel = candidate;
-        lastInitError = null;
-        break;
-      }
+        source_info: sourceInfo,
+      }),
+    });
+    const initData = (init.data || {}) as { publish_id?: string; upload_url?: string };
+    publishId = String(initData.publish_id || '');
+    uploadUrl = String(initData.upload_url || '');
+    if (!publishId || !uploadUrl) {
       lastInitError = new Error('TikTok init échoué (pas de publish_id / upload_url).');
-    } catch (e) {
-      lastInitError = e instanceof Error ? e : new Error('TikTok init échoué');
-      const msg = lastInitError.message.toLowerCase();
-      // Guidelines / audit : retenter un niveau plus restreint (SELF_ONLY = inbox créateur).
-      if (
-        msg.includes('guideline') ||
-        msg.includes('unaudited') ||
-        msg.includes('privacy_level') ||
-        msg.includes('not authorized')
-      ) {
-        continue;
-      }
-      throw lastInitError;
     }
+  } catch (e) {
+    lastInitError = e instanceof Error ? e : new Error('TikTok init échoué');
   }
 
   // Filet : sans audit Content Posting, Direct Post est souvent refusé → Inbox (brouillon créateur).

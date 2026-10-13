@@ -21,6 +21,7 @@ import {
   exchangeTikTokCodeForConnection,
   getTikTokSocialConnection,
   publishTikTokReel,
+  queryTikTokCreatorInfo,
   saveTikTokSocialConnection,
   tiktokAppConfigured,
   tiktokConnectorStatusMessage,
@@ -92,9 +93,11 @@ import {
   type SocialCommsBoard,
   type SocialLocale,
   type SocialNetwork,
+  isTikTokDirectPostReady,
   type SocialPost,
   type SocialPostFormat,
   type SocialPostStatus,
+  type TikTokDirectPostSettings,
 } from '@/lib/admin/social-comms';
 import { addLibraryPathAliases, hashVariationSeed, isBoardLibraryPath } from '@/lib/admin/library-path-utils';
 import { runSocialTextCascade } from '@/lib/admin/social-text-ai';
@@ -1378,7 +1381,71 @@ export async function updateSocialPostTikTokMirrorAction(postId: string, alsoPub
     ...board,
     posts: board.posts.map((item) =>
       item.id === postId
-        ? { ...item, alsoPublishTikTok, updatedAt: new Date().toISOString() }
+        ? {
+            ...item,
+            alsoPublishTikTok,
+            // Désactiver le miroir = invalider le consentement Direct Post.
+            tiktokDirectPost: alsoPublishTikTok ? item.tiktokDirectPost : null,
+            updatedAt: new Date().toISOString(),
+          }
+        : item,
+    ),
+  });
+  revalidateCommunity();
+  return { ok: true as const };
+}
+
+export async function getTikTokCreatorInfoAction() {
+  await requireAdmin();
+  try {
+    let conn = await getTikTokSocialConnection();
+    if (!conn.connected || !conn.accessToken) {
+      return { ok: false as const, error: `TikTok non connecté — ${tiktokConnectorStatusMessage(conn)}` };
+    }
+    const queried = await queryTikTokCreatorInfo(conn, async (next) => {
+      await saveTikTokSocialConnection(next);
+      conn = next;
+    });
+    await saveTikTokSocialConnection(queried.connection);
+    return { ok: true as const, data: queried.info };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : 'Impossible de charger creator_info TikTok.',
+    };
+  }
+}
+
+export async function updateSocialPostTikTokDirectPostAction(
+  postId: string,
+  settings: TikTokDirectPostSettings,
+) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.format !== 'reel') {
+    return { ok: false as const, error: 'TikTok Direct Post : Reels uniquement.' };
+  }
+  if (!isTikTokDirectPostReady(settings)) {
+    return {
+      ok: false as const,
+      error: 'Paramètres TikTok incomplets (visibilité + Music Usage + disclosure).',
+    };
+  }
+  await saveSocialCommsBoard({
+    ...board,
+    posts: board.posts.map((item) =>
+      item.id === postId
+        ? {
+            ...item,
+            alsoPublishTikTok: true,
+            tiktokDirectPost: {
+              ...settings,
+              consentedAt: settings.consentedAt || new Date().toISOString(),
+            },
+            updatedAt: new Date().toISOString(),
+          }
         : item,
     ),
   });
