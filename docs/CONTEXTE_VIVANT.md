@@ -27,6 +27,33 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-13 — TikTok miroir Reels : plus d’échec silencieux + inbox filet
+
+- Cause du Reel 08h (IG/FB/YT OK, TT manquant) : (1) chunking MP4 invalide sous 64 Mo ; (2) Direct Post public encore bloqué guidelines ; (3) erreurs TT avalées par le cron.
+- Correctifs : 1 chunk si ≤64 Mo ; erreurs TT dans `publishError` ; rattrapage cron des Reels publiés sans `tiktokExternalId` ; programmation force `alsoPublishTikTok` sur Reels ; fallback **Inbox** si Direct Post refusé.
+- Reel `sp_muwz7tnf_163hpr` renvoyé → TikTok **inbox** (`v_inbox_file~…`). Public auto = audit Content Posting encore requis.
+- Fichiers : `tiktok-social.ts`, `community/actions.ts`.
+
+### 2026-10-12 — TikTok Direct Post reconnecté (OAuth OK)
+
+- OAuth `@fit.mangas` refait dans le navigateur latéral Cursor : scopes `video.publish,video.upload,user.info.basic`.
+- CM affiche « TikTok connecté (fit.mangas) — Direct Post (video.publish) OK ».
+- `TIKTOK_REQUEST_VIDEO_PUBLISH=1` déjà sur Vercel + `.env.local`.
+- **Suite 13/10** : miroir OK via Inbox ; public Direct Post = audit Content Posting encore requis.
+
+### 2026-10-12 — TikTok Production Live → Direct Post
+
+- App TikTok `7685356596200900629` **Live** depuis 12/10 10:09.
+- Flag `TIKTOK_REQUEST_VIDEO_PUBLISH=1` local + Vercel ; messages CM (`tiktok-social.ts`).
+- Reconnexion OAuth faite le même jour (voir entrée ci-dessus).
+
+### 2026-10-07 — TikTok App Review resoumise (In review)
+
+- Portal TikTok app `7685356596200900629` : Draft → textes creator-facing + icône + démo MP4 → **Submit** → statut **In review**.
+- Description ≤120 car. sans « admin privé » ; App review = OAuth créateur + Direct Post (`video.publish`).
+- Démo générée : `scripts/tiktok-app-review-demo.ts` → `fitmangas-tiktok-demo.mp4` (fitmangas.com + Login Kit scopes + publish).
+- Après approve : `TIKTOK_REQUEST_VIDEO_PUBLISH=1` + reconnecter TikTok dans le CM.
+
 ### 2026-10-07 — Leads chauds Conversations + TikTok App Review
 
 - **Croissance → Conversations** : panneau « Leads chauds » sous inbox + détail (score ≥40, exclut @meta_/démo/équipe/payant). Clic → ouvre le fil. `listHotLeads`, `HotLeadsPanel.tsx`.

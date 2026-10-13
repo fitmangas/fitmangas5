@@ -207,13 +207,32 @@ async function ensureFreshToken(
 export async function publishTikTokReel(
   connection: TikTokSocialConnection,
   post: SocialPost,
-  options?: { onTokenRefreshed?: (next: TikTokSocialConnection) => Promise<void> },
-): Promise<{ publishId: string; connection: TikTokSocialConnection }> {
+  options?: {
+    onTokenRefreshed?: (next: TikTokSocialConnection) => Promise<void>;
+    /** Poll status (2 s chacun). Cron : ~12 (24 s). Manuel : 45. */
+    maxPollAttempts?: number;
+    /**
+     * Si true (défaut cron) : après upload OK, un statut PROCESSING_* suffit —
+     * TikTok finit en async. Évite de tuer le cron Meta/YouTube.
+     */
+    acceptProcessingAsSuccess?: boolean;
+  },
+): Promise<{
+  publishId: string;
+  connection: TikTokSocialConnection;
+  status: string;
+  privacyLevel: string;
+}> {
   if (post.format !== 'reel') {
     throw new Error('TikTok auto : réservé aux Reels (MP4). Carousel/feed restent IG+FB.');
   }
   if (!post.editedVideoPath) {
     throw new Error('MP4 manquant : impossible de publier sur TikTok.');
+  }
+  if (!tiktokHasDirectPostScope(connection)) {
+    throw new Error(
+      `TikTok sans scope video.publish — reconnecte OAuth (Direct Post). ${tiktokConnectorStatusMessage(connection)}`,
+    );
   }
 
   let conn = await ensureFreshToken(connection, options?.onTokenRefreshed);
@@ -227,9 +246,28 @@ export async function publishTikTokReel(
   const videoSize = fileBuffer.byteLength;
   if (videoSize < 10_000) throw new Error('MP4 trop petit / invalide pour TikTok.');
 
-  const chunkSize = Math.min(10_000_000, videoSize);
-  const totalChunkCount = Math.max(1, Math.ceil(videoSize / chunkSize));
+  // TikTok FILE_UPLOAD : chunks (sauf le dernier) ≥ 5 MiB, chunk ≤ 64 MiB.
+  // Sous 64 MiB → 1 seul chunk (évite « total chunk count is invalid »).
+  const MIN_CHUNK = 5 * 1024 * 1024;
+  const MAX_CHUNK = 64 * 1024 * 1024;
+  const PREFERRED_CHUNK = 10 * 1024 * 1024;
+  let chunkSize: number;
+  let totalChunkCount: number;
+  if (videoSize <= MAX_CHUNK) {
+    chunkSize = videoSize;
+    totalChunkCount = 1;
+  } else {
+    chunkSize = PREFERRED_CHUNK;
+    totalChunkCount = Math.ceil(videoSize / chunkSize);
+    // Garantir que tous les chunks pleins font ≥ 5 MiB
+    if (chunkSize < MIN_CHUNK) {
+      chunkSize = MIN_CHUNK;
+      totalChunkCount = Math.ceil(videoSize / chunkSize);
+    }
+  }
   const title = captionForPublish(post).slice(0, 2200);
+  const maxPollAttempts = Math.max(1, options?.maxPollAttempts ?? 45);
+  const acceptProcessingAsSuccess = options?.acceptProcessingAsSuccess !== false;
 
   const creator = await tiktokJson(`${TIKTOK_API}/v2/post/publish/creator_info/query/`, {
     method: 'POST',
@@ -245,41 +283,100 @@ export async function publishTikTokReel(
   const privacyOptions = Array.isArray(creatorData.privacy_level_options)
     ? creatorData.privacy_level_options
     : [];
-  const privacyLevel =
-    privacyOptions.find((p) => p === 'PUBLIC_TO_EVERYONE') ||
-    privacyOptions[0] ||
-    'SELF_ONLY';
+  const preferredOrder = [
+    'PUBLIC_TO_EVERYONE',
+    'MUTUAL_FOLLOW_FRIENDS',
+    'FOLLOWER_OF_CREATOR',
+    'SELF_ONLY',
+  ];
+  const privacyCandidates = [
+    ...preferredOrder.filter((p) => privacyOptions.includes(p)),
+    ...privacyOptions.filter((p) => !preferredOrder.includes(p)),
+    ...(privacyOptions.length ? [] : (['SELF_ONLY'] as const)),
+  ];
 
-  const init = await tiktokJson(`${TIKTOK_API}/v2/post/publish/video/init/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({
-      post_info: {
-        title,
-        privacy_level: privacyLevel,
-        disable_duet: false,
-        disable_comment: false,
-        disable_stitch: false,
-        // Content Posting API : pas d’image cover custom — frame à 1 s. Miniature manuelle dans l’app TikTok.
-        video_cover_timestamp_ms: 1000,
-      },
-      source_info: {
-        source: 'FILE_UPLOAD',
-        video_size: videoSize,
-        chunk_size: chunkSize,
-        total_chunk_count: totalChunkCount,
-      },
-    }),
-  });
+  const sourceInfo = {
+    source: 'FILE_UPLOAD' as const,
+    video_size: videoSize,
+    chunk_size: chunkSize,
+    total_chunk_count: totalChunkCount,
+  };
 
-  const initData = (init.data || {}) as { publish_id?: string; upload_url?: string };
-  const publishId = String(initData.publish_id || '');
-  const uploadUrl = String(initData.upload_url || '');
+  let publishId = '';
+  let uploadUrl = '';
+  let privacyLevel = privacyCandidates[0] || 'SELF_ONLY';
+  let lastInitError: Error | null = null;
+
+  for (const candidate of privacyCandidates) {
+    try {
+      const init = await tiktokJson(`${TIKTOK_API}/v2/post/publish/video/init/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: JSON.stringify({
+          post_info: {
+            title,
+            privacy_level: candidate,
+            disable_duet: false,
+            disable_comment: false,
+            disable_stitch: false,
+            // Content Posting API : pas d’image cover custom — frame à 1 s.
+            video_cover_timestamp_ms: 1000,
+          },
+          source_info: sourceInfo,
+        }),
+      });
+      const initData = (init.data || {}) as { publish_id?: string; upload_url?: string };
+      publishId = String(initData.publish_id || '');
+      uploadUrl = String(initData.upload_url || '');
+      if (publishId && uploadUrl) {
+        privacyLevel = candidate;
+        lastInitError = null;
+        break;
+      }
+      lastInitError = new Error('TikTok init échoué (pas de publish_id / upload_url).');
+    } catch (e) {
+      lastInitError = e instanceof Error ? e : new Error('TikTok init échoué');
+      const msg = lastInitError.message.toLowerCase();
+      // Guidelines / audit : retenter un niveau plus restreint (SELF_ONLY = inbox créateur).
+      if (
+        msg.includes('guideline') ||
+        msg.includes('unaudited') ||
+        msg.includes('privacy_level') ||
+        msg.includes('not authorized')
+      ) {
+        continue;
+      }
+      throw lastInitError;
+    }
+  }
+
+  // Filet : sans audit Content Posting, Direct Post est souvent refusé → Inbox (brouillon créateur).
   if (!publishId || !uploadUrl) {
-    throw new Error('TikTok init échoué (pas de publish_id / upload_url).');
+    try {
+      const inboxInit = await tiktokJson(`${TIKTOK_API}/v2/post/publish/inbox/video/init/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: JSON.stringify({ source_info: sourceInfo }),
+      });
+      const inboxData = (inboxInit.data || {}) as { publish_id?: string; upload_url?: string };
+      publishId = String(inboxData.publish_id || '');
+      uploadUrl = String(inboxData.upload_url || '');
+      privacyLevel = 'INBOX';
+      if (!publishId || !uploadUrl) {
+        throw new Error('TikTok inbox init échoué (pas de publish_id / upload_url).');
+      }
+    } catch (inboxError) {
+      const inboxMsg = inboxError instanceof Error ? inboxError.message : 'inbox échoué';
+      throw new Error(
+        `TikTok Direct Post refusé (${lastInitError?.message || 'guidelines'}). Inbox aussi : ${inboxMsg}. Lancer l’audit Content Posting : https://developers.tiktok.com/doc/content-sharing-guidelines/`,
+      );
+    }
   }
 
   for (let i = 0; i < totalChunkCount; i += 1) {
@@ -302,7 +399,7 @@ export async function publishTikTokReel(
   }
 
   let status = 'PROCESSING_UPLOAD';
-  for (let attempt = 0; attempt < 45; attempt += 1) {
+  for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
     await new Promise((r) => setTimeout(r, 2000));
     const statusRes = await tiktokJson(`${TIKTOK_API}/v2/post/publish/status/fetch/`, {
       method: 'POST',
@@ -318,12 +415,33 @@ export async function publishTikTokReel(
     if (status === 'FAILED') {
       throw new Error(`TikTok publication échouée : ${st.fail_reason || 'FAILED'}`);
     }
+    if (
+      acceptProcessingAsSuccess &&
+      (status === 'PROCESSING_UPLOAD' ||
+        status === 'PROCESSING_DOWNLOAD' ||
+        status === 'SEND_TO_USER_INBOX') &&
+      attempt >= Math.min(2, maxPollAttempts - 1)
+    ) {
+      // Upload accepté côté TikTok — le cron ne doit pas attendre 90 s.
+      break;
+    }
   }
-  if (status !== 'PUBLISH_COMPLETE') {
+  if (status === 'FAILED') {
+    throw new Error('TikTok publication échouée.');
+  }
+  if (status !== 'PUBLISH_COMPLETE' && !acceptProcessingAsSuccess) {
     throw new Error(`TikTok : timeout (dernier statut ${status || 'inconnu'}).`);
   }
+  if (
+    status !== 'PUBLISH_COMPLETE' &&
+    status !== 'PROCESSING_UPLOAD' &&
+    status !== 'PROCESSING_DOWNLOAD' &&
+    status !== 'SEND_TO_USER_INBOX'
+  ) {
+    throw new Error(`TikTok : statut inattendu ${status || 'inconnu'}.`);
+  }
 
-  return { publishId, connection: conn };
+  return { publishId, connection: conn, status, privacyLevel };
 }
 
 export function tiktokConnectorStatusMessage(connection: TikTokSocialConnection): string {
@@ -332,13 +450,13 @@ export function tiktokConnectorStatusMessage(connection: TikTokSocialConnection)
     return `Connecteurs TikTok manquants : ${missing.join(', ')} (Vercel + .env.local). Puis app developers.tiktok.com → Content Posting API + scopes video.upload / video.publish (audit TikTok requis pour le public). Voir docs/TIKTOK_APP_REVIEW.md.`;
   }
   if (!connection.connected) {
-    return 'Clés TikTok présentes — connecte @fit.mangas via OAuth. Pour le Direct Post public : faire approuver Production (pas « internal use ») puis TIKTOK_REQUEST_VIDEO_PUBLISH=1 + reconnecter. docs/TIKTOK_APP_REVIEW.md';
+    return 'Clés TikTok présentes — App Live OK. Connecte @fit.mangas via OAuth (scopes video.upload + video.publish). docs/TIKTOK_APP_REVIEW.md';
   }
   const name = connection.displayName ? ` (${connection.displayName})` : '';
   if (!tiktokHasDirectPostScope(connection)) {
-    return `TikTok connecté${name} — scope video.publish absent : miroir auto public = pas comme IG/YT tant que App Review Production n’est pas approuvée (docs/TIKTOK_APP_REVIEW.md).`;
+    return `TikTok connecté${name} — scope video.publish absent : déconnecte puis reconnecte TikTok dans le CM (ancien token = upload seul). docs/TIKTOK_APP_REVIEW.md`;
   }
-  return `TikTok connecté${name} — Direct Post (video.publish) OK.`;
+  return `TikTok connecté${name} — scopes OK. Public Direct Post si audit Content Posting passé ; sinon filet Inbox auto.`;
 }
 
 export async function getTikTokSocialConnection(): Promise<TikTokSocialConnection> {
