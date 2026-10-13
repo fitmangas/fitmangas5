@@ -29,10 +29,11 @@ Référence : [Content Sharing Guidelines](https://developers.tiktok.com/doc/con
 ## Statut (13/10/2026)
 
 **Production = Live.** OAuth `@fit.mangas` OK (`video.publish` + `video.upload`).  
-**Direct Post public** : encore refusé par TikTok (« review our integration guidelines ») tant que l’**audit Content Posting** n’est pas passé.  
-**Filet auto** : si Direct Post public échoue → upload **Inbox** (brouillon dans l’app TikTok du créateur), plus d’échec silencieux.  
+**Audit Content Posting** : **soumis** le 13/10/2026 (formulaire Apply → réponse TikTok 2–4 semaines).  
+**UX Direct Post** : panneau consentement CM (`TikTokDirectPostComposer`) — `creator_info`, privacy sans défaut, Comment/Duet/Stitch, disclosure, Music Usage. Obligatoire avant publish (`tiktokDirectPost` sur le post).  
+**Filet auto** : si Direct Post public échoue (unaudited) → upload **Inbox**.  
 **Bug corrigé** : chunking MP4 (`total chunk count is invalid` sous 64 Mo → 1 chunk).  
-**Reste :** soumettre l’audit Content Posting pour publier **directement en public** (sans passer par l’inbox).
+**Après approve audit** : republier un Reel avec settings Direct Post → public sans inbox.
 
 ## Démarche resoumission (faite / référence)
 

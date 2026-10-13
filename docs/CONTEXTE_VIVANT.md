@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-13 — Audit TikTok Content Posting soumis + UX Direct Post
+
+- Formulaire Apply Direct Post **soumis** (réponse TikTok annoncée 2–4 semaines). App ID `7685356596200900629`.
+- UX obligatoire guidelines : `TikTokDirectPostComposer` (privacy sans défaut, interactions, disclosure, Music Usage) + `tiktokDirectPost` sur SocialPost ; `publishTikTokReel` refuse sans consentement.
+- Démo audit : slides MP4 + gist base64. Fichiers : `TikTokDirectPostComposer.tsx`, `tiktok-social.ts`, `community/actions.ts`, `social-comms.ts`, `TIKTOK_APP_REVIEW.md`.
+- Public auto sans inbox = **après approve** audit. D’ici là : inbox filet + panneau consentement prêt.
+
 ### 2026-10-13 — TikTok miroir Reels : plus d’échec silencieux + inbox filet
 
 - Cause du Reel 08h (IG/FB/YT OK, TT manquant) : (1) chunking MP4 invalide sous 64 Mo ; (2) Direct Post public encore bloqué guidelines ; (3) erreurs TT avalées par le cron.

@@ -64,7 +64,7 @@ alwaysApply: true
 - Miroirs Reels IG : Facebook + TikTok + **YouTube Shorts** (`alsoPublishYouTube`, `src/lib/admin/youtube-social.ts`)
 - YouTube = **publication seulement** (pas de DM → pas de workflows acquisition type IG/WA). OAuth : `YOUTUBE_CLIENT_ID` + `YOUTUBE_CLIENT_SECRET` — **connecté 21/09/2026** (`youtube_social_connection`, chaîne Alejandra Mangas `UCHkmseevG7-gcLcQZS5xVkQ`).
 - Compte cible chaîne : `info@casamangas.com` (OAuth Google Cloud — pas le mot de passe dans le repo).
-- **TikTok** (13/10/2026) : App Production **Live**. OAuth `@fit.mangas` OK (`video.publish`). Miroir Reels forcé à la prog. Si Direct Post public refusé (guidelines) → fallback **Inbox**. Public auto = audit Content Posting encore à passer. Chunking ≤64 Mo = 1 chunk.
+- **TikTok** (13/10/2026) : App Production **Live**. OAuth `@fit.mangas` OK (`video.publish`). Miroir Reels + panneau `TikTokDirectPostComposer` (consentement). **Audit Content Posting soumis** (réponse 2–4 sem.). Sans audit : Direct Post public → filet Inbox. Chunking ≤64 Mo = 1 chunk.
 - **WhatsApp** : voir section Meta — bascule Ale Mangas (template APPROVED) ; register Cloud + carte encore à finaliser.
 
 ## Git push
