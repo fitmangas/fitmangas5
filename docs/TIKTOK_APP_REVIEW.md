@@ -21,13 +21,20 @@ Référence : [Content Sharing Guidelines](https://developers.tiktok.com/doc/con
 | Élément | État |
 |---|---|
 | Clés `TIKTOK_CLIENT_KEY` / `SECRET` | Présentes |
-| OAuth `@fit.mangas` | Possible (scopes Live actuels : `user.info.basic` + `video.upload`) |
-| Direct Post public (`video.publish`) | **Bloqué** tant que Production / audit non approuvés |
-| Code publish Reel | Déjà dans `src/lib/admin/tiktok-social.ts` (même modèle que YT) |
+| App Production | **Live depuis le 12/10/2026** (app `7685356596200900629`) |
+| OAuth `@fit.mangas` | **Reconnecté 12/10/2026** — scopes `video.publish` + `video.upload` + `user.info.basic` |
+| `TIKTOK_REQUEST_VIDEO_PUBLISH` | **=1** (local + Vercel) |
+| Code publish Reel | Déjà dans `src/lib/admin/tiktok-social.ts` |
 
-Tant que Production est « Not approved », cocher TikTok dans le CM ne donnera pas le même résultat fiable qu’IG/FB/YT.
+## Statut (13/10/2026)
 
-## Démarche resoumission (à faire dans developers.tiktok.com)
+**Production = Live.** OAuth `@fit.mangas` OK (`video.publish` + `video.upload`).  
+**Direct Post public** : encore refusé par TikTok (« review our integration guidelines ») tant que l’**audit Content Posting** n’est pas passé.  
+**Filet auto** : si Direct Post public échoue → upload **Inbox** (brouillon dans l’app TikTok du créateur), plus d’échec silencieux.  
+**Bug corrigé** : chunking MP4 (`total chunk count is invalid` sous 64 Mo → 1 chunk).  
+**Reste :** soumettre l’audit Content Posting pour publier **directement en public** (sans passer par l’inbox).
+
+## Démarche resoumission (faite / référence)
 
 ### 1. Return to Draft
 Bouton **Return to Draft** → corriger textes + produits + scopes **avant** de resoumettre.

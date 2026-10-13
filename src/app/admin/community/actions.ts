@@ -1894,12 +1894,16 @@ export async function publishSocialPostNowAction(postId: string) {
                   await saveTikTokSocialConnection(next);
                   ttConn = next;
                 },
+                maxPollAttempts: 30,
+                acceptProcessingAsSuccess: true,
               });
               tiktokExternalId = published.publishId;
               if (published.connection.accessToken !== ttConn.accessToken) {
                 await saveTikTokSocialConnection(published.connection);
               }
-              notes.push('TikTok');
+              notes.push(
+                published.status === 'PUBLISH_COMPLETE' ? 'TikTok' : `TikTok (en cours: ${published.status})`,
+              );
             }
           } catch (ttError) {
             console.error('[publishSocialPostNowAction] TT mirror', post.id, ttError);
@@ -2025,6 +2029,10 @@ export async function scheduleSocialPostAction(postId: string) {
   if (post.network === 'instagram') {
     // Instagram : file FitMangas uniquement. Le miroir Facebook part au cron (même instant que IG),
     // avec overlay composé côté serveur — évite les IDs fantômes d’un FB programmé trop tôt.
+    // Reels : TikTok + YouTube toujours activés à la programmation (miroir automatique).
+    const forceReelMirrors = post.format === 'reel';
+    const alsoPublishTikTok = forceReelMirrors ? true : post.alsoPublishTikTok;
+    const alsoPublishYouTube = forceReelMirrors ? true : post.alsoPublishYouTube;
     await saveSocialCommsBoard({
       ...board,
       posts: board.posts.map((item) =>
@@ -2032,6 +2040,9 @@ export async function scheduleSocialPostAction(postId: string) {
           ? {
               ...item,
               status: 'scheduled',
+              alsoPublishFacebook: true,
+              alsoPublishTikTok,
+              alsoPublishYouTube,
               facebookExternalId: null,
               tiktokExternalId: null,
               youtubeExternalId: null,
@@ -2047,11 +2058,9 @@ export async function scheduleSocialPostAction(postId: string) {
     return {
       ok: true as const,
       mode: 'instagram_queue' as const,
-      message: post.alsoPublishFacebook
-        ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook${post.alsoPublishTikTok ? ' + TikTok' : ''}${post.alsoPublishYouTube ? ' + YouTube' : ''} (même visuel que la preview).`
-        : post.alsoPublishTikTok || post.alsoPublishYouTube
-          ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir ${[post.alsoPublishTikTok && 'TikTok', post.alsoPublishYouTube && 'YouTube'].filter(Boolean).join(' + ')}.`
-          : 'Instagram programmé dans FitMangas. Le cron publiera à l’heure prévue.',
+      message: alsoPublishTikTok || alsoPublishYouTube
+        ? `Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook${alsoPublishTikTok ? ' + TikTok' : ''}${alsoPublishYouTube ? ' + YouTube' : ''} (même visuel que la preview).`
+        : 'Instagram en file FitMangas. À l’heure prévue : publication IG + miroir Facebook (même visuel que la preview).',
     };
   }
 
@@ -2220,19 +2229,30 @@ export async function processDueSocialPostsAction() {
       if (post.alsoPublishTikTok && post.format === 'reel' && post.editedVideoPath) {
         try {
           let ttConn = await getTikTokSocialConnection();
-          if (ttConn.connected && ttConn.accessToken) {
+          if (!ttConn.connected || !ttConn.accessToken) {
+            mirrorErrors.push(`TikTok non connecté — ${tiktokConnectorStatusMessage(ttConn)}`);
+          } else {
+            const remainingMs = TIME_BUDGET_MS - (Date.now() - startedAt);
+            const pollAttempts = Math.max(3, Math.min(12, Math.floor(remainingMs / 2500)));
             const ttPublished = await publishTikTokReel(ttConn, post, {
               onTokenRefreshed: async (next) => {
                 await saveTikTokSocialConnection(next);
                 ttConn = next;
               },
+              maxPollAttempts: pollAttempts,
+              acceptProcessingAsSuccess: true,
             });
             tiktokExternalId = ttPublished.publishId;
             await saveTikTokSocialConnection(ttPublished.connection);
           }
         } catch (ttError) {
           console.error('[processDueSocialPostsAction] TT mirror', post.id, ttError);
+          mirrorErrors.push(
+            `TikTok: ${ttError instanceof Error ? ttError.message : 'échec miroir'}`,
+          );
         }
+      } else if (post.alsoPublishTikTok && (post.format !== 'reel' || !post.editedVideoPath)) {
+        mirrorErrors.push('TikTok ignoré (Reel MP4 requis)');
       }
       if (post.alsoPublishYouTube && post.format === 'reel' && post.editedVideoPath) {
         if (post.youtubeExternalId) {
@@ -2304,7 +2324,79 @@ export async function processDueSocialPostsAction() {
     }
   }
 
-  if (published > 0 || pending > 0 || failed > 0) {
+  // Rattrapage : Reels déjà publiés IG/FB/YT mais TikTok manquant (échecs silencieux passés).
+  let tiktokRetried = 0;
+  if (Date.now() - startedAt < TIME_BUDGET_MS - 25_000) {
+    const missingTikTok = nextPosts
+      .filter(
+        (p) =>
+          p.status === 'published' &&
+          p.network === 'instagram' &&
+          p.format === 'reel' &&
+          p.alsoPublishTikTok &&
+          !p.tiktokExternalId &&
+          Boolean(p.editedVideoPath) &&
+          p.plannedAt &&
+          Date.now() - new Date(p.plannedAt).getTime() < 14 * 24 * 60 * 60 * 1000,
+      )
+      .sort((a, b) => String(b.plannedAt).localeCompare(String(a.plannedAt)))
+      .slice(0, 1);
+
+    for (const post of missingTikTok) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS - 20_000) break;
+      try {
+        let ttConn = await getTikTokSocialConnection();
+        if (!ttConn.connected || !ttConn.accessToken) {
+          errors.push({
+            id: post.id,
+            error: `TikTok rattrapage: non connecté — ${tiktokConnectorStatusMessage(ttConn)}`,
+          });
+          continue;
+        }
+        const remainingMs = TIME_BUDGET_MS - (Date.now() - startedAt);
+        const pollAttempts = Math.max(3, Math.min(12, Math.floor(remainingMs / 2500)));
+        const ttPublished = await publishTikTokReel(ttConn, post, {
+          onTokenRefreshed: async (next) => {
+            await saveTikTokSocialConnection(next);
+            ttConn = next;
+          },
+          maxPollAttempts: pollAttempts,
+          acceptProcessingAsSuccess: true,
+        });
+        nextPosts = nextPosts.map((item) =>
+          item.id === post.id
+            ? {
+                ...item,
+                alsoPublishTikTok: true,
+                tiktokExternalId: ttPublished.publishId,
+                publishError: item.publishError?.includes('TikTok')
+                  ? null
+                  : item.publishError,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        );
+        await saveSocialCommsBoard({ ...board, posts: nextPosts });
+        tiktokRetried += 1;
+      } catch (ttError) {
+        const msg = ttError instanceof Error ? ttError.message : 'échec miroir';
+        console.error('[processDueSocialPostsAction] TT catch-up', post.id, ttError);
+        errors.push({ id: post.id, error: `TikTok rattrapage: ${msg}` });
+        nextPosts = nextPosts.map((item) =>
+          item.id === post.id
+            ? {
+                ...item,
+                publishError: [`TikTok: ${msg}`, item.publishError].filter(Boolean).join(' · '),
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        );
+        await saveSocialCommsBoard({ ...board, posts: nextPosts });
+      }
+    }
+  }
+
+  if (published > 0 || pending > 0 || failed > 0 || tiktokRetried > 0) {
     revalidateCommunity();
   }
   return {
@@ -2313,8 +2405,73 @@ export async function processDueSocialPostsAction() {
     pending,
     failed,
     due: duePosts.length,
+    tiktokRetried,
     errors,
   };
+}
+
+/** Republie uniquement le miroir TikTok d’un Reel IG déjà publié (ou prêt). */
+export async function publishTikTokMirrorNowAction(postId: string) {
+  await requireAdmin();
+  const board = await getSocialCommsBoard();
+  const post = board.posts.find((item) => item.id === postId);
+  if (!post) return { ok: false as const, error: 'Post introuvable.' };
+  if (post.network !== 'instagram' || post.format !== 'reel') {
+    return { ok: false as const, error: 'Miroir TikTok : réservé aux Reels Instagram.' };
+  }
+  if (!post.editedVideoPath) {
+    return { ok: false as const, error: 'MP4 manquant : impossible de publier sur TikTok.' };
+  }
+  if (post.tiktokExternalId) {
+    return {
+      ok: true as const,
+      already: true as const,
+      message: `TikTok déjà publié (${post.tiktokExternalId}).`,
+      publishId: post.tiktokExternalId,
+    };
+  }
+
+  let ttConn = await getTikTokSocialConnection();
+  if (!ttConn.connected || !ttConn.accessToken) {
+    return { ok: false as const, error: `TikTok non connecté — ${tiktokConnectorStatusMessage(ttConn)}` };
+  }
+
+  try {
+    const published = await publishTikTokReel(ttConn, post, {
+      onTokenRefreshed: async (next) => {
+        await saveTikTokSocialConnection(next);
+        ttConn = next;
+      },
+      maxPollAttempts: 30,
+      acceptProcessingAsSuccess: true,
+    });
+    await saveTikTokSocialConnection(published.connection);
+    const nextPosts = board.posts.map((item) =>
+      item.id === postId
+        ? {
+            ...item,
+            alsoPublishTikTok: true,
+            tiktokExternalId: published.publishId,
+            publishError: item.publishError?.includes('TikTok') ? null : item.publishError,
+            updatedAt: new Date().toISOString(),
+          }
+        : item,
+    );
+    await saveSocialCommsBoard({ ...board, posts: nextPosts });
+    revalidateCommunity();
+    return {
+      ok: true as const,
+      publishId: published.publishId,
+      status: published.status,
+      message:
+        published.status === 'PUBLISH_COMPLETE'
+          ? 'Publié sur TikTok.'
+          : `Envoyé à TikTok (${published.status}) — finalisation côté TikTok.`,
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Échec TikTok.';
+    return { ok: false as const, error: message };
+  }
 }
 
 /** Publie / complète le miroir Facebook d’un post IG (refuse le doublon sauf force). */
