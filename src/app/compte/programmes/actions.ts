@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import {
   completeProgramInternal,
+  postponeSessionInternal,
   recordFeedbackInternal,
   recordFeelingInternal,
   recordTestInternal,
@@ -112,6 +113,14 @@ export async function completeProgramAction(enrollmentId: string): Promise<Progr
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
   const res = await completeProgramInternal(enrollmentId, userId);
+  if (res.ok) revalidateProgrammes();
+  return res;
+}
+
+export async function postponeSessionAction(enrollmentId: string): Promise<ProgramActionResult> {
+  const userId = await sessionUserId();
+  if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
+  const res = await postponeSessionInternal(enrollmentId, userId);
   if (res.ok) revalidateProgrammes();
   return res;
 }

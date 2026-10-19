@@ -1,0 +1,4731 @@
+{
+  "version": 1,
+  "generated": "2026-10-14",
+  "source": "Claude — catalogue construit sur les 79 vidéos publiées de standalone_vimeo_videos (titres et durées vérifiés le 14/10/2026)",
+  "rules": [
+    "Résoudre chaque video_title en standalone_vimeo_videos.id par titre EXACT (validation_status publiée, non masquée). Lister les titres non trouvés au lieu d'en inventer.",
+    "segment = extrait de vidéo (secondes). to_validate=true : minutage à vérifier par Alejandra dans l'admin.",
+    "kind=live : carte dynamique « Live de la semaine » = prochain live publié du même style, dans la langue de la cliente ; si aucun : message « pas encore au planning ».",
+    "status=draft à l'import : Alejandra relit puis publie programme par programme.",
+    "Textes ES = traduction à relire par Alejandra."
+  ],
+  "levels": {
+    "1": {
+      "fr": "Débutante",
+      "es": "Principiante",
+      "label_fr": "Je démarre",
+      "label_es": "Empiezo"
+    },
+    "2": {
+      "fr": "Intermédiaire",
+      "es": "Intermedia",
+      "label_fr": "Je progresse",
+      "label_es": "Progreso"
+    },
+    "3": {
+      "fr": "Avancée",
+      "es": "Avanzada",
+      "label_fr": "Je me dépasse",
+      "label_es": "Me supero"
+    },
+    "0": {
+      "fr": "Tous niveaux",
+      "es": "Todos los niveles",
+      "label_fr": "Bien-être",
+      "label_es": "Bienestar"
+    }
+  },
+  "goals": {
+    "debuter": {
+      "fr": "Débuter en douceur",
+      "es": "Empezar con calma",
+      "icon": "sprout"
+    },
+    "tonifier": {
+      "fr": "Tonifier",
+      "es": "Tonificar",
+      "icon": "dumbbell"
+    },
+    "dos": {
+      "fr": "Dos & posture",
+      "es": "Espalda y postura",
+      "icon": "person-standing"
+    },
+    "cardio": {
+      "fr": "Cardio",
+      "es": "Cardio",
+      "icon": "heart-pulse"
+    },
+    "souplesse": {
+      "fr": "Souplesse",
+      "es": "Flexibilidad",
+      "icon": "leaf"
+    },
+    "express": {
+      "fr": "Peu de temps",
+      "es": "Poco tiempo",
+      "icon": "timer"
+    }
+  },
+  "faq": [
+    {
+      "q": {
+        "fr": "Je rate une séance, c'est grave ?",
+        "es": "Me salté una sesión, ¿es grave?"
+      },
+      "a": {
+        "fr": "Non. Elle reste disponible : fais-la le lendemain ou décale-la. Le programme suit ton rythme, pas l'inverse.",
+        "es": "No. Sigue disponible: hazla al día siguiente o cámbiala de día. El programa sigue tu ritmo, no al revés."
+      }
+    },
+    {
+      "q": {
+        "fr": "Je peux changer mes jours ou l'heure du rappel ?",
+        "es": "¿Puedo cambiar mis días o la hora del recordatorio?"
+      },
+      "a": {
+        "fr": "Oui, à tout moment depuis « Mes réglages », sur cette page.",
+        "es": "Sí, en cualquier momento desde « Mis ajustes », en esta página."
+      }
+    },
+    {
+      "q": {
+        "fr": "Et si une séance est trop difficile ?",
+        "es": "¿Y si una sesión es demasiado difícil?"
+      },
+      "a": {
+        "fr": "Note-la « Difficile » à la fin. Si ça se répète, on te propose une version plus douce. Et parles-en pendant le live : Alejandra te corrige en direct.",
+        "es": "Márcala como « Difícil » al final. Si se repite, te proponemos una versión más suave. Y coméntalo en la clase en vivo: Alejandra te corrige en directo."
+      }
+    },
+    {
+      "q": {
+        "fr": "Je peux suivre deux programmes en même temps ?",
+        "es": "¿Puedo seguir dos programas al mismo tiempo?"
+      },
+      "a": {
+        "fr": "Un seul programme actif à la fois, pour garder le bon rythme. Tu peux en mettre un en pause et le reprendre plus tard, là où tu l'avais laissé.",
+        "es": "Un solo programa activo a la vez, para mantener el buen ritmo. Puedes pausar uno y retomarlo después, justo donde lo dejaste."
+      }
+    }
+  ],
+  "safety": {
+    "fr": "Écoute ton corps. En cas de douleur, de grossesse, de rééducation ou de problème de santé, demande l'avis d'un professionnel de santé avant de commencer.",
+    "es": "Escucha a tu cuerpo. En caso de dolor, embarazo, rehabilitación o problema de salud, consulta a un profesional de la salud antes de empezar."
+  },
+  "programs": [
+    {
+      "slug": "les-fondations",
+      "status": "draft",
+      "level": 1,
+      "track": "pilates",
+      "goals": [
+        "debuter",
+        "dos"
+      ],
+      "intensity": 1,
+      "impact": "doux",
+      "live_style": "Pilates",
+      "title": {
+        "fr": "Les Fondations du Pilates",
+        "es": "Los Fundamentos del Pilates"
+      },
+      "promise": {
+        "fr": "En 3 semaines, tu respires, tu trouves ton centre et tu sais placer ton bassin.",
+        "es": "En 3 semanas respiras mejor, encuentras tu centro y aprendes a colocar tu pelvis."
+      },
+      "for_who": {
+        "fr": "Tu n'as jamais fait de Pilates, ou tu reprends après une longue pause.",
+        "es": "Nunca has hecho Pilates o vuelves después de una larga pausa."
+      },
+      "not_for": {
+        "fr": "Tu pratiques le Pilates depuis plus d'un an : passe directement à Centre solide.",
+        "es": "Practicas Pilates desde hace más de un año: pasa directamente a Centro sólido."
+      },
+      "benefits": [
+        {
+          "fr": "Respiration latérale maîtrisée",
+          "es": "Respiración lateral dominada",
+          "icon": "wind"
+        },
+        {
+          "fr": "Bassin neutre et dos protégé",
+          "es": "Pelvis neutra y espalda protegida",
+          "icon": "target"
+        },
+        {
+          "fr": "Un centre qui s'active tout seul",
+          "es": "Un centro que se activa solo",
+          "icon": "shield-check"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Petit ballon (semaine 3)",
+          "es": "Pelota pequeña (semana 3)"
+        }
+      ],
+      "weeks": 3,
+      "sessions_per_week": 3,
+      "minutes_range": "17–37 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/alejandra-tapis.jpg",
+      "next_slug": "centre-solide",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "planche_genoux",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les genoux",
+            "es": "Plancha sobre rodillas"
+          },
+          "how": {
+            "fr": "Avant-bras au sol, genoux posés, dos long. Arrête dès que le bassin s'affaisse.",
+            "es": "Antebrazos en el piso, rodillas apoyadas, espalda larga. Para en cuanto la pelvis se hunda."
+          }
+        },
+        {
+          "key": "pont",
+          "type": "seconds",
+          "label": {
+            "fr": "Pont fessier tenu",
+            "es": "Puente de glúteos sostenido"
+          },
+          "how": {
+            "fr": "Allongée, pieds à plat, bassin levé, côtes basses.",
+            "es": "Acostada, pies apoyados, pelvis arriba, costillas abajo."
+          }
+        },
+        {
+          "key": "flexion",
+          "type": "scale",
+          "label": {
+            "fr": "Flexion avant debout : tes mains touchent…",
+            "es": "Flexión hacia delante de pie: tus manos tocan…"
+          },
+          "how": {
+            "fr": "Jambes tendues sans forcer, expire en descendant.",
+            "es": "Piernas estiradas sin forzar, exhala al bajar."
+          },
+          "scale": {
+            "fr": [
+              "Genoux",
+              "Tibias",
+              "Chevilles",
+              "Sol"
+            ],
+            "es": [
+              "Rodillas",
+              "Espinillas",
+              "Tobillos",
+              "Suelo"
+            ]
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Respirer et trouver ton centre",
+            "es": "Respirar y encontrar tu centro"
+          },
+          "cues": [
+            {
+              "fr": "Inspire par le nez, les côtes s'ouvrent sur les côtés",
+              "es": "Inhala por la nariz, las costillas se abren hacia los lados"
+            },
+            {
+              "fr": "Expire longuement, le nombril rentre vers la colonne",
+              "es": "Exhala largo, el ombligo va hacia la columna"
+            },
+            {
+              "fr": "Bassin neutre : ni creusé, ni rentré",
+              "es": "Pelvis neutra: ni arqueada, ni metida"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat 3",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 1010,
+              "segment": null,
+              "minutes": 17,
+              "objective": {
+                "fr": "Découvrir la respiration latérale et le centre",
+                "es": "Descubrir la respiración lateral y el centro"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat Débutant : Les Fondations (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3671,
+              "segment": {
+                "start_s": 0,
+                "end_s": 1800,
+                "to_validate": true
+              },
+              "minutes": 30,
+              "objective": {
+                "fr": "Les bases au sol, partie 1",
+                "es": "Las bases en el piso, parte 1"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Assouplir le dos et les hanches",
+                "es": "Flexibilizar la espalda y las caderas"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Stabiliser",
+            "es": "Estabilizar"
+          },
+          "cues": [
+            {
+              "fr": "Omoplates basses, loin des oreilles",
+              "es": "Omóplatos abajo, lejos de las orejas"
+            },
+            {
+              "fr": "La nuque prolonge la colonne",
+              "es": "La nuca prolonga la columna"
+            },
+            {
+              "fr": "Le mouvement part du centre, pas des bras",
+              "es": "El movimiento nace del centro, no de los brazos"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat 2",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 1853,
+              "segment": null,
+              "minutes": 31,
+              "objective": {
+                "fr": "Stabiliser le bassin pendant que les jambes bougent",
+                "es": "Estabilizar la pelvis mientras las piernas se mueven"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat Débutant : Les Fondations (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3671,
+              "segment": {
+                "start_s": 1800,
+                "end_s": 3660,
+                "to_validate": true
+              },
+              "minutes": 31,
+              "objective": {
+                "fr": "Les bases au sol, partie 2",
+                "es": "Las bases en el piso, parte 2"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Récupérer et allonger",
+                "es": "Recuperar y alargar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Enchaîner avec fluidité",
+            "es": "Encadenar con fluidez"
+          },
+          "cues": [
+            {
+              "fr": "Garde le souffle régulier, même quand ça chauffe",
+              "es": "Mantén la respiración regular, aunque cueste"
+            },
+            {
+              "fr": "Qualité avant quantité : ralentis plutôt que de forcer",
+              "es": "Calidad antes que cantidad: baja el ritmo en lugar de forzar"
+            },
+            {
+              "fr": "Termine chaque répétition avec le centre engagé",
+              "es": "Termina cada repetición con el centro activo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "✨ Pilates Mat – 30 minutes à la maison ✨",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 1933,
+              "segment": null,
+              "minutes": 32,
+              "objective": {
+                "fr": "Ta première séance complète",
+                "es": "Tu primera sesión completa"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates petit ballon 18",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 2204,
+              "segment": null,
+              "minutes": 37,
+              "objective": {
+                "fr": "Le petit ballon pour sentir les muscles profonds",
+                "es": "La pelota pequeña para sentir los músculos profundos"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Ouvrir la cage thoracique et se redresser",
+                "es": "Abrir la caja torácica y enderezarte"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 9,
+        "video_minutes": 260
+      }
+    },
+    {
+      "slug": "barre-en-douceur",
+      "status": "draft",
+      "level": 1,
+      "track": "barre",
+      "goals": [
+        "debuter",
+        "tonifier"
+      ],
+      "intensity": 1,
+      "impact": "doux",
+      "live_style": "Barre",
+      "title": {
+        "fr": "Barre en douceur",
+        "es": "Barre suave"
+      },
+      "promise": {
+        "fr": "La grâce de la barre sans le stress : 3 semaines pour gagner en tonus et en posture.",
+        "es": "La elegancia de la barre sin estrés: 3 semanas para ganar tono y postura."
+      },
+      "for_who": {
+        "fr": "Tu aimes la danse et l'élégance, mais tu débutes.",
+        "es": "Te encantan la danza y la elegancia, pero estás empezando."
+      },
+      "not_for": {
+        "fr": "Tu cherches surtout à te détendre : regarde plutôt Souplesse & récupération.",
+        "es": "Buscas sobre todo relajarte: mejor mira Flexibilidad y recuperación."
+      },
+      "benefits": [
+        {
+          "fr": "Jambes et fessiers tonifiés",
+          "es": "Piernas y glúteos tonificados",
+          "icon": "dumbbell"
+        },
+        {
+          "fr": "Posture plus droite",
+          "es": "Postura más erguida",
+          "icon": "person-standing"
+        },
+        {
+          "fr": "Coordination et équilibre",
+          "es": "Coordinación y equilibrio",
+          "icon": "scale"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Chaise",
+          "es": "Silla"
+        },
+        {
+          "fr": "Bande élastique",
+          "es": "Banda elástica"
+        },
+        {
+          "fr": "Cercle (semaine 2)",
+          "es": "Aro (semana 2)"
+        }
+      ],
+      "weeks": 3,
+      "sessions_per_week": 3,
+      "minutes_range": "11–41 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/barre-douce.jpg",
+      "next_slug": "barre-sculpt",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "releve",
+          "type": "seconds",
+          "label": {
+            "fr": "Tenue en relevé (sur la demi-pointe)",
+            "es": "Relevé sostenido (media punta)"
+          },
+          "how": {
+            "fr": "Une main sur la chaise, talons levés, genoux tendus.",
+            "es": "Una mano en la silla, talones arriba, rodillas estiradas."
+          }
+        },
+        {
+          "key": "equilibre",
+          "type": "seconds",
+          "label": {
+            "fr": "Équilibre sur une jambe",
+            "es": "Equilibrio sobre una pierna"
+          },
+          "how": {
+            "fr": "Sans appui, côté le moins stable.",
+            "es": "Sin apoyo, del lado menos estable."
+          }
+        },
+        {
+          "key": "plies",
+          "type": "count",
+          "label": {
+            "fr": "Pliés en 1 minute",
+            "es": "Pliés en 1 minuto"
+          },
+          "how": {
+            "fr": "Talons joints, genoux dans l'axe des pieds, dos droit.",
+            "es": "Talones juntos, rodillas alineadas con los pies, espalda recta."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Apprivoiser la barre",
+            "es": "Familiarizarte con la barre"
+          },
+          "cues": [
+            {
+              "fr": "Une main posée légèrement sur la chaise, sans t'y accrocher",
+              "es": "Una mano apoyada suavemente en la silla, sin colgarte"
+            },
+            {
+              "fr": "Genoux dans l'axe des pieds",
+              "es": "Rodillas alineadas con los pies"
+            },
+            {
+              "fr": "Tête haute, comme tirée par un fil",
+              "es": "Cabeza en alto, como jalada por un hilo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre clases reels-1",
+              "video_folder": "MY LIBRARY",
+              "video_duration_s": 1778,
+              "segment": null,
+              "minutes": 30,
+              "objective": {
+                "fr": "Les positions de base de la barre",
+                "es": "Las posiciones básicas de la barre"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates – Bande Élastique & Chaise (30 min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 1834,
+              "segment": null,
+              "minutes": 31,
+              "objective": {
+                "fr": "Tonifier avec la chaise et la bande",
+                "es": "Tonificar con la silla y la banda"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "Relâcher en 10 minutes",
+                "es": "Soltar en 10 minutos"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Tonifier tout le corps",
+            "es": "Tonificar todo el cuerpo"
+          },
+          "cues": [
+            {
+              "fr": "Petits mouvements, grande précision",
+              "es": "Movimientos pequeños, gran precisión"
+            },
+            {
+              "fr": "Expire sur l'effort",
+              "es": "Exhala en el esfuerzo"
+            },
+            {
+              "fr": "Garde le bassin stable sur une jambe",
+              "es": "Mantén la pelvis estable sobre una pierna"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre flow Full Body",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2019,
+              "segment": null,
+              "minutes": 34,
+              "objective": {
+                "fr": "Un premier flow complet",
+                "es": "Tu primer flow completo"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates 8 avec Magic Ring – Session dynamique de 30 minutes",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2078,
+              "segment": null,
+              "minutes": 35,
+              "objective": {
+                "fr": "Le cercle pour les bras et l'intérieur des cuisses",
+                "es": "El aro para los brazos y la parte interna de los muslos"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Mobiliser hanches et épaules",
+                "es": "Movilizar caderas y hombros"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Posture et allongement",
+            "es": "Postura y alargamiento"
+          },
+          "cues": [
+            {
+              "fr": "Allonge la nuque, épaules basses",
+              "es": "Alarga la nuca, hombros abajo"
+            },
+            {
+              "fr": "Ouvre la poitrine sans cambrer",
+              "es": "Abre el pecho sin arquear"
+            },
+            {
+              "fr": "Termine chaque série en douceur",
+              "es": "Termina cada serie con suavidad"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Upper Body & Posture (40 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2378,
+              "segment": null,
+              "minutes": 40,
+              "objective": {
+                "fr": "Haut du corps et posture",
+                "es": "Tren superior y postura"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre flow- Full body class",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2481,
+              "segment": null,
+              "minutes": 41,
+              "objective": {
+                "fr": "Ton premier cours complet de 40 minutes",
+                "es": "Tu primera clase completa de 40 minutos"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Récupérer et allonger",
+                "es": "Recuperar y alargar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 9,
+        "video_minutes": 265
+      }
+    },
+    {
+      "slug": "dos-posture-anti-bureau",
+      "status": "draft",
+      "level": 1,
+      "track": "bien-etre",
+      "goals": [
+        "dos",
+        "debuter"
+      ],
+      "intensity": 1,
+      "impact": "doux",
+      "live_style": "Pilates",
+      "title": {
+        "fr": "Dos & posture : anti-bureau",
+        "es": "Espalda y postura: anti-oficina"
+      },
+      "promise": {
+        "fr": "8 h assise par jour ? 3 semaines pour soulager le dos et retrouver une posture droite.",
+        "es": "¿8 horas sentada al día? 3 semanas para aliviar la espalda y recuperar una postura erguida."
+      },
+      "for_who": {
+        "fr": "Tu passes tes journées assise et ton dos te le rappelle à 15 h.",
+        "es": "Pasas el día sentada y tu espalda te lo recuerda a las 3 de la tarde."
+      },
+      "not_for": {
+        "fr": "Tu as une douleur aiguë ou un suivi médical en cours : demande d'abord l'avis de ton médecin ou de ton kiné.",
+        "es": "Tienes un dolor agudo o un seguimiento médico en curso: consulta primero a tu médico o fisioterapeuta."
+      },
+      "benefits": [
+        {
+          "fr": "Moins de tensions dans la nuque et le dos",
+          "es": "Menos tensión en la nuca y la espalda",
+          "icon": "feather"
+        },
+        {
+          "fr": "Épaules ouvertes",
+          "es": "Hombros abiertos",
+          "icon": "person-standing"
+        },
+        {
+          "fr": "Réflexes de posture au quotidien",
+          "es": "Reflejos de buena postura en el día a día",
+          "icon": "repeat"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Cercle",
+          "es": "Aro"
+        },
+        {
+          "fr": "Rouleau (semaine 3)",
+          "es": "Rodillo (semana 3)"
+        }
+      ],
+      "weeks": 3,
+      "sessions_per_week": 3,
+      "minutes_range": "11–45 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/pm-pont-exterieur.jpg",
+      "next_slug": "centre-solide",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "mains_dos",
+          "type": "scale",
+          "label": {
+            "fr": "Mains jointes dans le dos (une main par le haut, une par le bas)",
+            "es": "Manos unidas en la espalda (una por arriba, otra por abajo)"
+          },
+          "how": {
+            "fr": "Teste les deux côtés, note le moins bon.",
+            "es": "Prueba los dos lados y anota el peor."
+          },
+          "scale": {
+            "fr": [
+              "Pas encore",
+              "Presque",
+              "Oui"
+            ],
+            "es": [
+              "Todavía no",
+              "Casi",
+              "Sí"
+            ]
+          }
+        },
+        {
+          "key": "planche_genoux",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les genoux",
+            "es": "Plancha sobre rodillas"
+          },
+          "how": {
+            "fr": "Dos long, nuque dans l'axe.",
+            "es": "Espalda larga, nuca alineada."
+          }
+        },
+        {
+          "key": "flexion",
+          "type": "scale",
+          "label": {
+            "fr": "Flexion avant debout : tes mains touchent…",
+            "es": "Flexión hacia delante de pie: tus manos tocan…"
+          },
+          "how": {
+            "fr": "Sans forcer, expire en descendant.",
+            "es": "Sin forzar, exhala al bajar."
+          },
+          "scale": {
+            "fr": [
+              "Genoux",
+              "Tibias",
+              "Chevilles",
+              "Sol"
+            ],
+            "es": [
+              "Rodillas",
+              "Espinillas",
+              "Tobillos",
+              "Suelo"
+            ]
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Relâcher",
+            "es": "Soltar"
+          },
+          "cues": [
+            {
+              "fr": "Respire dans le dos, entre les omoplates",
+              "es": "Respira hacia la espalda, entre los omóplatos"
+            },
+            {
+              "fr": "Mobilise vertèbre par vertèbre",
+              "es": "Moviliza vértebra por vértebra"
+            },
+            {
+              "fr": "Aucune douleur : adapte l'amplitude",
+              "es": "Ningún dolor: adapta la amplitud"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "Déverrouiller le dos le matin",
+                "es": "Desbloquear la espalda por la mañana"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Ouvrir la cage thoracique",
+                "es": "Abrir la caja torácica"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Mat 3",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 1010,
+              "segment": null,
+              "minutes": 17,
+              "objective": {
+                "fr": "Activer le centre qui protège le dos",
+                "es": "Activar el centro que protege la espalda"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Renforcer le haut du dos",
+            "es": "Fortalecer la parte alta de la espalda"
+          },
+          "cues": [
+            {
+              "fr": "Omoplates qui glissent vers le bas",
+              "es": "Omóplatos que se deslizan hacia abajo"
+            },
+            {
+              "fr": "Menton légèrement rentré",
+              "es": "Barbilla ligeramente metida"
+            },
+            {
+              "fr": "Le ventre soutient le dos",
+              "es": "El abdomen sostiene la espalda"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Upper Body & Posture (40 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2378,
+              "segment": null,
+              "minutes": 40,
+              "objective": {
+                "fr": "Renforcer le haut du dos",
+                "es": "Fortalecer la parte alta de la espalda"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Magic Circle & Posture (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3449,
+              "segment": {
+                "start_s": 0,
+                "end_s": 1740,
+                "to_validate": true
+              },
+              "minutes": 29,
+              "objective": {
+                "fr": "Le cercle au service de la posture, partie 1",
+                "es": "El aro al servicio de la postura, parte 1"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Allonger les chaînes du dos",
+                "es": "Alargar las cadenas de la espalda"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Ancrer la posture",
+            "es": "Afianzar la postura"
+          },
+          "cues": [
+            {
+              "fr": "Assise : les deux ischions bien posés",
+              "es": "Sentada: los dos isquiones bien apoyados"
+            },
+            {
+              "fr": "Debout : poids réparti sur les deux pieds",
+              "es": "De pie: el peso repartido en los dos pies"
+            },
+            {
+              "fr": "Toutes les heures : 3 respirations latérales",
+              "es": "Cada hora: 3 respiraciones laterales"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "FitMangas – Pilates Mat avec Rouleau (Foam Roller)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3343,
+              "segment": {
+                "start_s": 0,
+                "end_s": 1680,
+                "to_validate": true
+              },
+              "minutes": 28,
+              "objective": {
+                "fr": "Le rouleau pour libérer le dos, partie 1",
+                "es": "El rodillo para liberar la espalda, parte 1"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Magic Circle & Posture (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3449,
+              "segment": {
+                "start_s": 1740,
+                "end_s": 3420,
+                "to_validate": true
+              },
+              "minutes": 28,
+              "objective": {
+                "fr": "Le cercle au service de la posture, partie 2",
+                "es": "El aro al servicio de la postura, parte 2"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher tout le corps",
+                "es": "Soltar todo el cuerpo"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 9,
+        "video_minutes": 260
+      }
+    },
+    {
+      "slug": "routine-express-20",
+      "status": "draft",
+      "level": 1,
+      "track": "cardio",
+      "goals": [
+        "express",
+        "debuter",
+        "cardio"
+      ],
+      "intensity": 1,
+      "impact": "modéré",
+      "live_style": "Tous",
+      "title": {
+        "fr": "Routine express 20 min",
+        "es": "Rutina exprés 20 min"
+      },
+      "promise": {
+        "fr": "Pas le temps ? 2 semaines de séances courtes pour bouger presque chaque jour.",
+        "es": "¿Sin tiempo? 2 semanas de sesiones cortas para moverte casi todos los días."
+      },
+      "for_who": {
+        "fr": "Tu jongles entre travail, enfants et tout le reste.",
+        "es": "Haces malabares entre el trabajo, los niños y todo lo demás."
+      },
+      "not_for": {
+        "fr": "Tu as 45 minutes devant toi : Les Fondations ou Barre en douceur iront plus loin.",
+        "es": "Tienes 45 minutos disponibles: Los Fundamentos o Barre suave te llevarán más lejos."
+      },
+      "benefits": [
+        {
+          "fr": "Une habitude qui tient",
+          "es": "Un hábito que se queda",
+          "icon": "repeat"
+        },
+        {
+          "fr": "Énergie dès le matin",
+          "es": "Energía desde la mañana",
+          "icon": "sunrise"
+        },
+        {
+          "fr": "Zéro excuse : 10 à 30 minutes",
+          "es": "Cero excusas: de 10 a 30 minutos",
+          "icon": "timer"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        }
+      ],
+      "weeks": 2,
+      "sessions_per_week": 4,
+      "minutes_range": "11–29 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/alejandra-mug.jpg",
+      "next_slug": "cardio-plaisir",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "squats",
+          "type": "count",
+          "label": {
+            "fr": "Squats en 1 minute",
+            "es": "Sentadillas en 1 minuto"
+          },
+          "how": {
+            "fr": "Fesses vers l'arrière, genoux dans l'axe.",
+            "es": "Glúteos hacia atrás, rodillas alineadas."
+          }
+        },
+        {
+          "key": "planche_genoux",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les genoux",
+            "es": "Plancha sobre rodillas"
+          },
+          "how": {
+            "fr": "Arrête dès que le bassin s'affaisse.",
+            "es": "Para en cuanto la pelvis se hunda."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Bouger un peu, souvent",
+            "es": "Moverte poco, pero seguido"
+          },
+          "cues": [
+            {
+              "fr": "Même 10 minutes comptent",
+              "es": "Hasta 10 minutos cuentan"
+            },
+            {
+              "fr": "Choisis une heure fixe",
+              "es": "Elige un horario fijo"
+            },
+            {
+              "fr": "Coche ta séance : la régularité fait tout",
+              "es": "Marca tu sesión: la constancia lo es todo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "Réveiller le corps en 10 minutes",
+                "es": "Despertar el cuerpo en 10 minutos"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat 3",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 1010,
+              "segment": null,
+              "minutes": 17,
+              "objective": {
+                "fr": "Le centre en 17 minutes",
+                "es": "El centro en 17 minutos"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Fit-Dance Express (20 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 1222,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Cardio en musique",
+                "es": "Cardio con música"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Booty Power Sculpt Express – Défi 20 Min",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 1346,
+              "segment": null,
+              "minutes": 22,
+              "objective": {
+                "fr": "Fessiers express",
+                "es": "Glúteos exprés"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Tous",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Tenir le rythme",
+            "es": "Mantener el ritmo"
+          },
+          "cues": [
+            {
+              "fr": "Garde ton créneau",
+              "es": "Respeta tu horario"
+            },
+            {
+              "fr": "Augmente l'intensité, pas la durée",
+              "es": "Sube la intensidad, no la duración"
+            },
+            {
+              "fr": "Respire entre les séries",
+              "es": "Respira entre series"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Mobilité complète",
+                "es": "Movilidad completa"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Allonger et récupérer",
+                "es": "Alargar y recuperar"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Booty Power Sculpt",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 1747,
+              "segment": null,
+              "minutes": 29,
+              "objective": {
+                "fr": "Bas du corps",
+                "es": "Tren inferior"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Barre clases reels-1",
+              "video_folder": "MY LIBRARY",
+              "video_duration_s": 1778,
+              "segment": null,
+              "minutes": 30,
+              "objective": {
+                "fr": "Barre courte",
+                "es": "Barre corta"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Tous",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 8,
+        "video_minutes": 172
+      }
+    },
+    {
+      "slug": "centre-solide",
+      "status": "draft",
+      "level": 2,
+      "track": "pilates",
+      "goals": [
+        "tonifier",
+        "dos"
+      ],
+      "intensity": 2,
+      "impact": "doux",
+      "live_style": "Pilates",
+      "title": {
+        "fr": "Centre solide",
+        "es": "Centro sólido"
+      },
+      "promise": {
+        "fr": "4 semaines avec ballon, cercle et bande pour un centre fort et un dos protégé.",
+        "es": "4 semanas con pelota, aro y banda para un centro fuerte y una espalda protegida."
+      },
+      "for_who": {
+        "fr": "Tu connais les bases et tu veux progresser avec les accessoires.",
+        "es": "Conoces las bases y quieres progresar con accesorios."
+      },
+      "not_for": {
+        "fr": "Tu n'as jamais fait de Pilates : commence par Les Fondations (3 semaines).",
+        "es": "Nunca has hecho Pilates: empieza por Los Fundamentos (3 semanas)."
+      },
+      "benefits": [
+        {
+          "fr": "Sangle abdominale profonde",
+          "es": "Faja abdominal profunda",
+          "icon": "shield-check"
+        },
+        {
+          "fr": "Contrôle et précision",
+          "es": "Control y precisión",
+          "icon": "crosshair"
+        },
+        {
+          "fr": "Dos plus stable au quotidien",
+          "es": "Espalda más estable en el día a día",
+          "icon": "person-standing"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Petit ballon",
+          "es": "Pelota pequeña"
+        },
+        {
+          "fr": "Cercle",
+          "es": "Aro"
+        },
+        {
+          "fr": "Bande longue",
+          "es": "Banda larga"
+        },
+        {
+          "fr": "Swiss ball (semaine 3)",
+          "es": "Pelota suiza (semana 3)"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 3,
+      "minutes_range": "37–60 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/pm-centre-ballon.jpg",
+      "next_slug": "pilates-challenge",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "planche",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les avant-bras",
+            "es": "Plancha sobre antebrazos"
+          },
+          "how": {
+            "fr": "Jambes tendues, bassin aligné.",
+            "es": "Piernas estiradas, pelvis alineada."
+          }
+        },
+        {
+          "key": "hundred",
+          "type": "count",
+          "label": {
+            "fr": "Hundred : séries de 10 respirations sans perdre le dos",
+            "es": "Hundred: series de 10 respiraciones sin perder la espalda"
+          },
+          "how": {
+            "fr": "Sur 10 séries maximum.",
+            "es": "Sobre 10 series como máximo."
+          }
+        },
+        {
+          "key": "pont_1j",
+          "type": "seconds",
+          "label": {
+            "fr": "Pont sur une jambe (côté le plus faible)",
+            "es": "Puente a una pierna (lado más débil)"
+          },
+          "how": {
+            "fr": "Bassin horizontal.",
+            "es": "Pelvis horizontal."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Accessoires et précision",
+            "es": "Accesorios y precisión"
+          },
+          "cues": [
+            {
+              "fr": "Le ballon guide, il ne fait pas le travail",
+              "es": "La pelota guía, no hace el trabajo"
+            },
+            {
+              "fr": "Expire pour engager le centre avant de bouger",
+              "es": "Exhala para activar el centro antes de moverte"
+            },
+            {
+              "fr": "Pas de vitesse : du contrôle",
+              "es": "Sin velocidad: con control"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates petit ballon 18",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 2204,
+              "segment": null,
+              "minutes": 37,
+              "objective": {
+                "fr": "Le petit ballon pour les muscles profonds",
+                "es": "La pelota pequeña para los músculos profundos"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat avec bande élastique longue – Renforcement profond et contrôle",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 2545,
+              "segment": null,
+              "minutes": 42,
+              "objective": {
+                "fr": "La bande pour le contrôle",
+                "es": "La banda para el control"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Ouvrir et redresser",
+                "es": "Abrir y enderezar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Endurance du centre",
+            "es": "Resistencia del centro"
+          },
+          "cues": [
+            {
+              "fr": "Garde le bassin stable jusqu'à la dernière répétition",
+              "es": "Mantén la pelvis estable hasta la última repetición"
+            },
+            {
+              "fr": "Allonge-toi dans chaque mouvement",
+              "es": "Alárgate en cada movimiento"
+            },
+            {
+              "fr": "Souffle régulier",
+              "es": "Respiración regular"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Long Band Essentials & Ocean View (40 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 2573,
+              "segment": null,
+              "minutes": 43,
+              "objective": {
+                "fr": "Les essentiels à la bande longue",
+                "es": "Lo esencial con la banda larga"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat avec Ballon Paille (Soft Ball)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3373,
+              "segment": null,
+              "minutes": 56,
+              "objective": {
+                "fr": "Soft ball : centre et fessiers",
+                "es": "Soft ball: centro y glúteos"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Dynamic Yoga & Stretch (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2651,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Mobilité active",
+                "es": "Movilidad activa"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Le cercle et le Swiss ball",
+            "es": "El aro y la pelota suiza"
+          },
+          "cues": [
+            {
+              "fr": "Presse le cercle sans bloquer la respiration",
+              "es": "Presiona el aro sin bloquear la respiración"
+            },
+            {
+              "fr": "Sur le Swiss ball, cherche l'équilibre avant l'amplitude",
+              "es": "En la pelota suiza, busca el equilibrio antes que la amplitud"
+            },
+            {
+              "fr": "Épaules basses",
+              "es": "Hombros abajo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat avec Cercle Magique",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3501,
+              "segment": null,
+              "minutes": 58,
+              "objective": {
+                "fr": "Le cercle magique, séance complète",
+                "es": "El aro mágico, sesión completa"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Swiss Ball & Ocean View (40 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 2590,
+              "segment": null,
+              "minutes": 43,
+              "objective": {
+                "fr": "Équilibre et gainage au Swiss ball",
+                "es": "Equilibrio y core con la pelota suiza"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Tout assembler",
+            "es": "Unirlo todo"
+          },
+          "cues": [
+            {
+              "fr": "Enchaîne sans perdre la qualité",
+              "es": "Encadena sin perder calidad"
+            },
+            {
+              "fr": "Mesure tes progrès : plus de contrôle, moins d'effort",
+              "es": "Mide tu progreso: más control, menos esfuerzo"
+            },
+            {
+              "fr": "Prépare-toi au niveau suivant",
+              "es": "Prepárate para el siguiente nivel"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Toning Balls",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3148,
+              "segment": null,
+              "minutes": 52,
+              "objective": {
+                "fr": "Tonification avec poids légers",
+                "es": "Tonificación con pesas ligeras"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Magic Circle & Posture (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3449,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Cercle et posture, séance complète",
+                "es": "Aro y postura, sesión completa"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Mat Clasique",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3599,
+              "segment": null,
+              "minutes": 60,
+              "objective": {
+                "fr": "Le Pilates classique en entier",
+                "es": "El Pilates clásico completo"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 12,
+        "video_minutes": 576
+      }
+    },
+    {
+      "slug": "barre-sculpt",
+      "status": "draft",
+      "level": 2,
+      "track": "barre",
+      "goals": [
+        "tonifier"
+      ],
+      "intensity": 2,
+      "impact": "modéré",
+      "live_style": "Barre",
+      "title": {
+        "fr": "Barre Sculpt",
+        "es": "Barre Sculpt"
+      },
+      "promise": {
+        "fr": "4 semaines de barre avec bande, ballon et petits poids pour sculpter tout le corps.",
+        "es": "4 semanas de barre con banda, pelota y pesas ligeras para esculpir todo el cuerpo."
+      },
+      "for_who": {
+        "fr": "Tu as fait « Barre en douceur » ou tu pratiques déjà la barre.",
+        "es": "Hiciste « Barre suave » o ya practicas barre."
+      },
+      "not_for": {
+        "fr": "Tu débutes la barre : commence par Barre en douceur.",
+        "es": "Empiezas con la barre: comienza por Barre suave."
+      },
+      "benefits": [
+        {
+          "fr": "Silhouette tonique",
+          "es": "Silueta tonificada",
+          "icon": "sparkles"
+        },
+        {
+          "fr": "Bras et épaules dessinés",
+          "es": "Brazos y hombros definidos",
+          "icon": "dumbbell"
+        },
+        {
+          "fr": "Cardio doux intégré",
+          "es": "Cardio suave integrado",
+          "icon": "heart-pulse"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Chaise ou barre",
+          "es": "Silla o barra"
+        },
+        {
+          "fr": "Bande élastique",
+          "es": "Banda elástica"
+        },
+        {
+          "fr": "Ballon",
+          "es": "Pelota"
+        },
+        {
+          "fr": "Petits poids",
+          "es": "Pesas ligeras"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 3,
+      "minutes_range": "20–57 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/barre-cercle.jpg",
+      "next_slug": "barre-intense",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "plies",
+          "type": "count",
+          "label": {
+            "fr": "Pliés en 1 minute",
+            "es": "Pliés en 1 minuto"
+          },
+          "how": {
+            "fr": "Amplitude complète, dos droit.",
+            "es": "Amplitud completa, espalda recta."
+          }
+        },
+        {
+          "key": "releve",
+          "type": "seconds",
+          "label": {
+            "fr": "Tenue en relevé",
+            "es": "Relevé sostenido"
+          },
+          "how": {
+            "fr": "Une main sur la chaise.",
+            "es": "Una mano en la silla."
+          }
+        },
+        {
+          "key": "planche",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les avant-bras",
+            "es": "Plancha sobre antebrazos"
+          },
+          "how": {
+            "fr": "Jambes tendues.",
+            "es": "Piernas estiradas."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Haut du corps",
+            "es": "Tren superior"
+          },
+          "cues": [
+            {
+              "fr": "Coudes souples",
+              "es": "Codos suaves"
+            },
+            {
+              "fr": "Poignets dans l'axe",
+              "es": "Muñecas alineadas"
+            },
+            {
+              "fr": "Le centre tient la posture",
+              "es": "El centro sostiene la postura"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre upper body",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2623,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Bras, épaules, dos",
+                "es": "Brazos, hombros, espalda"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates – Ballon & Bande Élastique (40 min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2605,
+              "segment": null,
+              "minutes": 43,
+              "objective": {
+                "fr": "Ballon et bande",
+                "es": "Pelota y banda"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Barre Flow Cardio",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2731,
+              "segment": null,
+              "minutes": 46,
+              "objective": {
+                "fr": "Cardio doux en barre",
+                "es": "Cardio suave en la barre"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Petits poids, grande précision",
+            "es": "Pesas ligeras, gran precisión"
+          },
+          "cues": [
+            {
+              "fr": "Poids léger, gestes lents",
+              "es": "Peso ligero, movimientos lentos"
+            },
+            {
+              "fr": "Expire sur l'effort",
+              "es": "Exhala en el esfuerzo"
+            },
+            {
+              "fr": "Pas d'élan",
+              "es": "Sin impulso"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Flow & Light Weights (45 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2837,
+              "segment": null,
+              "minutes": 47,
+              "objective": {
+                "fr": "Poids légers et flow",
+                "es": "Pesas ligeras y flow"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates Flow 9 45 minutes à la maison ✨",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2547,
+              "segment": null,
+              "minutes": 42,
+              "objective": {
+                "fr": "Barre Pilates complet",
+                "es": "Barre Pilates completo"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Mobilité",
+                "es": "Movilidad"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Cardio sculpt",
+            "es": "Cardio sculpt"
+          },
+          "cues": [
+            {
+              "fr": "Garde l'alignement genou-pied",
+              "es": "Mantén la alineación rodilla-pie"
+            },
+            {
+              "fr": "Accélère sans perdre la forme",
+              "es": "Acelera sin perder la técnica"
+            },
+            {
+              "fr": "Reprends ton souffle entre les blocs",
+              "es": "Recupera el aliento entre bloques"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Flow / Cardio Sculpt",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2881,
+              "segment": null,
+              "minutes": 48,
+              "objective": {
+                "fr": "Cardio sculpt",
+                "es": "Cardio sculpt"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Sculpt Cardio – Ballon & Poids (40 min)",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 2480,
+              "segment": null,
+              "minutes": 41,
+              "objective": {
+                "fr": "Ballon et poids",
+                "es": "Pelota y pesas"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Barre flow- Full body class",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2481,
+              "segment": null,
+              "minutes": 41,
+              "objective": {
+                "fr": "Full body",
+                "es": "Full body"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Séances longues",
+            "es": "Sesiones largas"
+          },
+          "cues": [
+            {
+              "fr": "Tiens la qualité jusqu'au bout",
+              "es": "Mantén la calidad hasta el final"
+            },
+            {
+              "fr": "Hydrate-toi",
+              "es": "Hidrátate"
+            },
+            {
+              "fr": "Termine par les étirements",
+              "es": "Termina con los estiramientos"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Pilates – Ballon (55 min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3326,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Séance longue au ballon",
+                "es": "Sesión larga con pelota"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates Cardio – Bande Élastique (1h)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3416,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Cardio à la bande",
+                "es": "Cardio con banda"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 12,
+        "video_minutes": 529
+      }
+    },
+    {
+      "slug": "fessiers-jambes",
+      "status": "draft",
+      "level": 2,
+      "track": "cardio",
+      "goals": [
+        "tonifier"
+      ],
+      "intensity": 2,
+      "impact": "modéré",
+      "live_style": "Barre",
+      "title": {
+        "fr": "Fessiers & jambes",
+        "es": "Glúteos y piernas"
+      },
+      "promise": {
+        "fr": "4 semaines ciblées pour des fessiers galbés et des jambes fortes.",
+        "es": "4 semanas enfocadas en glúteos firmes y piernas fuertes."
+      },
+      "for_who": {
+        "fr": "Tu veux un objectif précis et visible.",
+        "es": "Quieres un objetivo preciso y visible."
+      },
+      "not_for": {
+        "fr": "Tes genoux sont fragiles : préfère Barre en douceur, plus doux pour les articulations.",
+        "es": "Tus rodillas son frágiles: mejor elige Barre suave, más amable con las articulaciones."
+      },
+      "benefits": [
+        {
+          "fr": "Fessiers renforcés",
+          "es": "Glúteos fortalecidos",
+          "icon": "flame"
+        },
+        {
+          "fr": "Genoux et hanches protégés",
+          "es": "Rodillas y caderas protegidas",
+          "icon": "shield-check"
+        },
+        {
+          "fr": "Endurance du bas du corps",
+          "es": "Resistencia del tren inferior",
+          "icon": "activity"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Bande élastique",
+          "es": "Banda elástica"
+        },
+        {
+          "fr": "Ballon",
+          "es": "Pelota"
+        },
+        {
+          "fr": "Petits poids",
+          "es": "Pesas ligeras"
+        },
+        {
+          "fr": "Chaise",
+          "es": "Silla"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 3,
+      "minutes_range": "20–63 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/barre-arabesque.jpg",
+      "next_slug": "boot-camp-hiit",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "squats",
+          "type": "count",
+          "label": {
+            "fr": "Squats en 1 minute",
+            "es": "Sentadillas en 1 minuto"
+          },
+          "how": {
+            "fr": "Cuisses parallèles au sol si possible.",
+            "es": "Muslos paralelos al piso si es posible."
+          }
+        },
+        {
+          "key": "pont_1j",
+          "type": "seconds",
+          "label": {
+            "fr": "Pont sur une jambe (côté le plus faible)",
+            "es": "Puente a una pierna (lado más débil)"
+          },
+          "how": {
+            "fr": "Bassin horizontal.",
+            "es": "Pelvis horizontal."
+          }
+        },
+        {
+          "key": "chaise",
+          "type": "seconds",
+          "label": {
+            "fr": "Chaise contre le mur",
+            "es": "Sentadilla isométrica en la pared"
+          },
+          "how": {
+            "fr": "Genoux à 90°, dos collé au mur.",
+            "es": "Rodillas a 90°, espalda pegada a la pared."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Réveiller les fessiers",
+            "es": "Despertar los glúteos"
+          },
+          "cues": [
+            {
+              "fr": "Pousse dans le talon",
+              "es": "Empuja con el talón"
+            },
+            {
+              "fr": "Bassin stable, pas de bascule",
+              "es": "Pelvis estable, sin balanceo"
+            },
+            {
+              "fr": "Contraction en fin de mouvement",
+              "es": "Contracción al final del movimiento"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Booty Power Sculpt Express – Défi 20 Min",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 1346,
+              "segment": null,
+              "minutes": 22,
+              "objective": {
+                "fr": "Défi 20 minutes",
+                "es": "Reto de 20 minutos"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Booty Power Sculpt",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 1747,
+              "segment": null,
+              "minutes": 29,
+              "objective": {
+                "fr": "Booty sculpt",
+                "es": "Booty sculpt"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Étirer",
+                "es": "Estirar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Charge progressive",
+            "es": "Carga progresiva"
+          },
+          "cues": [
+            {
+              "fr": "Ajoute la bande quand c'est facile",
+              "es": "Agrega la banda cuando sea fácil"
+            },
+            {
+              "fr": "Genou au-dessus de la cheville",
+              "es": "Rodilla sobre el tobillo"
+            },
+            {
+              "fr": "Ne bloque pas le souffle",
+              "es": "No bloquees la respiración"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "booty Sculpt 2",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 1977,
+              "segment": null,
+              "minutes": 33,
+              "objective": {
+                "fr": "Booty sculpt 2",
+                "es": "Booty sculpt 2"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Sculpt Cardio – Ballon & Poids (40 min)",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 2480,
+              "segment": null,
+              "minutes": 41,
+              "objective": {
+                "fr": "Ballon et poids",
+                "es": "Pelota y pesas"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Mobilité des hanches",
+                "es": "Movilidad de cadera"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Séance longue",
+            "es": "Sesión larga"
+          },
+          "cues": [
+            {
+              "fr": "Gère ton effort sur 55 minutes",
+              "es": "Dosifica tu esfuerzo en 55 minutos"
+            },
+            {
+              "fr": "Pause active si besoin",
+              "es": "Pausa activa si la necesitas"
+            },
+            {
+              "fr": "Qualité constante",
+              "es": "Calidad constante"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "BOOTY POWER SCULPT – 55 MIN",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 3203,
+              "segment": null,
+              "minutes": 53,
+              "objective": {
+                "fr": "La séance longue",
+                "es": "La sesión larga"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates – Bande Élastique & Chaise (30 min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 1834,
+              "segment": null,
+              "minutes": 31,
+              "objective": {
+                "fr": "Chaise et bande",
+                "es": "Silla y banda"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Récupérer",
+                "es": "Recuperar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Le défi final",
+            "es": "El reto final"
+          },
+          "cues": [
+            {
+              "fr": "Donne tout sur les dernières séries",
+              "es": "Dalo todo en las últimas series"
+            },
+            {
+              "fr": "Écoute tes genoux",
+              "es": "Escucha a tus rodillas"
+            },
+            {
+              "fr": "Célèbre la fin du programme",
+              "es": "Celebra el final del programa"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Booty Power Sculpt en espanol 4",
+              "video_folder": "BOOTY POWER SCULPT",
+              "video_duration_s": 3770,
+              "segment": null,
+              "minutes": 63,
+              "objective": {
+                "fr": "Séance en espagnol (bonus)",
+                "es": "Sesión en español"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "FitMangas – Barre Spicy Burn Challenge (50 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3154,
+              "segment": null,
+              "minutes": 53,
+              "objective": {
+                "fr": "Défi Spicy Burn",
+                "es": "Reto Spicy Burn"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 12,
+        "video_minutes": 452
+      }
+    },
+    {
+      "slug": "cardio-plaisir",
+      "status": "draft",
+      "level": 2,
+      "track": "cardio",
+      "goals": [
+        "cardio"
+      ],
+      "intensity": 2,
+      "impact": "modéré",
+      "live_style": "Fit-Dance",
+      "title": {
+        "fr": "Cardio plaisir",
+        "es": "Cardio con alegría"
+      },
+      "promise": {
+        "fr": "4 semaines de Fit-Dance et Box Dance : tu transpires en dansant, sans t'en rendre compte.",
+        "es": "4 semanas de Fit-Dance y Box Dance: sudas bailando sin darte cuenta."
+      },
+      "for_who": {
+        "fr": "Tu veux du cardio qui fait sourire.",
+        "es": "Quieres un cardio que te haga sonreír."
+      },
+      "not_for": {
+        "fr": "Tu cherches le calme : Souplesse & récupération est fait pour toi.",
+        "es": "Buscas calma: Flexibilidad y recuperación es para ti."
+      },
+      "benefits": [
+        {
+          "fr": "Endurance cardio",
+          "es": "Resistencia cardiovascular",
+          "icon": "heart-pulse"
+        },
+        {
+          "fr": "Coordination",
+          "es": "Coordinación",
+          "icon": "music"
+        },
+        {
+          "fr": "Bonne humeur garantie",
+          "es": "Buen humor garantizado",
+          "icon": "smile"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Baskets",
+          "es": "Tenis"
+        },
+        {
+          "fr": "Petits poids (semaine 1)",
+          "es": "Pesas ligeras (semana 1)"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 3,
+      "minutes_range": "11–60 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/dance-studio.jpg",
+      "next_slug": "boot-camp-hiit",
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "genoux",
+          "type": "count",
+          "label": {
+            "fr": "Montées de genoux en 1 minute",
+            "es": "Rodillas arriba en 1 minuto"
+          },
+          "how": {
+            "fr": "Compte un genou droit + un gauche = 1.",
+            "es": "Cuenta una rodilla derecha + una izquierda = 1."
+          }
+        },
+        {
+          "key": "danse",
+          "type": "count",
+          "label": {
+            "fr": "Minutes de danse sans pause",
+            "es": "Minutos bailando sin pausa"
+          },
+          "how": {
+            "fr": "Sur la séance du jour.",
+            "es": "En la sesión del día."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Entrer dans le rythme",
+            "es": "Entrar en el ritmo"
+          },
+          "cues": [
+            {
+              "fr": "Suis la musique avant la technique",
+              "es": "Sigue la música antes que la técnica"
+            },
+            {
+              "fr": "Amortis tes appuis",
+              "es": "Amortigua tus apoyos"
+            },
+            {
+              "fr": "Souris : c'est fait pour ça",
+              "es": "Sonríe: para eso es"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Fit-Dance Express (20 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 1222,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Fit-Dance express",
+                "es": "Fit-Dance exprés"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "FIT DANCE 30’ – Cardio Latino + Small Weights",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 1975,
+              "segment": null,
+              "minutes": 33,
+              "objective": {
+                "fr": "Latino et petits poids",
+                "es": "Latino y pesas ligeras"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "fit -Dance 1 sesion 35 min",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 2282,
+              "segment": null,
+              "minutes": 38,
+              "objective": {
+                "fr": "Session complète",
+                "es": "Sesión completa"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Fit-Dance",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Tenir 40 minutes",
+            "es": "Aguantar 40 minutos"
+          },
+          "cues": [
+            {
+              "fr": "Gère ton souffle",
+              "es": "Controla tu respiración"
+            },
+            {
+              "fr": "Réduis l'amplitude si besoin, pas le rythme",
+              "es": "Si hace falta, reduce la amplitud, no el ritmo"
+            },
+            {
+              "fr": "Hydrate-toi",
+              "es": "Hidrátate"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Fit-Dance Express & Beats (40 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 2430,
+              "segment": null,
+              "minutes": 41,
+              "objective": {
+                "fr": "Express & beats",
+                "es": "Express & beats"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Fit-Dance Express (50 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 2542,
+              "segment": null,
+              "minutes": 42,
+              "objective": {
+                "fr": "Fit-Dance express 50",
+                "es": "Fit-Dance exprés 50"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "Récupérer",
+                "es": "Recuperar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Fit-Dance",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Varier les styles",
+            "es": "Variar los estilos"
+          },
+          "cues": [
+            {
+              "fr": "Box Dance : poings légers, centre engagé",
+              "es": "Box Dance: puños ligeros, centro activo"
+            },
+            {
+              "fr": "Pivote sur la plante du pied",
+              "es": "Gira sobre la planta del pie"
+            },
+            {
+              "fr": "Lâche-toi",
+              "es": "Suéltate"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Fit-Dance 1",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 2810,
+              "segment": null,
+              "minutes": 47,
+              "objective": {
+                "fr": "Fit-Dance 1",
+                "es": "Fit-Dance 1"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Fit-Dance 2",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 2810,
+              "segment": null,
+              "minutes": 47,
+              "objective": {
+                "fr": "Fit-Dance 2",
+                "es": "Fit-Dance 2"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Box Dance – Séance en ligne de 50 minutes",
+              "video_folder": "BOX-DANCE",
+              "video_duration_s": 2878,
+              "segment": null,
+              "minutes": 48,
+              "objective": {
+                "fr": "Box Dance",
+                "es": "Box Dance"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Fit-Dance",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "La grande fête",
+            "es": "La gran fiesta"
+          },
+          "cues": [
+            {
+              "fr": "Séances longues : pars doucement",
+              "es": "Sesiones largas: empieza suave"
+            },
+            {
+              "fr": "Garde de l'énergie pour la fin",
+              "es": "Guarda energía para el final"
+            },
+            {
+              "fr": "Célèbre",
+              "es": "Celebra"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Fit-Dance 3",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 3314,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Fit-Dance 3",
+                "es": "Fit-Dance 3"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Fit-Dance Cardio (55 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 3302,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Cardio 55",
+                "es": "Cardio 55"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "FitMangas – Fit-Dance Cardio Party (60 Min)",
+              "video_folder": "FIT-DANCE",
+              "video_duration_s": 3526,
+              "segment": null,
+              "minutes": 59,
+              "objective": {
+                "fr": "La Cardio Party",
+                "es": "La Cardio Party"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Fit-Dance",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 12,
+        "video_minutes": 496
+      }
+    },
+    {
+      "slug": "pilates-challenge",
+      "status": "draft",
+      "level": 3,
+      "track": "pilates",
+      "goals": [
+        "tonifier"
+      ],
+      "intensity": 3,
+      "impact": "doux",
+      "live_style": "Pilates",
+      "title": {
+        "fr": "Pilates Challenge",
+        "es": "Pilates Challenge"
+      },
+      "promise": {
+        "fr": "4 semaines, 4 séances par semaine : le Pilates classique et ses accessoires, en version exigeante.",
+        "es": "4 semanas, 4 sesiones por semana: el Pilates clásico y sus accesorios en versión exigente."
+      },
+      "for_who": {
+        "fr": "Tu maîtrises le centre et tu veux un vrai défi.",
+        "es": "Dominas el centro y quieres un verdadero reto."
+      },
+      "not_for": {
+        "fr": "Ton centre lâche encore après 20 minutes : fais d'abord Centre solide.",
+        "es": "Tu centro todavía se cansa después de 20 minutos: haz primero Centro sólido."
+      },
+      "benefits": [
+        {
+          "fr": "Force profonde",
+          "es": "Fuerza profunda",
+          "icon": "flame"
+        },
+        {
+          "fr": "Contrôle total",
+          "es": "Control total",
+          "icon": "crosshair"
+        },
+        {
+          "fr": "Endurance sur 60 minutes",
+          "es": "Resistencia de 60 minutos",
+          "icon": "timer"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Swiss ball",
+          "es": "Pelota suiza"
+        },
+        {
+          "fr": "Soft ball",
+          "es": "Soft ball"
+        },
+        {
+          "fr": "Cercle",
+          "es": "Aro"
+        },
+        {
+          "fr": "Rouleau",
+          "es": "Rodillo"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 4,
+      "minutes_range": "39–62 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/pm-rouleau.jpg",
+      "next_slug": null,
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "planche",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les avant-bras",
+            "es": "Plancha sobre antebrazos"
+          },
+          "how": {
+            "fr": "Jambes tendues, bassin aligné.",
+            "es": "Piernas estiradas, pelvis alineada."
+          }
+        },
+        {
+          "key": "teaser",
+          "type": "seconds",
+          "label": {
+            "fr": "Teaser tenu",
+            "es": "Teaser sostenido"
+          },
+          "how": {
+            "fr": "Jambes à 45°, bras parallèles.",
+            "es": "Piernas a 45°, brazos paralelos."
+          }
+        },
+        {
+          "key": "planche_laterale",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche latérale (côté le plus faible)",
+            "es": "Plancha lateral (lado más débil)"
+          },
+          "how": {
+            "fr": "Hanches hautes.",
+            "es": "Caderas arriba."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Le classique",
+            "es": "El clásico"
+          },
+          "cues": [
+            {
+              "fr": "Précision du répertoire",
+              "es": "Precisión del repertorio"
+            },
+            {
+              "fr": "Transitions fluides",
+              "es": "Transiciones fluidas"
+            },
+            {
+              "fr": "Souffle maître du rythme",
+              "es": "La respiración marca el ritmo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat Clasique",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3599,
+              "segment": null,
+              "minutes": 60,
+              "objective": {
+                "fr": "Répertoire classique",
+                "es": "Repertorio clásico"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "FitMangas – Pilates Mat avec Rouleau (Foam Roller)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3343,
+              "segment": null,
+              "minutes": 56,
+              "objective": {
+                "fr": "Rouleau, séance complète",
+                "es": "Rodillo, sesión completa"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Toning Balls",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3148,
+              "segment": null,
+              "minutes": 52,
+              "objective": {
+                "fr": "Toning balls",
+                "es": "Toning balls"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Récupération",
+                "es": "Recuperación"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Instabilité",
+            "es": "Inestabilidad"
+          },
+          "cues": [
+            {
+              "fr": "Le Swiss ball révèle tes compensations",
+              "es": "La pelota suiza revela tus compensaciones"
+            },
+            {
+              "fr": "Ralentis dans les phases difficiles",
+              "es": "Baja el ritmo en las fases difíciles"
+            },
+            {
+              "fr": "Le centre avant les membres",
+              "es": "El centro antes que las extremidades"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat Classique & Soft Ball (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3693,
+              "segment": null,
+              "minutes": 62,
+              "objective": {
+                "fr": "Classique et soft ball",
+                "es": "Clásico y soft ball"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat – Magic Circle & Ful",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3556,
+              "segment": null,
+              "minutes": 59,
+              "objective": {
+                "fr": "Cercle full body",
+                "es": "Aro full body"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Swiss Ball Intermédiaire / Avancé (55 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3340,
+              "segment": null,
+              "minutes": 56,
+              "objective": {
+                "fr": "Swiss ball avancé",
+                "es": "Pelota suiza avanzado"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Posture",
+                "es": "Postura"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Intensité",
+            "es": "Intensidad"
+          },
+          "cues": [
+            {
+              "fr": "Tiens les positions plus longtemps",
+              "es": "Sostén las posiciones más tiempo"
+            },
+            {
+              "fr": "Garde la qualité sous la fatigue",
+              "es": "Mantén la calidad con el cansancio"
+            },
+            {
+              "fr": "Récupère activement",
+              "es": "Recupera de forma activa"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Mat & Swiss Ball Challenge (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3635,
+              "segment": null,
+              "minutes": 61,
+              "objective": {
+                "fr": "Le challenge Swiss ball",
+                "es": "El reto con pelota suiza"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat avec Cercle Magique",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3501,
+              "segment": null,
+              "minutes": 58,
+              "objective": {
+                "fr": "Cercle magique",
+                "es": "Aro mágico"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Mat avec Ballon Paille (Soft Ball)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3373,
+              "segment": null,
+              "minutes": 56,
+              "objective": {
+                "fr": "Soft ball",
+                "es": "Soft ball"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Dynamic Yoga & Stretch (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2651,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Mobilité",
+                "es": "Movilidad"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Le test final",
+            "es": "La prueba final"
+          },
+          "cues": [
+            {
+              "fr": "Compare avec ta semaine 1",
+              "es": "Compara con tu semana 1"
+            },
+            {
+              "fr": "Note tes ressentis",
+              "es": "Anota tus sensaciones"
+            },
+            {
+              "fr": "Célèbre ta progression",
+              "es": "Celebra tu progreso"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Pilates Swiss Ball Intermédiaire / Avancé (55 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3340,
+              "segment": null,
+              "minutes": 56,
+              "objective": {
+                "fr": "Swiss ball avancé, le retour",
+                "es": "Pelota suiza avanzado, el regreso"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Pilates Mat & Swiss Ball Challenge (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3635,
+              "segment": null,
+              "minutes": 61,
+              "objective": {
+                "fr": "Challenge final",
+                "es": "Reto final"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Pilates Magic Circle & Posture (60 Min)",
+              "video_folder": "PILATES MAT",
+              "video_duration_s": 3449,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Cercle et posture",
+                "es": "Aro y postura"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Pilates",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 16,
+        "video_minutes": 867
+      }
+    },
+    {
+      "slug": "barre-intense",
+      "status": "draft",
+      "level": 3,
+      "track": "barre",
+      "goals": [
+        "tonifier",
+        "cardio"
+      ],
+      "intensity": 3,
+      "impact": "modéré",
+      "live_style": "Barre",
+      "title": {
+        "fr": "Barre Intense",
+        "es": "Barre Intenso"
+      },
+      "promise": {
+        "fr": "4 semaines de barre cardio et sculpt, des séances d'une heure qui brûlent.",
+        "es": "4 semanas de barre cardio y sculpt, sesiones de una hora que queman."
+      },
+      "for_who": {
+        "fr": "Tu as terminé Barre Sculpt ou tu pratiques la barre régulièrement.",
+        "es": "Terminaste Barre Sculpt o practicas barre con regularidad."
+      },
+      "not_for": {
+        "fr": "Tu n'as pas encore fait Barre Sculpt : commence par celui-là.",
+        "es": "Aún no has hecho Barre Sculpt: empieza por ese."
+      },
+      "benefits": [
+        {
+          "fr": "Endurance musculaire",
+          "es": "Resistencia muscular",
+          "icon": "dumbbell"
+        },
+        {
+          "fr": "Cardio élevé",
+          "es": "Cardio intenso",
+          "icon": "heart-pulse"
+        },
+        {
+          "fr": "Silhouette affinée",
+          "es": "Silueta estilizada",
+          "icon": "sparkles"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Chaise ou barre",
+          "es": "Silla o barra"
+        },
+        {
+          "fr": "Bande",
+          "es": "Banda"
+        },
+        {
+          "fr": "Ballon",
+          "es": "Pelota"
+        },
+        {
+          "fr": "Petits poids",
+          "es": "Pesas ligeras"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 4,
+      "minutes_range": "39–68 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/barre-exterieur.jpg",
+      "next_slug": null,
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "chaise",
+          "type": "seconds",
+          "label": {
+            "fr": "Chaise contre le mur",
+            "es": "Sentadilla isométrica en la pared"
+          },
+          "how": {
+            "fr": "Genoux à 90°.",
+            "es": "Rodillas a 90°."
+          }
+        },
+        {
+          "key": "plies",
+          "type": "count",
+          "label": {
+            "fr": "Pliés en 1 minute",
+            "es": "Pliés en 1 minuto"
+          },
+          "how": {
+            "fr": "Amplitude complète.",
+            "es": "Amplitud completa."
+          }
+        },
+        {
+          "key": "releve",
+          "type": "seconds",
+          "label": {
+            "fr": "Tenue en relevé sur une jambe",
+            "es": "Relevé a una pierna"
+          },
+          "how": {
+            "fr": "Une main sur la chaise.",
+            "es": "Una mano en la silla."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Spicy",
+            "es": "Spicy"
+          },
+          "cues": [
+            {
+              "fr": "Brûle sans perdre l'alignement",
+              "es": "Quema sin perder la alineación"
+            },
+            {
+              "fr": "Expire fort sur l'effort",
+              "es": "Exhala fuerte en el esfuerzo"
+            },
+            {
+              "fr": "Pause active si besoin",
+              "es": "Pausa activa si la necesitas"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "FitMangas – Barre Spicy Burn Challenge (50 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3154,
+              "segment": null,
+              "minutes": 53,
+              "objective": {
+                "fr": "Spicy Burn",
+                "es": "Spicy Burn"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Flow Sculpt & Scenic View (60 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3483,
+              "segment": null,
+              "minutes": 58,
+              "objective": {
+                "fr": "Sculpt",
+                "es": "Sculpt"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Barre Pilates Flow & Sculpt (Intermédiaire)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3852,
+              "segment": null,
+              "minutes": 64,
+              "objective": {
+                "fr": "Flow & Sculpt",
+                "es": "Flow & Sculpt"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Récupération",
+                "es": "Recuperación"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Duo et cardio",
+            "es": "Dúo y cardio"
+          },
+          "cues": [
+            {
+              "fr": "Rythme soutenu",
+              "es": "Ritmo sostenido"
+            },
+            {
+              "fr": "Appuis amortis",
+              "es": "Apoyos amortiguados"
+            },
+            {
+              "fr": "Sourire même dans le feu",
+              "es": "Sonríe incluso en el fuego"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Duo Fun & Burn (60 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3633,
+              "segment": null,
+              "minutes": 61,
+              "objective": {
+                "fr": "Duo Fun & Burn",
+                "es": "Duo Fun & Burn"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates Cardio – Bande Élastique (1h)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3416,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Cardio bande",
+                "es": "Cardio con banda"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Barre Dynamic Ocean Flow (65 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3966,
+              "segment": null,
+              "minutes": 66,
+              "objective": {
+                "fr": "Ocean Flow",
+                "es": "Ocean Flow"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Dynamic Yoga & Stretch (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2651,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Mobilité",
+                "es": "Movilidad"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Puissance",
+            "es": "Potencia"
+          },
+          "cues": [
+            {
+              "fr": "Ne sacrifie jamais la posture",
+              "es": "Nunca sacrifiques la postura"
+            },
+            {
+              "fr": "Accélère progressivement",
+              "es": "Acelera poco a poco"
+            },
+            {
+              "fr": "Garde les épaules basses",
+              "es": "Mantén los hombros abajo"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "FitMangas – Barre Pilates Flow (Cardio & Dynamic)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 4071,
+              "segment": null,
+              "minutes": 68,
+              "objective": {
+                "fr": "Cardio & Dynamic",
+                "es": "Cardio & Dynamic"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Barre Pilates – Ballon (55 min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3326,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Ballon",
+                "es": "Pelota"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Barre Flow & Light Weights (45 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 2837,
+              "segment": null,
+              "minutes": 47,
+              "objective": {
+                "fr": "Poids légers",
+                "es": "Pesas ligeras"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Le final",
+            "es": "El final"
+          },
+          "cues": [
+            {
+              "fr": "Donne tout",
+              "es": "Dalo todo"
+            },
+            {
+              "fr": "Hydrate-toi",
+              "es": "Hidrátate"
+            },
+            {
+              "fr": "Célèbre",
+              "es": "Celebra"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Barre Dynamic Ocean Flow (65 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3966,
+              "segment": null,
+              "minutes": 66,
+              "objective": {
+                "fr": "Ocean Flow, le retour",
+                "es": "Ocean Flow, el regreso"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "FitMangas – Barre Spicy Burn Challenge (50 Min)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 3154,
+              "segment": null,
+              "minutes": 53,
+              "objective": {
+                "fr": "Spicy Burn final",
+                "es": "Spicy Burn final"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "FitMangas – Barre Pilates Flow (Cardio & Dynamic)",
+              "video_folder": "BARRE FLOW",
+              "video_duration_s": 4071,
+              "segment": null,
+              "minutes": 68,
+              "objective": {
+                "fr": "Le grand final",
+                "es": "El gran final"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Récupération",
+                "es": "Recuperación"
+              }
+            },
+            {
+              "order": 5,
+              "kind": "live",
+              "live_style": "Barre",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 16,
+        "video_minutes": 883
+      }
+    },
+    {
+      "slug": "boot-camp-hiit",
+      "status": "draft",
+      "level": 3,
+      "track": "cardio",
+      "goals": [
+        "cardio",
+        "tonifier"
+      ],
+      "intensity": 3,
+      "impact": "fort",
+      "live_style": "Boot Camp",
+      "title": {
+        "fr": "Boot Camp HIIT",
+        "es": "Boot Camp HIIT"
+      },
+      "promise": {
+        "fr": "4 semaines de HIIT total body : intense, efficace, avec une séance de récupération chaque semaine.",
+        "es": "4 semanas de HIIT total body: intenso, eficaz y con una sesión de recuperación cada semana."
+      },
+      "for_who": {
+        "fr": "Tu veux transpirer et repousser tes limites.",
+        "es": "Quieres sudar y superar tus límites."
+      },
+      "not_for": {
+        "fr": "Tu ne peux pas sauter (articulations, voisins) : préfère Barre Intense, sans impact.",
+        "es": "No puedes saltar (articulaciones, vecinos): mejor elige Barre Intenso, sin impacto."
+      },
+      "benefits": [
+        {
+          "fr": "Cardio puissant",
+          "es": "Cardio potente",
+          "icon": "heart-pulse"
+        },
+        {
+          "fr": "Force totale",
+          "es": "Fuerza total",
+          "icon": "zap"
+        },
+        {
+          "fr": "Mental d'acier",
+          "es": "Mente de acero",
+          "icon": "mountain"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Baskets",
+          "es": "Tenis"
+        },
+        {
+          "fr": "Bande",
+          "es": "Banda"
+        },
+        {
+          "fr": "Petits poids",
+          "es": "Pesas ligeras"
+        }
+      ],
+      "weeks": 4,
+      "sessions_per_week": 3,
+      "minutes_range": "20–57 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/hiit-bande.jpg",
+      "next_slug": null,
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "burpees",
+          "type": "count",
+          "label": {
+            "fr": "Burpees en 1 minute",
+            "es": "Burpees en 1 minuto"
+          },
+          "how": {
+            "fr": "Version sans saut acceptée : note-la.",
+            "es": "Se acepta la versión sin salto: anótala."
+          }
+        },
+        {
+          "key": "planche",
+          "type": "seconds",
+          "label": {
+            "fr": "Planche sur les avant-bras",
+            "es": "Plancha sobre antebrazos"
+          },
+          "how": {
+            "fr": "Jambes tendues.",
+            "es": "Piernas estiradas."
+          }
+        },
+        {
+          "key": "chaise",
+          "type": "seconds",
+          "label": {
+            "fr": "Chaise contre le mur",
+            "es": "Sentadilla isométrica en la pared"
+          },
+          "how": {
+            "fr": "Genoux à 90°.",
+            "es": "Rodillas a 90°."
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Bases du HIIT",
+            "es": "Bases del HIIT"
+          },
+          "cues": [
+            {
+              "fr": "Échauffe-toi bien",
+              "es": "Calienta bien"
+            },
+            {
+              "fr": "Amortis les sauts ou remplace-les",
+              "es": "Amortigua los saltos o reemplázalos"
+            },
+            {
+              "fr": "Qualité avant vitesse",
+              "es": "Calidad antes que velocidad"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Boot Camp Duo",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3040,
+              "segment": null,
+              "minutes": 51,
+              "objective": {
+                "fr": "Boot Camp Duo",
+                "es": "Boot Camp Duo"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Boot Camp Total Body Burn (50 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3207,
+              "segment": null,
+              "minutes": 53,
+              "objective": {
+                "fr": "Total Body Burn 50",
+                "es": "Total Body Burn 50"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Récupération active",
+                "es": "Recuperación activa"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Boot Camp",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Monter en intensité",
+            "es": "Subir la intensidad"
+          },
+          "cues": [
+            {
+              "fr": "Intervalles courts, effort franc",
+              "es": "Intervalos cortos, esfuerzo franco"
+            },
+            {
+              "fr": "Récupère vraiment pendant les pauses",
+              "es": "Recupera de verdad en las pausas"
+            },
+            {
+              "fr": "Gainage solide",
+              "es": "Core firme"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Boot Camp Sunset HIIT (45 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3287,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Sunset HIIT",
+                "es": "Sunset HIIT"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Boot Camp Total Body Burn (55 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3415,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Total Body Burn 55",
+                "es": "Total Body Burn 55"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâcher",
+                "es": "Soltar"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Boot Camp",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Infaillible",
+            "es": "Infalible"
+          },
+          "cues": [
+            {
+              "fr": "Mental : une série à la fois",
+              "es": "Mente: una serie a la vez"
+            },
+            {
+              "fr": "Respire par le nez dès que possible",
+              "es": "Respira por la nariz cuando puedas"
+            },
+            {
+              "fr": "Adapte sans abandonner",
+              "es": "Adapta sin rendirte"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Boot Camp Infaillible (55 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3410,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Infaillible",
+                "es": "Infalible"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Boot Camp Duo Challenge (60 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3426,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Duo Challenge",
+                "es": "Duo Challenge"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Posture",
+                "es": "Postura"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Boot Camp",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "focus": {
+            "fr": "Le grand défi",
+            "es": "El gran reto"
+          },
+          "cues": [
+            {
+              "fr": "Donne tout sur la dernière",
+              "es": "Dalo todo en la última"
+            },
+            {
+              "fr": "Compare avec ta semaine 1",
+              "es": "Compara con tu semana 1"
+            },
+            {
+              "fr": "Célèbre",
+              "es": "Celebra"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Boot Camp Special Friends – Full Body Challenge",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3436,
+              "segment": null,
+              "minutes": 57,
+              "objective": {
+                "fr": "Full Body Challenge",
+                "es": "Full Body Challenge"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Boot Camp Sunset HIIT (45 Min)",
+              "video_folder": "BOOT CAMP",
+              "video_duration_s": 3287,
+              "segment": null,
+              "minutes": 55,
+              "objective": {
+                "fr": "Sunset HIIT final",
+                "es": "Sunset HIIT final"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Dynamic Yoga & Stretch (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2651,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Mobilité",
+                "es": "Movilidad"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Boot Camp",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 12,
+        "video_minutes": 590
+      }
+    },
+    {
+      "slug": "souplesse-recuperation",
+      "status": "draft",
+      "level": 0,
+      "track": "bien-etre",
+      "goals": [
+        "souplesse",
+        "dos"
+      ],
+      "intensity": 1,
+      "impact": "doux",
+      "live_style": "Stretching",
+      "title": {
+        "fr": "Souplesse & récupération",
+        "es": "Flexibilidad y recuperación"
+      },
+      "promise": {
+        "fr": "« Pas assez souple ? » C'est justement pour ça qu'on commence. 3 semaines pour gagner en amplitude.",
+        "es": "« ¿No eres flexible? » Justo por eso empezamos. 3 semanas para ganar amplitud."
+      },
+      "for_who": {
+        "fr": "Tu te sens raide, ou tu veux récupérer de séances intenses.",
+        "es": "Te sientes rígida o quieres recuperarte de sesiones intensas."
+      },
+      "not_for": {
+        "fr": "Tu veux surtout transpirer : regarde Cardio plaisir.",
+        "es": "Lo que quieres es sudar: mira Cardio con alegría."
+      },
+      "benefits": [
+        {
+          "fr": "Amplitude gagnée",
+          "es": "Amplitud ganada",
+          "icon": "move-diagonal-2"
+        },
+        {
+          "fr": "Tensions relâchées",
+          "es": "Tensiones liberadas",
+          "icon": "feather"
+        },
+        {
+          "fr": "Meilleur sommeil",
+          "es": "Mejor sueño",
+          "icon": "moon"
+        }
+      ],
+      "equipment": [
+        {
+          "fr": "Tapis",
+          "es": "Tapete"
+        },
+        {
+          "fr": "Coussin ou brique",
+          "es": "Cojín o bloque"
+        }
+      ],
+      "weeks": 3,
+      "sessions_per_week": 3,
+      "minutes_range": "11–45 min",
+      "cover_suggestion": "docs/maquettes/chantier-octobre-2026/assets/pm-plage.jpg",
+      "next_slug": null,
+      "coach_note": {
+        "fr": "",
+        "es": "",
+        "todo": "Mot d'Alejandra à écrire dans l'admin"
+      },
+      "tests": [
+        {
+          "key": "flexion",
+          "type": "scale",
+          "label": {
+            "fr": "Flexion avant debout : tes mains touchent…",
+            "es": "Flexión hacia delante de pie: tus manos tocan…"
+          },
+          "how": {
+            "fr": "Sans forcer, expire en descendant.",
+            "es": "Sin forzar, exhala al bajar."
+          },
+          "scale": {
+            "fr": [
+              "Genoux",
+              "Tibias",
+              "Chevilles",
+              "Sol"
+            ],
+            "es": [
+              "Rodillas",
+              "Espinillas",
+              "Tobillos",
+              "Suelo"
+            ]
+          }
+        },
+        {
+          "key": "mains_dos",
+          "type": "scale",
+          "label": {
+            "fr": "Mains jointes dans le dos",
+            "es": "Manos unidas en la espalda"
+          },
+          "how": {
+            "fr": "Une main par le haut, une par le bas.",
+            "es": "Una mano por arriba, la otra por abajo."
+          },
+          "scale": {
+            "fr": [
+              "Pas encore",
+              "Presque",
+              "Oui"
+            ],
+            "es": [
+              "Todavía no",
+              "Casi",
+              "Sí"
+            ]
+          }
+        },
+        {
+          "key": "fente",
+          "type": "scale",
+          "label": {
+            "fr": "Fente basse, buste droit, genou arrière au sol",
+            "es": "Zancada baja, torso recto, rodilla trasera en el suelo"
+          },
+          "how": {
+            "fr": "Hanches face à l'avant.",
+            "es": "Caderas mirando al frente."
+          },
+          "scale": {
+            "fr": [
+              "Pas encore",
+              "Presque",
+              "Oui"
+            ],
+            "es": [
+              "Todavía no",
+              "Casi",
+              "Sí"
+            ]
+          }
+        }
+      ],
+      "weeks_detail": [
+        {
+          "week": 1,
+          "focus": {
+            "fr": "Relâcher",
+            "es": "Soltar"
+          },
+          "cues": [
+            {
+              "fr": "Ne force jamais un étirement",
+              "es": "Nunca fuerces un estiramiento"
+            },
+            {
+              "fr": "Expire pour descendre plus loin",
+              "es": "Exhala para bajar más"
+            },
+            {
+              "fr": "Reste 5 respirations dans chaque posture",
+              "es": "Quédate 5 respiraciones en cada postura"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "10 minutes de relâchement",
+                "es": "10 minutos para soltar"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Stretching 1",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1371,
+              "segment": null,
+              "minutes": 23,
+              "objective": {
+                "fr": "Étirements essentiels",
+                "es": "Estiramientos esenciales"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching Flow Dynamique (20 min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 1172,
+              "segment": null,
+              "minutes": 20,
+              "objective": {
+                "fr": "Flow de mobilité",
+                "es": "Flow de movilidad"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Stretching",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "focus": {
+            "fr": "Ouvrir",
+            "es": "Abrir"
+          },
+          "cues": [
+            {
+              "fr": "Ouvre la poitrine",
+              "es": "Abre el pecho"
+            },
+            {
+              "fr": "Allonge la colonne",
+              "es": "Alarga la columna"
+            },
+            {
+              "fr": "Hanches libres",
+              "es": "Caderas libres"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Étirements posturaux",
+                "es": "Estiramientos posturales"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Yoga et relâchement",
+                "es": "Yoga y relajación"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Stretching express – 10 minutes pour bien commencer ou terminer ta journée",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 633,
+              "segment": null,
+              "minutes": 11,
+              "objective": {
+                "fr": "Rituel du soir",
+                "es": "Ritual de la noche"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Stretching",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "focus": {
+            "fr": "Amplitude",
+            "es": "Amplitud"
+          },
+          "cues": [
+            {
+              "fr": "Mesure tes progrès (mains au sol ?)",
+              "es": "Mide tu progreso (¿manos al piso?)"
+            },
+            {
+              "fr": "Mobilité active, pas seulement passive",
+              "es": "Movilidad activa, no solo pasiva"
+            },
+            {
+              "fr": "Garde ce rituel après le programme",
+              "es": "Conserva este ritual después del programa"
+            }
+          ],
+          "steps": [
+            {
+              "order": 1,
+              "kind": "video",
+              "video_title": "Dynamic Yoga & Stretch (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2651,
+              "segment": null,
+              "minutes": 44,
+              "objective": {
+                "fr": "Yoga dynamique",
+                "es": "Yoga dinámico"
+              }
+            },
+            {
+              "order": 2,
+              "kind": "video",
+              "video_title": "Stretching Postural (40 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2349,
+              "segment": null,
+              "minutes": 39,
+              "objective": {
+                "fr": "Posture",
+                "es": "Postura"
+              }
+            },
+            {
+              "order": 3,
+              "kind": "video",
+              "video_title": "Yoga & Stretch Release (45 Min)",
+              "video_folder": "STRETCHING",
+              "video_duration_s": 2679,
+              "segment": null,
+              "minutes": 45,
+              "objective": {
+                "fr": "Relâchement final",
+                "es": "Relajación final"
+              }
+            },
+            {
+              "order": 4,
+              "kind": "live",
+              "live_style": "Stretching",
+              "rule": "next_published_live_same_style_in_client_language",
+              "objective": {
+                "fr": "Un live avec Alejandra cette semaine : elle te voit et te corrige.",
+                "es": "Una clase en vivo con Alejandra esta semana: te ve y te corrige."
+              }
+            }
+          ]
+        }
+      ],
+      "stats": {
+        "video_steps": 9,
+        "video_minutes": 277
+      }
+    }
+  ]
+}

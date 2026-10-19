@@ -84,11 +84,13 @@ export const compteNavLabels: Record<
     referral: string;
     notifications: string;
     selfKnowledge: string;
+    programmes: string;
   }
 > = {
   fr: {
     dashboard: 'Tableau de bord',
     planning: 'Planning',
+    programmes: 'Programmes',
     blog: 'Blog',
     videos: 'Vidéos',
     shop: 'Boutique',
@@ -101,6 +103,7 @@ export const compteNavLabels: Record<
   en: {
     dashboard: 'Dashboard',
     planning: 'Schedule',
+    programmes: 'Programs',
     blog: 'Blog',
     videos: 'Videos',
     shop: 'Shop',
@@ -113,6 +116,7 @@ export const compteNavLabels: Record<
   es: {
     dashboard: 'Panel',
     planning: 'Planificación',
+    programmes: 'Programas',
     blog: 'Blog',
     videos: 'Videos',
     shop: 'Tienda',

@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 3b (branche locale, pas de push)
+
+- Espace client programmes derrière `NEXT_PUBLIC_FEATURE_PROGRAMMES` (off) : catalogue, page slug, lecteur Vimeo dnt, fin, certificat PDF, story OG, `/test-niveau`.
+- Dashboard : bloc « Mon programme » sous Bonjour (état vide tant que SQL/import absents).
+- A07 + décaler à demain (lien sans écriture) ; cron hourly no-op si drapeaux/tables absents.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-3b.md`.
+
 ### 2026-10-19 — Chantier oct. lot 2b (branche locale, pas de push)
 
 - Gabarit email v2 (drapeau off) : `wrapResendEmailV2`, A01–A06, Instagram `@fit.mangas`, désinscription signée.

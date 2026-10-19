@@ -53,6 +53,7 @@ export function isCriticalEventType(eventType: string): boolean {
   if (isNotifV2Enabled()) {
     if (eventType.includes('.reminder_J-1') || eventType.includes('.reminder_H-1')) return true;
     if (eventType.includes('.schedule_changed')) return true;
+    if (eventType.startsWith('program.session')) return true;
   }
   return false;
 }

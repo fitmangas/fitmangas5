@@ -19,6 +19,7 @@ const distDir = process.env.NEXT_DIST_DIR?.trim() || '.next';
 const nextConfig: NextConfig = {
   distDir,
   poweredByHeader: false,
+  serverExternalPackages: ['@react-pdf/renderer'],
   async headers() {
     return [{ source: '/:path*', headers: buildSecurityHeaders() }];
   },

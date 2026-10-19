@@ -1,7 +1,7 @@
 import { A_VALIDER_LOT2 } from '@/content/a-valider';
 import { getEmailPublicBaseUrl, outlookButton, wrapResendEmailV2, type EmailLocale } from '@/lib/email/base-template';
 
-export type V2EmailId = 'A01' | 'A02' | 'A03' | 'A04' | 'A05' | 'A06';
+export type V2EmailId = 'A01' | 'A02' | 'A03' | 'A04' | 'A05' | 'A06' | 'A07';
 
 export type V2EmailVars = {
   firstName?: string;
@@ -9,6 +9,7 @@ export type V2EmailVars = {
   courseTime?: string;
   courseDate?: string;
   joinUrl?: string;
+  programUrl?: string;
   locale?: EmailLocale;
   omitProgramme?: boolean;
   digestLines?: string[];
@@ -68,6 +69,27 @@ export function renderV2Email(id: V2EmailId, vars: V2EmailVars = {}): { subject:
         kicker: locale === 'es' ? 'En 1 hora' : 'Dans 1 heure',
         headline: A_VALIDER_LOT2.liveOneHourSoonSubject[locale](mins, title),
         preheader: hint,
+        showPreferencesLink: true,
+      }),
+    };
+  }
+
+  if (id === 'A07') {
+    const session = vars.courseTitle || 'ta séance';
+    const subject = locale === 'es' ? `Hoy: ${session}` : `Aujourd’hui : ${session}`;
+    const programUrl = vars.programUrl || `${base()}/compte/programmes`;
+    const postpone = `${programUrl}${programUrl.includes('?') ? '&' : '?'}decaler=1`;
+    const inner = `<p style="margin:0 0 20px;">${locale === 'es' ? 'Tu sesión del día está lista. Alejandra te espera en el vídeo, y en el live de la semana.' : 'Ta séance du jour est prête. Alejandra t’attend dans la vidéo, et au live de la semaine.'}</p>
+      ${outlookButton(locale === 'es' ? 'Empezar mi sesión' : 'Commencer ma séance', join)}
+      <p style="margin:16px 0 0; text-align:center; font-size:13px; color:#8B8178;">${locale === 'es' ? '¿No es para hoy?' : 'Pas aujourd’hui ?'} <a href="${postpone}" style="color:#C45D3E; font-weight:700;">${locale === 'es' ? 'Pasarla a mañana' : 'Décaler à demain'}</a></p>`;
+    return {
+      subject,
+      transactional: true,
+      html: wrapResendEmailV2({
+        innerHtml: inner,
+        locale,
+        kicker: locale === 'es' ? 'Tu sesión de hoy' : 'Ta séance du jour',
+        headline: subject,
         showPreferencesLink: true,
       }),
     };
@@ -135,5 +157,22 @@ export function v2TemplateForEvent(eventType: string, vars: V2EmailVars): { subj
   if (eventType === 'course.visio.cancelled' || eventType === 'course.visio.schedule_changed') return renderV2Email('A05', vars);
   if (eventType === 'digest.summary') return renderV2Email('A04', vars);
   if (eventType === 'digest.weekly') return renderV2Email('A06', vars);
+  if (eventType === 'program.session.reminder') return renderV2Email('A07', vars);
+  if (eventType === 'program.completed') {
+    const cert = vars.joinUrl || `${base()}/compte/programmes`;
+    const locale = vars.locale === 'es' ? 'es' : 'fr';
+    const subject = locale === 'es' ? '¡Enhorabuena, programa terminado!' : 'Bravo, programme terminé !';
+    return {
+      subject,
+      transactional: true,
+      html: wrapResendEmailV2({
+        innerHtml: `<p style="margin:0 0 20px;">${locale === 'es' ? 'Tu certificado está listo.' : 'Ton certificat est prêt.'}</p>${outlookButton(locale === 'es' ? 'Descargar el certificado' : 'Télécharger le certificat', cert)}`,
+        locale,
+        kicker: locale === 'es' ? 'Programa' : 'Programme',
+        headline: subject,
+        showPreferencesLink: false,
+      }),
+    };
+  }
   return null;
 }

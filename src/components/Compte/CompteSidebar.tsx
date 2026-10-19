@@ -4,13 +4,19 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, BookOpen, Brain, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, Brain, CalendarDays, Gift, Route, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 
-const links = [
+type NavKey = Exclude<keyof (typeof compteNavLabels)['fr'], 'dashboard'>;
+
+const links: Array<{ href: string; key: NavKey; icon: typeof CalendarDays; exact: boolean }> = [
   { href: '/compte/planning', key: 'planning', icon: CalendarDays, exact: true },
+  ...(isProgrammesEnabled()
+    ? [{ href: '/compte/programmes', key: 'programmes' as const, icon: Route, exact: false }]
+    : []),
   { href: '/compte/blog', key: 'blog', icon: BookOpen, exact: true },
   { href: '/compte/connaissance-de-soi', key: 'selfKnowledge', icon: Brain, exact: false },
   { href: '/compte/replays', key: 'videos', icon: Video, exact: true },
@@ -18,9 +24,7 @@ const links = [
   { href: '/compte/notifications', key: 'notifications', icon: Bell, exact: true },
   { href: '/compte/parrainage', key: 'referral', icon: Gift, exact: true },
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
-] as const;
-
-type NavKey = (typeof links)[number]['key'];
+];
 
 export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?: ClientLang; unreadNotifications?: number }) {
   const pathname = usePathname();
@@ -52,7 +56,7 @@ export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?:
         />
       </Link>
       {links.map(({ href, key, icon: Icon, exact }) => {
-        const label = labels[key as NavKey];
+        const label = labels[key];
         const basePath = href.split('#')[0];
         const hrefHash = href.includes('#') ? `#${href.split('#')[1]}` : '';
         const isProfile = basePath === '/compte/profil' || pathname === '/compte/preferences';

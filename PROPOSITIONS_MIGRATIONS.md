@@ -1005,6 +1005,7 @@ create table if not exists public.program_enrollments (
   reminder_inapp boolean not null default true,
   reminder_push boolean not null default false,
   paused_at timestamptz, completed_at timestamptz, certificate_number text unique,
+  postponed_until date,
   created_at timestamptz not null default now()
 );
 create unique index if not exists program_enrollments_one_active

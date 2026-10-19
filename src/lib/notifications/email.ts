@@ -68,6 +68,7 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
         courseTitle: String(payload.courseTitle ?? payload.title ?? ''),
         courseTime: String(payload.courseTime ?? ''),
         joinUrl: String(payload.joinUrl ?? ''),
+        programUrl: payload.programUrl ? String(payload.programUrl) : undefined,
         omitProgramme: !isProgrammesEnabled(),
       })
     : null;

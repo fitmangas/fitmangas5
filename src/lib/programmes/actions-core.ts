@@ -20,6 +20,25 @@ export async function requireVisioUser(userId: string): Promise<ProgramActionRes
 
 type EnrollmentRow = { id: string; user_id: string; program_id: string; status: string };
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function resolveProgramUuid(
+  admin: ReturnType<typeof createAdminClient>,
+  programIdOrSlug: string,
+): Promise<string | null> {
+  const query = isUuid(programIdOrSlug)
+    ? admin.from('programs').select('id').eq('id', programIdOrSlug).maybeSingle()
+    : admin.from('programs').select('id').eq('slug', programIdOrSlug).maybeSingle();
+  const { data, error } = await query;
+  if (error) {
+    console.error('[programmes] resolve program', error.message);
+    return null;
+  }
+  return data?.id ? String(data.id) : null;
+}
+
 export async function loadOwnedEnrollment(enrollmentId: string, userId: string): Promise<EnrollmentRow | ProgramActionResult> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -50,9 +69,11 @@ export async function startProgramInternal(input: {
   const gated = programmesGate() ?? (await requireVisioUser(input.userId));
   if (gated) return gated;
   const admin = createAdminClient();
+  const programUuid = await resolveProgramUuid(admin, input.programId);
+  if (!programUuid) return { ok: false, message: GENERIC };
   const { data, error } = await admin.rpc('start_program', {
     p_user_id: input.userId,
-    p_program_id: input.programId,
+    p_program_id: programUuid,
     p_start_date: input.startDate,
     p_chosen_days: input.chosenDays,
     p_reminder_time: input.reminderTime,
@@ -221,6 +242,25 @@ export async function completeProgramInternal(enrollmentId: string, userId: stri
     console.error('[programmes] complete', error.message);
     return { ok: false, message: GENERIC };
   }
+  try {
+    const { dispatch } = await import('@/lib/notifications/dispatcher');
+    const { getEmailPublicBaseUrl } = await import('@/lib/email/base-template');
+    const base = getEmailPublicBaseUrl();
+    await dispatch(admin, {
+      event_type: 'program.completed',
+      user_id: userId,
+      payload: {
+        title: 'Bravo, programme terminé',
+        body: 'Ton certificat est prêt.',
+        joinUrl: `${base}/api/programmes/certificat/${enrollmentId}`,
+        programUrl: `${base}/compte/programmes`,
+      },
+      channel_hints: ['email', 'in_app'],
+      idempotency_key: `program.completed:${enrollmentId}`,
+    });
+  } catch (e) {
+    console.error('[programmes] complete notify', e);
+  }
   return { ok: true, id: certificate };
 }
 
@@ -244,6 +284,23 @@ export async function recordFeedbackInternal(input: {
   });
   if (error) {
     console.error('[programmes] feedback', error.message);
+    return { ok: false, message: GENERIC };
+  }
+  return { ok: true };
+}
+
+export async function postponeSessionInternal(enrollmentId: string, userId: string): Promise<ProgramActionResult> {
+  const gated = programmesGate() ?? (await requireVisioUser(userId));
+  if (gated) return gated;
+  const row = await loadOwnedEnrollment(enrollmentId, userId);
+  if ('ok' in row) return row;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const until = tomorrow.toISOString().slice(0, 10);
+  const admin = createAdminClient();
+  const { error } = await admin.from('program_enrollments').update({ postponed_until: until }).eq('id', enrollmentId);
+  if (error) {
+    console.error('[programmes] postpone', error.message);
     return { ok: false, message: GENERIC };
   }
   return { ok: true };

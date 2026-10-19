@@ -21,6 +21,10 @@ import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { programBySlug } from '@/lib/programmes/catalogue';
 
 function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
   const lines =
@@ -378,6 +382,8 @@ export default async function ComptePage({
         </details>
       </section>
 
+      {isProgrammesEnabled() ? <DashboardProgramBlock userId={user.id} /> : null}
+
       <section className="relative isolate space-y-3 md:space-y-4">
         <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
           <Image
@@ -532,4 +538,36 @@ export default async function ComptePage({
       </section>
     </div>
   );
+}
+
+async function DashboardProgramBlock({ userId }: { userId: string }) {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from('program_enrollments')
+      .select('id, program_id, programs(slug, title)')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (data) {
+      const prog = data.programs as { slug?: string; title?: { fr?: string } } | { slug?: string; title?: { fr?: string } }[] | null;
+      const program = Array.isArray(prog) ? prog[0] : prog;
+      const slug = program?.slug ?? '';
+      const catalog = slug ? programBySlug(slug) : undefined;
+      return (
+        <MonProgrammeCard
+          state="active"
+          title={program?.title?.fr ?? catalog?.title.fr}
+          nextSession={catalog?.weeks_detail?.[0]?.steps?.find((s) => s.kind === 'video')?.objective?.fr ?? 'Ta prochaine séance'}
+          minutes={catalog?.weeks_detail?.[0]?.steps?.find((s) => s.kind === 'video')?.minutes ?? 20}
+          progressLabel="en cours"
+          percent={0}
+          href={slug ? `/compte/programmes/${slug}` : '/compte/programmes'}
+        />
+      );
+    }
+  } catch {
+    /* tables absentes tant que le GO Lot 3 n’est pas appliqué */
+  }
+  return <MonProgrammeCard state="empty" href="/compte/programmes" />;
 }

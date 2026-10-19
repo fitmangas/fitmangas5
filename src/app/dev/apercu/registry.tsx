@@ -8,6 +8,13 @@ import { NotificationsCenterV2 } from '@/components/Notifications/v2/Notificatio
 import { PreferencesNotifV2 } from '@/components/Notifications/v2/PreferencesNotifV2';
 import { AdminProgrammesManager } from '@/components/Programmes/admin/AdminProgrammesManager';
 import { DEMO_ADMIN_PROGRAMS, DEMO_ADMIN_VIDEOS } from '@/components/Programmes/admin/demo-data';
+import { CatalogClient } from '@/components/Programmes/CatalogClient';
+import { ProgramDetailClient } from '@/components/Programmes/ProgramDetailClient';
+import { SessionPlayer } from '@/components/Programmes/SessionPlayer';
+import { ProgramDone } from '@/components/Programmes/ProgramDone';
+import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
+import { LevelTestClient } from '@/components/Programmes/LevelTestClient';
+import { CATALOG_PROGRAMS } from '@/lib/programmes/catalogue';
 
 export type PreviewEntry = { slug: string; lot: string; title: string; render: () => ReactNode };
 
@@ -137,6 +144,113 @@ export const PREVIEWS: PreviewEntry[] = [
       <div className="luxury-shell admin-area relative min-h-screen">
         <div className="luxury-bg-orbs" aria-hidden />
         <AdminProgrammesManager programs={DEMO_ADMIN_PROGRAMS} videos={DEMO_ADMIN_VIDEOS} preview tablesMissing />
+      </div>
+    ),
+  },
+  {
+    slug: 'programmes-catalogue',
+    lot: '3b',
+    title: 'Programmes — catalogue (B01)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <CatalogClient activeSlug="les-fondations" />
+      </div>
+    ),
+  },
+  {
+    slug: 'programme-decouverte',
+    lot: '3b',
+    title: 'Programme — découverte (B03)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <ProgramDetailClient program={CATALOG_PROGRAMS[0]} mode="discovery" />
+      </div>
+    ),
+  },
+  {
+    slug: 'programme-en-cours',
+    lot: '3b',
+    title: 'Programme — en cours (B02)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <ProgramDetailClient program={CATALOG_PROGRAMS[0]} mode="active" />
+      </div>
+    ),
+  },
+  {
+    slug: 'seance-lecteur',
+    lot: '3b',
+    title: 'Séance — lecteur (B05)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <SessionPlayer
+          preview
+          programTitle="Les Fondations du Pilates"
+          slug="les-fondations"
+          sessionTitle="Les bases au sol, partie 2"
+          weekLabel="Semaine 2 · Stabiliser · séance 5 sur 9"
+          objective="Enchaîner la 2e moitié de la séance en gardant le bassin stable."
+          cues={['Omoplates basses, loin des oreilles', 'La nuque prolonge la colonne', 'Le mouvement part du centre, pas des bras']}
+          startS={1800}
+          endS={3671}
+          durationS={3671}
+          prevHref="/dev/apercu/programme-en-cours"
+          nextHref="/dev/apercu/programme-en-cours"
+          softerHref="/dev/apercu/programmes-catalogue"
+        />
+      </div>
+    ),
+  },
+  {
+    slug: 'programme-termine',
+    lot: '3b',
+    title: 'Programme terminé (B07)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <ProgramDone
+          preview
+          firstName="Margaux"
+          programTitle="Les Fondations du Pilates"
+          slug="les-fondations"
+          nextSlug="centre-solide"
+          nextTitle="Centre solide"
+          certificateUrl="#"
+          storyUrl="#"
+        />
+      </div>
+    ),
+  },
+  {
+    slug: 'mon-programme-dashboard',
+    lot: '3b',
+    title: 'Tableau de bord — Mon programme (B06)',
+    render: () => (
+      <div className="luxury-shell min-h-screen p-8">
+        <h1 className="hero-signature-title text-4xl">Bonjour Margaux</h1>
+        <div className="mt-6">
+          <MonProgrammeCard
+            state="active"
+            title="Les Fondations du Pilates"
+            nextSession="les bases au sol, partie 2"
+            minutes={31}
+            progressLabel="semaine 2 sur 3"
+            percent={44}
+            href="/compte/programmes/les-fondations"
+          />
+        </div>
+        <div className="mt-8">
+          <MonProgrammeCard state="empty" href="/compte/programmes" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    slug: 'test-niveau',
+    lot: '3b',
+    title: 'Test de niveau (D08)',
+    render: () => (
+      <div className="luxury-shell min-h-screen px-4 py-16">
+        <LevelTestClient />
       </div>
     ),
   },

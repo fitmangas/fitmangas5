@@ -74,6 +74,12 @@ export function SupportFloatingButton({ lang = 'fr' }: Props) {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    const openSupport = () => setOpen(true);
+    document.addEventListener('fm-open-support', openSupport);
+    return () => document.removeEventListener('fm-open-support', openSupport);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);

@@ -4,13 +4,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Bell, BookOpen, Brain, CalendarDays, Gift, ShoppingBag, UserRound, Video } from 'lucide-react';
+import { Bell, BookOpen, Brain, CalendarDays, Gift, Route, ShoppingBag, UserRound, Video } from 'lucide-react';
 
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 
-const links = [
+type NavKey = Exclude<keyof (typeof compteNavLabels)['fr'], 'dashboard'>;
+
+const links: Array<{ href: string; key: NavKey; icon: typeof CalendarDays }> = [
   { href: '/compte/planning', key: 'planning', icon: CalendarDays },
+  ...(isProgrammesEnabled()
+    ? [{ href: '/compte/programmes', key: 'programmes' as const, icon: Route }]
+    : []),
   { href: '/compte/blog', key: 'blog', icon: BookOpen },
   { href: '/compte/connaissance-de-soi', key: 'selfKnowledge', icon: Brain },
   { href: '/compte/replays', key: 'videos', icon: Video },
@@ -18,9 +24,7 @@ const links = [
   { href: '/compte/notifications', key: 'notifications', icon: Bell },
   { href: '/compte/parrainage', key: 'referral', icon: Gift },
   { href: '/compte/profil', key: 'profile', icon: UserRound },
-] as const;
-
-type NavKey = (typeof links)[number]['key'];
+];
 
 export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0 }: { lang?: ClientLang; unreadNotifications?: number }) {
   const pathname = usePathname();
@@ -77,7 +81,7 @@ export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0 }: 
             hrefHash
               ? pathname === '/compte' && hash === hrefHash
               : pathname === basePath || pathname.startsWith(`${basePath}/`);
-          const label = labels[key as NavKey];
+          const label = labels[key];
           const badge =
             key === 'notifications' && unreadNotifications > 0 ? (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">

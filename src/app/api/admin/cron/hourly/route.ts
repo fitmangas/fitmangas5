@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
 import { writeHeartbeat, alertCronLagIfNeeded } from '@/lib/notifications/v2/heartbeats';
 import { processDigestQueue } from '@/lib/notifications/phase3';
+import { enqueueProgramSessionReminders } from '@/lib/programmes/reminders';
 
 export const maxDuration = 120;
 
@@ -21,6 +22,13 @@ async function handle(request: Request) {
   } catch (e) {
     console.error('[cron/hourly] digest', e);
     results.digest = { error: e instanceof Error ? e.message : 'digest' };
+  }
+
+  try {
+    results.programSessions = await enqueueProgramSessionReminders(admin);
+  } catch (e) {
+    console.error('[cron/hourly] program sessions', e);
+    results.programSessions = { error: e instanceof Error ? e.message : 'program' };
   }
 
   try {
