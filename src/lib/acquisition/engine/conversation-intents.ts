@@ -3,6 +3,9 @@
  * Aligné docs/STRATEGIE_CROISSANCE.md (répondre avant de vendre, soft-no, pas d’empilement).
  */
 
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { A_VALIDER_LOT7 } from '@/content/a-valider';
+
 export type ConversationIntent =
   | 'thinking'
   | 'factual_price'
@@ -155,6 +158,29 @@ export function replyForIntent(
   market: 'fr' | 'mx',
 ): { body: string; tag: string; scheduleSoftNudge?: boolean; appendTrialLink?: boolean } {
   const es = market === 'mx';
+  if (isCroissanceV2Enabled()) {
+    const t = A_VALIDER_LOT7.intents;
+    switch (intent) {
+      case 'thinking':
+        return { tag: 'thinking', scheduleSoftNudge: true, appendTrialLink: false, body: es ? t.thinkingEs : t.thinkingFr };
+      case 'factual_price':
+        return { tag: 'factual_price', appendTrialLink: false, body: es ? t.priceEs : t.priceFr };
+      case 'factual_schedule':
+        return { tag: 'factual_schedule', appendTrialLink: false, body: es ? t.scheduleEs : t.scheduleFr };
+      case 'factual_replay':
+        return { tag: 'factual_replay', appendTrialLink: false, body: es ? t.replayEs : t.replayFr };
+      case 'factual_how':
+        return { tag: 'factual_how', appendTrialLink: false, body: es ? t.howEs : t.howFr };
+      case 'trial_offer':
+        return { tag: 'trial_offer', appendTrialLink: true, body: es ? t.trialEs : t.trialFr };
+      case 'support':
+        return { tag: 'support_request', appendTrialLink: false, body: es ? t.supportEs : t.supportFr };
+      case 'warm_no_intent':
+        return { tag: 'warm_no_intent', appendTrialLink: false, body: es ? t.warmEs : t.warmFr };
+      case 'offtopic':
+        return { tag: 'offtopic_warm', appendTrialLink: false, body: es ? t.offtopicEs : t.offtopicFr };
+    }
+  }
   switch (intent) {
     case 'thinking':
       return {
@@ -320,6 +346,9 @@ export function replyForIntent(
 
 /** Rappel doux optionnel (thinking) — une seule fois, pas un tunnel essai. */
 export function thinkingNudgeBody(market: 'fr' | 'mx'): string {
+  if (isCroissanceV2Enabled()) {
+    return market === 'mx' ? A_VALIDER_LOT7.intents.nudgeEs : A_VALIDER_LOT7.intents.nudgeFr;
+  }
   return market === 'mx'
     ? [
         'Hola de nuevo 💛',

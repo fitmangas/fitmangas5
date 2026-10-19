@@ -33,7 +33,7 @@ alwaysApply: true
 
 ### Acquisition (code clé)
 - **Stratégie permanente** : `docs/STRATEGIE_CROISSANCE.md` (relire avant toute tâche Croissance)
-- Catalog workflows : `src/lib/acquisition/engine/workflow-catalog.ts` (sync DB via `ensureWorkflowCatalog`)
+- Catalog workflows : `src/lib/acquisition/engine/workflow-catalog.ts` (sync DB via `ensureWorkflowCatalog`) · **CROISSANCE_V2** (off) : overlay mémoire des textes/mots-clés (`croissance-v2-overlay.ts`), 43 règles conservées, une relance à la fois, fenêtre 9–20 h
 - Intentions conversation : `conversation-intents.ts` (thinking / factuel / support / warm / offtopic) + intercept orchestrateur
 - Soft-no / follow-gate intention : `soft-decline.ts` + `follow-gate.ts` + `orchestrator.ts`
 - **Leads chauds** (Conversations) : score ≥40, liste sous inbox (`listHotLeads` / `HotLeadsPanel`) — exclut @meta_/équipe/payant

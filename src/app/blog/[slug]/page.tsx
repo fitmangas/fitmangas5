@@ -36,8 +36,9 @@ export async function generateMetadata(props: {
   const article = previewDraft ? await fetchAnyArticleBySlugParamAdmin(slug) : await fetchPublishedArticleBySlugParam(slug);
   if (!article) return { title: 'Article' };
   const lang = (sp.lang === 'es' ? 'es' : 'fr') as BlogLang;
-  const title =
+  const titleRaw =
     lang === 'es' ? article.title_es ?? article.title_fr : article.title_fr;
+  const title = (titleRaw ?? 'Article').replace(/\s*\|\s*FitMangas\s*$/i, '').trim() || 'Article';
   const description =
     lang === 'es'
       ? article.meta_description_es ?? article.description_es ?? article.description_fr ?? undefined

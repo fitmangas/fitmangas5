@@ -458,4 +458,33 @@ export const PREVIEWS: PreviewEntry[] = [
       </div>
     ),
   },
+  {
+    slug: 'croissance-v2',
+    lot: '7',
+    title: 'Croissance V2 — aperçu (données fictives)',
+    render: () => (
+      <div className="min-h-screen bg-[#FFFAF5] p-8 text-[#2A2420]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#C45D3E]">Admin · Croissance</p>
+        <h1 className="mt-2 text-3xl font-bold">Lot 7 — sans rien supprimer</h1>
+        <p className="mt-2 max-w-xl text-sm text-[#5A5550]">
+          43 règles conservées. Drapeau CROISSANCE_V2 éteint : le site actuel ne change pas.
+        </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {[
+            ['Vue d’ensemble', 'Entonnoir de référence + Inclure les tests (off)'],
+            ['Conversations', 'Étiquette Test masquée par défaut'],
+            ['Workflows', 'Liste 43 règles · une relance à la fois'],
+            ['ADS', 'Témoignage vidéo · Avant le premier euro'],
+            ['Publications', 'Doublon · À filmer · bloqué en cours'],
+            ['SEO', 'Guides par thème · cache 1 h'],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-[1.75rem] bg-white p-5 shadow-sm">
+              <p className="font-semibold">{title}</p>
+              <p className="mt-1 text-sm text-[#78716C]">{body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
 ];

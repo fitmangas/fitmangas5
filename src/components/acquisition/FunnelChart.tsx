@@ -46,9 +46,12 @@ function peopleForStep(stepId: string, conversations: AcqConversation[]): Avatar
     }));
 }
 
-function formatHint(step: FunnelStep, index: number): string | undefined {
+function formatHint(step: FunnelStep, index: number, steps: FunnelStep[]): string | undefined {
   if (step.rateFromPrevious == null || index === 0) return undefined;
-  if (step.id === 'retention') return `${step.rateFromPrevious} % retenues`;
+  if (step.id === 'retention') {
+    const prev = steps[index - 1]?.value ?? 0;
+    return `${step.rateFromPrevious} % · ${step.value} sur ${prev}`;
+  }
   return `${step.rateFromPrevious} % vs étape précédente`;
 }
 
@@ -81,7 +84,7 @@ export function FunnelChart({
         {steps.map((step, i) => {
           const active = step.id === activeStepId;
           const people = showAvatars ? peopleForStep(step.id, conversations) : [];
-          const hint = formatHint(step, i);
+          const hint = formatHint(step, i, steps);
 
           return (
             <div key={step.id} className="flex flex-1 items-stretch">

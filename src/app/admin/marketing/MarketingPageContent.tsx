@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import Link from 'next/link';
 import { BarChart3, CheckCircle2, Circle, Rocket, Search, TrendingUp } from 'lucide-react';
 
@@ -482,6 +483,7 @@ export async function MarketingPageContent() {
           <MarketingEditorialCalendarSection
             scheduled={(scheduledRaw ?? []) as Array<{ id: string; title_fr: string; scheduled_publication_at: string; status: string }>}
             suggestions={(suggestionsRaw ?? []) as Array<{ id: string; suggestion_fr: string; suggestion_es: string | null; topics_hint: string | null; created_at: string }>}
+            publishedTitles={(articlesRaw ?? []).map((a: { title_fr?: string }) => String(a.title_fr ?? '')).filter(Boolean)}
           />
         </Panel>
       </section>
@@ -664,7 +666,7 @@ type SubscriptionStats = {
   mrrEur: number;
 };
 
-async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
+async function fetchSearchConsoleSummaryUncached(): Promise<SearchConsoleSummary> {
   try {
     const [overview, queries, topPages, indexing] = await Promise.all([
       getSearchOverview(28),
@@ -691,7 +693,11 @@ async function fetchSearchConsoleSummary(): Promise<SearchConsoleSummary> {
   }
 }
 
-async function fetchGaSummary(): Promise<GaSummary> {
+const fetchSearchConsoleSummary = unstable_cache(fetchSearchConsoleSummaryUncached, ['croissance-seo-gsc'], {
+  revalidate: 3600,
+});
+
+async function fetchGaSummaryUncached(): Promise<GaSummary> {
   try {
     const [pageViews, countries, conversion] = await Promise.all([
       getPageViews(30),
@@ -716,6 +722,10 @@ async function fetchGaSummary(): Promise<GaSummary> {
     };
   }
 }
+
+const fetchGaSummary = unstable_cache(fetchGaSummaryUncached, ['croissance-seo-ga4'], {
+  revalidate: 3600,
+});
 
 function summarizeSubscriptions(
   rows: Array<{ status: string | null; price_cents: number | null; ends_at: string | null; stripe_subscription_id: string | null }>,
@@ -1323,7 +1333,7 @@ function aggregateNotifications(rows: Array<{ channel: string | null; created_at
 }
 
 function formatSeconds(seconds: number) {
-  if (!seconds) return '—';
+  if (!seconds || seconds > 30 * 60) return '—';
   const minutes = Math.round(seconds / 60);
   return `${minutes} min`;
 }

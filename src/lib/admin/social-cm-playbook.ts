@@ -492,6 +492,7 @@ export function mergeCaptionWithCta(caption: string, cta: string): string {
   const tipKey = tip.toLowerCase();
   const tipHead = tipKey.slice(0, Math.min(24, tip.length));
   if (tipHead && base.toLowerCase().includes(tipHead)) return base;
+  if (/essai gratuit 7 jours/i.test(base) && /essai gratuit 7 jours/i.test(tip)) return base;
   const lastLine = base.split(/\n/).pop()?.trim().toLowerCase() ?? '';
   if (lastLine && (lastLine === tipKey || (tipHead && lastLine.includes(tipHead)))) return base;
   return `${base.replace(/\s+$/, '')}\n\n${tip}`;

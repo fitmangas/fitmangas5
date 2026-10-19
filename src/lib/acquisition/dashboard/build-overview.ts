@@ -13,6 +13,7 @@ import { getPerformanceLoopStatus } from '@/lib/acquisition/performance-loop';
 import { fetchAcqCrmFunnel } from '@/lib/acquisition/sources/acq-crm';
 import { getMetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
 import { summarizeAdsPerformance } from '@/lib/acquisition/ads/repository';
+import { PAID_DEFINITION_HINT } from '@/lib/acquisition/paid-definition';
 import type {
   AcquisitionChannel,
   AcquisitionKpi,
@@ -87,19 +88,24 @@ async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('post_metrics')
-      .select('id, hook, reach, saved, format, pilier, fetched_at')
+      .select('id, post_id, hook, reach, saved, format, pilier, fetched_at')
       .not('hook', 'is', null)
-      .order('saved', { ascending: false, nullsFirst: false })
-      .limit(20);
+      .order('fetched_at', { ascending: false, nullsFirst: false })
+      .limit(200);
     if (!error && data?.length) {
+      const seen = new Set<string>();
       for (const row of data) {
+        const postKey = String(row.post_id ?? row.id);
+        if (seen.has(postKey)) continue;
+        seen.add(postKey);
         const saves = row.saved ?? null;
         const reach = row.reach ?? null;
         const score =
           saves != null && reach != null && reach > 0 ? Math.round((saves / reach) * 10000) / 100 : saves;
+        const hookRaw = String(row.hook ?? '');
         rows.push({
-          id: String(row.id),
-          hook: String(row.hook ?? ''),
+          id: postKey,
+          hook: Array.from(hookRaw).join(''),
           channel: 'instagram',
           saves,
           reach,
@@ -108,6 +114,7 @@ async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
           pilier: row.pilier ? String(row.pilier) : null,
           format: row.format ? String(row.format) : null,
         });
+        if (rows.length >= 20) break;
       }
     }
   } catch {
@@ -186,12 +193,29 @@ export async function buildAcquisitionOverview(
   const sitePaid = stripe.ok ? stripe.data.activePaid : supa.ok ? supa.data.paidCount : null;
   const siteRetentionRate = supa.ok ? supa.data.retention90d : null;
 
+  const paidCountForRetention = sitePaid ?? 0;
+  const retainedCount =
+    siteRetentionRate != null && paidCountForRetention > 0
+      ? Math.round((siteRetentionRate / 100) * paidCountForRetention)
+      : siteRetentionRate != null
+        ? siteRetentionRate
+        : null;
+
   const siteFunnel = buildSteps({
     reach: siteReach,
     clicks: siteClicks,
     trials: siteTrials,
     paid: sitePaid,
-    retentionValue: siteRetentionRate,
+    retentionValue: retainedCount,
+    retentionRate: siteRetentionRate,
+  });
+
+  const referenceFunnel = buildSteps({
+    reach: ga4.ok ? ga4.data.sessions : siteReach,
+    clicks: ga4.ok ? ga4.data.trialClicks : siteClicks,
+    trials: siteTrials,
+    paid: sitePaid,
+    retentionValue: retainedCount,
     retentionRate: siteRetentionRate,
   });
 
@@ -238,7 +262,7 @@ export async function buildAcquisitionOverview(
       id: 'arpu',
       label: 'ARPU mensuel',
       value: formatEur(arpu),
-      hint: 'Moyenne price_cents des abonnées actives (Stripe réel).',
+      hint: `Moyenne price_cents des abonnées actives (Stripe réel). ${PAID_DEFINITION_HINT}`,
       tone: 'good',
     },
     {
@@ -339,6 +363,7 @@ export async function buildAcquisitionOverview(
     funnel: crmFunnel,
     siteFunnel: siteFunnelLabeled,
     crmFunnel,
+    referenceFunnel,
     kpis,
     performanceHooks,
     sourceErrors,

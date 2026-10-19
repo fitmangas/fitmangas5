@@ -146,6 +146,8 @@ export function AcquisitionBoard({
   const [status, setStatus] = useState<string | null>(null);
   const [conciergeBadge, setConciergeBadge] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [includeTests, setIncludeTests] = useState(false);
+  const [showTests, setShowTests] = useState(false);
 
   const tabs = useMemo(
     () =>
@@ -163,6 +165,16 @@ export function AcquisitionBoard({
     name: contactDisplayName(c)!,
     imageUrl: null,
   }));
+
+  const visibleConversations = useMemo(() => {
+    const filtered = showTests ? conversations : conversations.filter((c) => !isDemoOrTestHandle(c.contactHandle));
+    return [...filtered].sort((a, b) => {
+      const unreadRank = (c: (typeof filtered)[number]) => (c.status === 'waiting' || c.status === 'open' ? 0 : 1);
+      const r = unreadRank(a) - unreadRank(b);
+      if (r !== 0) return r;
+      return (Date.parse(b.lastMessageAt ?? '') || 0) - (Date.parse(a.lastMessageAt ?? '') || 0);
+    });
+  }, [conversations, showTests]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
 
@@ -424,6 +436,28 @@ export function AcquisitionBoard({
                 })
               }
             />
+            <label className="mb-2 inline-flex items-center gap-2 text-sm" style={{ color: acq.ink }}>
+              <input
+                type="checkbox"
+                checked={includeTests}
+                onChange={(e) => setIncludeTests(e.target.checked)}
+              />
+              Inclure les tests
+            </label>
+            {!includeTests ? (
+              <p className="mb-4 text-xs" style={{ color: acq.muted }}>
+                Compteurs sans comptes test / équipe (liste équipe : réglage après GO, voir PROPOSITIONS Lot 7).
+              </p>
+            ) : null}
+            {overview.referenceFunnel?.length ? (
+              <FunnelChart
+                title="Entonnoir de référence"
+                subtitle="Visites GA4 → clics essai → essais Stripe → payantes (actif hors essai) → encore abonnées à 90 j"
+                steps={overview.referenceFunnel}
+                showAvatars={false}
+                activeStepId="paid"
+              />
+            ) : null}
             <FunnelChart
               title="Parcours site"
               subtitle="GA4 / Search Console / Stripe — trafic et conversions produit"
@@ -459,7 +493,15 @@ export function AcquisitionBoard({
                   disabled={!schemaReady}
                 />
               }
-              headerExtra={inboxPeople.length > 0 ? <AvatarStack people={inboxPeople} max={7} size="md" /> : null}
+              headerExtra={
+                <div className="flex flex-wrap items-center gap-3">
+                  {inboxPeople.length > 0 ? <AvatarStack people={inboxPeople} max={7} size="md" /> : null}
+                  <label className="inline-flex items-center gap-2 text-xs" style={{ color: acq.muted }}>
+                    <input type="checkbox" checked={showTests} onChange={(e) => setShowTests(e.target.checked)} />
+                    Afficher les tests
+                  </label>
+                </div>
+              }
               className="lg:max-h-[820px] lg:overflow-y-auto"
             >
               {conversationsError ? (
@@ -517,7 +559,7 @@ export function AcquisitionBoard({
                 className="space-y-2 rounded-[20px] p-3"
                 style={{ backgroundColor: acq.zoneInner }}
               >
-                {conversations.map((c, i) => {
+                {visibleConversations.map((c, i) => {
                   const selected = selectedConversationId === c.id;
                   const avatarName = contactDisplayName(c);
                   const displayName = avatarName ?? c.subject ?? c.contactHandle ?? 'Sans nom';
@@ -550,7 +592,7 @@ export function AcquisitionBoard({
                             </p>
                             <ChipRow className="mt-2">
                               {demo ? (
-                                <Chip label="DÉMO/TEST" tone={selected ? 'onDark' : 'sandbox'} />
+                                <Chip label="Test" tone={selected ? 'onDark' : 'sandbox'} />
                               ) : null}
                               <Chip label={c.channel} tone={selected ? 'onDark' : 'neutral'} />
                               <Chip

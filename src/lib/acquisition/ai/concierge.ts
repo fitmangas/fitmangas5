@@ -1,9 +1,12 @@
 import {
   CONCIERGE_OPENING_ES,
   CONCIERGE_OPENING_FR,
-  CONCIERGE_SYSTEM_PROMPT,
+  conciergeSystemPrompt,
   isAiDisclosureEnabled,
 } from '@/lib/acquisition/config';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { commonF } from '@/lib/acquisition/engine/croissance-v2-copy';
+import { softDeclineReplyEs, softDeclineReplyFr } from '@/lib/acquisition/engine/soft-decline';
 import {
   classifyConversationIntent,
   replyForIntent,
@@ -46,11 +49,18 @@ const NO_PITCH_INTENTS: ConciergeIntent[] = [
 function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeResult {
   const lower = inboundText.toLowerCase();
 
-  if (/stop|désabonne|desabonne|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas/.test(lower)) {
+  const optoutRe = isCroissanceV2Enabled()
+    ? /\bstop\b|^\s*¡?(basta|arr[êe]te|no m[áa]s)\s*[.!]*\s*$|d[ée]sabonne-moi|me d[ée]sabonner|d[ée]sinscris-moi|me d[ée]sinscrire|unsubscribe|ne m['’][ée]cris plus|arr[êe]te de m['’][ée]crire|arr[êe]te les messages|no me escribas|no m[áa]s mensajes|ya basta|basta ya/i
+    : /stop|désabonne|desabonne|unsubscribe|no más|no mas|basta|arrête|arrete|no me escribas/;
+  if (optoutRe.test(inboundText)) {
     return {
       ok: true,
       intent: 'optout',
-      reply: market === 'mx' ? 'Entendido, no te escribo más.' : 'Compris, je ne t’écris plus.',
+      reply: isCroissanceV2Enabled()
+        ? commonF(market === 'mx' ? 'es' : 'fr')
+        : market === 'mx'
+          ? 'Entendido, no te escribo más.'
+          : 'Compris, je ne t’écris plus.',
       suggestedActions: [],
       provider: 'fallback',
     };
@@ -60,10 +70,7 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
     return {
       ok: true,
       intent: 'soft_decline',
-      reply:
-        market === 'mx'
-          ? 'Gracias por tu sinceridad 💛\n\nTe deseo lo mejor donde estés. Si un día quieres probar conmigo, estaré aquí — sin presión.'
-          : 'Merci pour ta sincérité 💛\n\nJe te souhaite une belle continuation là où tu es. Si un jour tu as envie d’essayer avec moi, je serai là — sans pression.',
+      reply: market === 'mx' ? softDeclineReplyEs() : softDeclineReplyFr(),
       suggestedActions: [],
       provider: 'fallback',
     };
@@ -103,24 +110,41 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
   }
 
   // Catch-all adouci : converses d’abord, pas de pitch / email immédiat
+  const v2 = isCroissanceV2Enabled();
   const replies: Record<ConciergeIntent, string> = {
-    info:
-      market === 'mx'
+    info: v2
+      ? market === 'mx'
+        ? `${CONCIERGE_OPENING_ES}\n\n¿Qué te trae por aquí? ¿Las clases, los precios u otra cosa?`
+        : `${CONCIERGE_OPENING_FR}\n\nDis-moi ce qui t’amène : les cours, les prix ou autre chose ?`
+      : market === 'mx'
         ? `${CONCIERGE_OPENING_ES}\n\nDime qué te trae por aquí 💛 ¿Una duda sobre las clases, el precio, o algo más?`
         : `${CONCIERGE_OPENING_FR}\n\nDis-moi ce qui t’amène 💛 Une question sur les cours, le prix, ou autre chose ?`,
-    trial:
-      market === 'mx'
+    trial: v2
+      ? market === 'mx'
+        ? `${CONCIERGE_OPENING_ES}\nCon gusto: te mando enseguida el enlace de la prueba de 7 días gratis.`
+        : `${CONCIERGE_OPENING_FR}\nAvec plaisir : je t’envoie le lien de l’essai 7 jours gratuits juste après.`
+      : market === 'mx'
         ? `${CONCIERGE_OPENING_ES}\n\nPrueba 7 días gratis ✨\nTe envío el enlace →`
         : `${CONCIERGE_OPENING_FR}\n\nEssai 7 jours gratuits ✨\nJe t’envoie le lien →`,
-    booking:
-      market === 'mx'
+    booking: v2
+      ? market === 'mx'
+        ? 'Con gusto 💛\nLas clases en grupo son en línea. Si es para Nantes, te respondo personalmente.'
+        : 'Avec plaisir 💛\nLes cours en groupe sont en visio. Pour les cours à Nantes, je te réponds personnellement.'
+      : market === 'mx'
         ? '¿Prefieres visio colectivo o presencial en Nantes?\n\nDime y te ayudo.'
         : 'Tu préfères le visio collectif ou le présentiel à Nantes ?\n\nDis-moi, je t’aide.',
-    human:
-      market === 'mx'
+    human: v2
+      ? market === 'mx'
+        ? 'Te leo 💛\nCuéntame, te respondo por aquí.'
+        : 'Je te lis 💛\nDis-moi tout, je te réponds ici.'
+      : market === 'mx'
         ? 'Te leo 💛 Cuéntame con calma — te ayudo.'
         : 'Je te lis 💛 Dis-moi tranquillement — je t’aide.',
-    optout: market === 'mx' ? 'Entendido, no te escribo más.' : 'Compris, je ne t’écris plus.',
+    optout: v2
+      ? commonF(market === 'mx' ? 'es' : 'fr')
+      : market === 'mx'
+        ? 'Entendido, no te escribo más.'
+        : 'Compris, je ne t’écris plus.',
     soft_decline:
       market === 'mx'
         ? 'Gracias por tu sinceridad 💛\n\nTe deseo lo mejor donde estés.'
@@ -135,7 +159,8 @@ function fallbackConcierge(inboundText: string, market: 'fr' | 'mx'): ConciergeR
   const suggested: Record<ConciergeIntent, string[]> = {
     info: [],
     trial: ['send_trial_link'],
-    booking: ['book_session_intent'],
+    booking:
+      v2 && /nantes|pr[ée]sentiel|presentiel|sur place/.test(lower) ? ['escalate_human'] : ['book_session_intent'],
     human: [],
     optout: [],
     soft_decline: [],
@@ -219,7 +244,7 @@ export async function runConcierge(params: {
         model,
         max_tokens: 1024,
         temperature: 0.4,
-        system: CONCIERGE_SYSTEM_PROMPT,
+        system: conciergeSystemPrompt(),
         messages: [
           {
             role: 'user',

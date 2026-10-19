@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 7 (branche locale, pas de push)
+
+- Croissance : overlay `CROISSANCE_V2` (off). 43 règles conservées. Relance unique + fenêtre 9–20 h. Textes `croissance-messages.md` en mémoire seulement.
+- UI additive : entonnoir de référence, Test masqués, liste moteur, À filmer, doublons, guides `/blog/guides/[theme]`. Table `acq_team_accounts` proposée, non appliquée.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-7.md` + `synthese.md`. Pas de push.
+
 ### 2026-10-19 — Chantier oct. lot 6 (branche locale, pas de push)
 
 - ACCESS_V2 préparé (off). Comparatif SELECT : 1 écart (`f694a7d9…`) → activation bloquée. `hasVisioClientAccess` inchangé tant que le drapeau est off.

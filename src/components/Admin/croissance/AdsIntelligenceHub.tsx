@@ -281,6 +281,24 @@ export function AdsIntelligenceHub({
         </div>
       )}
 
+      <Card testId="ads-before-first-euro">
+        <div className="px-5 py-5 sm:px-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
+            Avant le premier euro
+          </p>
+          <ul className="mt-3 space-y-1 text-sm" style={{ color: acq.ink }}>
+            <li>
+              GA4 événements clés (inscription / achat) :{' '}
+              {intelligence.adsTotals ? 'reçu (sync Ads)' : 'pas encore reçu — à marquer dans GA4'}
+            </li>
+            <li>
+              Pixel Meta Purchase :{' '}
+              {(intelligence.adsTotals?.purchaseValueCents ?? 0) > 0 ? 'reçu' : 'pas encore reçu'}
+            </li>
+          </ul>
+        </div>
+      </Card>
+
       {/* Sync + capabilities */}
       <Card testId="ads-sync-status">
         <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">

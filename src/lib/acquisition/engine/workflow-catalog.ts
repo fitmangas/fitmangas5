@@ -15,6 +15,8 @@ import {
   QR_TRIAL_SOLO,
 } from '@/lib/acquisition/copy-bilingual';
 import type { AcqWorkflow } from '@/lib/acquisition/types';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { foldAccents } from './send-window';
 
 /**
  * Catalogue workflows Acquisition.
@@ -1308,9 +1310,10 @@ export const WORKFLOW_CATALOG_COUNT = WORKFLOW_CATALOG.length;
  */
 export function textMatchesKeyword(text: string | undefined, keywordRaw: unknown): boolean {
   if (!text) return false;
-  const kw = typeof keywordRaw === 'string' ? keywordRaw.trim().toLowerCase() : '';
+  const fold = isCroissanceV2Enabled() ? foldAccents : (v: string) => v.toLowerCase();
+  const kw = fold(typeof keywordRaw === 'string' ? keywordRaw.trim() : '');
   if (!kw) return true;
-  const hay = text.toLowerCase();
+  const hay = fold(text);
   const parts = kw.split('|').map((p) => p.trim()).filter(Boolean);
   if (!parts.length) return true;
   return parts.some((p) => {

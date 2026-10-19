@@ -155,6 +155,90 @@ export const A_VALIDER_LOT5 = {
   },
 } as const;
 
+export const A_VALIDER_LOT7 = {
+  includeTests: { fr: 'Inclure les tests', es: 'Incluir las pruebas' },
+  teamAccounts: { fr: 'Comptes de l’équipe (à ignorer dans les compteurs)', es: 'Cuentas del equipo (ignoradas en los contadores)' },
+  showTests: { fr: 'Afficher les tests', es: 'Mostrar las pruebas' },
+  testLabel: { fr: 'Test', es: 'Prueba' },
+  teamLabel: { fr: 'Équipe', es: 'Equipo' },
+  vendorLabel: { fr: 'Prestataire', es: 'Proveedor' },
+  engineList: { fr: 'Liste', es: 'Lista' },
+  engineDetail: { fr: 'Voir le détail', es: 'Ver detalle' },
+  toFilm: { fr: 'À filmer', es: 'Por filmar' },
+  duplicateCaption: {
+    fr: 'Cette légende ressemble à plus de 80 % à un post des 60 derniers jours.',
+    es: 'Este pie se parece en más del 80 % a una publicación de los últimos 60 días.',
+  },
+  scheduleAnyway: { fr: 'Programmer quand même', es: 'Programar de todos modos' },
+  stuckSince: { fr: 'Bloqué depuis le', es: 'Bloqueado desde el' },
+  retryPublish: { fr: 'Réessayer', es: 'Reintentar' },
+  backToDraft: { fr: 'Remettre en brouillon', es: 'Volver a borrador' },
+  unsourced160: { fr: '160 € en studio — à sourcer', es: '160 € en estudio — por confirmar' },
+  beforeFirstEuro: { fr: 'Avant le premier euro', es: 'Antes del primer euro' },
+  received: { fr: 'reçu', es: 'recibido' },
+  notReceived: { fr: 'pas encore reçu', es: 'aún no recibido' },
+  videoTestimonial: {
+    fr: 'Témoignage vidéo d’une élève : ce que je ressens après 3 semaines',
+    es: 'Testimonio en video de una alumna: lo que siento después de 3 semanas',
+  },
+  healthHooksPositive: [
+    {
+      was: 'À 15h ton dos te lâche ?',
+      now: 'À 15h, un créneau de 45 min avec moi — je te vois et je te corrige.',
+    },
+    {
+      was: 'Ton périnée n’est plus le même après bébé.',
+      now: 'Après bébé, tu n’as pas à chercher seule : je te réponds personnellement.',
+    },
+    {
+      was: 'La ménopause casse ta récupération.',
+      now: 'Un cours à horaire fixe, pour tenir sans te juger.',
+    },
+  ],
+  intents: {
+    thinkingFr:
+      'Bien sûr 💛\nPrends le temps qu’il te faut. Si tu veux, je t’écris un petit rappel dans quelques jours — sinon dis-le-moi.',
+    thinkingEs:
+      'Por supuesto 💛\nTómate el tiempo que necesites. Si quieres, te escribo un recordatorio en unos días — si no, dímelo.',
+    priceFr:
+      'Avec plaisir 💛\nVisio en groupe : 39 €/mois pour 8 cours live (2 par semaine).\nReplays illimités et bibliothèque de vidéos inclus.\nEssai 7 jours gratuits : carte à l’inscription, prélèvement après l’essai.',
+    priceEs:
+      'Con gusto 💛\nClases en grupo en línea: 39 € al mes por 8 clases en vivo (2 por semana).\nIncluye replays ilimitados y biblioteca de videos.\nPrueba 7 días gratis: tarjeta al registrarte, cobro después de la prueba.',
+    scheduleFr:
+      'Les horaires des cours en groupe sont sur le planning 💛\nDis-moi ce qui t’arrange, ou démarre l’essai 7 jours gratuits pour choisir ton premier cours.',
+    scheduleEs:
+      'Los horarios de las clases en grupo están en el planning 💛\nDime qué te acomoda, o empieza la prueba de 7 días gratis y elige tu primera clase.',
+    replayFr:
+      'Si tu rates un live, le replay reste dans ton espace 💛\nEn live, je te vois et je te corrige.',
+    replayEs:
+      'Si te pierdes un live, el replay queda en tu espacio 💛\nEn vivo, te veo y te corrijo.',
+    howFr:
+      'Tu t’inscris, tu rejoins le live à l’heure, je te vois et je te corrige 💛\nSi tu rates, tu as le replay.',
+    howEs:
+      'Te inscribes, entras al live a la hora, te veo y te corrijo 💛\nSi faltas, tienes el replay.',
+    trialFr:
+      'Oui : essai 7 jours gratuits 💛\nCours en groupe en visio, je te vois et je te corrige. Le lien est juste en dessous.',
+    trialEs:
+      'Sí: prueba de 7 días gratis 💛\nClases en grupo en línea, te veo y te corrijo. El enlace está justo aquí abajo.',
+    supportFr:
+      'Je suis là pour t’aider 💛\nDis-moi ce que tu vois à l’écran. Pour le compte, le replay ou le paiement, tu peux aussi écrire via le support.',
+    supportEs:
+      'Estoy aquí para ayudarte 💛\nDime qué ves en pantalla. Para la cuenta, el replay o el pago, también puedes escribir por el soporte.',
+    warmFr: 'Merci, vraiment 💛\nÇa me touche. Je suis là.',
+    warmEs: 'Gracias, de verdad 💛\nMe alegra leerte. Aquí estoy.',
+    offtopicFr: 'Merci 💛\nBelle journée à toi.',
+    offtopicEs: 'Gracias 💛\nQue tengas un lindo día.',
+    nudgeFr: 'Petit mot 💛\nJuste le rappel dont on avait parlé. Si tu préfères que je n’écrive plus, dis-le-moi.',
+    nudgeEs: 'Un mensajito 💛\nSolo el recordatorio del que hablamos. Si prefieres que no te escriba más, dímelo.',
+  },
+  conciergeStyleBlock: `Style : tu écris comme Alejandra, à la première personne, en tutoyant (marché mx : espagnol du Mexique neutre, « tú »).
+2 à 5 lignes courtes, 300 caractères maximum, une seule action, 0 ou 1 émoji (💛). Pas de flèches, pas de majuscules.
+Faits autorisés, rien d’autre : Visio en groupe 39 €/mois = 8 cours live par mois (2 par semaine), replays illimités, bibliothèque de vidéos ; Visio individuelle 269 €/mois = 5 cours individuels + accès aux 8 cours en groupe ; essai 7 jours gratuits, carte demandée à l’inscription, prélèvement après l’essai ; je vois et je corrige en direct.
+Aucune supposition ni aucun conseil de santé. Post-partum, périnée, douleur : réponds seulement que tu répondras personnellement.
+Présentiel / Nantes : aucun cours réservable sur le site. Réponds « Je te réponds personnellement ici pour les cours à Nantes », sans lien.
+Ne demande jamais de s’abonner au compte pour donner une info ou l’essai.`,
+} as const;
+
 export const A_VALIDER_LOT4 = {
   flagOff: {
     fr: 'Les cartes cadeaux ne sont pas encore ouvertes.',

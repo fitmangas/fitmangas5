@@ -118,6 +118,7 @@ export function WorkflowManager({
   const [labResult, setLabResult] = useState<{ ok: boolean; label: string; detail: string } | null>(
     null,
   );
+  const [engineView, setEngineView] = useState<'list' | 'detail'>('list');
 
   const workflowList = useMemo(() => workflows, [workflows]);
 
@@ -350,6 +351,14 @@ export function WorkflowManager({
         <div className="mb-4 flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => setEngineView((v) => (v === 'list' ? 'detail' : 'list'))}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+            style={{ backgroundColor: '#FFFFFF', color: acq.ink, boxShadow: acq.shadowCard }}
+          >
+            {engineView === 'list' ? 'Voir le détail' : 'Vue liste'}
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setCreating(true);
               setNewDraft(emptyDraft());
@@ -412,6 +421,38 @@ export function WorkflowManager({
           </Card>
         ) : null}
 
+        {engineView === 'list' ? (
+          <div className="overflow-x-auto rounded-[18px]" style={{ backgroundColor: acq.zoneInner }}>
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: acq.muted }}>
+                  <th className="px-4 py-3">Règle</th>
+                  <th className="px-4 py-3">Canal</th>
+                  <th className="px-4 py-3">30 j</th>
+                  <th className="px-4 py-3">Dernière fois</th>
+                  <th className="px-4 py-3">Active</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workflowList.map((wf) => {
+                  const last = recentRuns.find((r) => r.workflowName === wf.name);
+                  const count30 = recentRuns.filter((r) => r.workflowName === wf.name).length;
+                  return (
+                    <tr key={wf.id} className="border-t border-black/5">
+                      <td className="px-4 py-2 font-medium">{wf.name}</td>
+                      <td className="px-4 py-2">
+                        {WORKFLOW_TRIGGER_OPTIONS.find((t) => t.id === wf.triggerType)?.label ?? wf.triggerType}
+                      </td>
+                      <td className="px-4 py-2">{count30}</td>
+                      <td className="px-4 py-2">{last ? new Date(last.createdAt).toLocaleString('fr-FR') : '—'}</td>
+                      <td className="px-4 py-2">{wf.enabled ? 'oui' : 'non'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
         <div className="space-y-3">
           {workflowList.map((wf) => {
             const draft = drafts[wf.id] ?? draftFromWorkflow(wf);
@@ -489,6 +530,7 @@ export function WorkflowManager({
             );
           })}
         </div>
+        )}
       </JourneyBoard>
 
       {recentRuns.length ? (

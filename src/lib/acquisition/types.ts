@@ -160,6 +160,8 @@ export type AcquisitionOverview = {
   siteFunnel: FunnelStep[];
   /** Pipeline CRM Acquisition (contacts → payantes) */
   crmFunnel: FunnelStep[];
+  /** Entonnoir de référence (GA4 visites → clics essai → essais → payantes → 90 j) */
+  referenceFunnel?: FunnelStep[];
   kpis: AcquisitionKpi[];
   performanceHooks: PerformanceHookRow[];
   sourceErrors: SourceError[];

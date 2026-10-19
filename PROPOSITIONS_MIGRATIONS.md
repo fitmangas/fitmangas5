@@ -1206,6 +1206,28 @@ revoke all on public.printful_product_names from anon, authenticated;
 grant select, insert, update on public.printful_product_names to service_role;
 ```
 
+## Lot 7 — Croissance
+
+Non appliqué. **Aucun SQL obligatoire pour allumer le code** (overlay mémoire derrière `CROISSANCE_V2`).
+
+Réglage « comptes de l’équipe » (Instagram, e-mails, téléphones à ignorer dans les compteurs, SPEC §12.1) — table proposée, GO Kevin :
+
+```sql
+create table if not exists public.acq_team_accounts (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('instagram', 'email', 'phone')),
+  value text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.acq_team_accounts enable row level security;
+revoke all on public.acq_team_accounts from anon, authenticated;
+grant select, insert, update, delete on public.acq_team_accounts to service_role;
+```
+
+Sans cette table : interrupteur « Inclure les tests » masque seulement les handles démo déjà connus ; la liste équipe n’est pas encore persistée.
+
+---
+
 ## Lot 6 — Fonction d'accès unique
 
 Non appliqué. **Aucun SQL obligatoire.** ACCESS_V2 lit `subscriptions` (status active/trialing, `sub_…`, `ends_at`, `livemode` via Stripe si clé live).
