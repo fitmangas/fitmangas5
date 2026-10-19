@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
 import { CheckoutPurchaseTracker } from '@/components/Marketing/CheckoutPurchaseTracker';
-import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
+import { PlanningV3 } from '@/components/Compte/PlanningV3';
 import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
 import { VisioLock } from '@/components/Premium/VisioLock';
@@ -516,7 +516,7 @@ export default async function ComptePage({
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.nextSessions}</h2>
         </div>
         <div className="relative z-0">
-          <SmartCalendar lang={lang} />
+          <PlanningV3 lang={lang} compact />
         </div>
       </section>
 

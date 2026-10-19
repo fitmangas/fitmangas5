@@ -143,7 +143,7 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
           <span>·</span>
           <span>⏱ ~{readingMinutes(loc.content)} min</span>
           <span>·</span>
-          <span>👁 {article.view_count ?? 0} vues</span>
+          {(article.view_count ?? 0) > 0 ? <span>👁 {article.view_count} vues</span> : null}
           <span className="hidden sm:inline">·</span>
           <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
         </div>

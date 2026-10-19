@@ -12,9 +12,13 @@ import {
   Info,
   Mail,
   LockKeyhole,
-  UserCircle2,
 } from 'lucide-react';
 import { ManageCookiesButton } from '@/components/Marketing/ManageCookiesButton';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { HtmlLang } from '@/components/Marketing/HtmlLang';
+import { HowItWorks } from '@/components/Marketing/HowItWorks';
+import { LandingFaq } from '@/components/Marketing/LandingFaq';
+import { isGiftsEnabled } from '@/lib/gifts/flag';
 import { A_VALIDER_LOT1 } from '@/content/a-valider';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
@@ -58,6 +62,7 @@ type VimeoShowcaseItem = {
 };
 
 type BlogPreviewItem = {
+  slugFr: string;
   titleFr: string;
   titleEs: string | null;
   excerptFr: string | null;
@@ -111,12 +116,14 @@ export function LandingPage({
   const l =
     lang === 'FR'
       ? {
-          member: 'Devenir membre',
-          login: 'Se connecter',
-          heroTitleTop: 'Visio Pilates',
-          heroTitleBottom: 'est ta thérapie',
-          heroBody: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
-          start: 'On démarre',
+          member: 'Essai gratuit',
+          login: 'Connexion',
+          heroTitleTop: 'Ta coach te voit.',
+          heroTitleBottom: 'Même en visio.',
+          heroBody: "J'aide les femmes à se sentir fortes et bien dans leur corps, en cours live depuis chez elles : je te vois, je te corrige, je t'encourage.",
+          start: 'Essai gratuit 7 jours',
+          startHint: '0 € aujourd’hui · sans engagement · annulable en ligne',
+          stylesCta: 'Faire le test de niveau',
           community: 'Rejoignez la communauté',
           liveReplay: 'Direct et Replay',
           available: 'Disponible',
@@ -132,8 +139,8 @@ export function LandingPage({
           trialCta: 'Essai gratuit 7 jours',
           blogLabel: 'Le Blog',
           blogTitle: 'Inspiration Pilates & bien-être',
-          blogCta: 'S’inscrire pour accéder au blog',
-          blogArticleCta: 'Réservé aux membres — S’inscrire',
+          blogCta: 'Tous les articles',
+          blogArticleCta: 'Lire l’article',
           privacy: 'Confidentialité',
           terms: 'Conditions',
           legal: 'Mentions légales',
@@ -153,12 +160,14 @@ export function LandingPage({
           },
         }
       : {
-          member: 'Hacerme miembro',
-          login: 'Conectarse',
-          heroTitleTop: 'Visio Pilates',
-          heroTitleBottom: 'es tu terapia',
-          heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.',
-          start: 'Empezamos',
+          member: 'Prueba gratis',
+          login: 'Conexión',
+          heroTitleTop: 'Tu coach te ve.',
+          heroTitleBottom: 'Incluso online.',
+          heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases en vivo desde casa: te veo, te corrijo, te animo.',
+          start: 'Prueba gratis 7 días',
+          startHint: '0 € hoy · sin compromiso · cancelas en línea',
+          stylesCta: 'Hacer el test de nivel',
           community: 'Únete a la comunidad',
           liveReplay: 'Directo y replay',
           available: 'Disponible',
@@ -174,8 +183,8 @@ export function LandingPage({
           trialCta: 'Prueba gratis 7 días',
           blogLabel: 'El Blog',
           blogTitle: 'Inspiración Pilates y bienestar',
-          blogCta: 'Inscribirse para acceder al blog',
-          blogArticleCta: 'Reservado a miembros — Inscribirse',
+          blogCta: 'Todos los artículos',
+          blogArticleCta: 'Leer el artículo',
           privacy: 'Privacidad',
           terms: 'Condiciones',
           legal: 'Aviso legal',
@@ -334,57 +343,14 @@ export function LandingPage({
   return (
     <div className="min-h-screen overflow-x-clip bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       <HomeScrollEffects />
-      {/* Top Bar */}
-      <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
-        <div className="relative mx-auto max-w-6xl px-5 py-3 md:px-10 md:py-4">
-          <div className="flex items-center justify-center gap-4 md:gap-5">
-            <button
-              type="button"
-              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${terracottaCtaClass} px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
-            >
-              {l.member}
-            </button>
-            {process.env.NEXT_PUBLIC_FEATURE_GIFTS === '1' ? (
-              <a href="/offrir" className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 md:inline">
-                Offrir
-              </a>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#c45d3e] hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
-            >
-              <UserCircle2 size={14} />
-              {l.login}
-            </button>
-          </div>
-          <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-5 md:flex md:right-10">
-            <button
-              type="button"
-              onClick={() => toggleLang('FR')}
-              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
-                lang === 'FR'
-                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
-                  : 'text-brand-ink/30 hover:text-brand-ink'
-              }`}
-            >
-              FR
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleLang('ES')}
-              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
-                lang === 'ES'
-                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
-                  : 'text-brand-ink/30 hover:text-brand-ink'
-              }`}
-            >
-              ES
-            </button>
-          </div>
-        </div>
-      </div>
+      <HtmlLang lang={lang === 'ES' ? 'es' : 'fr'} />
+      <PublicSiteHeader
+        lang={lang}
+        onToggleLang={toggleLang}
+        onLogin={() => setShowLoginModal(true)}
+        onTrial={() => openTrialSignup(t.courses.visio[0], 'hero')}
+        homeHref={lang === 'ES' ? '/es' : '/'}
+      />
 
       <main className="mx-auto max-w-2xl overflow-x-clip px-5 pb-24 pt-1 md:max-w-6xl md:px-8 md:pt-10">
         <div className="mb-2 flex justify-end gap-6 md:mb-6 md:hidden">
@@ -417,7 +383,7 @@ export function LandingPage({
                 priority
                 className="mb-3 h-14 w-14 shrink-0 object-contain md:mb-5 md:h-14 md:w-14"
               />
-              <h1 className="min-w-0 font-serif italic leading-[1.12] tracking-tight text-brand-ink text-[2.125rem] md:flex-none md:text-7xl md:leading-[1.02]">
+              <h1 className="fm-display min-w-0 leading-[1.12] tracking-tight text-brand-ink text-[2.125rem] md:flex-none md:text-7xl md:leading-[1.02]">
                 {l.heroTitleTop}
                 <br />
                 {l.heroTitleBottom}
@@ -439,6 +405,7 @@ export function LandingPage({
             >
               {l.start}
             </button>
+            <p className="mt-2 text-center text-[12px] text-brand-ink/55 md:hidden">{l.startHint}</p>
 
             {/* Encadré stats — mobile : 2 colonnes ; 180 + avatars à droite ; cours centrés */}
             <div
@@ -657,7 +624,18 @@ export function LandingPage({
           </div>
         </section>
 
-        <section id="offers" ref={offersReveal} className="scroll-mt-24">
+        <VideoTestimonialsCarousel
+          lang={lang}
+          label={l.testimonialsLabel}
+          title={l.reviews}
+          positiveReviews={l.positiveReviews}
+          ctaLabel={l.trialCta}
+          onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
+        />
+
+        <HowItWorks lang={lang} />
+
+        <section id="tarifs" ref={offersReveal} className="scroll-mt-24">
         {/* Offers Grid — visio uniquement */}
         <div className="mb-20 space-y-12">
           <div data-reveal className="space-y-3 text-center">
@@ -733,12 +711,25 @@ export function LandingPage({
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-white shadow-lg transition-transform active:scale-95">
                         <ArrowRight size={20} className="text-white" strokeWidth={2} aria-hidden />
                       </div>
+                      <p className="mt-2 text-[12px] font-medium text-brand-ink/60">
+                        {lang === 'ES'
+                          ? `0 € hoy · 7 días gratis, luego ${course.id === 'v-ind' ? '269' : '39'} €/mes`
+                          : `0 € aujourd’hui · 7 jours gratuits, puis ${course.id === 'v-ind' ? '269' : '39'} €/mois`}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+          {isGiftsEnabled() ? (
+            <p className="mt-5 text-center text-[13px] text-brand-ink/60">
+              {lang === 'ES' ? '¿Quieres regalar clases ?' : 'Tu veux offrir des cours ?'}{' '}
+              <Link href="/offrir" className="font-semibold text-luxury-orange underline-offset-4">
+                {lang === 'ES' ? 'Tarjeta regalo desde 39 €' : 'Carte cadeau dès 39 €'}
+              </Link>
+            </p>
+          ) : null}
         </div>
         </section>
 
@@ -762,15 +753,6 @@ export function LandingPage({
             <ArrowRight size={14} />
           </div>
         </a>
-
-        <VideoTestimonialsCarousel
-          lang={lang}
-          label={l.testimonialsLabel}
-          title={l.reviews}
-          positiveReviews={l.positiveReviews}
-          ctaLabel={l.trialCta}
-          onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
-        />
 
         {/* Pilates styles inspiration section */}
         <section
@@ -818,15 +800,13 @@ export function LandingPage({
           </div>
 
           <div data-reveal className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
-            >
-              {l.start}
-            </button>
+            <Link href="/test-niveau" className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}>
+              {l.stylesCta}
+            </Link>
           </div>
         </section>
+
+        <LandingFaq lang={lang} />
 
         {visibleBlogPreviews.length > 0 ? (
           <section ref={blogReveal} className="py-16 md:py-24">
@@ -850,16 +830,10 @@ export function LandingPage({
                 const excerpt = lang === 'ES' ? article.excerptEs?.trim() || article.excerptFr : article.excerptFr;
                 const categoryLabel = lang === 'ES' ? article.categoryLabelEs || article.categoryLabelFr : article.categoryLabelFr;
                 return (
-                <button
+                <Link
                   key={article.titleFr}
                   data-reveal
-                  type="button"
-                  onClick={() =>
-                    openTrialSignup(
-                      onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
-                      'blog_preview',
-                    )
-                  }
+                  href={`/blog/${article.slugFr}`}
                   className="group overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/70 text-left shadow-[0_18px_50px_rgba(48,35,28,0.08)] transition hover:-translate-y-1"
                 >
                   <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
@@ -871,23 +845,14 @@ export function LandingPage({
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{excerpt}</p>
                     <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-accent">{l.blogArticleCta}</p>
                   </div>
-                </button>
+                </Link>
               );
               })}
             </div>
             <div data-reveal className="mt-8 text-center">
-              <button
-                type="button"
-                onClick={() =>
-                  openTrialSignup(
-                    onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
-                    'blog_cta',
-                  )
-                }
-                className={`${terracottaCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
-              >
+              <Link href="/blog" className={`${terracottaCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}>
                 {l.blogCta}
-              </button>
+              </Link>
             </div>
           </section>
         ) : null}

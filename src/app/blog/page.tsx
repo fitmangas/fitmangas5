@@ -123,6 +123,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
 
+  if (lang === 'es') listQuery = listQuery.not('content_es', 'is', null);
   if (categoryId) listQuery = listQuery.eq('category_id', categoryId);
 
   if (q) {
@@ -321,7 +322,7 @@ function HeroArticle({
   const loc = pickLocalizedArticle(article, lang);
   const href = lang === 'es' ? `/blog/${article.slug_es ?? article.slug_fr}` : `/blog/${article.slug_fr}`;
   return (
-    <article className="glass-card mt-12 grid gap-8 overflow-hidden p-6 lg:grid-cols-2 lg:p-10">
+    <Link href={href} className="glass-card mt-12 grid gap-8 overflow-hidden p-6 lg:grid-cols-2 lg:p-10">
       <div className="relative min-h-[220px] overflow-hidden rounded-t-2xl border border-white/35 bg-white/25 lg:rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={article.displayImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -336,21 +337,18 @@ function HeroArticle({
               ⭐ {Number(article.average_rating).toFixed(1)} ({article.rating_count ?? 0})
             </span>
           ) : null}
-          <span>👁 {article.view_count ?? 0}</span>
+          {(article.view_count ?? 0) > 0 ? <span>👁 {article.view_count}</span> : null}
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href={href} className="btn-luxury-primary inline-flex w-fit items-center px-8 py-3 text-xs tracking-[0.14em]">
+          <span className="btn-luxury-primary inline-flex w-fit items-center px-8 py-3 text-xs tracking-[0.14em]">
             {copy.read}
-          </Link>
-          <Link
-            href="/?offer=v-coll"
-            className="inline-flex w-fit items-center rounded-full border border-orange-300/70 bg-orange-50/70 px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-800 transition hover:border-orange-400 hover:bg-orange-100"
-          >
+          </span>
+          <span className="inline-flex w-fit items-center rounded-full border border-orange-300/70 bg-orange-50/70 px-8 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-800">
             Découvrir l’offre Visio
-          </Link>
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -382,7 +380,7 @@ function ArticleCard({
         <p className="mt-2 line-clamp-2 flex-1 text-sm text-luxury-muted">{loc.description ?? ''}</p>
         <div className="mt-4 flex gap-4 text-xs text-luxury-muted">
           {article.average_rating != null ? <span>⭐ {Number(article.average_rating).toFixed(1)}</span> : null}
-          <span>👁 {article.view_count ?? 0}</span>
+          {(article.view_count ?? 0) > 0 ? <span>👁 {article.view_count}</span> : null}
         </div>
       </div>
     </Link>

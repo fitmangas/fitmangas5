@@ -8,6 +8,7 @@ import { Activity, BookOpen, Clapperboard, Film, Gift, Inbox, Route, ShoppingBag
 import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { isGiftsEnabled } from '@/lib/gifts/flag';
+import { SidebarTooltip } from '@/components/Compte/SidebarTooltip';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -15,11 +16,11 @@ const links = [
   ...(typeof process !== 'undefined' && isProgrammesEnabled()
     ? [{ href: '/admin/programmes', label: 'Programmes', icon: Route }]
     : []),
-  { href: '/admin/clients', label: 'Clients', icon: Users },
-  { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/admin/clients', label: 'Clientes', icon: Users },
+  { href: '/admin/inbox', label: 'Messages', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
-  { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
+  { href: '/admin/promos', label: 'Codes promo', icon: TicketPercent },
   ...(typeof process !== 'undefined' && isGiftsEnabled()
     ? [{ href: '/admin/cartes-cadeaux', label: 'Cartes cadeaux', icon: Gift }]
     : []),
@@ -95,9 +96,10 @@ export function AdminSidebar() {
 
   return (
     <aside className="luxury-floating-rail fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
+      <SidebarTooltip label="Tableau de bord">
       <Link
         href="/admin"
-        title="Dashboard"
+        aria-label="Tableau de bord"
         prefetch
         onMouseEnter={() => router.prefetch('/admin')}
         onClick={(e) => {
@@ -117,6 +119,7 @@ export function AdminSidebar() {
           className="h-[30px] w-[30px] object-contain"
         />
       </Link>
+      </SidebarTooltip>
       {links.map(({ href, label, icon: Icon }) => {
         const isActive =
           href === '/admin/croissance'
@@ -152,10 +155,10 @@ export function AdminSidebar() {
         const showPending = isPending && pendingHref === href;
 
         return (
+          <SidebarTooltip key={href} label={label}>
           <Link
-            key={href}
             href={targetHref}
-            title={label}
+            aria-label={label}
             prefetch
             onMouseEnter={() => router.prefetch(href)}
             onClick={(e) => {
@@ -172,6 +175,7 @@ export function AdminSidebar() {
             <Icon size={23} strokeWidth={2} aria-hidden />
             {badge}
           </Link>
+          </SidebarTooltip>
         );
       })}
     </aside>

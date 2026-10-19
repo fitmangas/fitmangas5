@@ -136,7 +136,7 @@ export function SelfTestRunner({
           introBullet1: 'Un retrato con nombre y forma de tu perfil (radar).',
           introBullet2: 'Tus fuerzas y límites — sin juicio, orientado a la práctica.',
           introBullet3: 'Un puente hacia cursos colectivos a horarios fijos.',
-          disclaimer: 'Ítems IPIP · dominio público · ~600 000 personas.',
+          disclaimer: 'Ítems IPIP · dominio público.',
           disclaimerAttach:
             'Escala ECR-S (Wei et al., 2007) — ítems oficiales, dominio público.',
         }
@@ -167,7 +167,7 @@ export function SelfTestRunner({
           introBullet1: 'Un portrait nommé + la forme de ton profil (radar).',
           introBullet2: 'Tes forces et limites — sans jugement, orienté pratique.',
           introBullet3: 'Un pont vers les cours collectifs à horaires fixes.',
-          disclaimer: 'Items IPIP · domaine public · ~600 000 personnes.',
+          disclaimer: 'Items IPIP · domaine public.',
           disclaimerAttach:
             'Échelle ECR-S (Wei et al., 2007) — items officiels, domaine public.',
         };

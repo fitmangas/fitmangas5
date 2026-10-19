@@ -44,7 +44,6 @@ const COPY = {
     title: 'Mieux te connaître pour tenir ta pratique.',
     lead: 'Un portrait clair de comment tu fonctionnes — pour ne plus lâcher seule.',
     stats: [
-      { value: '600 000+', label: 'personnes ayant validé le test' },
       { value: '~8 min', label: 'pour te découvrir' },
     ],
     proof: 'Elles aussi se sont découvertes — puis se sont tenues',
@@ -58,7 +57,6 @@ const COPY = {
     title: 'Conocerte mejor para sostener tu práctica.',
     lead: 'Un retrato claro de cómo funcionas — para no soltar sola.',
     stats: [
-      { value: '600 000+', label: 'personas que validaron el test' },
       { value: '~8 min', label: 'para descubrirte' },
     ],
     proof: 'Ellas también se descubrieron — y se sostuvieron',

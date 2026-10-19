@@ -2,6 +2,7 @@ import { uniqueBlogImageUrl } from '@/lib/blog/images';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type LandingBlogPreview = {
+  slugFr: string;
   titleFr: string;
   titleEs: string | null;
   excerptFr: string | null;
@@ -45,7 +46,7 @@ export async function loadLandingHomeData(): Promise<{
     const { data: articles } = await admin
       .from('blog_articles')
       .select(
-        'title_fr, title_es, description_fr, description_es, featured_image_url, published_at, blog_categories ( label_fr, label_es, slug )',
+        'slug_fr, title_fr, title_es, description_fr, description_es, featured_image_url, published_at, blog_categories ( label_fr, label_es, slug )',
       )
       .eq('status', 'published')
       .order('published_at', { ascending: false })
@@ -60,6 +61,7 @@ export async function loadLandingHomeData(): Promise<{
             ? category.slug
             : null;
       return {
+        slugFr: String(row.slug_fr ?? ''),
         titleFr: String(row.title_fr ?? ''),
         titleEs: row.title_es ? String(row.title_es) : null,
         excerptFr: row.description_fr ? String(row.description_fr) : null,

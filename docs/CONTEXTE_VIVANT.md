@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 5 (branche locale, pas de push)
+
+- Conversion : menu public, titre A accueil, modale D01 (case immédiat seulement v-ind), planning v3, habillage live D03, D09 suivi clientes, D06 nav mobile, D10 info-bulles, D07 Les cours.
+- Présentiel masqué (`ONSITE_ENABLED` off). Tables `client_followups` / noms boutique : SQL proposé, non appliqué.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-5.md`. Pas de push.
+
 ### 2026-10-19 — Chantier oct. lot 3b (branche locale, pas de push)
 
 - Espace client programmes derrière `NEXT_PUBLIC_FEATURE_PROGRAMMES` (off) : catalogue, page slug, lecteur Vimeo dnt, fin, certificat PDF, story OG, `/test-niveau`.

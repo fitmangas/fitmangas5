@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
+import { HtmlLang } from '@/components/Marketing/HtmlLang';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { SupportFloatingButton } from '@/components/Compte/SupportFloatingButton';
 import { getClientLang } from '@/lib/compte/i18n';
@@ -31,12 +32,13 @@ export default async function CompteLayout({ children }: { children: React.React
 
   return (
     <div className="luxury-shell relative min-h-screen" lang={lang}>
+      <HtmlLang lang={lang === 'es' ? 'es' : lang === 'en' ? 'en' : 'fr'} />
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative">
         <CompteSidebar lang={lang} unreadNotifications={unreadNotifications ?? 0} />
         <CompteMobileBottomNav lang={lang} unreadNotifications={unreadNotifications ?? 0} />
-        <main className="luxury-main relative z-0 pb-20 pt-2 md:pb-16 md:pl-24 md:pt-0">{children}</main>
+        <main className="luxury-main relative z-0 pb-32 pt-2 md:pb-16 md:pl-24 md:pt-0">{children}</main>
         <SupportFloatingButton lang={lang} />
       </div>
     </div>

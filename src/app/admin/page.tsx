@@ -4,7 +4,6 @@ import { Bell, Megaphone, Video } from 'lucide-react';
 
 import { AiBusinessAdvisor } from '@/components/Admin/AiBusinessAdvisor';
 import { AdminKpiCardsInteractive } from '@/components/Admin/AdminKpiCardsInteractive';
-import { ClientAvatar } from '@/components/Admin/ClientAvatar';
 import { DismissibleDashboardBadge, DismissOnClickLink } from '@/components/Admin/DismissibleDashboardBadge';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { checkIsAdmin } from '@/lib/auth/admin';
@@ -30,6 +29,7 @@ type ProfileRow = {
   role: string | null;
   last_checkout_course_id: string | null;
   created_at: string | null;
+  subscription_status: string | null;
 };
 
 type UpcomingCourseRow = {
@@ -149,7 +149,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     adminDb
       .from('profiles')
-      .select('id, first_name, last_name, avatar_url, role, last_checkout_course_id, created_at')
+      .select('id, first_name, last_name, avatar_url, role, last_checkout_course_id, created_at, subscription_status')
       .eq('archived', false)
       .eq('role', 'member')
       .order('created_at', { ascending: false })
@@ -196,7 +196,6 @@ export default async function AdminPage() {
   const avatarUrl = me?.avatar_url?.trim() || null;
   const notificationsSummary = await loadNotificationObservability('month');
   const occupancyLabel = pctLabel(kpis.occupancyPercent);
-  const clientsHeadTr = 'bg-white/85 text-[10px] uppercase tracking-wider text-luxury-ink/65 backdrop-blur';
   const combinedRevenueMonthEur =
     stripeMonthEur == null && kpiDrilldowns.boutiqueRevenueEur <= 0
       ? null
@@ -417,58 +416,41 @@ export default async function AdminPage() {
           </DismissOnClickLink>
         </GlassCard>
         <GlassCard elevated className="p-5 md:p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Derniers clients</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-luxury-soft">Dernières clientes</h2>
           <div className="mt-1 flex justify-end">
             <Link
               href="/admin/clients"
               className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-orange underline-offset-4 hover:underline"
             >
-              Voir tous →
+              Suivi des clientes →
             </Link>
           </div>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-left">
-            <thead>
-              <tr className={clientsHeadTr}>
-                <th className="rounded-l-full border-b border-t border-l border-[#ece8e0] px-3 py-3">Nom</th>
-                <th className="border-y border-[#ece8e0] px-3 py-3">Rôle</th>
-                <th className="border-y border-[#ece8e0] px-3 py-3">Dernière offre</th>
-                <th className="rounded-r-full border-b border-t border-r border-[#ece8e0] px-3 py-3">Inscription</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-luxury-ink">
-              {(latestProfiles as ProfileRow[] | null)?.map((profile) => (
-                <tr key={profile.id} className="border-b border-white/40">
-                  <td className="px-2 py-3">
-                    <Link
-                      href={`/admin/clients/${profile.id}`}
-                      className="inline-flex items-center gap-3 font-semibold text-luxury-orange underline-offset-4 hover:underline"
-                    >
-                      <ClientAvatar
-                        avatarUrl={profile.avatar_url}
-                        name={[profile.first_name, profile.last_name].filter(Boolean).join(' ')}
-                        size={32}
-                      />
-                      {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8)}
-                    </Link>
-                  </td>
-                  <td className="px-2 py-3 text-luxury-muted">{profile.role || 'member'}</td>
-                  <td className="px-2 py-3 text-luxury-muted">{profile.last_checkout_course_id || '—'}</td>
-                  <td className="px-2 py-3 text-luxury-muted">
-                    {profile.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR') : '—'}
-                  </td>
-                </tr>
-              ))}
-              {!latestProfiles?.length ? (
-                <tr>
-                  <td className="px-2 py-4 text-luxury-muted" colSpan={4}>
-                    Aucun profil trouvé pour l’instant.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-            </table>
-          </div>
+          <ul className="mt-3 space-y-2">
+            {(latestProfiles as ProfileRow[] | null)?.map((profile) => {
+              const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.id.slice(0, 8);
+              const initial = (profile.first_name || profile.last_name || '?').charAt(0).toUpperCase();
+              const status = (profile.subscription_status ?? '').toLowerCase();
+              const dot = status === 'active' ? '#3d7a4a' : status === 'trialing' ? '#e6a285' : status === 'past_due' || status === 'unpaid' ? '#c45d3e' : '#b9b2aa';
+              return (
+                <li key={profile.id}>
+                  <Link href={`/admin/clients/${profile.id}`} className="flex items-center gap-3 rounded-2xl px-1 py-1.5 hover:bg-white/50">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f6ddd3] text-[12px] font-semibold text-[#a5452a]">{initial}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-luxury-ink">{name}</span>
+                      <span className="text-[11px] text-luxury-muted">
+                        inscrite le {profile.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.04] px-2 py-1 text-[11px]">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+                      {status || '—'}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+            {!latestProfiles?.length ? <li className="px-2 py-4 text-sm text-luxury-muted">Aucun profil trouvé pour l’instant.</li> : null}
+          </ul>
         </GlassCard>
       </section>
 

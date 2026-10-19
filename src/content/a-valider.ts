@@ -101,6 +101,60 @@ export const A_VALIDER_LOT3 = {
   },
 } as const;
 
+export const A_VALIDER_LOT5 = {
+  faq: {
+    fr: [
+      { q: 'Je n’ai jamais fait de Pilates, c’est pour moi ?', a: 'Oui. Alejandra adapte chaque exercice pendant le live, et le programme « Les Fondations » t’apprend les bases en 3 semaines.' },
+      { q: 'Comment Alejandra peut me corriger à travers un écran ?', a: 'Ta caméra est allumée : elle te voit en direct, t’appelle par ton prénom et te montre le bon placement.' },
+      { q: 'Je suis gênée d’être filmée.', a: 'Tu choisis ton cadrage, de côté ou en plan large : l’important, c’est qu’Alejandra voie ta posture pour te corriger. [Caméra / enregistrement : à confirmer après vérif. lot 1.]' },
+      { q: 'Je n’ai pas le temps.', a: 'Les lives durent 45 à 60 minutes à heure fixe, et les programmes proposent des séances de 20 minutes.' },
+      { q: 'De quel matériel ai-je besoin ?', a: 'Un tapis suffit. Les accessoires (petit ballon, bande) sont indiqués avant chaque cours.' },
+      { q: 'Comment j’annule ?', a: 'En ligne, en 3 clics, depuis ton espace. Pendant l’essai, tu ne paies rien.' },
+    ],
+    es: [
+      { q: 'Nunca he hecho Pilates, ¿es para mí?', a: 'Sí. Alejandra adapta cada ejercicio en el live, y el programa « Las bases » te enseña en 3 semanas.' },
+      { q: '¿Cómo puede corregirme a través de una pantalla?', a: 'Tu cámara está encendida: te ve en directo, te llama por tu nombre y te muestra el gesto.' },
+      { q: 'Me da vergüenza que me filmen.', a: 'Tú eliges el encuadre. Lo importante es que Alejandra vea tu postura. [Cámara / grabación: por confirmar.]' },
+      { q: 'No tengo tiempo.', a: 'Los lives duran 45 a 60 minutos a hora fija, y los programas proponen sesiones de 20 minutos.' },
+      { q: '¿Qué material necesito?', a: 'Un tapete basta. Los accesorios se indican antes de cada clase.' },
+      { q: '¿Cómo cancelo?', a: 'En línea, en 3 clics, desde tu espacio. Durante la prueba no pagas nada.' },
+    ],
+  },
+  liveAdvice: {
+    fr: 'Pose ton téléphone ou ton ordinateur à 2–3 mètres, à hauteur de hanches : je te vois en entier et je peux te corriger.',
+    es: 'Pon el teléfono o el ordenador a 2–3 metros, a la altura de las caderas: te veo entera y puedo corregirte.',
+  },
+  followupWa: {
+    payment_failed: { fr: 'Bonjour, c’est Alejandra. Ton paiement FitMangas n’est pas passé. Tu peux me dire si tu as besoin d’un coup de main ?', es: 'Hola, soy Alejandra. Tu pago de FitMangas no pasó. ¿Te ayudo?' },
+    trial_ending: { fr: 'Bonjour, c’est Alejandra. Ton essai se termine bientôt. Tu as une question avant de décider ?', es: 'Hola, soy Alejandra. Tu prueba termina pronto. ¿Tienes alguna pregunta?' },
+    incomplete: { fr: 'Bonjour, c’est Alejandra. Tu as commencé ton inscription FitMangas. Tu veux que je t’aide à la terminer ?', es: 'Hola, soy Alejandra. Empezaste tu inscripción. ¿Te ayudo a terminarla?' },
+    inactive: { fr: 'Bonjour, c’est Alejandra. Ça fait un moment que je ne t’ai pas vue en live. Tout va bien ?', es: 'Hola, soy Alejandra. Hace tiempo que no te veo en vivo. ¿Todo bien?' },
+    cancelled: { fr: 'Bonjour, c’est Alejandra. Tu as quitté FitMangas récemment. Si tu veux en parler, je suis là.', es: 'Hola, soy Alejandra. Dejaste FitMangas hace poco. Si quieres hablar, aquí estoy.' },
+  },
+  followupMailSubject: {
+    fr: 'FitMangas — un mot d’Alejandra',
+    es: 'FitMangas — un mensaje de Alejandra',
+  },
+  courseStyles: [
+    { title: 'Pilates Mat', level: 'Tous niveaux', body: 'Au sol, sur le tapis : le centre, la respiration, la posture.', image: '/Photo%20Alejandra%20exercice%20avec%20anneau.JPG' },
+    { title: 'Pilates Accessoires', level: 'Tous niveaux', body: 'Petit ballon, bande, cercle : plus de précision et de tonus.', image: '/Photo%20Alejandra%20exercice%20sur%20la%20plage.JPG' },
+    { title: 'Barre / Pilates Flow', level: 'Tous niveaux', body: 'Entre danse et Pilates, debout puis au sol : jambes et fessiers.', image: '/Photo%20Alejandra%20pose%20pour%20photographe.JPG' },
+    { title: 'Fit-Dance', level: 'Dynamique', body: 'Du cardio en dansant, sans impact pour les articulations.', image: '/landing/offer-v-coll.jpg' },
+    { title: 'Stretching & Yoga Flow', level: 'Doux', body: 'Souplesse et récupération, pour relâcher le dos et les hanches.', image: '/landing/hero.jpg' },
+    { title: 'Boot Camp', level: 'Intense', body: 'Renforcement et cardio par intervalles, pour celles qui veulent transpirer.', image: '/landing/offer-v-ind.jpg' },
+  ],
+  liveRundown: {
+    kicker: 'Comment se passe un live',
+    title: 'Elle te voit, elle te corrige',
+    intro: 'Depuis chez toi, sur ordinateur ou téléphone : Alejandra te voit et te corrige en direct, comme en studio.',
+    steps: [
+      { title: 'Tu ouvres le lien 10 min avant', body: 'Depuis ton espace, sur ordinateur ou téléphone.' },
+      { title: 'Tu allumes ta caméra', body: 'Ton micro est coupé à l’entrée. Place ton écran à 2–3 m, à hauteur de hanches.' },
+      { title: 'Alejandra te corrige en direct', body: 'Par ton prénom. Et si tu rates le live, le replay arrive dans ton espace.' },
+    ],
+  },
+} as const;
+
 export const A_VALIDER_LOT4 = {
   flagOff: {
     fr: 'Les cartes cadeaux ne sont pas encore ouvertes.',

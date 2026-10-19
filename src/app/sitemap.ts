@@ -56,6 +56,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${APP_URL}/quiz`,
+      lastModified: HOME_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: `${APP_URL}/es/quiz`,
+      lastModified: HOME_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${APP_URL}/test-niveau`,
+      lastModified: HOME_LAST_MODIFIED,
+      changeFrequency: 'monthly',
+      priority: 0.75,
+    },
+    {
       url: `${APP_URL}/mentions-legales`,
       lastModified: LEGAL_LAST_MODIFIED,
       changeFrequency: 'monthly',

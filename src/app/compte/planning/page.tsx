@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
+import { PlanningV3 } from '@/components/Compte/PlanningV3';
 import { CompteDashboardBackLink } from '@/components/Compte/CompteDashboardBackLink';
 import { getClientLang } from '@/lib/compte/i18n';
 import { createClient } from '@/lib/supabase/server';
@@ -33,7 +33,7 @@ export default async function ComptePlanningPage() {
       </header>
 
       <section className="mt-8">
-        <SmartCalendar lang={lang} />
+        <PlanningV3 lang={lang} />
       </section>
     </main>
   );

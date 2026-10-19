@@ -1175,3 +1175,35 @@ revoke all on public.gift_cards from anon, authenticated;
 grant select, insert, update on public.gift_cards to service_role;
 ```
 
+## Lot 5 — Conversion et expérience
+
+Non appliqué.
+
+```sql
+create table if not exists public.client_followups (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id),
+  followed_at timestamptz not null default now(),
+  channel text not null check (channel in ('whatsapp','email')),
+  reason text,
+  note text,
+  author_id uuid references public.profiles(id)
+);
+alter table public.client_followups enable row level security;
+revoke all on public.client_followups from anon, authenticated;
+grant select, insert on public.client_followups to service_role;
+
+-- Noms boutique FR/ES éditables (sans changer le slug Printful)
+create table if not exists public.printful_product_names (
+  printful_product_id bigint primary key,
+  name_fr text,
+  name_es text,
+  slug text unique,
+  updated_at timestamptz not null default now()
+);
+alter table public.printful_product_names enable row level security;
+revoke all on public.printful_product_names from anon, authenticated;
+grant select, insert, update on public.printful_product_names to service_role;
+```
+
+

@@ -18,6 +18,17 @@ import { CATALOG_PROGRAMS } from '@/lib/programmes/catalogue';
 import { OffrirClient } from '@/components/Gifts/OffrirClient';
 import { ActivateGiftClient } from '@/components/Gifts/ActivateGiftClient';
 import { AdminGiftsManager } from '@/components/Gifts/AdminGiftsManager';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { HowItWorks } from '@/components/Marketing/HowItWorks';
+import { LandingFaq } from '@/components/Marketing/LandingFaq';
+import { PlanningV3 } from '@/components/Compte/PlanningV3';
+import { LiveHabillage } from '@/components/Live/LiveHabillage';
+import { PreviewTrialModal } from '@/components/dev/Lot5Previews';
+import { AdminClientsFollowup } from '@/components/Admin/AdminClientsFollowup';
+import { LesCoursExtras } from '@/components/Marketing/LesCoursExtras';
+import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
+import { SidebarTooltip } from '@/components/Compte/SidebarTooltip';
+import { CalendarDays, Users } from 'lucide-react';
 
 export type PreviewEntry = { slug: string; lot: string; title: string; render: () => ReactNode };
 
@@ -285,5 +296,125 @@ export const PREVIEWS: PreviewEntry[] = [
     lot: '4',
     title: 'Admin — cartes cadeaux (C05)',
     render: () => <AdminGiftsManager preview />,
+  },
+  {
+    slug: 'modale-essai',
+    lot: '5',
+    title: 'Modale essai (D01)',
+    render: () => (
+      <div className="min-h-screen bg-brand-beige">
+        <PublicSiteHeader lang="FR" />
+        <PreviewTrialModal />
+      </div>
+    ),
+  },
+  {
+    slug: 'planning-v3',
+    lot: '5',
+    title: 'Planning v3 (D04)',
+    render: () => (
+      <div className="luxury-shell min-h-screen p-6">
+        <PlanningV3
+          preview
+          compact={false}
+          programSessions={[
+            { id: 'p1', dayKey: new Date().toISOString().slice(0, 10), title: 'Les bases au sol', stepLabel: 'Ta séance 2', durationMin: 23, href: '#' },
+          ]}
+        />
+      </div>
+    ),
+  },
+  {
+    slug: 'live-habillage',
+    lot: '5',
+    title: 'Page du live — habillage (D03)',
+    render: () => (
+      <LiveHabillage
+        title="Barre/Pilates Flow"
+        languageLabel="en français"
+        startsAt={new Date(Date.now() + 14 * 60000).toISOString()}
+        endsAt={new Date(Date.now() + 55 * 60000).toISOString()}
+        backHref="/compte"
+        backLabel="Mon espace"
+        spotifyUrl="https://open.spotify.com"
+      >
+        <div className="relative mx-auto aspect-video w-full overflow-hidden rounded-2xl bg-black">
+          <p className="absolute inset-0 flex items-center justify-center text-white/70">Cadre Jitsi (fictif — aperçu)</p>
+        </div>
+      </LiveHabillage>
+    ),
+  },
+  {
+    slug: 'comment-ca-marche',
+    lot: '5',
+    title: 'Accueil — Comment ça marche + FAQ',
+    render: () => (
+      <div className="min-h-screen bg-brand-beige px-5 py-10">
+        <PublicSiteHeader lang="FR" />
+        <HowItWorks lang="FR" />
+        <LandingFaq lang="FR" />
+      </div>
+    ),
+  },
+  {
+    slug: 'suivi-clientes',
+    lot: '5',
+    title: 'Admin — suivi des clientes (D09)',
+    render: () => (
+      <div className="luxury-shell admin-area min-h-screen">
+        <AdminClientsFollowup preview />
+      </div>
+    ),
+  },
+  {
+    slug: 'les-cours',
+    lot: '5',
+    title: 'Les cours (D07)',
+    render: () => (
+      <div className="min-h-screen bg-brand-beige">
+        <PublicSiteHeader lang="FR" />
+        <div className="mx-auto max-w-6xl px-5 md:px-8">
+          <LesCoursExtras
+            lives={[
+              { id: '1', title: 'Pilates Mat', startsAt: new Date().toISOString(), language: 'es' },
+              { id: '2', title: 'Barre Pilates Flow', startsAt: new Date(Date.now() + 86400000 * 2).toISOString(), language: 'fr' },
+            ]}
+          />
+        </div>
+      </div>
+    ),
+  },
+  {
+    slug: 'nav-mobile',
+    lot: '5',
+    title: 'Navigation mobile (D06)',
+    render: () => (
+      <div className="relative mx-auto min-h-screen max-w-[390px] bg-brand-beige pb-32">
+        <CompteMobileBottomNav lang="fr" unreadNotifications={2} />
+        <p className="px-6 pt-8 text-sm text-luxury-muted">Aperçu barre haute + onglets (données fictives).</p>
+      </div>
+    ),
+  },
+  {
+    slug: 'info-bulles',
+    lot: '5',
+    title: 'Info-bulles menu (D10)',
+    render: () => (
+      <div className="flex min-h-screen items-center justify-center bg-brand-beige p-10">
+        <div className="flex flex-col gap-3 rounded-full bg-white/80 p-3">
+          <SidebarTooltip label="Planning">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-luxury-ink">
+              <CalendarDays size={22} />
+            </span>
+          </SidebarTooltip>
+          <SidebarTooltip label="Clientes">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-luxury-ink">
+              <Users size={22} />
+            </span>
+          </SidebarTooltip>
+        </div>
+        <p className="ml-8 max-w-xs text-sm text-luxury-muted">Survole une icône (150 ms) : l’étiquette apparaît à droite.</p>
+      </div>
+    ),
   },
 ];

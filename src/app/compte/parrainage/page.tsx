@@ -7,6 +7,7 @@ import {
   resolveReferrerReferralProgram,
   type ReferralProgramKind,
 } from '@/lib/referrals/referral-program';
+import { isOnsiteEnabled } from '@/lib/onsite/flag';
 import { countActiveQualifiedReferrals, REFERRAL_REWARD_THRESHOLD } from '@/lib/referrals/reward';
 
 const APP = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
@@ -29,7 +30,9 @@ export default async function CompteParrainagePage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  const program = resolveReferrerReferralProgram(profile ?? {});
+  const programRaw = resolveReferrerReferralProgram(profile ?? {});
+  const program: ReferralProgramKind =
+    !isOnsiteEnabled() && programRaw === 'presentiel' ? 'visio_collectif' : programRaw;
   const rewardEligible = isReferralRewardProgram(program);
   const programCopy = t.program[program];
 

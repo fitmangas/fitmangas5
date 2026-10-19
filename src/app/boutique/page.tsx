@@ -1,12 +1,13 @@
 import Link from 'next/link';
 
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { slugifyProductName } from '@/lib/marketing/public-nav';
 import { sortPrintfulProducts } from '@/lib/printful-product-order';
 import { getPrintfulProducts, mapProductImage } from '@/lib/printful';
 
 export const dynamic = 'force-dynamic';
 
 function formatPrice(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return 'Prix sur demande';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
@@ -19,9 +20,14 @@ export default async function BoutiquePage() {
     console.error('[boutique] Printful catalogue indisponible', e);
     catalogueUnavailable = true;
   }
-  const products = await sortPrintfulProducts(productsRaw);
+  const products = (await sortPrintfulProducts(productsRaw)).filter((product) => {
+    const price = Number((product as unknown as { retail_price?: string }).retail_price ?? 0);
+    return Number.isFinite(price) && price > 0;
+  });
 
   return (
+    <>
+    <PublicSiteHeader lang="FR" />
     <main className="mx-auto max-w-7xl px-6 pb-20 pt-10 md:px-10">
       <header className="mb-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">FitMangas Boutique</p>
@@ -65,7 +71,7 @@ export default async function BoutiquePage() {
                   <h2 className="line-clamp-2 text-lg font-semibold tracking-tight text-luxury-ink">{product.name}</h2>
                   <p className="text-sm font-medium text-luxury-muted">{formatPrice(price)}</p>
                   <Link
-                    href="/compte/boutique"
+                    href={`/boutique/${slugifyProductName(product.name, product.id)}`}
                     className="inline-flex items-center justify-center rounded-full border border-luxury-orange/35 bg-luxury-orange px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-95"
                   >
                     Voir le produit
@@ -77,5 +83,6 @@ export default async function BoutiquePage() {
         </section>
       )}
     </main>
+    </>
   );
 }

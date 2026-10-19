@@ -1,13 +1,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { SeoPillarPage } from '@/lib/seo-pillar-pages';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { ManageCookiesButton } from '@/components/Marketing/ManageCookiesButton';
+import { LesCoursExtras, type WeekLive } from '@/components/Marketing/LesCoursExtras';
+import { A_VALIDER_LOT1 } from '@/content/a-valider';
 
 type Props = {
   page: SeoPillarPage;
   relatedPages: SeoPillarPage[];
+  weekLives?: WeekLive[];
 };
 
-export function SeoPillarPageShell({ page, relatedPages }: Props) {
+export function SeoPillarPageShell({ page, relatedPages, weekLives = [] }: Props) {
   const heroImage =
     page.slug === 'pilates-debutant-maison'
       ? '/Photo Alejandra exercice avec anneau.JPG'
@@ -22,6 +27,8 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
         : '/espace cliente dashboard.jpg';
 
   return (
+    <>
+    <PublicSiteHeader lang="FR" />
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">
       <nav className="mb-8 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted">
         <Link href="/" className="hover:text-luxury-ink">
@@ -71,6 +78,8 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
           </div>
         </div>
       </header>
+
+      {page.slug === 'cours-pilates-visio' ? <LesCoursExtras lives={weekLives} /> : null}
 
       <section className="mt-8 grid gap-4 md:grid-cols-2">
         <div className="rounded-[1.75rem] border border-white/60 bg-white/55 p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
@@ -134,7 +143,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
       </section>
 
       <section className="mt-12 rounded-[2rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-6 shadow-[0_18px_42px_rgba(120,80,20,0.08)] md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Maillage interne</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Guides liés</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink">Guides liés pour progresser</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {relatedPages.map((related) => (
@@ -168,5 +177,17 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
         </div>
       </section>
     </main>
+    <footer className="border-t border-brand-ink/[0.06] bg-white/60">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8 text-[12px] text-brand-ink/55">
+        <span>© {new Date().getFullYear()} FitMangas</span>
+        <span className="flex flex-wrap gap-4">
+          <Link href="/terms">CGV</Link>
+          <Link href="/privacy">Confidentialité</Link>
+          <Link href="/mentions-legales">Mentions légales</Link>
+          <ManageCookiesButton label={A_VALIDER_LOT1.cookies.manage.fr} className="hover:text-brand-ink" />
+        </span>
+      </div>
+    </footer>
+    </>
   );
 }
