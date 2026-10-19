@@ -27,6 +27,12 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 2b (branche locale, pas de push)
+
+- Gabarit email v2 (drapeau off) : `wrapResendEmailV2`, A01–A06, Instagram `@fit.mangas`, désinscription signée.
+- Écrans A08/A09/A10 en aperçu `/dev/apercu` + pages réelles si `NEXT_PUBLIC_FEATURE_NOTIF_V2`. Cloche → page, plus de dropdown.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-2b.md`.
+
 ### 2026-10-19 — Chantier oct. lot 2a (branche locale `chantier-oct-2026`, pas de push)
 
 - Moteur notif v2 derrière `NEXT_PUBLIC_FEATURE_NOTIF_V2` (off) : destinataires visio = accès actuel + langue ; veille ≥18h locale ; 1 h = 0<min≤75 ; plus de missed visio.

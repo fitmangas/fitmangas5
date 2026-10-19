@@ -1,6 +1,10 @@
 import { formatEmailFirstName } from '@/lib/email/format-first-name';
 import { wrapResendEmail } from '@/lib/email/base-template';
+import { v2TemplateForEvent } from '@/lib/email/v2-templates';
 import { sendEmail } from '@/lib/email/send';
+import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { unsubscribeUrlForUser } from '@/lib/notifications/v2/unsubscribe';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEmailTemplate, renderTemplate } from './templates';
@@ -55,10 +59,20 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
       ? (userData.user.user_metadata as { first_name?: unknown }).first_name
       : undefined;
   const firstName = formatEmailFirstName(profile.first_name) || formatEmailFirstName(String(metaFirstName ?? ''));
-  const payload = { ...args.payload, firstName };
+  const payload: Record<string, unknown> = { ...args.payload, firstName };
   const template = getEmailTemplate(args.event_type);
+  const v2 = isNotifV2Enabled()
+    ? v2TemplateForEvent(args.event_type, {
+        locale,
+        firstName,
+        courseTitle: String(payload.courseTitle ?? payload.title ?? ''),
+        courseTime: String(payload.courseTime ?? ''),
+        joinUrl: String(payload.joinUrl ?? ''),
+        omitProgramme: !isProgrammesEnabled(),
+      })
+    : null;
   const rendered = template ? renderTemplate(template, locale, payload) : null;
-  const title = rendered?.subject ?? String(args.payload.title ?? 'FitMangas');
+  const title = v2?.subject ?? rendered?.subject ?? String(args.payload.title ?? 'FitMangas');
   const body = args.payload.body != null ? String(args.payload.body) : '';
   const innerHtml =
     rendered?.html ??
@@ -68,12 +82,23 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
     <p style="margin:16px 0 0;font-size:12px;color:#6B6560;">FitMangas · ${escapeHtml(args.locale)} · ${escapeHtml(args.event_type)}</p>
   `;
   const showPreferences = !template?.critical;
-  const html = wrapResendEmail({
-    innerHtml,
-    locale,
-    showPreferencesLink: showPreferences,
-  });
+  const unsub = v2 && !v2.transactional ? unsubscribeUrlForUser(args.toProfileId) : null;
+  const html =
+    v2?.html ??
+    wrapResendEmail({
+      innerHtml,
+      locale,
+      showPreferencesLink: showPreferences,
+      unsubscribeUrl: unsub,
+    });
 
-  const result = await sendEmail({ from, to, subject: title, html });
+  const headers =
+    unsub
+      ? {
+          'List-Unsubscribe': `<${unsub}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+  const result = await sendEmail({ from, to, subject: title, html, headers });
   if (!result.ok) throw new Error(`Envoi email échoué : ${result.error}`);
 }

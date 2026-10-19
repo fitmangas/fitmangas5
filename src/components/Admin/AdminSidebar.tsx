@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { Activity, BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -15,6 +16,9 @@ const links = [
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
   { href: '/admin/croissance', label: 'Croissance', icon: Target },
+  ...(typeof process !== 'undefined' && isNotifV2Enabled()
+    ? [{ href: '/admin/sante', label: 'Santé des envois', icon: Activity }]
+    : []),
 ];
 
 export function AdminSidebar() {

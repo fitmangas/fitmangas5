@@ -6,6 +6,10 @@ import { computeGamificationGrade } from '@/lib/gamification';
 import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
 
+import { Bell } from 'lucide-react';
+
+import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
+
 import { NotificationBell, type NotificationRow } from './NotificationBell';
 
 export async function CompteTopBar({ showNotifications = false }: { showNotifications?: boolean }) {
@@ -73,7 +77,19 @@ export async function CompteTopBar({ showNotifications = false }: { showNotifica
       </GlassCard>
 
       <GlassCard className="flex flex-wrap items-center justify-end gap-3 px-5 py-4 md:px-6">
-        {showNotifications ? <NotificationBell userId={user.id} items={(notifications ?? []) as NotificationRow[]} /> : null}
+        {showNotifications ? (
+          isNotifV2Enabled() ? (
+            <Link
+              href="/compte/notifications"
+              className="relative flex min-h-[44px] items-center gap-2 rounded-full border border-white/70 bg-white/45 px-3 py-2 text-luxury-ink"
+            >
+              <Bell size={18} aria-hidden />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">Notifications</span>
+            </Link>
+          ) : (
+            <NotificationBell userId={user.id} items={(notifications ?? []) as NotificationRow[]} />
+          )
+        ) : null}
         <Link href="/compte/profil" className="btn-luxury-ghost px-5 py-2.5 text-xs tracking-[0.14em]">
           Mon profil
         </Link>

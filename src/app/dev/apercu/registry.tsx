@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 
 import { AdminMfaClient } from '@/components/Admin/AdminMfaClient';
 import { ProfileBillingCard } from '@/components/Compte/ProfileBillingCard';
+import { AdminSanteV2 } from '@/components/Notifications/v2/AdminSanteV2';
+import { DEMO_NOTIF_ITEMS } from '@/components/Notifications/v2/demo-data';
+import { NotificationsCenterV2 } from '@/components/Notifications/v2/NotificationsCenterV2';
+import { PreferencesNotifV2 } from '@/components/Notifications/v2/PreferencesNotifV2';
 
 export type PreviewEntry = { slug: string; lot: string; title: string; render: () => ReactNode };
 
@@ -81,6 +85,45 @@ export const PREVIEWS: PreviewEntry[] = [
             ))}
           </ul>
         </div>
+      </div>
+    ),
+  },
+  {
+    slug: 'centre-notifications',
+    lot: '2b',
+    title: 'Centre de notifications (A08)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <NotificationsCenterV2 items={DEMO_NOTIF_ITEMS} unreadCount={2} nextLiveLabel="Demain 18:30 · Barre/Pilates Flow" />
+      </div>
+    ),
+  },
+  {
+    slug: 'preferences-notifications',
+    lot: '2b',
+    title: 'Préférences de notifications (A09)',
+    render: () => (
+      <div className="luxury-shell min-h-screen">
+        <PreferencesNotifV2 marketingOptIn={false} otherLanguage={false} />
+      </div>
+    ),
+  },
+  {
+    slug: 'admin-sante',
+    lot: '2b',
+    title: 'Admin — Santé des envois (A10)',
+    render: () => (
+      <div className="luxury-shell admin-area min-h-screen">
+        <AdminSanteV2
+          noLiveAlert
+          backlog={8850}
+          heartbeats={[
+            { job: 'course-reminders', last_run_at: 'il y a 3 min', late: false },
+            { job: 'social', last_run_at: 'jamais', late: true },
+          ]}
+          sent7d={{ email: 42, fail: 1, push: 8 }}
+          errors={['resend_batch_error (email masqué)']}
+        />
       </div>
     ),
   },
