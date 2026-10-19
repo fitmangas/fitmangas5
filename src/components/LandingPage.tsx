@@ -345,6 +345,11 @@ export function LandingPage({
             >
               {l.member}
             </button>
+            {process.env.NEXT_PUBLIC_FEATURE_GIFTS === '1' ? (
+              <a href="/offrir" className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 md:inline">
+                Offrir
+              </a>
+            ) : null}
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}

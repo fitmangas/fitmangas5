@@ -100,3 +100,14 @@ export const A_VALIDER_LOT3 = {
     es: 'La importación real (--apply) está reservada a Kevin después del GO escrito.',
   },
 } as const;
+
+export const A_VALIDER_LOT4 = {
+  flagOff: {
+    fr: 'Les cartes cadeaux ne sont pas encore ouvertes.',
+    es: 'Las tarjetas regalo aún no están abiertas.',
+  },
+  stripeTestOnly: {
+    fr: 'Paiement carte cadeau : Stripe test, ou production après GO.',
+    es: 'Pago de tarjeta regalo: Stripe test, o producción después del GO.',
+  },
+} as const;

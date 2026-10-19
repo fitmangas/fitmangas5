@@ -85,6 +85,7 @@ export const compteNavLabels: Record<
     notifications: string;
     selfKnowledge: string;
     programmes: string;
+    gifts: string;
   }
 > = {
   fr: {
@@ -99,6 +100,7 @@ export const compteNavLabels: Record<
     referral: 'Parrainage',
     notifications: 'Notifications',
     selfKnowledge: 'Connaissance de soi',
+    gifts: 'Offrir',
   },
   en: {
     dashboard: 'Dashboard',
@@ -112,6 +114,7 @@ export const compteNavLabels: Record<
     referral: 'Referrals',
     notifications: 'Notifications',
     selfKnowledge: 'Self-knowledge',
+    gifts: 'Gift',
   },
   es: {
     dashboard: 'Panel',
@@ -125,5 +128,6 @@ export const compteNavLabels: Record<
     referral: 'Referidos',
     notifications: 'Notificaciones',
     selfKnowledge: 'Autoconocimiento',
+    gifts: 'Regalar',
   },
 };

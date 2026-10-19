@@ -9,6 +9,7 @@ import { Bell, BookOpen, Brain, CalendarDays, Gift, Route, ShoppingBag, UserRoun
 import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { isGiftsEnabled } from '@/lib/gifts/flag';
 
 type NavKey = Exclude<keyof (typeof compteNavLabels)['fr'], 'dashboard'>;
 
@@ -21,6 +22,7 @@ const links: Array<{ href: string; key: NavKey; icon: typeof CalendarDays }> = [
   { href: '/compte/connaissance-de-soi', key: 'selfKnowledge', icon: Brain },
   { href: '/compte/replays', key: 'videos', icon: Video },
   { href: '/compte/boutique', key: 'shop', icon: ShoppingBag },
+  ...(isGiftsEnabled() ? [{ href: '/offrir', key: 'gifts' as const, icon: Gift }] : []),
   { href: '/compte/notifications', key: 'notifications', icon: Bell },
   { href: '/compte/parrainage', key: 'referral', icon: Gift },
   { href: '/compte/profil', key: 'profile', icon: UserRound },

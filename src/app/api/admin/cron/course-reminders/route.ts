@@ -26,6 +26,14 @@ async function handle(request: Request) {
     }
 
     const admin = createAdminClient();
+    let gifts: unknown = { skipped: true };
+    try {
+      const { processScheduledGiftEmails } = await import('@/lib/gifts/fulfill');
+      gifts = await processScheduledGiftEmails(admin);
+    } catch (e) {
+      console.error('[course reminders cron] gifts', e);
+      gifts = { error: e instanceof Error ? e.message : 'gifts' };
+    }
     const result = await runCourseCycles(admin);
     try {
       const { data } = await admin.from('cron_heartbeats').select('job, last_run_at').eq('job', 'course-reminders').maybeSingle();
@@ -34,7 +42,7 @@ async function handle(request: Request) {
     } catch (e) {
       console.error('[course reminders cron] heartbeat', e);
     }
-    return NextResponse.json({ ...result, social });
+    return NextResponse.json({ ...result, social, gifts });
   } catch (error) {
     console.error('[course reminders cron]', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

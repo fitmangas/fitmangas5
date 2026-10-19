@@ -199,6 +199,12 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === 'gift') {
+          const { fulfillGiftCheckout } = await import('@/lib/gifts/fulfill');
+          const gift = await fulfillGiftCheckout(admin, session);
+          console.info('[stripe webhook] gift checkout', { sessionId: session.id, gift });
+          break;
+        }
         const courseId = session.metadata?.course_id ?? null;
         const customerId = await resolveStripeCustomerIdFromSession(stripe, session);
         const customerEmail = session.customer_email ?? session.customer_details?.email ?? null;

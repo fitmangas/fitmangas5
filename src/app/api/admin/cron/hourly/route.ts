@@ -25,6 +25,14 @@ async function handle(request: Request) {
   }
 
   try {
+    const { sendGiftExpiryReminders } = await import('@/lib/gifts/reminders');
+    results.giftsExpiry = await sendGiftExpiryReminders(admin);
+  } catch (e) {
+    console.error('[cron/hourly] gifts expiry', e);
+    results.giftsExpiry = { error: e instanceof Error ? e.message : 'gifts' };
+  }
+
+  try {
     results.programSessions = await enqueueProgramSessionReminders(admin);
   } catch (e) {
     console.error('[cron/hourly] program sessions', e);

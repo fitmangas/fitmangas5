@@ -75,9 +75,12 @@ L’abonnement se résilie **en ligne**, depuis l’espace cliente (Profil → �
 
 ## 8. Cartes cadeaux
 
+- Prix (paiement unique, lus depuis Stripe) : 1 mois 39 € · 3 mois 109 € · 6 mois 195 € · 12 mois 349 €.
 - Validité : **12 mois après l’achat** pour activer la carte. Les mois offerts commencent **à l’activation**.
-- L’acheteuse peut programmer l’envoi au plus tard 6 mois après l’achat.
-- Une carte s’active une seule fois, avec son code, depuis la page « Activer ma carte ».
+- L’acheteuse peut programmer l’envoi au plus tard 6 mois après l’achat (heure dans son fuseau Paris ou Mexico).
+- Une carte s’active une seule fois, avec son code, depuis `/offrir/activer`, sans carte bancaire.
+- L’email de la destinataire n’est jamais utilisé en marketing.
+- Une cliente déjà abonnée reçoit un crédit sur ses prochains prélèvements ; en essai, la fin d’essai est prolongée de N mois.
 - Une carte non activée au bout de 12 mois expire. `[À valider : remboursement ou non d’une carte expirée non activée.]`
 
 ## 9. Déroulement des cours en visio

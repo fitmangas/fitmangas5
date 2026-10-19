@@ -4,9 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { Activity, BookOpen, Clapperboard, Film, Inbox, Route, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { Activity, BookOpen, Clapperboard, Film, Gift, Inbox, Route, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
 import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { isGiftsEnabled } from '@/lib/gifts/flag';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
@@ -19,6 +20,9 @@ const links = [
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
+  ...(typeof process !== 'undefined' && isGiftsEnabled()
+    ? [{ href: '/admin/cartes-cadeaux', label: 'Cartes cadeaux', icon: Gift }]
+    : []),
   { href: '/admin/croissance', label: 'Croissance', icon: Target },
   ...(typeof process !== 'undefined' && isNotifV2Enabled()
     ? [{ href: '/admin/sante', label: 'Santé des envois', icon: Activity }]

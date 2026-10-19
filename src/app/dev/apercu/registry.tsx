@@ -15,6 +15,9 @@ import { ProgramDone } from '@/components/Programmes/ProgramDone';
 import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
 import { LevelTestClient } from '@/components/Programmes/LevelTestClient';
 import { CATALOG_PROGRAMS } from '@/lib/programmes/catalogue';
+import { OffrirClient } from '@/components/Gifts/OffrirClient';
+import { ActivateGiftClient } from '@/components/Gifts/ActivateGiftClient';
+import { AdminGiftsManager } from '@/components/Gifts/AdminGiftsManager';
 
 export type PreviewEntry = { slug: string; lot: string; title: string; render: () => ReactNode };
 
@@ -253,5 +256,34 @@ export const PREVIEWS: PreviewEntry[] = [
         <LevelTestClient />
       </div>
     ),
+  },
+  {
+    slug: 'offrir',
+    lot: '4',
+    title: 'Offrir (C01)',
+    render: () => (
+      <OffrirClient
+        preview
+        emailDeliveryOn={false}
+        prices={[
+          { months: 1, priceId: null, amountCents: 3900, currency: 'eur', perMonthCents: 3900, badge: null },
+          { months: 3, priceId: null, amountCents: 10900, currency: 'eur', perMonthCents: 3633, badge: null },
+          { months: 6, priceId: null, amountCents: 19500, currency: 'eur', perMonthCents: 3250, badge: '1 mois offert' },
+          { months: 12, priceId: null, amountCents: 34900, currency: 'eur', perMonthCents: 2908, badge: '3 mois offerts' },
+        ]}
+      />
+    ),
+  },
+  {
+    slug: 'offrir-activer',
+    lot: '4',
+    title: 'Activer une carte cadeau (C04)',
+    render: () => <ActivateGiftClient preview />,
+  },
+  {
+    slug: 'admin-cartes-cadeaux',
+    lot: '4',
+    title: 'Admin — cartes cadeaux (C05)',
+    render: () => <AdminGiftsManager preview />,
   },
 ];
