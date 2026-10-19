@@ -1,3 +1,4 @@
+import { isNotifV2Enabled } from './v2/flag';
 import type { NotificationCategory } from './types';
 
 /** Maps event_type prefixes to preference buckets (prompt maître §8.2). */
@@ -48,6 +49,10 @@ export function isCriticalEventType(eventType: string): boolean {
   }
   if (/^course\.[^.]+\.cancelled/.test(eventType)) {
     return true;
+  }
+  if (isNotifV2Enabled()) {
+    if (eventType.includes('.reminder_J-1') || eventType.includes('.reminder_H-1')) return true;
+    if (eventType.includes('.schedule_changed')) return true;
   }
   return false;
 }

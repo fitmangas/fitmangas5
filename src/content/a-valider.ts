@@ -26,3 +26,54 @@ export const A_VALIDER_LOT1 = {
     limited: { fr: 'Trop de tentatives. Réessaie dans un moment.', es: 'Demasiados intentos. Inténtalo de nuevo en un rato.' },
   },
 } as const;
+
+export const A_VALIDER_LOT2 = {
+  liveJoinHint: {
+    fr: 'Le lien est déjà ouvert, connecte-toi 10 minutes avant.',
+    es: 'El enlace ya está abierto, conéctate 10 minutos antes.',
+  },
+  liveEveSubject: {
+    fr: (time: string, title: string) => `Demain ${time} : ${title} avec Alejandra`,
+    es: (time: string, title: string) => `Mañana ${time}: ${title} con Alejandra`,
+  },
+  liveEvePreview: {
+    fr: 'Ton tapis, une bouteille d’eau, et c’est parti.',
+    es: 'Tu tapete, una botella de agua, y listo.',
+  },
+  liveOneHourSubject: {
+    fr: (title: string) => `Dans 1 heure : ${title}`,
+    es: (title: string) => `En 1 hora: ${title}`,
+  },
+  liveOneHourSoonSubject: {
+    fr: (mins: number, title: string) => `Dans ${mins} min : ${title}`,
+    es: (mins: number, title: string) => `En ${mins} min: ${title}`,
+  },
+  liveCancelledSubject: {
+    fr: (when: string) => `Le live de ${when} est annulé`,
+    es: (when: string) => `El live de ${when} está cancelado`,
+  },
+  liveCancelledLastMinute: {
+    fr: 'Annulation de dernière minute',
+    es: 'Cancelación de último minuto',
+  },
+  liveScheduleChanged: {
+    fr: 'L’horaire du live a changé',
+    es: 'El horario del live cambió',
+  },
+  replayMissingAdmin: {
+    fr: (title: string) => `Replay manquant : ${title}`,
+    es: (title: string) => `Replay faltante: ${title}`,
+  },
+  cronLag: {
+    fr: (job: string) => `Tâche planifiée en retard : ${job}`,
+    es: (job: string) => `Tarea programada retrasada: ${job}`,
+  },
+  repeatWeekly: {
+    fr: 'Répéter chaque semaine jusqu’au',
+    es: 'Repetir cada semana hasta el',
+  },
+  liveStyleHint: {
+    fr: 'Style : Pilates, Barre, Fit-Dance, Boot Camp, Stretching, Booty — le type de cours ci-dessus sert de style.',
+    es: 'Estilo: Pilates, Barre, Fit-Dance, Boot Camp, Stretching, Booty — el tipo de curso de arriba sirve de estilo.',
+  },
+} as const;

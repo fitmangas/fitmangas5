@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 2a (branche locale `chantier-oct-2026`, pas de push)
+
+- Moteur notif v2 derrière `NEXT_PUBLIC_FEATURE_NOTIF_V2` (off) : destinataires visio = accès actuel + langue ; veille ≥18h locale ; 1 h = 0<min≤75 ; plus de missed visio.
+- Digest retiré de `daily-jobs` ; cutoff + flag bloquent tout flush. Routes `/api/admin/cron/social` et `/hourly` (GET+POST).
+- Lives récurrents admin (drapeau on). SQL Lot 2 dans `PROPOSITIONS_MIGRATIONS.md` (non appliqué).
+- Visites live : 0 ligne (RPC `full` + erreurs avalées). Recorder non modifié.
+- Fichiers : `src/lib/notifications/v2/*`, `social-publish-due.ts`, `AdminCoursesManager.tsx`, rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-2a.md`.
+
 ### 2026-10-13 — Audit TikTok Content Posting soumis + UX Direct Post
 
 - Formulaire Apply Direct Post **soumis** (réponse TikTok annoncée 2–4 semaines). App ID `7685356596200900629`.

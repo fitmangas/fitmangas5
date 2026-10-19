@@ -757,3 +757,195 @@ on conflict (id) do nothing;
 -- update storage.buckets set allowed_mime_types = array['image/jpeg','image/png','image/webp','video/mp4','image/gif']
 -- where id = 'avatars';
 ```
+
+## Lot 2 — Notifications (moteur)
+
+> Rien de ce bloc n’a été exécuté. `NOTIF_V2_CUTOFF` à poser au moment du GO (horodatage du déploiement). Cron-job.org appelle encore `course-reminders` (GET) : le couper **le jour de la bascule** pg_cron, sinon double déclencheur.
+
+### L2-a. Préférences (défauts SPEC §3.8)
+
+```sql
+alter table public.notification_preferences
+  add column if not exists live_eve_email boolean not null default true,
+  add column if not exists live_eve_inapp boolean not null default true,
+  add column if not exists live_eve_push boolean not null default false,
+  add column if not exists live_hour_email boolean not null default true,
+  add column if not exists live_hour_inapp boolean not null default true,
+  add column if not exists live_hour_push boolean not null default false,
+  add column if not exists live_other_language boolean not null default false,
+  add column if not exists program_session_email boolean not null default true,
+  add column if not exists program_session_inapp boolean not null default true,
+  add column if not exists program_session_push boolean not null default false,
+  add column if not exists program_nudge_email boolean not null default true,
+  add column if not exists program_nudge_inapp boolean not null default true,
+  add column if not exists content_replay_email boolean not null default true,
+  add column if not exists content_replay_inapp boolean not null default true,
+  add column if not exists content_replay_push boolean not null default false,
+  add column if not exists blog_email boolean not null default false,
+  add column if not exists blog_inapp boolean not null default true,
+  add column if not exists blog_push boolean not null default false,
+  add column if not exists weekly_digest_email boolean not null default true,
+  add column if not exists silence_mode_hours boolean not null default true;
+
+-- miroir aussi sur le profil (filtre destinataires lives)
+alter table public.profiles
+  add column if not exists live_other_language boolean not null default false;
+```
+
+`Offres et nouveautés` = colonne existante `profiles.marketing_email_opt_in` (défaut false, lot 1). Ne pas dupliquer.
+
+### L2-b. `user_notifications` (centre A08)
+
+```sql
+alter table public.user_notifications
+  add column if not exists category text,
+  add column if not exists action_url text,
+  add column if not exists action_label text,
+  add column if not exists meta jsonb not null default '{}'::jsonb,
+  add column if not exists group_key text;
+
+create unique index if not exists user_notifications_group_key_uniq
+  on public.user_notifications (user_id, group_key)
+  where group_key is not null;
+```
+
+### L2-c. Heartbeats + anti-doublon
+
+`notification_log.idempotency_key` est **déjà unique**. Rien à ajouter.
+
+```sql
+create table if not exists public.cron_heartbeats (
+  job text primary key,
+  last_run_at timestamptz not null default now(),
+  meta jsonb not null default '{}'::jsonb
+);
+alter table public.cron_heartbeats enable row level security;
+revoke all on public.cron_heartbeats from anon, authenticated;
+grant all on public.cron_heartbeats to service_role;
+create policy cron_heartbeats_admin_select on public.cron_heartbeats
+  for select to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+grant select on public.cron_heartbeats to authenticated;
+```
+
+### L2-d. Style de live (SPEC §3.10)
+
+Le type de cours admin sert déjà de style (titre). Colonne additive optionnelle :
+
+```sql
+alter table public.courses
+  add column if not exists live_style text;
+```
+
+Le code du lot 2a **n’écrit pas** cette colonne tant qu’elle n’existe pas.
+
+### L2-e. Cutoff file digest
+
+```sql
+-- À renseigner au GO (horodatage UTC du déploiement notif v2), ex. :
+-- insert into public.admin_settings (key, value) values ('NOTIF_V2_CUTOFF', '"2026-10-20T00:00:00.000Z"')
+-- on conflict (key) do update set value = excluded.value;
+-- Variable d’environnement équivalente : NOTIF_V2_CUTOFF (lue par le code).
+```
+
+Comptage backlog (lecture, `/admin/sante` au lot 2b) :
+
+```sql
+select digest_bucket,
+       coalesce(payload->>'event_type', '—') as event_type,
+       count(*) as n
+from public.notification_digest_queue
+where processed_at is null
+group by 1, 2
+order by n desc;
+```
+
+Archivage **sans envoi** (GO écrit obligatoire) :
+
+```sql
+update public.notification_digest_queue
+set processed_at = now(),
+    payload = coalesce(payload, '{}'::jsonb) || jsonb_build_object('archived_reason', 'archived_backlog')
+where processed_at is null
+  and created_at < :cutoff_timestamptz;
+```
+
+### L2-f. Supabase Cron (pg_cron + pg_net)
+
+Prérequis : extension `pg_cron` + `pg_net` ; secret `CRON_SECRET` dans **Vault** (nom `cron_secret`). Couper cron-job.org le jour J. Routes : GET **et** POST exportées.
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+-- Rappels lives (toutes les 10 min)
+select cron.schedule(
+  'fitmangas-course-reminders',
+  '*/10 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://fitmangas.com/api/admin/cron/course-reminders',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+  $$
+);
+
+-- Publication sociale (toutes les 10 min) — séparée
+select cron.schedule(
+  'fitmangas-social',
+  '*/10 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://fitmangas.com/api/admin/cron/social',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+  $$
+);
+
+-- Récapitulatifs (toutes les heures à :05)
+select cron.schedule(
+  'fitmangas-hourly',
+  '5 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://fitmangas.com/api/admin/cron/hourly',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+  $$
+);
+```
+
+### L2-g. Visites de live — diagnostic (aucune écriture)
+
+Cause probable (voir rapport lot-2a) : RPC `record_live_course_visit` exige `auth.uid()`, cours publié, et `course_access_level = full` ; les erreurs sont avalées côté client. Table sans policy SELECT cliente. Correctif proposé **hors zone interdite** si Kevin le décide : journaliser l’échec RPC (hors `LiveVisitRecorder`) ou assouplir `course_access_level` — **non appliqué**.
+
+```sql
+-- Lecture seule
+select count(*) as n_30j
+from public.live_course_daily_visits
+where visit_date >= current_date - 30;
+
+select course_id, count(*) as n
+from public.live_course_daily_visits
+where visit_date >= current_date - 30
+group by 1
+order by n desc
+limit 20;
+```
+
+Présence = `created_at` (pas `visit_date`) entre 15 min avant `courses.starts_at` et `courses.ends_at`, calculée à la lecture.

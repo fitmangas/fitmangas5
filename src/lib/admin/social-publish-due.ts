@@ -59,7 +59,7 @@ export async function processDueSocialPostsInternal() {
 
   const duePosts = board.posts
     .filter((post) => {
-      if (post.status !== 'scheduled' || !post.plannedAt) return false;
+      if ((post.status !== 'scheduled' && post.status !== 'publishing') || !post.plannedAt) return false;
       if (post.network !== 'instagram') return false;
       // Reprise conteneur même si l’heure est passée ; sinon attendre plannedAt
       if (post.igContainerId) return true;
@@ -124,6 +124,19 @@ export async function processDueSocialPostsInternal() {
     if (Date.now() - startedAt > TIME_BUDGET_MS) {
       console.warn('[processDueSocialPostsAction] time budget reached, deferring remaining posts');
       break;
+    }
+
+    // Verrou atomique (équivalent SQL scheduled → publishing) : on ne publie
+    // que si le statut en mémoire est encore scheduled. Un second cron voit publishing et reprend.
+    if (post.status === 'scheduled') {
+      const claimed = nextPosts.find((item) => item.id === post.id && item.status === 'scheduled');
+      if (!claimed) continue;
+      nextPosts = nextPosts.map((item) =>
+        item.id === post.id && item.status === 'scheduled'
+          ? { ...item, status: 'publishing' as const, updatedAt: new Date().toISOString() }
+          : item,
+      );
+      await saveSocialCommsBoard({ ...board, posts: nextPosts });
     }
 
     const attemptAt = new Date().toISOString();
@@ -255,6 +268,7 @@ export async function processDueSocialPostsInternal() {
         item.id === post.id
           ? {
               ...item,
+              status: 'scheduled',
               publishError: message,
               publishAttemptAt: attemptAt,
               updatedAt: attemptAt,

@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, Play, Pencil, Trash2, UserCheck, X } from 'lucide-react';
 import { createCourseAction, deleteCourseAction, updateCourseAction } from '@/app/admin/courses/actions';
+import { weeklyOccurrences } from '@/lib/courses/recurring';
+import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
+import { A_VALIDER_LOT2 } from '@/content/a-valider';
 
 import { CourseDatetimeFields } from '@/components/Admin/CourseDatetimeFields';
 import { CourseReplayLinkForm } from '@/components/Admin/CourseReplayLinkForm';
@@ -85,12 +88,18 @@ type FormState = {
   spotifyPlaylistUrl: string;
   courseLanguage: '' | 'fr' | 'es';
   courseSkillLevel: CourseSkillLevel;
+  repeatUntil: string;
 };
 
 type CourseTypeOption = { value: string; label: string; custom?: boolean };
 
 const COURSE_TYPE_OPTIONS: CourseTypeOption[] = [
   { value: 'pilates-mat', label: 'Pilates Mat' },
+  { value: 'barre', label: 'Barre' },
+  { value: 'fit-dance', label: 'Fit-Dance' },
+  { value: 'boot-camp', label: 'Boot Camp' },
+  { value: 'stretching', label: 'Stretching' },
+  { value: 'booty', label: 'Booty' },
   { value: 'yoga-flow', label: 'Yoga Flow' },
   { value: 'postural', label: 'Postural' },
   { value: 'renfo-core', label: 'Renfo Core' },
@@ -344,6 +353,7 @@ function emptyCreateForm(): FormState {
     spotifyPlaylistUrl: '',
     courseLanguage: 'fr',
     courseSkillLevel: 'all_levels',
+    repeatUntil: '',
   };
 }
 
@@ -368,6 +378,7 @@ function courseToFormState(c: AdminCourseRow, courseTypeOptions: CourseTypeOptio
     spotifyPlaylistUrl: c.spotify_playlist_url ?? '',
     courseLanguage: isCourseLanguage(c.course_language) ? c.course_language : '',
     courseSkillLevel: normalizeCourseSkillLevel(c.course_skill_level),
+    repeatUntil: '',
   };
 }
 
@@ -403,6 +414,7 @@ function formToPayload(f: FormState, courseTypeOptions: CourseTypeOption[]) {
     timezone: f.timeZone,
     courseLanguage: f.courseLanguage || null,
     courseSkillLevel: f.courseSkillLevel,
+    repeatUntil: f.repeatUntil ? new Date(`${f.repeatUntil}T23:59:00`).toISOString() : null,
   };
 }
 
@@ -794,6 +806,51 @@ export function AdminCoursesManager({ courses, recordingsByCourseId = {} }: Prop
             }
             onEndsLocalChange={(endsLocal) => setCreateForm((s) => ({ ...s, endsLocal }))}
           />
+          {isNotifV2Enabled() && createForm.courseFormat === 'online' ? (
+            <div className="rounded-2xl border border-[#D9C9B4]/80 bg-white/50 p-4">
+              <label className="flex items-center gap-3 text-sm text-luxury-ink">
+                <input
+                  type="checkbox"
+                  checked={Boolean(createForm.repeatUntil)}
+                  onChange={(e) =>
+                    setCreateForm((s) => ({
+                      ...s,
+                      repeatUntil: e.target.checked
+                        ? s.repeatUntil || s.startsLocal.slice(0, 10)
+                        : '',
+                    }))
+                  }
+                />
+                {A_VALIDER_LOT2.repeatWeekly.fr}
+              </label>
+              {createForm.repeatUntil ? (
+                <>
+                  <input
+                    type="date"
+                    value={createForm.repeatUntil.slice(0, 10)}
+                    onChange={(e) => setCreateForm((s) => ({ ...s, repeatUntil: e.target.value }))}
+                    className={`${REFINED_SELECT} mt-2 max-w-xs`}
+                  />
+                  <p className="mt-2 text-[11px] text-luxury-muted">{A_VALIDER_LOT2.liveStyleHint.fr}</p>
+                  <ul className="mt-2 list-disc pl-5 text-xs text-luxury-ink">
+                    {isCompleteCourseDatetimeLocal(createForm.startsLocal) &&
+                    isCompleteCourseDatetimeLocal(createForm.endsLocal)
+                      ? weeklyOccurrences(
+                          isoFromCourseDatetimeLocal(createForm.startsLocal, createForm.timeZone),
+                          isoFromCourseDatetimeLocal(createForm.endsLocal, createForm.timeZone),
+                          createForm.repeatUntil
+                            ? new Date(`${createForm.repeatUntil}T23:59:00`).toISOString()
+                            : null,
+                          true,
+                        ).map((occ) => (
+                          <li key={occ.starts}>{formatCourseInstant(occ.starts, createForm.timeZone)}</li>
+                        ))
+                      : null}
+                  </ul>
+                </>
+              ) : null}
+            </div>
+          ) : null}
           {createForm.courseFormat === 'onsite' ? (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-soft">

@@ -7,6 +7,9 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { normalizeCourseSkillLevel, type CourseSkillLevel } from '@/lib/course-skill-level';
 import { dispatchCourseCancelledByCoach } from '@/lib/notifications/phase2';
+import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
+import { weeklyOccurrences } from '@/lib/courses/recurring';
+import { dispatchVisioScheduleChangedV2 } from '@/lib/notifications/v2/reminders';
 
 function slugFromTitle(title: string) {
   const base = title
@@ -39,6 +42,7 @@ const courseUpsertSchema = z
     timezone: z.string().max(64).default('Europe/Paris'),
     courseLanguage: z.union([z.enum(['fr', 'es']), z.literal(''), z.null()]).optional(),
     courseSkillLevel: z.enum(['all_levels', 'beginner', 'intermediate', 'advanced']).optional(),
+    repeatUntil: z.string().nullable().optional(),
   })
   .superRefine((data, ctx) => {
     const start = new Date(data.startsAt);
@@ -87,14 +91,15 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
     const d = parsed.data;
     const admin = createAdminClient();
 
-    const { error } = await admin.from('courses').insert({
-      slug: slugFromTitle(d.title),
+    const occurrences = weeklyOccurrences(d.startsAt, d.endsAt, d.repeatUntil, isNotifV2Enabled());
+    const rows = occurrences.map((occ, i) => ({
+      slug: slugFromTitle(d.title) + (i > 0 ? `-${i + 1}` : ''),
       title: d.title,
       description: d.description ?? null,
       course_format: d.courseFormat,
       course_category: d.courseCategory,
-      starts_at: new Date(d.startsAt).toISOString(),
-      ends_at: new Date(d.endsAt).toISOString(),
+      starts_at: occ.starts,
+      ends_at: occ.ends,
       timezone: d.timezone,
       capacity_max: d.capacityMax ?? null,
       location: d.location?.trim() || null,
@@ -107,7 +112,9 @@ export async function createCourseAction(raw: unknown): Promise<ActionResult> {
       course_skill_level: normalizeCourseSkillLevel(d.courseSkillLevel ?? 'all_levels') as CourseSkillLevel,
       created_by: user.id,
       auto_add_for_monthly: d.courseFormat === 'online',
-    });
+    }));
+
+    const { error } = await admin.from('courses').insert(rows);
 
     if (error) {
       console.error('[createCourse]', error);
@@ -140,7 +147,7 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
     const admin = createAdminClient();
     const { data: before } = await admin
       .from('courses')
-      .select('is_published')
+      .select('is_published, starts_at, course_format, course_language, title, ends_at')
       .eq('id', idParse.data)
       .maybeSingle();
 
@@ -174,6 +181,20 @@ export async function updateCourseAction(courseId: string, raw: unknown): Promis
 
     if (before?.is_published === true && d.isPublished === false) {
       await dispatchCourseCancelledByCoach(admin, idParse.data);
+    } else if (
+      isNotifV2Enabled() &&
+      before &&
+      String((before as { course_format?: string }).course_format) === 'online' &&
+      String((before as { starts_at?: string }).starts_at) !== new Date(d.startsAt).toISOString()
+    ) {
+      await dispatchVisioScheduleChangedV2(admin, {
+        id: idParse.data,
+        title: d.title,
+        starts_at: new Date(d.startsAt).toISOString(),
+        ends_at: new Date(d.endsAt).toISOString(),
+        course_format: 'online',
+        course_language: normalizeCourseLanguage(d.courseLanguage ?? null),
+      }, String((before as { starts_at?: string }).starts_at));
     }
 
     revalidatePath('/admin/courses');

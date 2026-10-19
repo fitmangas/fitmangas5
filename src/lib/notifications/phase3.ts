@@ -8,6 +8,7 @@ import { dispatch } from './dispatcher';
 import { mergePrefs } from './defaults';
 import { calendarDayKeyInTimeZone, formatInUserTimezone } from './timezone';
 import { renderTemplate, getEmailTemplate } from './templates';
+import { filterDigestRowsForFlush } from './v2/cutoff';
 
 type DispatchFn = typeof dispatch;
 
@@ -356,6 +357,10 @@ function formatDigestSummaryLines(
 
 export async function processDigestQueue(client: SupabaseClient, deps: Phase3Deps = {}) {
   const now = deps.now ?? new Date();
+  const gate = filterDigestRowsForFlush([{ id: 'probe', created_at: now.toISOString() }]);
+  if (gate.skippedFlagOff) {
+    return { sent: 0, skipped: 'flag_off' as const };
+  }
 
   // Destinataires = members (pas seulement les lignes prefs existantes).
   const { data: members, error: membersError } = await client.from('profiles').select('id, display_timezone, preferred_locale').eq('role', 'member');
@@ -390,10 +395,13 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
 
     const { data: queued } = await client
       .from('notification_digest_queue')
-      .select('id, digest_bucket, payload')
+      .select('id, digest_bucket, payload, created_at')
       .eq('user_id', member.id)
       .is('processed_at', null);
-    const rows = (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
+    const filtered = filterDigestRowsForFlush(
+      (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown>; created_at?: string }[],
+    );
+    const rows = filtered.allowed as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
 
     const locale: DigestLocale = member.preferred_locale === 'es' ? 'es' : 'fr';
     const summary = await buildDigestSummaryForUser(client, member.id, tz, locale, now);
@@ -448,10 +456,10 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
 }
 
 export async function runPhase3DailyJobs(client: SupabaseClient, deps: Phase3Deps = {}) {
-  const [community, weMissYou, digestResult] = await Promise.all([
+  const [community, weMissYou] = await Promise.all([
     runCommunityCycles(client, deps),
     runWeMissYouCycles(client, deps),
-    processDigestQueue(client, deps),
   ]);
-  return { community, weMissYou, digest: digestResult };
+  // Flush digest retiré de daily-jobs (SPEC §3.7) : horaire /api/admin/cron/hourly + cutoff.
+  return { community, weMissYou, digest: { sent: 0, skipped: 'moved_to_hourly' as const } };
 }
