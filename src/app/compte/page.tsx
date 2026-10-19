@@ -397,8 +397,8 @@ export default async function ComptePage({
             <div className="max-md:mb-6">
               <div className="flex items-start justify-between gap-2 md:gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
-                  <p className="mt-1 text-luxury-muted max-md:whitespace-nowrap max-md:pb-3 max-md:text-[9px] max-md:tracking-[0.1em] md:mt-2 md:pb-0 md:text-xs">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
+                  <p className="mt-1 text-luxury-muted max-md:whitespace-nowrap max-md:pb-3 max-md:text-xs max-md:tracking-[0.1em] md:mt-2 md:pb-0 md:text-xs">
                     {t.coursesMonth}
                   </p>
                 </div>
@@ -425,9 +425,9 @@ export default async function ComptePage({
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.myLibrary} />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
                 <div className="mt-4 grid grid-cols-2 gap-3 md:mt-8 md:flex md:flex-col">
-                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-xs text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {replayStatIsCountFallback ? replayCount : `${replayHoursRounded}h`}
                     </span>
@@ -441,7 +441,7 @@ export default async function ComptePage({
                         : t.replayHoursAvailable}
                     </span>
                   </p>
-                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-xs text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {vimeoHoursRounded}h
                     </span>
@@ -459,7 +459,7 @@ export default async function ComptePage({
               </span>
             ) : null}
             <div className="mt-auto pt-4 md:mt-5 md:pt-0">
-              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
+              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 flex min-h-[40px] w-full items-center justify-center px-3 text-center text-xs tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-xs">
                 {t.myLibrary}
               </Link>
             </div>
@@ -476,8 +476,8 @@ export default async function ComptePage({
           <GlassCard className="relative order-2 flex h-full flex-col p-3 md:order-none md:p-6">
             <div className="flex items-start justify-between gap-2 md:gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
-                <p className="mt-2 flex flex-col items-center gap-1 text-center text-[11px] text-luxury-muted md:mt-4 md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
+                <p className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-luxury-muted md:mt-4 md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                   <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-3xl">
                     {publishedBlogCount ?? 0}
                   </span>
@@ -495,7 +495,7 @@ export default async function ComptePage({
               </span>
             ) : null}
             <div className="mt-auto pt-2 md:mt-5 md:pt-0">
-              <Link href="/compte/blog" className="btn-luxury-ghost flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
+              <Link href="/compte/blog" className="btn-luxury-ghost flex min-h-[40px] w-full items-center justify-center px-3 text-center text-xs tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-xs">
                 {t.openBlog}
               </Link>
             </div>

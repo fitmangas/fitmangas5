@@ -246,7 +246,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
             <div className="shrink-0 border-b border-brand-ink/[0.06] px-6 pb-5 pt-6 sm:px-8 sm:pt-8">
               <div className="flex items-start justify-between gap-4 pr-8">
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">
                     {effectiveSegment === 'VISIO'
                       ? lang === 'FR'
                         ? 'Visio'
@@ -268,7 +268,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                 </button>
               </div>
               <div className="mt-4">
-                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-brand-ink/40">
                   {lang === 'FR' ? 'Formule' : 'Fórmula'}
                 </p>
                 <div className="relative">
@@ -310,7 +310,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                               }`}
                             >
                               <span className="whitespace-nowrap">{option.title}</span>
-                              <span className="whitespace-nowrap text-[10px] normal-case tracking-normal opacity-80">{option.price}</span>
+                              <span className="whitespace-nowrap text-xs normal-case tracking-normal opacity-80">{option.price}</span>
                             </button>
                           );
                         })}
@@ -326,7 +326,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    <label className="fm-label text-brand-ink/40">
                       {labels.firstName}
                       <input
                         required
@@ -336,7 +336,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                         className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                       />
                     </label>
-                    <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                    <label className="fm-label text-brand-ink/40">
                       {labels.lastName}
                       <input
                         required
@@ -347,7 +347,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                       />
                     </label>
                   </div>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                  <label className="fm-label text-brand-ink/40">
                     {labels.email}
                     <input
                       required
@@ -358,7 +358,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                       className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                     />
                   </label>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                  <label className="fm-label text-brand-ink/40">
                     {labels.phone}
                     <input
                       required
@@ -371,7 +371,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                       className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                     />
                   </label>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                  <label className="fm-label text-brand-ink/40">
                     {labels.birthDate}
                     <input
                       type="date"
@@ -380,7 +380,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                       className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
                     />
                   </label>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                  <label className="fm-label text-brand-ink/40">
                     {labels.offerCode}
                     <input
                       type="text"
@@ -391,7 +391,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                       className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 font-mono text-sm uppercase tracking-wide text-brand-ink placeholder:text-brand-ink/25 outline-none ring-brand-accent/30 transition focus:ring-2"
                     />
                   </label>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+                  <label className="fm-label text-brand-ink/40">
                     <span className="inline-flex items-center gap-1">
                       <Lock size={10} className="opacity-50" />
                       {labels.password}

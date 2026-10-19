@@ -106,7 +106,7 @@ function HudMetricRow({ m }: { m: HudMetric }) {
         <p className="font-serif text-3xl italic leading-none text-brand-ink sm:text-4xl" data-testid={`hud-metric-${m.label}`}>
           <AnimatedCounter value={m.value} />
         </p>
-        <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-brand-ink/45">{m.label}</p>
+        <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/45">{m.label}</p>
       </div>
     </Link>
   );
@@ -126,7 +126,7 @@ function MiniBarCluster({ values, label }: { values: number[]; label: string }) 
           />
         ))}
       </div>
-      <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{label}</span>
     </div>
   );
 }
@@ -342,7 +342,7 @@ export function EvolutionScene({
               ) : null}
               {deltaPct != null ? (
                 <span
-                  className="mt-4 inline-flex items-center gap-1 rounded-full bg-[#2c241e]/90 px-3 py-1 text-[11px] font-bold text-[#FFFAF5]"
+                  className="mt-4 inline-flex items-center gap-1 rounded-full bg-[#2c241e]/90 px-3 py-1 text-xs font-bold text-[#FFFAF5]"
                   data-testid="evolution-delta"
                 >
                   {deltaPct >= 0 ? '↑' : '↓'} {deltaPct >= 0 ? '+' : ''}
@@ -372,7 +372,7 @@ export function EvolutionScene({
                   <AnimatedCounter value={sessions} />
                   <span className="text-lg text-brand-ink/35">/{goal}</span>
                 </p>
-                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">
                   {locale === 'es' ? 'Mes' : 'Mois'}
                 </p>
               </div>
@@ -380,7 +380,7 @@ export function EvolutionScene({
                 <p className="font-serif text-2xl italic text-brand-ink sm:text-3xl">
                   <AnimatedCounter value={regVal} />
                 </p>
-                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c45d3e]">
                   {deltaPct != null && deltaPct >= 0 ? `▲ ${deltaPct}%` : t.regularity}
                 </p>
               </div>
@@ -388,7 +388,7 @@ export function EvolutionScene({
                 <p className="font-serif text-2xl italic text-brand-ink sm:text-3xl">
                   <AnimatedCounter value={Math.round(energyVal)} />
                 </p>
-                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{t.energy}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{t.energy}</p>
               </div>
             </div>
 

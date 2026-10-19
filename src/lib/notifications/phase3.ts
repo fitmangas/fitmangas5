@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { sendEmail as sendEmailCentral } from '@/lib/email/send';
 
 import { wrapResendEmail } from '@/lib/email/base-template';
 import { countActiveQualifiedReferrals, REFERRAL_REWARD_THRESHOLD } from '@/lib/referrals/reward';
@@ -36,7 +36,8 @@ async function sendEmail(to: string, subject: string, html: string) {
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.NEWSLETTER_FROM_EMAIL?.trim();
   if (!key || !from) return false;
-  await new Resend(key).emails.send({ from, to, subject, html });
+  const result = await sendEmailCentral({ from, to, subject, html });
+  if (!result.ok) throw new Error(`Envoi email échoué : ${result.error}`);
   return true;
 }
 

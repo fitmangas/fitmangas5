@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { processDueSocialPostsAction } from '@/app/admin/community/actions';
+import { processDueSocialPostsInternal } from '@/lib/admin/social-publish-due';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 
 /** Hobby autorise jusqu’à 300s — Reels Meta demandent souvent 30–90s + reprise. */
@@ -21,7 +21,7 @@ async function handlePublish(request: Request) {
 
   try {
     // Pas de recover replays ici : ça volait le budget temps et faisait rater les publications IG.
-    const result = await processDueSocialPostsAction();
+    const result = await processDueSocialPostsInternal();
     console.info('[community publish-scheduled]', result);
     return NextResponse.json(result);
   } catch (error) {

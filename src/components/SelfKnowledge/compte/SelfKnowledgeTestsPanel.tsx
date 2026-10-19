@@ -319,7 +319,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                             {formatLabel(row.test_version, locale)}
                           </span>
                         </p>
-                        <span className="text-[11px] text-brand-ink/45">
+                        <span className="text-xs text-brand-ink/45">
                           {dateFmt.format(new Date(row.created_at))}
                         </span>
                       </div>
@@ -403,7 +403,7 @@ export function SelfKnowledgeTestsPanel({ lang, history }: Props) {
                 compareLabel={`${t.radarThen} · ${t.radarNow}`}
                 size={280}
               />
-              <div className="mt-3 flex justify-center gap-4 text-[11px] text-brand-ink/55">
+              <div className="mt-3 flex justify-center gap-4 text-xs text-brand-ink/55">
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#c45d3e]" />
                   {t.radarNow}

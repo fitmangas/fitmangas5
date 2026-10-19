@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { processDueSocialPostsAction } from '@/app/admin/community/actions';
+import { processDueSocialPostsInternal } from '@/lib/admin/social-publish-due';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { runCourseCycles } from '@/lib/notifications/phase2';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -15,9 +15,9 @@ export async function GET(request: Request) {
 
   try {
     // Publications IG dues en premier (prioritaire vs rappels cours).
-    let social: Awaited<ReturnType<typeof processDueSocialPostsAction>> | { error: string };
+    let social: Awaited<ReturnType<typeof processDueSocialPostsInternal>> | { error: string };
     try {
-      social = await processDueSocialPostsAction();
+      social = await processDueSocialPostsInternal();
       console.info('[course reminders cron] social', social);
     } catch (e) {
       console.error('[course reminders cron] social', e);

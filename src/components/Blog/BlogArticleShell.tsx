@@ -148,7 +148,7 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
           <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
         </div>
         <div className="mt-5">
-          <Link href="/?offer=v-coll" className="btn-luxury-primary inline-flex px-6 py-2.5 text-[11px] tracking-[0.14em]">
+          <Link href="/?offer=v-coll" className="btn-luxury-primary inline-flex px-6 py-2.5 text-xs tracking-[0.14em]">
             Découvrir l’offre Visio
           </Link>
         </div>

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 import { z } from 'zod';
 
 import { wrapResendEmail, getEmailPublicBaseUrl } from '@/lib/email/base-template';
+import { sendEmail } from '@/lib/email/send';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildShareUrl } from '@/lib/self-knowledge/invites';
 
@@ -34,6 +37,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
 
+  const guard = await guardPublicFormRequest(request, 'invite_remind', turnstileTokenFromBody(json), localeFromBody(json));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
+
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
@@ -54,7 +60,7 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error('[invite/remind-inviter]', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return publicServerError('invite/remind-inviter', error, 500);
   }
 
   if (!invites?.length) {
@@ -107,18 +113,11 @@ export async function POST(request: Request) {
     unsubscribeUrl: `${getEmailPublicBaseUrl()}/compte/profil#notifications`,
   });
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to: inviterEmail, subject, html }),
-  });
+  const res = await sendEmail({ from, to: inviterEmail, subject, html });
 
   if (!res.ok) {
     return NextResponse.json(
-      { error: `Envoi rappel impossible (provider_${res.status}).` },
+      { error: 'Envoi du rappel impossible pour le moment.' },
       { status: 502 },
     );
   }

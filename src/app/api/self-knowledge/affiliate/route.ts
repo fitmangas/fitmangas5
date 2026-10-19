@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { z } from 'zod';
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -26,6 +27,6 @@ export async function POST(req: Request) {
     resource_id: parsed.data.resourceId,
   });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return publicServerError('self-knowledge/affiliate', error, 500);
   return NextResponse.json({ ok: true });
 }

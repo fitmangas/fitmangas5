@@ -39,6 +39,7 @@ describe('sendPushNotification', () => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY = 'public-key';
     process.env.VAPID_PRIVATE_KEY = 'private-key';
+    process.env.EMAIL_SAFE_MODE = 'off';
     mocks.subscriptions = [
       {
         id: 'sub-1',
@@ -72,5 +73,22 @@ describe('sendPushNotification', () => {
 
     expect(result.sent).toBe(0);
     expect(mocks.deleteEq).toHaveBeenCalledWith('id', 'sub-1');
+  });
+});
+
+describe('sendPushNotification — garde anti-envoi', () => {
+  it('hors production avec EMAIL_SAFE_MODE actif : aucun push envoyé', async () => {
+    vi.clearAllMocks();
+    const prevVercel = process.env.VERCEL_ENV;
+    delete process.env.VERCEL_ENV;
+    delete process.env.EMAIL_SAFE_MODE;
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+
+    const result = await sendPushNotification('user-1', 'Titre');
+
+    expect(result).toEqual({ sent: 0, safeMode: true });
+    expect(mocks.sendNotification).not.toHaveBeenCalled();
+    info.mockRestore();
+    if (prevVercel !== undefined) process.env.VERCEL_ENV = prevVercel;
   });
 });

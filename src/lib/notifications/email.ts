@@ -1,7 +1,6 @@
-import { Resend } from 'resend';
-
 import { formatEmailFirstName } from '@/lib/email/format-first-name';
 import { wrapResendEmail } from '@/lib/email/base-template';
+import { sendEmail } from '@/lib/email/send';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEmailTemplate, renderTemplate } from './templates';
@@ -75,11 +74,6 @@ export async function sendDispatcherEmail(args: SendDispatcherEmailArgs): Promis
     showPreferencesLink: showPreferences,
   });
 
-  const resend = new Resend(apiKey);
-  await resend.emails.send({
-    from,
-    to,
-    subject: title,
-    html,
-  });
+  const result = await sendEmail({ from, to, subject: title, html });
+  if (!result.ok) throw new Error(`Envoi email échoué : ${result.error}`);
 }

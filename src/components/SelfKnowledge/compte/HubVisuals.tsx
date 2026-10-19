@@ -245,7 +245,7 @@ export function ConsistencyChain({ streak, label, sub }: ChainProps) {
           return (
             <span
               key={i}
-              className={`hub-chain-link inline-flex h-8 w-8 items-center justify-center rounded-full border-2 text-[11px] font-bold sm:h-9 sm:w-9 ${
+              className={`hub-chain-link inline-flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold sm:h-9 sm:w-9 ${
                 active
                   ? 'is-on border-[#c45d3e] bg-[#c45d3e] text-white shadow-[0_6px_14px_rgba(196,93,62,0.35)]'
                   : 'border-[#e5d0c4] bg-white/80 text-[#c4b0a4]'

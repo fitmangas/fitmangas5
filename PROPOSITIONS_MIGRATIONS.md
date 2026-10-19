@@ -647,3 +647,113 @@ on conflict (id) do nothing;
 ```
 
 **Note :** les UUID fixes ci-dessus nécessitent que `acq_workflows.id` accepte les inserts explicites (déjà le cas). Adapter les IDs si conflit.
+
+---
+
+# Chantier octobre 2026
+
+> Rien de ce qui suit n’a été exécuté. Chaque bloc attend le **GO écrit de Kevin**. Ordre conseillé : migration → déploiement → drapeau.
+
+## Lot 1 — Sécurité, conformité
+
+### L1-a. RLS sur les 8 tables publicité / organique (fuite constatée)
+
+Constat du 19/10/2026 (lecture seule avec la clé publique `anon`) : `ad_campaigns`, `ad_creatives`, `ads_sync_runs`, `organic_account_snapshots`, `organic_media_snapshots` **renvoient des lignes** à n’importe quel visiteur ; `ad_breakdowns_daily`, `ad_insights_daily`, `ad_metrics_daily` répondent 200 (vides aujourd’hui). Aucune RLS dans les migrations `20260924140000` et `20260924180000`.
+Vérifié : tout le code qui lit/écrit ces tables (`src/lib/acquisition/ads/repository.ts`, `intelligence-repository.ts`, `sync-intelligence.ts`) passe par `createAdminClient()` (service_role, qui ignore la RLS) → rien ne casse.
+
+```sql
+begin;
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'ad_breakdowns_daily','ad_campaigns','ad_creatives','ad_insights_daily',
+    'ad_metrics_daily','ads_sync_runs','organic_account_snapshots','organic_media_snapshots'
+  ] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon', t);
+    execute format('revoke all on public.%I from authenticated', t);
+    execute format('grant all on public.%I to service_role', t);
+    execute format('drop policy if exists %I on public.%I', t || '_admin_select', t);
+    execute format(
+      'create policy %I on public.%I for select to authenticated using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = ''admin''))',
+      t || '_admin_select', t
+    );
+  end loop;
+end $$;
+-- La politique admin ne sert que si un écran lit un jour ces tables avec la session (aujourd’hui : service_role).
+grant select on public.ad_breakdowns_daily, public.ad_campaigns, public.ad_creatives, public.ad_insights_daily,
+  public.ad_metrics_daily, public.ads_sync_runs, public.organic_account_snapshots, public.organic_media_snapshots
+  to authenticated;
+commit;
+```
+
+Vérification après application (doit renvoyer `[]` ou 401) :
+`curl "$SUPABASE_URL/rest/v1/ad_campaigns?select=id&limit=1" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"`
+
+### L1-b. Supprimer la politique « Users can insert own enrollments »
+
+Vérifié : aucune insertion d’inscription depuis le navigateur. Les seules écritures (`src/lib/notifications/phase2.ts` → appelée par le webhook Stripe, `src/app/admin/attendance/actions.ts`) utilisent service_role.
+
+```sql
+drop policy if exists "Users can insert own enrollments" on public.enrollments;
+```
+
+(Destructif au sens « suppression de politique » : GO écrit requis.)
+
+### L1-c. Table `rate_limits` (IP hachées, purge 24 h)
+
+Utilisée par `src/lib/security/rate-limit.ts` quand `RATE_LIMIT_ENABLED=1`. Sans la table, le drapeau reste off (le code renvoie une erreur explicite côté serveur et laisse passer : la limite n’est pas appliquée, c’est journalisé).
+
+```sql
+create table if not exists public.rate_limits (
+  id bigserial primary key,
+  scope text not null,
+  ip_hash text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists rate_limits_scope_ip_created on public.rate_limits (scope, ip_hash, created_at desc);
+alter table public.rate_limits enable row level security;
+revoke all on public.rate_limits from anon, authenticated;
+grant all on public.rate_limits to service_role;
+grant usage, select on sequence public.rate_limits_id_seq to service_role;
+
+-- Purge : lignes de plus de 24 h (pg_cron, toutes les heures)
+select cron.schedule('rate_limits_purge', '17 * * * *',
+  $$delete from public.rate_limits where created_at < now() - interval '24 hours'$$);
+```
+
+### L1-d. Opt-in marketing : défaut à `false` + correction des profils sans preuve
+
+Comptes du 19/10/2026 (lecture seule) : **15 profils**, dont **14** avec `marketing_email_opt_in = true`. **Avec preuve** (`marketing_email_opt_in_at` renseignée) : **0**. **Sans preuve** : **14**. Origine : migrations `20260521120000` / `20260522140000` qui ont mis tout le monde à `true` sans consentement.
+Code déjà modifié (lot 1) : défaut applicatif à `false` (`DEFAULT_MARKETING_EMAIL_OPT_IN`, page profil). Quand une cliente coche, `marketing_email_opt_in_at` est daté (`src/app/compte/preferences/actions.ts`).
+
+```sql
+-- 1) Nouveaux profils : non par défaut
+alter table public.profiles alter column marketing_email_opt_in set default false;
+
+-- 2) Contrôle avant correction (doit afficher 14 / 0 au 19/10)
+select
+  count(*) filter (where marketing_email_opt_in and marketing_email_opt_in_at is null)  as sans_preuve,
+  count(*) filter (where marketing_email_opt_in and marketing_email_opt_in_at is not null) as avec_preuve
+from public.profiles;
+
+-- 3) Correction (UPDATE en masse → GO écrit)
+update public.profiles
+set marketing_email_opt_in = false
+where marketing_email_opt_in = true
+  and marketing_email_opt_in_at is null;
+```
+
+### L1-e. Bucket `avatars` : fichiers `text/html` (proposition, non appliquée)
+
+Voir le rapport du lot 1 (§10) : le bucket public `avatars` sert aussi au montage des Reels (`social-cm/…`), dont des fichiers `text/html`. Proposition : bucket privé `cm-private` + URL signées 1 h pour les `text/html` ; `avatars` limité à `image/jpeg, image/png, image/webp, video/mp4` côté stockage.
+
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('cm-private', 'cm-private', false, 209715200, array['text/html','application/json'])
+on conflict (id) do nothing;
+-- Seulement APRÈS bascule du code CM sur cm-private + URL signées :
+-- update storage.buckets set allowed_mime_types = array['image/jpeg','image/png','image/webp','video/mp4','image/gif']
+-- where id = 'avatars';
+```

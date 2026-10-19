@@ -468,7 +468,7 @@ export default async function CompteReplaysPage({ searchParams }: { searchParams
                 {heroPlayable ? (
                   <Link
                     href={liveCourseHref(hero.courseId, { from: LIVE_FROM_REPLAYS })}
-                    className="btn-luxury-primary px-6 py-2.5 text-[11px] tracking-[0.12em]"
+                    className="btn-luxury-primary px-6 py-2.5 text-xs tracking-[0.12em]"
                   >
                     {t.play}
                   </Link>

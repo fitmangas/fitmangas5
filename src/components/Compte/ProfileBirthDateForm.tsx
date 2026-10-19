@@ -26,7 +26,7 @@ export function ProfileBirthDateForm({ defaultIsoDate }: { defaultIsoDate: strin
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Date de naissance</h2>
       <p className="mt-2 text-sm text-luxury-muted">Pour ton anniversaire (jour et mois uniquement côté surprise).</p>
       <form action={updateBirthDateAction} className="mt-6 flex flex-wrap items-end gap-4">
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-luxury-soft">
+        <label className="fm-label text-luxury-soft">
           Naissance
           <input
             name="birth_date"
@@ -49,7 +49,7 @@ export function ProfileBirthDateFormEmbedded({ defaultIsoDate }: { defaultIsoDat
       <h2 className="text-xl font-semibold tracking-tight text-luxury-ink">Date de naissance</h2>
       <p className="mt-2 text-sm text-luxury-muted">Pour ton anniversaire (jour et mois uniquement côté surprise).</p>
       <form action={updateBirthDateAction} className="mt-6 flex flex-wrap items-end gap-4">
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-luxury-soft">
+        <label className="fm-label text-luxury-soft">
           Naissance
           <input
             name="birth_date"

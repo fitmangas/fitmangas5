@@ -46,6 +46,10 @@ async function userIdFromEmail(email: string | null | undefined) {
 export async function POST(request: Request) {
   const signatureSecret = process.env.PRINTFUL_WEBHOOK_SECRET?.trim();
   const rawBody = await request.text();
+  if (!signatureSecret && process.env.VERCEL_ENV === 'production') {
+    console.error('[printful webhook] PRINTFUL_WEBHOOK_SECRET manquant en production — requête refusée.');
+    return NextResponse.json({ error: 'Webhook non configuré.' }, { status: 503 });
+  }
   if (signatureSecret) {
     const signature = (
       request.headers.get('x-pf-signature') ??

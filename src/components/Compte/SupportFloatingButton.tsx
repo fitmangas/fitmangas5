@@ -4,6 +4,7 @@ import { MessageCircle, X } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 
 import { submitSupportTicketAction, type SupportTicketType } from '@/app/compte/support-actions';
+import { TurnstileWidget } from '@/components/Security/TurnstileWidget';
 
 type Props = {
   lang?: 'fr' | 'es' | 'en';
@@ -69,6 +70,7 @@ export function SupportFloatingButton({ lang = 'fr' }: Props) {
   const [type, setType] = useState<SupportTicketType>('question');
   const [message, setMessage] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function SupportFloatingButton({ lang = 'fr' }: Props) {
     e.preventDefault();
     setFeedback(null);
     startTransition(async () => {
-      const res = await submitSupportTicketAction(type, message);
+      const res = await submitSupportTicketAction(type, message, turnstileToken);
       if (!res.ok) {
         setFeedback(res.message);
         return;
@@ -166,6 +168,8 @@ export function SupportFloatingButton({ lang = 'fr' }: Props) {
                   className="mt-2 w-full resize-y rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-luxury-ink outline-none ring-luxury-orange/30 focus:ring-2"
                 />
               </label>
+
+              <TurnstileWidget onToken={setTurnstileToken} />
 
               {feedback ? (
                 <p className={`text-sm ${feedback === t.success ? 'text-emerald-800' : 'text-red-800'}`}>{feedback}</p>

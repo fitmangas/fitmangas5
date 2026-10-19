@@ -67,7 +67,7 @@ export function SelfTestCardGrid({ locale, cards, compact = false, vertical = fa
                   {card.description}
                 </p>
                 {card.sourceLine ? (
-                  <p className="mt-1.5 text-[10px] tracking-wide text-brand-ink/35">{card.sourceLine}</p>
+                  <p className="mt-1.5 text-xs tracking-wide text-brand-ink/35">{card.sourceLine}</p>
                 ) : null}
                 <Link
                   href={card.href}

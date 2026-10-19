@@ -54,7 +54,7 @@ export function ClientLoginForm() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/45">
+        <label className="fm-label text-brand-ink/45">
           E-mail
           <input
             type="email"
@@ -66,7 +66,7 @@ export function ClientLoginForm() {
           />
         </label>
 
-        <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/45">
+        <label className="fm-label text-brand-ink/45">
           Mot de passe
           <input
             type="password"

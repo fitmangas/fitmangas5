@@ -144,7 +144,7 @@ export function HealthMetricsForm({ lang, consentId }: Props) {
           </p>
         ) : null}
 
-        <button type="submit" disabled={loading} className="btn-luxury-primary sm:col-span-2 px-7 py-3 text-[11px] tracking-[0.14em]">
+        <button type="submit" disabled={loading} className="btn-luxury-primary sm:col-span-2 px-7 py-3 text-xs tracking-[0.14em]">
           {loading ? t.loading : t.cta}
         </button>
       </form>
@@ -161,7 +161,7 @@ export function HealthMetricsForm({ lang, consentId }: Props) {
             <div key={key} className="rounded-2xl border border-white/40 bg-white/45 p-4 text-center">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft">{label}</p>
               <p className="mt-2 text-3xl font-semibold text-luxury-ink">{scores[key]}</p>
-              <p className="text-[10px] text-luxury-muted">/100</p>
+              <p className="text-xs text-luxury-muted">/100</p>
             </div>
           ))}
         </div>

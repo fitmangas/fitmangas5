@@ -121,7 +121,7 @@ function NumberedList({ items, accent }: { items: string[]; accent: string }) {
           className="flex gap-3 border-b border-brand-ink/[0.06] py-3.5 last:border-b-0"
         >
           <span
-            className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ background: accent }}
           >
             {String(i + 1).padStart(2, '0')}
@@ -341,7 +341,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
                 {locale === 'es' ? '1.ª' : '1re'} {primaryPct}%
               </span>
               {secondary ? (
-                <span className="rounded-full border border-brand-ink/10 bg-brand-beige/70 px-3 py-1.5 text-[10px] font-medium text-brand-ink/55">
+                <span className="rounded-full border border-brand-ink/10 bg-brand-beige/70 px-3 py-1.5 text-xs font-medium text-brand-ink/55">
                   {t.secondary} · {secondary.styleName?.[locale] ?? cleanProfileTitle(secondary.title[locale])} (
                   {secondaryPct}%)
                 </span>
@@ -358,7 +358,7 @@ export function QuizReport({ quiz, result, score, locale, trialHref, hubHref, em
         </div>
       </header>
 
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-brand-ink/40">{t.discNote}</p>
+      <p className="mt-4 text-center text-xs leading-relaxed text-brand-ink/40">{t.discNote}</p>
 
       {/* MIX — 2 graphiques utiles, puis le reste sur la page */}
       <section id="mix" className="scroll-mt-28 mt-10 space-y-8">

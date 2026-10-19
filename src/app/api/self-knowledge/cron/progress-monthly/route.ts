@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 
+import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { snapshotPreviousMonthForActiveUsers } from '@/lib/self-knowledge/progress-monthly';
 
 /**
  * Snapshot mensuel progression — brancher sur cron 1er du mois.
- * Auth : CRON_SECRET ou header Vercel cron.
+ * Auth : CRON_SECRET (Vercel l’envoie en Authorization: Bearer).
  */
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization');
-  const secret = process.env.CRON_SECRET;
-  const isVercelCron = Boolean(req.headers.get('x-vercel-cron'));
-  if (secret && auth !== `Bearer ${secret}` && !isVercelCron) {
+  if (!verifyCronSecret(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

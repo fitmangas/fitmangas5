@@ -20,7 +20,7 @@ function BirthSubmit() {
   return (
     <button
       type="submit"
-      className="btn-luxury-ghost min-h-[36px] px-4 py-1.5 text-[10px] tracking-[0.12em] disabled:opacity-50"
+      className="btn-luxury-ghost min-h-[36px] px-4 py-1.5 text-xs tracking-[0.12em] disabled:opacity-50"
       disabled={pending}
     >
       {pending ? '…' : 'OK'}
@@ -54,7 +54,7 @@ export function ProfileMonProfilCard({ avatarUrl, birthDate, email, title, birth
               name="avatar"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="max-w-[180px] text-[10px] text-luxury-muted file:mr-2 file:rounded-full file:border-0 file:bg-luxury-orange/90 file:px-2 file:py-1 file:text-[9px] file:font-semibold file:text-white"
+              className="max-w-[180px] text-xs text-luxury-muted file:mr-2 file:rounded-full file:border-0 file:bg-luxury-orange/90 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-white"
             />
             <AvatarSubmit />
           </form>
@@ -66,7 +66,7 @@ export function ProfileMonProfilCard({ avatarUrl, birthDate, email, title, birth
             <span className="text-luxury-ink">{email ?? '—'}</span>
           </p>
           <form action={updateBirthDateAction} className="flex flex-wrap items-end gap-2">
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-luxury-soft">
+            <label className="fm-label text-luxury-soft">
               {birthLabel}
               <input
                 name="birth_date"

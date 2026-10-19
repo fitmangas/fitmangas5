@@ -14,6 +14,8 @@ import {
   LockKeyhole,
   UserCircle2,
 } from 'lucide-react';
+import { ManageCookiesButton } from '@/components/Marketing/ManageCookiesButton';
+import { A_VALIDER_LOT1 } from '@/content/a-valider';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
@@ -446,7 +448,7 @@ export function LandingPage({
                 >
                   {coursesGivenCount.toLocaleString('fr-FR')}
                 </span>
-                <span className="mt-1.5 text-center text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+                <span className="mt-1.5 text-center text-[10px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofGiven}
                 </span>
               </div>
@@ -477,16 +479,16 @@ export function LandingPage({
                     ))}
                   </div>
                 </div>
-                <span className="inline-flex items-center justify-center gap-1 text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+                <span className="inline-flex items-center justify-center gap-1 text-[10px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofPeople}
                   <span className="relative group">
                     <span
-                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-brand-ink/20 text-[9px] text-brand-ink/60"
+                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-brand-ink/20 text-xs text-brand-ink/60"
                       aria-label="Information"
                     >
                       <Info className="size-2" />
                     </span>
-                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-xs normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                       {l.proofTooltip}
                     </span>
                   </span>
@@ -578,12 +580,12 @@ export function LandingPage({
                   {l.proofPeople}
                   <span className="relative group">
                     <span
-                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-[11px] text-brand-ink/60"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-xs text-brand-ink/60"
                       aria-label="Information"
                     >
                       <Info className="size-[11px]" />
                     </span>
-                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-xs normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                       {l.proofTooltip}
                     </span>
                   </span>
@@ -610,7 +612,7 @@ export function LandingPage({
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#5c554c] sm:tracking-[0.4em] md:text-brand-accent">{t.subtitle}</p>
                 <Link
                   href="/cours-pilates-visio"
-                  className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-[11px]"
+                  className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-xs"
                 >
                   <span>{lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}</span>
                   <span aria-hidden className="text-[#C45D3E] transition group-hover:translate-x-0.5">
@@ -686,7 +688,7 @@ export function LandingPage({
                   <div className="absolute inset-0 bg-brand-ink/5 transition-colors duration-500 group-hover:bg-transparent" />
                   {course.badge && (
                     <div className="absolute left-6 top-6">
-                      <span className="rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white shadow-xl">
+                      <span className="rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-xl">
                         {course.badge}
                       </span>
                     </div>
@@ -709,14 +711,14 @@ export function LandingPage({
 
                   <div className="mt-5 flex items-end justify-between border-t border-brand-ink/[0.06] pt-4">
                     <div className="flex flex-col">
-                      <span className="mb-1 text-[8px] font-bold uppercase tracking-[0.3em] text-brand-ink/30 md:mb-2 md:text-[9px]">
+                      <span className="mb-1 text-[8px] font-bold uppercase tracking-[0.3em] text-brand-ink/30 md:mb-2 md:text-[10px]">
                         {l.subscriptionLabel}
                       </span>
                       <div className="flex items-baseline gap-1.5">
                         <span className="font-sans text-3xl font-bold tracking-tighter text-brand-ink md:text-4xl">
                           {course.price.split(' ')[0]}
                         </span>
-                        <span className="text-[9px] font-semibold uppercase tracking-widest text-brand-ink/40 md:text-xs">
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-ink/40 md:text-xs">
                           {course.price.split(' ').slice(1).join(' ')}
                         </span>
                       </div>
@@ -858,7 +860,7 @@ export function LandingPage({
                   <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
                   <div className="p-5">
                     {categoryLabel ? (
-                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{categoryLabel}</p>
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{categoryLabel}</p>
                     ) : null}
                     <h3 className="font-serif text-xl italic text-brand-ink">{title}</h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{excerpt}</p>
@@ -902,7 +904,7 @@ export function LandingPage({
                 href={`/${pillar.slug}`}
                 className="rounded-[28px] border border-brand-ink/[0.06] bg-white/65 p-5 text-left shadow-[0_18px_50px_rgba(48,35,28,0.07)] transition hover:-translate-y-1 hover:bg-white/85"
               >
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">
                   {lang === 'ES' ? 'Guía esencial' : 'Guide essentiel'}
                 </p>
                 <h3 className="mt-2 font-serif text-xl italic text-brand-ink">{pillar.shortTitle}</h3>
@@ -924,7 +926,7 @@ export function LandingPage({
           <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-2">
             © {currentYear} Alejandra Mangas
           </p>
-          <p className="mb-4 text-[10px] tracking-[0.12em] text-brand-ink/30">
+          <p className="mb-4 text-xs tracking-[0.12em] text-brand-ink/30">
             <span data-footer-brand className="inline-block">
               FitMangas
             </span>
@@ -934,6 +936,10 @@ export function LandingPage({
             <Link href="/mentions-legales" className="hover:text-brand-ink transition-colors">{l.legal}</Link>
             <Link href="/privacy" className="hover:text-brand-ink transition-colors">{l.privacy}</Link>
             <Link href="/terms" className="hover:text-brand-ink transition-colors">{l.terms}</Link>
+            <ManageCookiesButton
+              label={A_VALIDER_LOT1.cookies.manage[lang === 'ES' ? 'es' : 'fr']}
+              className="uppercase tracking-widest hover:text-brand-ink transition-colors"
+            />
           </div>
           <div className="mt-6 flex justify-center">
             <Link

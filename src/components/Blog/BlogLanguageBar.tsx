@@ -21,7 +21,7 @@ export function BlogLanguageBar({ value, onChange, className = '' }: Props) {
           key={code}
           type="button"
           onClick={() => onChange(code)}
-          className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition ${
+          className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
             value === code
               ? 'bg-luxury-ink text-white'
               : 'bg-white/50 text-luxury-muted hover:bg-white/80'

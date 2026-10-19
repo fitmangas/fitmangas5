@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
@@ -16,12 +17,12 @@ export async function POST(request: Request) {
   if (favorite) {
     const { error } = await supabase.from('standalone_vimeo_favorites').insert({ video_id: videoId, user_id: user.id });
     if (error && !error.message.includes('duplicate key')) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return publicServerError('replays/standalone-favorites', error, 500);
     }
     return NextResponse.json({ ok: true, favorite: true });
   }
 
   const { error } = await supabase.from('standalone_vimeo_favorites').delete().eq('video_id', videoId).eq('user_id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return publicServerError('replays/standalone-favorites', error, 500);
   return NextResponse.json({ ok: true, favorite: false });
 }

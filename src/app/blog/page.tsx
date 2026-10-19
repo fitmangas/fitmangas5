@@ -195,7 +195,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           placeholder={copy.search}
           className="min-w-0 flex-1 rounded-full border border-white/50 bg-white/60 px-5 py-3 text-sm backdrop-blur-md outline-none ring-orange-400/25 focus:ring-2"
         />
-        <button type="submit" className="btn-luxury-primary shrink-0 px-8 py-3 text-[11px] tracking-[0.14em]">
+        <button type="submit" className="btn-luxury-primary shrink-0 px-8 py-3 text-xs tracking-[0.14em]">
           {copy.submit}
         </button>
       </form>
@@ -339,7 +339,7 @@ function HeroArticle({
           <span>👁 {article.view_count ?? 0}</span>
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href={href} className="btn-luxury-primary inline-flex w-fit items-center px-8 py-3 text-[11px] tracking-[0.14em]">
+          <Link href={href} className="btn-luxury-primary inline-flex w-fit items-center px-8 py-3 text-xs tracking-[0.14em]">
             {copy.read}
           </Link>
           <Link
@@ -377,10 +377,10 @@ function ArticleCard({
         <img src={article.displayImageUrl} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{cat}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{cat}</span>
         <h3 className="mt-2 text-lg font-semibold leading-snug text-luxury-ink">{loc.title}</h3>
         <p className="mt-2 line-clamp-2 flex-1 text-sm text-luxury-muted">{loc.description ?? ''}</p>
-        <div className="mt-4 flex gap-4 text-[11px] text-luxury-muted">
+        <div className="mt-4 flex gap-4 text-xs text-luxury-muted">
           {article.average_rating != null ? <span>⭐ {Number(article.average_rating).toFixed(1)}</span> : null}
           <span>👁 {article.view_count ?? 0}</span>
         </div>

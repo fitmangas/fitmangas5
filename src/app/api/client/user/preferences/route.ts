@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { requireAuthenticatedUser } from '@/lib/api-auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -58,7 +59,7 @@ export async function PATCH(request: Request) {
     .eq('id', auth.user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return publicServerError('user/preferences', error, 500);
   }
 
   return NextResponse.json({ language: lang });

@@ -185,7 +185,7 @@ export function PushOptIn({ lang, userId, initialEnabled, compact = false }: Pro
             <h3 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-ink">{l.title}</h3>
           </div>
           <p className="mt-2 text-xs leading-snug text-luxury-muted">{l.body}</p>
-          {message ? <p className="mt-1 text-[10px] text-luxury-muted">{message}</p> : null}
+          {message ? <p className="mt-1 text-xs text-luxury-muted">{message}</p> : null}
         </div>
         <button
           type="button"

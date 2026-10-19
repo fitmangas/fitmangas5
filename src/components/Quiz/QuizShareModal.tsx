@@ -304,7 +304,7 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_20px_rgba(37,211,102,0.4)] transition group-hover:scale-105 group-hover:shadow-[0_12px_28px_rgba(37,211,102,0.5)]">
                 <IconWhatsApp className="h-7 w-7" />
               </span>
-              <span className="text-[11px] font-semibold text-brand-ink/70">{t.whatsapp}</span>
+              <span className="text-xs font-semibold text-brand-ink/70">{t.whatsapp}</span>
             </button>
 
             <button
@@ -322,7 +322,7 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
               >
                 <IconInstagram className="h-7 w-7" />
               </span>
-              <span className="text-[11px] font-semibold text-brand-ink/70">{t.instagram}</span>
+              <span className="text-xs font-semibold text-brand-ink/70">{t.instagram}</span>
             </button>
 
             <button
@@ -334,7 +334,7 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-[0_8px_20px_rgba(24,119,242,0.4)] transition group-hover:scale-105">
                 <IconFacebook className="h-7 w-7" />
               </span>
-              <span className="text-[11px] font-semibold text-brand-ink/70">{t.facebook}</span>
+              <span className="text-xs font-semibold text-brand-ink/70">{t.facebook}</span>
             </button>
 
             <button
@@ -346,7 +346,7 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
               <span className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-ink/10 bg-white text-brand-ink shadow-[0_6px_16px_rgba(28,24,20,0.08)] transition group-hover:scale-105 group-hover:border-[#c45d3e]/40 group-hover:text-[#c45d3e]">
                 <Download size={22} strokeWidth={2.2} />
               </span>
-              <span className="text-[11px] font-semibold text-brand-ink/70">{t.download}</span>
+              <span className="text-xs font-semibold text-brand-ink/70">{t.download}</span>
             </button>
 
             <button
@@ -358,7 +358,7 @@ export function QuizShareModal({ open, onClose, shareText, ...cardArgs }: Props)
               <span className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-ink/10 bg-white text-brand-ink shadow-[0_6px_16px_rgba(28,24,20,0.08)] transition group-hover:scale-105 group-hover:border-[#c45d3e]/40 group-hover:text-[#c45d3e]">
                 <Share2 size={22} strokeWidth={2.2} />
               </span>
-              <span className="text-[11px] font-semibold text-brand-ink/70">{t.more}</span>
+              <span className="text-xs font-semibold text-brand-ink/70">{t.more}</span>
             </button>
           </div>
 

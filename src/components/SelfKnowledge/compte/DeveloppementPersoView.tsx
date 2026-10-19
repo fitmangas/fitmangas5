@@ -174,7 +174,7 @@ export function DeveloppementPersoView({ lang, journal, prompts, challenges, res
           )}
         </div>
         <div className="p-5">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{r.theme}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/40">{r.theme}</p>
           <h3 className="mt-1 font-serif text-lg italic text-brand-ink">{r.title}</h3>
           <p className="text-xs text-brand-ink/50">{r.author}</p>
           {r.why_text ? <p className="mt-2 text-sm leading-relaxed text-brand-ink/60">{r.why_text}</p> : null}
@@ -191,14 +191,14 @@ export function DeveloppementPersoView({ lang, journal, prompts, challenges, res
                 </button>
                 {r.disclosure ? (
                   <span
-                    className="rounded-full border border-[#c45d3e]/40 bg-[#c45d3e]/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]"
+                    className="rounded-full border border-[#c45d3e]/40 bg-[#c45d3e]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#c45d3e]"
                     data-testid="affiliate-disclosure"
                   >
                     {t.affiliate}
                   </span>
                 ) : null}
               </div>
-              <p className="text-[11px] leading-snug text-brand-ink/45">{t.samePrice}</p>
+              <p className="text-xs leading-snug text-brand-ink/45">{t.samePrice}</p>
             </div>
           ) : null}
         </div>

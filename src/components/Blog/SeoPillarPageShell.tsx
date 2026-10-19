@@ -45,10 +45,10 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
             <h1 className="hero-signature-title mt-4 max-w-4xl text-4xl text-luxury-ink md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-luxury-muted">{page.intro}</p>
             <div className="mt-7 flex max-w-xl flex-col gap-3 xl:flex-row">
-              <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
+              <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-6 py-3 text-center text-xs tracking-[0.12em] sm:text-xs">
                 Découvrir l’offre visio à 39 €/mois
               </Link>
-              <Link href="/blog" className="btn-luxury-ghost justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
+              <Link href="/blog" className="btn-luxury-ghost justify-center whitespace-nowrap px-6 py-3 text-center text-xs tracking-[0.12em] sm:text-xs">
                 Lire le blog Pilates
               </Link>
             </div>
@@ -65,7 +65,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
               />
             </div>
             <div className="absolute -bottom-4 left-4 right-4 rounded-[1.35rem] border border-white/70 bg-white/90 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Inclus avec FitMangas</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Inclus avec FitMangas</p>
               <p className="mt-1 text-sm font-semibold text-luxury-ink">Lives, replays, blog et espace cliente</p>
             </div>
           </div>
@@ -94,7 +94,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
               Ces pages servent à te donner les bases, mais le vrai progrès vient de la pratique régulière :
               cours en visio, replays, planning et suivi dans l’espace cliente.
             </p>
-            <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-7 py-3 text-[11px] tracking-[0.14em]">
+            <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-7 py-3 text-xs tracking-[0.14em]">
               Voir l’offre visio
             </Link>
           </div>
@@ -108,7 +108,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
                 className="h-full max-h-[360px] w-full object-cover object-top"
               />
               <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Aperçu espace cliente</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Aperçu espace cliente</p>
                 <p className="mt-1 text-sm font-semibold text-luxury-ink">Planning, replays, blog et progression</p>
               </div>
             </div>

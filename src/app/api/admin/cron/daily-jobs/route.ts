@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { processDueSocialPostsAction } from '@/app/admin/community/actions';
+import { processDueSocialPostsInternal } from '@/lib/admin/social-publish-due';
 import { verifyCronSecret } from '@/lib/blog/cron-secret';
 import { runCourseCycles, runPhase2DailyJobs } from '@/lib/notifications/phase2';
 import { recoverOrphanCourseReplays } from '@/lib/replay-recover-orphans';
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   try {
     // Social en premier : prioritaire vs jobs lourds (reminders / Vimeo recover).
-    const social = await processDueSocialPostsAction();
+    const social = await processDueSocialPostsInternal();
     const admin = createAdminClient();
     const courseReminders = await runCourseCycles(admin);
     const result = await runPhase2DailyJobs(admin);

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 
 import { getPrintfulProducts, mapProductImage, parseMoney } from '@/lib/printful';
 
@@ -17,7 +18,6 @@ export async function GET() {
     }));
     return NextResponse.json({ products: mapped });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erreur inconnue';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return publicServerError('products', error);
   }
 }

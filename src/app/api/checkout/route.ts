@@ -16,7 +16,7 @@ import { phoneFromAuthUser } from '@/lib/admin/client-phone';
 export async function POST(request: Request) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
-    return NextResponse.json({ error: 'Stripe n’est pas configuré (STRIPE_SECRET_KEY).' }, { status: 503 });
+    return NextResponse.json({ error: 'Le paiement est momentanément indisponible. Réessaie dans un instant.' }, { status: 503 });
   }
 
   const supabase = await createClient();

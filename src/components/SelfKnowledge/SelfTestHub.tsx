@@ -114,7 +114,7 @@ export function SelfTestHub({ locale }: Props) {
               <dt className="font-serif text-[1.4rem] italic leading-none text-[#c45d3e] sm:text-[1.65rem]">
                 {s.value}
               </dt>
-              <dd className="mt-2 text-[11px] leading-snug text-brand-ink/50">{s.label}</dd>
+              <dd className="mt-2 text-xs leading-snug text-brand-ink/50">{s.label}</dd>
             </div>
           ))}
         </dl>

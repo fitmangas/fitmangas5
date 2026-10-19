@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { AVATAR_MAX_BYTES, validateAvatarBytes } from '@/lib/compte/avatar-validation';
 import { createClient } from '@/lib/supabase/server';
 import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 
@@ -74,15 +75,19 @@ export async function updateAvatarAction(formData: FormData): Promise<void> {
 
   const file = formData.get('avatar');
   if (!(file instanceof File) || file.size === 0) return;
-  if (file.size > 4 * 1024 * 1024) return;
+  if (file.size > AVATAR_MAX_BYTES) return;
 
-  const ext = file.name.split('.').pop()?.toLowerCase();
-  const safeExt = ext && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
-  const path = `${user.id}/avatar.${safeExt}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const check = validateAvatarBytes(bytes, file.type || null);
+  if (!check.ok) {
+    console.warn('[avatar] fichier refusé', check.reason);
+    return;
+  }
+  const path = `${user.id}/avatar.${check.ext}`;
 
-  const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, {
+  const { error: upErr } = await supabase.storage.from('avatars').upload(path, bytes, {
     upsert: true,
-    contentType: file.type || `image/${safeExt}`,
+    contentType: check.mime,
   });
   if (upErr) return;
 

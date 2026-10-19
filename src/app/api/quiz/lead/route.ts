@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 
 import { quizLeadBodySchema, saveQuizLead } from '@/lib/quiz/lead';
 
@@ -9,6 +10,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
+
+  const guard = await guardPublicFormRequest(request, 'quiz_lead', turnstileTokenFromBody(json), localeFromBody(json));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const parsed = quizLeadBodySchema.safeParse(json);
   if (!parsed.success) {

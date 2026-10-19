@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
+import { buildSecurityHeaders } from './src/lib/security/headers';
+
 function supabaseStoragePattern(): { protocol: 'https'; hostname: string; pathname: string } | null {
   try {
     const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,6 +18,10 @@ const distDir = process.env.NEXT_DIST_DIR?.trim() || '.next';
 
 const nextConfig: NextConfig = {
   distDir,
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: buildSecurityHeaders() }];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.dropbox.com', pathname: '/**' },

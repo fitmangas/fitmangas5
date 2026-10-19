@@ -391,7 +391,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
         </div>
         <div className="space-y-1 p-3">
           <p className="line-clamp-1 text-[1.05rem] font-semibold tracking-tight text-luxury-ink">{p.name}</p>
-          <p className="text-[11px] tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
+          <p className="text-xs tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
         </div>
       </button>
     );
@@ -496,13 +496,13 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                       className={`h-full w-full ${isTransparentImage(p.image) ? 'object-contain p-1.5' : 'object-cover'}`}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] text-luxury-soft">Image</div>
+                    <div className="flex h-full w-full items-center justify-center text-xs text-luxury-soft">Image</div>
                   )}
                 </div>
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-[1.9rem] font-semibold leading-[0.88] tracking-tight text-luxury-ink">{p.name}</p>
                   <p className="mt-2 text-sm text-luxury-muted">{t.bestSeller}</p>
-                  <p className="mt-1 text-[11px] tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
+                  <p className="mt-1 text-xs tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
                 </div>
                 <ArrowUpRight size={16} className="ml-auto shrink-0 text-luxury-ink/70 transition group-hover:text-luxury-ink" />
               </button>
@@ -604,7 +604,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                 <p className="text-sm text-luxury-muted">★★★★★ • {t.topReviews}</p>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.variant}</label>
+                  <label className="fm-label text-luxury-soft">{t.variant}</label>
                   {loadingDetail ? (
                     <div className="mt-2 flex items-center gap-2 text-sm text-luxury-muted">
                       <Loader2 size={14} className="animate-spin" /> {t.loading}
@@ -629,7 +629,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.quantity}</label>
+                  <label className="fm-label text-luxury-soft">{t.quantity}</label>
                   <input
                     type="number"
                     min={1}
@@ -684,7 +684,7 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-soft">{t.country}</label>
+                  <label className="fm-label text-luxury-soft">{t.country}</label>
                   <input
                     required
                     readOnly={addressLocked}

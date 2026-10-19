@@ -381,7 +381,7 @@ export function BulletCards({ items, accent }: { items: string[]; accent?: strin
           className="flex gap-3 rounded-2xl border border-brand-ink/[0.06] bg-brand-beige/40 px-3.5 py-3 text-[14px] leading-relaxed text-brand-ink/85"
         >
           <span
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ background: color }}
           >
             {String(i + 1).padStart(2, '0')}

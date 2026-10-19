@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 import { z } from 'zod';
 
 import { generateSelfTestAnalysis } from '@/lib/self-knowledge/analyze';
@@ -33,6 +34,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
+
+  const guard = await guardPublicFormRequest(request, 'self_test_submit', turnstileTokenFromBody(json), localeFromBody(json));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

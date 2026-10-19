@@ -93,7 +93,7 @@ export function SelfKnowledgeMemberTest({
         <button
           type="button"
           onClick={() => setMode('take')}
-          className="btn-luxury-primary px-5 py-2.5 text-[11px] tracking-[0.12em]"
+          className="btn-luxury-primary px-5 py-2.5 text-xs tracking-[0.12em]"
         >
           {t.take}
         </button>
@@ -104,7 +104,7 @@ export function SelfKnowledgeMemberTest({
           <p className="text-sm text-luxury-muted">
             {locale === 'es' ? 'Aún no has hecho este test.' : 'Tu n’as pas encore passé ce test.'}
           </p>
-          <button type="button" onClick={() => setMode('take')} className="btn-luxury-primary mt-4 px-5 py-2.5 text-[11px]">
+          <button type="button" onClick={() => setMode('take')} className="btn-luxury-primary mt-4 px-5 py-2.5 text-xs">
             {t.take}
           </button>
         </GlassCard>

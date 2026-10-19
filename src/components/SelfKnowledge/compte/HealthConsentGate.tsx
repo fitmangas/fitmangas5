@@ -82,7 +82,7 @@ export function HealthConsentGate({ lang, onConsented }: Props) {
         type="button"
         onClick={() => void handleSubmit()}
         disabled={loading}
-        className="btn-luxury-primary mt-6 px-7 py-3 text-[11px] tracking-[0.14em]"
+        className="btn-luxury-primary mt-6 px-7 py-3 text-xs tracking-[0.14em]"
       >
         {loading ? t.loading : t.cta}
       </button>

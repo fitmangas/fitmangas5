@@ -19,7 +19,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: Omit<NotificationPreferencesRow, 
 };
 
 /** Default profil marketing (colonne profiles.marketing_email_opt_in). */
-export const DEFAULT_MARKETING_EMAIL_OPT_IN = true;
+export const DEFAULT_MARKETING_EMAIL_OPT_IN = false;
 
 export function mergePrefs(row: Partial<NotificationPreferencesRow> | null): Omit<
   NotificationPreferencesRow,

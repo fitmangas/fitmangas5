@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { TurnstileWidget } from '@/components/Security/TurnstileWidget';
 import { SelfTestLeadCapture, type SelfTestLeadPayload } from '@/components/SelfKnowledge/SelfTestLeadCapture';
 import { SelfTestShell } from '@/components/SelfKnowledge/SelfTestShell';
 import { SelfTestTeaser } from '@/components/SelfKnowledge/SelfTestTeaser';
@@ -78,6 +79,7 @@ export function SelfTestRunner({
   const [answers, setAnswers] = useState<SelfTestAnswers>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<SelfTestAnalysis | null>(null);
   const [scores, setScores] = useState<SelfTestScores | null>(null);
   const [batchSize, setBatchSize] = useState(BATCH_SIZE_DESKTOP);
@@ -202,6 +204,7 @@ export function SelfTestRunner({
                 firstName: lead!.firstName,
                 email: lead!.email,
                 consent: true,
+                turnstileToken,
                 blogOptIn: lead!.blogOptIn ?? false,
                 answers,
                 format: test.slug === 'big-five' ? resolvedFormat : undefined,
@@ -239,7 +242,7 @@ export function SelfTestRunner({
         setSubmitting(false);
       }
     },
-    [allComplete, answers, format, locale, mode, submitting, test],
+    [allComplete, answers, format, locale, mode, submitting, test, turnstileToken],
   );
 
   const handleLeadSubmit = useCallback(
@@ -289,6 +292,7 @@ export function SelfTestRunner({
           error={submitError}
           onSubmit={handleLeadSubmit}
         />
+        <TurnstileWidget onToken={setTurnstileToken} locale={locale} />
       </SelfTestShell>
     );
   }
@@ -362,7 +366,7 @@ export function SelfTestRunner({
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-3 text-[10px] leading-snug text-brand-ink/40">
+                      <p className="mt-3 text-xs leading-snug text-brand-ink/40">
                         {locale === 'es' ? 'Fuente IPIP · dominio público' : 'Source IPIP · domaine public'}
                       </p>
                       <span className="mt-4 inline-flex items-center justify-center rounded-full bg-[#c45d3e] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
@@ -371,7 +375,7 @@ export function SelfTestRunner({
                     </button>
                   ))}
                 </div>
-                <p className="mt-5 text-center text-[11px] text-brand-ink/40">{credibilityLine}</p>
+                <p className="mt-5 text-center text-xs text-brand-ink/40">{credibilityLine}</p>
               </div>
             </div>
           </div>

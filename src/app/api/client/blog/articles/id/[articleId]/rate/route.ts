@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { requireAuthenticatedUser } from '@/lib/api-auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -48,7 +49,7 @@ export async function POST(request: Request, context: { params: Promise<{ articl
 
     if (error) {
       console.error('[blog rate]', error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return publicServerError('blog/rate', error, 400);
     }
 
     const { data: stats } = await supabase

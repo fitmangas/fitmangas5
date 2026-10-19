@@ -46,8 +46,8 @@ function FeaturePillar({
     <div className={PILLAR_CARD_CLASS}>
       <Icon size={16} className="text-brand-accent/60 md:h-[18px] md:w-[18px]" aria-hidden />
       <div>
-        <p className="text-[9px] font-bold uppercase tracking-wider text-brand-ink/70 md:text-[10px]">{title}</p>
-        <p className="mt-0.5 text-[10px] leading-snug text-brand-ink/45 md:text-[11px]">{subtitle}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-brand-ink/70 md:text-[10px]">{title}</p>
+        <p className="mt-0.5 text-xs leading-snug text-brand-ink/45 md:text-xs">{subtitle}</p>
       </div>
     </div>
   );
@@ -91,7 +91,7 @@ function ExpandablePanel({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-brand-ink/65 transition hover:border-brand-accent/25 hover:bg-brand-sand/20 hover:text-brand-ink"
+        className="inline-flex items-center gap-1.5 rounded-full border border-brand-ink/[0.08] bg-brand-beige/30 px-3 py-1.5 text-xs font-semibold tracking-wide text-brand-ink/65 transition hover:border-brand-accent/25 hover:bg-brand-sand/20 hover:text-brand-ink"
         aria-expanded={open}
         aria-controls={panelId}
       >
@@ -185,7 +185,7 @@ export function OfferCardFeatures({ course, lang, onsiteCityLabel = 'Nantes' }: 
           ))}
         </div>
         <ExpandablePanel triggerLabel={t.visioIncludedTrigger} panelId={panelId}>
-          <ul className="space-y-2 pr-6 text-[11px] leading-relaxed text-brand-ink/65 md:text-xs">
+          <ul className="space-y-2 pr-6 text-xs leading-relaxed text-brand-ink/65 md:text-xs">
             {t.visioIncludedItems.map((item) => (
               <li key={item} className="flex items-start gap-2">
                 <Check size={12} className="mt-0.5 shrink-0 text-brand-accent/70" aria-hidden />

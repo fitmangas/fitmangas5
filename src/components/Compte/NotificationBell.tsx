@@ -69,7 +69,7 @@ export function NotificationBell({ userId, items }: { userId: string; items: Not
                     router.refresh();
                   })
                 }
-                className="text-[11px] font-semibold text-luxury-orange underline-offset-2 hover:underline disabled:opacity-40"
+                className="text-xs font-semibold text-luxury-orange underline-offset-2 hover:underline disabled:opacity-40"
               >
                 Tout marquer lu
               </button>
