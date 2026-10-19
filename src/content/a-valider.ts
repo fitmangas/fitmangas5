@@ -77,3 +77,26 @@ export const A_VALIDER_LOT2 = {
     es: 'Estilo: Pilates, Barre, Fit-Dance, Boot Camp, Stretching, Booty — el tipo de curso de arriba sirve de estilo.',
   },
 } as const;
+
+export const A_VALIDER_LOT3 = {
+  flagOff: {
+    fr: 'Les programmes guidés ne sont pas encore ouverts.',
+    es: 'Los programas guiados aún no están abiertos.',
+  },
+  visioRequired: {
+    fr: 'Les programmes sont réservés aux abonnées visio.',
+    es: 'Los programas están reservados a las abonadas de visio.',
+  },
+  notOwner: {
+    fr: 'Cette inscription ne t’appartient pas.',
+    es: 'Esta inscripción no te pertenece.',
+  },
+  tablesMissing: {
+    fr: 'Tables programmes non créées (migration Lot 3 en attente de GO).',
+    es: 'Tablas de programas no creadas (migración Lote 3 pendiente de GO).',
+  },
+  importApplyRefuse: {
+    fr: 'L’import réel (--apply) est réservé à Kevin après GO écrit.',
+    es: 'La importación real (--apply) está reservada a Kevin después del GO escrito.',
+  },
+} as const;

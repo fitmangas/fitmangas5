@@ -6,6 +6,8 @@ import { AdminSanteV2 } from '@/components/Notifications/v2/AdminSanteV2';
 import { DEMO_NOTIF_ITEMS } from '@/components/Notifications/v2/demo-data';
 import { NotificationsCenterV2 } from '@/components/Notifications/v2/NotificationsCenterV2';
 import { PreferencesNotifV2 } from '@/components/Notifications/v2/PreferencesNotifV2';
+import { AdminProgrammesManager } from '@/components/Programmes/admin/AdminProgrammesManager';
+import { DEMO_ADMIN_PROGRAMS, DEMO_ADMIN_VIDEOS } from '@/components/Programmes/admin/demo-data';
 
 export type PreviewEntry = { slug: string; lot: string; title: string; render: () => ReactNode };
 
@@ -124,6 +126,17 @@ export const PREVIEWS: PreviewEntry[] = [
           sent7d={{ email: 42, fail: 1, push: 8 }}
           errors={['resend_batch_error (email masqué)']}
         />
+      </div>
+    ),
+  },
+  {
+    slug: 'admin-programmes',
+    lot: '3a',
+    title: 'Admin — Programmes (B10)',
+    render: () => (
+      <div className="luxury-shell admin-area relative min-h-screen">
+        <div className="luxury-bg-orbs" aria-hidden />
+        <AdminProgrammesManager programs={DEMO_ADMIN_PROGRAMS} videos={DEMO_ADMIN_VIDEOS} preview tablesMissing />
       </div>
     ),
   },

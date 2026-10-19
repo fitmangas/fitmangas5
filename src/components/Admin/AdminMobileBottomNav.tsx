@@ -4,18 +4,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { BookOpen, Clapperboard, Film, Inbox, Route, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
   { href: '/admin/videos', label: 'Vidéos', icon: Film },
+  ...(typeof process !== 'undefined' && isProgrammesEnabled()
+    ? [{ href: '/admin/programmes', label: 'Programmes', icon: Route }]
+    : []),
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
   { href: '/admin/boutique', label: 'Boutique', icon: ShoppingBag },
   { href: '/admin/promos', label: 'Promos', icon: TicketPercent },
   { href: '/admin/croissance', label: 'Croissance', icon: Target },
-] as const;
+];
 
 export function AdminMobileBottomNav() {
   const pathname = usePathname();

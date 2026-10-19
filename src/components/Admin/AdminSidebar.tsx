@@ -4,12 +4,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { Activity, BookOpen, Clapperboard, Film, Inbox, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
+import { Activity, BookOpen, Clapperboard, Film, Inbox, Route, ShoppingBag, Target, TicketPercent, Users } from 'lucide-react';
 import { isNotifV2Enabled } from '@/lib/notifications/v2/flag';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 
 const links = [
   { href: '/admin/courses', label: 'Séances', icon: Clapperboard },
   { href: '/admin/videos', label: 'Vidéos', icon: Film },
+  ...(typeof process !== 'undefined' && isProgrammesEnabled()
+    ? [{ href: '/admin/programmes', label: 'Programmes', icon: Route }]
+    : []),
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
