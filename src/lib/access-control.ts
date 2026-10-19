@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkIsAdmin, isListedAdminEmail } from '@/lib/auth/admin';
 import type { AccessPolicy, AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse } from '@/lib/domain/calendar-types';
+import { isAccessV2Enabled } from '@/lib/access/flag';
+import { computeVisioAccessV2 } from '@/lib/access/access-v2';
 
 export type { AccessType, CourseCategory, CourseFormat, CustomerTier, SmartCourse };
 
@@ -122,6 +124,14 @@ export async function getUserTier(userId: string): Promise<CustomerTier | null> 
 
 export async function hasVisioClientAccess(userId: string): Promise<boolean> {
   if (await canBypassClientRestrictionsForAdmin(userId)) return true;
+  if (isAccessV2Enabled()) {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from('subscriptions')
+      .select('status, ends_at, stripe_subscription_id')
+      .eq('user_id', sanitizeUuid(userId));
+    return computeVisioAccessV2(data ?? []).visio;
+  }
   return isOnlineCustomerTier(await getUserTier(userId));
 }
 

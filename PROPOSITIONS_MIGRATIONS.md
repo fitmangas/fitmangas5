@@ -1206,4 +1206,14 @@ revoke all on public.printful_product_names from anon, authenticated;
 grant select, insert, update on public.printful_product_names to service_role;
 ```
 
+## Lot 6 — Fonction d'accès unique
+
+Non appliqué. **Aucun SQL obligatoire.** ACCESS_V2 lit `subscriptions` (status active/trialing, `sub_…`, `ends_at`, `livemode` via Stripe si clé live).
+
+Activation bloquée tant que le comparatif `scripts/chantier-oct/compare-access-v2.ts` affiche des écarts (lot 1 : 3 profils `active` sans subscription active, 2 `customer_tier` orphelins). Correction des **données** = GO Kevin, pas une migration de schéma.
+
+```sql
+-- Optionnel, après GO : mémoriser livemode pour ne plus dépendre d'un retrieve Stripe
+-- alter table public.subscriptions add column if not exists livemode boolean;
+```
 

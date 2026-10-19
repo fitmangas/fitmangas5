@@ -396,6 +396,47 @@ export const PREVIEWS: PreviewEntry[] = [
     ),
   },
   {
+    slug: 'acces-v2',
+    lot: '6',
+    title: 'Comparatif accès actuel / ACCESS_V2',
+    render: () => (
+      <div className="luxury-shell min-h-screen p-8">
+        <h1 className="hero-signature-title text-3xl text-luxury-ink">Accès visio — comparatif (données fictives)</h1>
+        <p className="mt-2 text-sm text-luxury-muted">Toute différence bloque l’activation de ACCESS_V2.</p>
+        <table className="mt-6 min-w-[640px] text-left text-sm">
+          <thead>
+            <tr className="text-[11px] uppercase tracking-[0.12em] text-luxury-soft">
+              <th className="py-2 pr-4">Profil</th>
+              <th className="py-2 pr-4">Actuel</th>
+              <th className="py-2 pr-4">V2</th>
+              <th className="py-2">Écart</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-black/5">
+              <td className="py-2 pr-4">f749fae0…</td>
+              <td>oui</td>
+              <td>oui (abonnement live)</td>
+              <td>OK</td>
+            </tr>
+            <tr className="border-t border-black/5">
+              <td className="py-2 pr-4">0e7da730…</td>
+              <td>oui (profil active)</td>
+              <td>non (aucune subscription)</td>
+              <td className="font-semibold text-[#a5452a]">DIFFÉRENCE</td>
+            </tr>
+            <tr className="border-t border-black/5">
+              <td className="py-2 pr-4">fa6b0305…</td>
+              <td>oui (profil active)</td>
+              <td>non (canceled)</td>
+              <td className="font-semibold text-[#a5452a]">DIFFÉRENCE</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    ),
+  },
+  {
     slug: 'info-bulles',
     lot: '5',
     title: 'Info-bulles menu (D10)',

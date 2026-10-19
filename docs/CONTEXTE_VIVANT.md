@@ -27,6 +27,11 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-19 — Chantier oct. lot 6 (branche locale, pas de push)
+
+- ACCESS_V2 préparé (off). Comparatif SELECT : 1 écart (`f694a7d9…`) → activation bloquée. `hasVisioClientAccess` inchangé tant que le drapeau est off.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-6.md`. Pas de push.
+
 ### 2026-10-19 — Chantier oct. lot 5 (branche locale, pas de push)
 
 - Conversion : menu public, titre A accueil, modale D01 (case immédiat seulement v-ind), planning v3, habillage live D03, D09 suivi clientes, D06 nav mobile, D10 info-bulles, D07 Les cours.
