@@ -559,7 +559,9 @@ export async function scheduleFollowup(params: {
   actionType: string;
   payload?: Record<string, unknown>;
   timeZone?: string;
-}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  /** Canal de la conversation : Instagram / Messenger / WhatsApp = règle Meta des 24 h (V2). */
+  channel?: string | null;
+}): Promise<{ ok: boolean; id?: string; runAt?: string; error?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) {
     return { ok: false, error: 'Table acq_followups absente — migration §9 requise.' };
@@ -569,7 +571,13 @@ export async function scheduleFollowup(params: {
   if (isCroissanceV2Enabled()) {
     const { clampFollowupToSendWindow } = await import('./send-window');
     const { croissanceV2FollowupInsertPlan } = await import('./croissance-v2-overlay');
-    const plan = croissanceV2FollowupInsertPlan(params.runAt, params.timeZone || 'Europe/Paris', clampFollowupToSendWindow);
+    const { isMetaMessagingChannel, planFollowupInMetaWindow } = await import('./meta-window');
+    // Canal inconnu : traité comme Meta (Instagram, Messenger, WhatsApp = la quasi-totalité des fils).
+    const metaRule = !params.channel || isMetaMessagingChannel(params.channel);
+    const clamp = metaRule
+      ? (iso: string, tz: string) => planFollowupInMetaWindow(iso, Date.now(), tz)
+      : clampFollowupToSendWindow;
+    const plan = croissanceV2FollowupInsertPlan(params.runAt, params.timeZone || 'Europe/Paris', clamp);
     if (plan.cancelScheduledFirst) await cancelScheduledFollowups(params.contactId);
     runAt = plan.runAt;
   }
@@ -587,7 +595,7 @@ export async function scheduleFollowup(params: {
     .select('id')
     .single();
   if (error) return { ok: false, error: error.message };
-  return { ok: true, id: String(data.id) };
+  return { ok: true, id: String(data.id), runAt };
 }
 
 /** Annule toutes les relances encore programmées pour un contact (opt-out). */
@@ -932,6 +940,11 @@ export async function runDueFollowups(limit = 40): Promise<{
 
   const { runWorkflowAction } = await import('@/lib/acquisition/engine/actions');
   const { detectAcquisitionMarket } = await import('@/lib/acquisition/market');
+  const { isCroissanceV2Enabled } = await import('@/lib/acquisition/croissance-v2-flag');
+  const { isMetaMessagingChannel, isMetaWindowOpen, lastInboundAt } = await import('./meta-window');
+  const v2 = isCroissanceV2Enabled();
+  /** V2 : une relance à la fois — au plus une par contact et par passage (la plus ancienne). */
+  const contactsDone = new Set<string>();
   const details: string[] = [];
   let okCount = 0;
   let failCount = 0;
@@ -943,6 +956,11 @@ export async function runDueFollowups(limit = 40): Promise<{
       await admin.from('acq_followups').update({ status: 'error' }).eq('id', id);
       failCount += 1;
       details.push(`${id}: action inconnue « ${actionType} »`);
+      continue;
+    }
+    if (v2 && contactsDone.has(String(row.contact_id))) {
+      await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+      details.push(`${id}: annulé — une relance à la fois (déjà une relance pour ce contact)`);
       continue;
     }
 
@@ -986,6 +1004,15 @@ export async function runDueFollowups(limit = 40): Promise<{
       await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
       details.push(`${id}: annulé — déjà ${contact.lifecycleStage}`);
       continue;
+    }
+    if (v2) {
+      contactsDone.add(String(row.contact_id));
+      // Meta refuse un message automatique plus de 24 h après le dernier message de la personne : on n'essaie pas.
+      if (isMetaMessagingChannel(detail.conversation.channel) && !isMetaWindowOpen(lastInboundAt(detail.messages), Date.now())) {
+        await admin.from('acq_followups').update({ status: 'cancelled' }).eq('id', id);
+        details.push(`${id}: annulé — fenêtre Meta de 24 h fermée (pas de réponse récente de la personne)`);
+        continue;
+      }
     }
 
     const lastInbound =

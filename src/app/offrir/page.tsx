@@ -14,7 +14,7 @@ import { isHeartbeatLate } from '@/lib/notifications/v2/heartbeats';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Offrir FitMangas — carte cadeau Pilates & Barre en visio',
+  title: { absolute: 'Offrir FitMangas — carte cadeau Pilates & Barre en visio' },
   description:
     'Offre de 1 à 12 mois de Pilates & Barre en visio avec Alejandra : lives où elle la corrige en direct, replays et programmes. Envoyée par email le jour choisi, ou en PDF à imprimer.',
   alternates: { canonical: '/offrir' },

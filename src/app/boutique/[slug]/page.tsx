@@ -20,10 +20,10 @@ async function findProduct(slug: string): Promise<BoutiqueItem | null> {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = await findProduct(slug);
-  if (!product) return { title: 'Boutique FitMangas' };
+  if (!product) return { title: { absolute: 'Boutique FitMangas' } };
   const price = formatBoutiquePrice(product);
   return {
-    title: `${product.name} — Boutique FitMangas`,
+    title: { absolute: `${product.name} — Boutique FitMangas` },
     description: `${product.name}${price ? ` · ${price}` : ''}. Fabriqué à la demande et livré chez toi.`,
     alternates: { canonical: `/boutique/${product.slug}` },
     openGraph: product.image ? { images: [product.image] } : undefined,

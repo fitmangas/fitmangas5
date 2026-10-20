@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Activer ma carte cadeau — FitMangas',
+  title: { absolute: 'Activer ma carte cadeau — FitMangas' },
   description: 'Active ta carte cadeau FitMangas : tes mois de Pilates & Barre en visio commencent tout de suite, sans carte bancaire.',
   robots: { index: false, follow: false },
 };

@@ -6,6 +6,7 @@ import { ArrowRight, Check, ChevronLeft, ChevronRight, Lock, Video } from 'lucid
 
 import type { SmartCourse } from '@/lib/domain/calendar-types';
 import { effectiveAccessForUi } from '@/lib/calendar-course-ui';
+import { pickMobilePlanningDays } from '@/lib/calendar/planning-mobile-days';
 import { tzHoursLabel } from '@/lib/time/tz-label';
 import { CalendarCourseModal } from '@/components/Calendar/CalendarCourseModal';
 import { SubscribeCalendarButton } from '@/components/Calendar/SubscribeCalendarButton';
@@ -57,6 +58,7 @@ const COPY = {
     session: 'Ta séance',
     done: 'Faite',
     start: 'Commencer',
+    ended: 'Terminé',
     replay: 'Voir le replay',
     join: 'Rejoindre',
     visio: 'Visio',
@@ -79,6 +81,7 @@ const COPY = {
     session: 'Tu sesión',
     done: 'Hecha',
     start: 'Empezar',
+    ended: 'Terminado',
     replay: 'Ver el replay',
     join: 'Unirme',
     visio: 'Online',
@@ -101,6 +104,7 @@ const COPY = {
     session: 'Your session',
     done: 'Done',
     start: 'Start',
+    ended: 'Ended',
     replay: 'Watch the replay',
     join: 'Join',
     visio: 'Online',
@@ -206,24 +210,36 @@ function LiveItem({
   const flag = flagFor(course.course_language ?? null);
   const directLink = full && Boolean(course.jitsi_link) && (past || isTodayCard);
 
+  // Live passé : il reste affiché, grisé (« Terminé »), pour que la semaine ne paraisse pas vide.
   const body = (
     <>
-      <p className="flex items-center justify-between text-[14px] font-semibold text-luxury-ink">
+      <p className={`flex items-center justify-between text-[14px] font-semibold ${past ? 'text-luxury-muted' : 'text-luxury-ink'}`}>
         <span className="tabular-nums">{time}</span>
         {flag ? (
-          <span className="text-[12px]" aria-label={course.course_language === 'es' ? 'en español' : 'en français'}>
+          <span
+            className={`text-[12px] ${past ? 'opacity-60 grayscale' : ''}`}
+            aria-label={course.course_language === 'es' ? 'en español' : 'en français'}
+          >
             {flag}
           </span>
         ) : null}
       </p>
-      <p className="text-[13px] font-medium leading-snug text-luxury-ink">{course.title}</p>
-      {!full ? (
+      <p className={`text-[13px] font-medium leading-snug ${past ? 'text-luxury-muted' : 'text-luxury-ink'}`}>{course.title}</p>
+      {past ? (
+        <p className="mt-0.5 text-[12px] text-luxury-soft">
+          {t.ended}
+          {full ? (
+            <>
+              {' · '}
+              <span className="font-semibold text-luxury-orange">{t.replay}</span>
+            </>
+          ) : null}
+        </p>
+      ) : !full ? (
         <p className="mt-0.5 inline-flex items-center gap-1 text-[12px] text-luxury-muted">
           <Lock size={11} aria-hidden />
           {t.locked}
         </p>
-      ) : past ? (
-        <p className="mt-0.5 text-[12px] font-semibold text-luxury-orange">{t.replay}</p>
       ) : isTodayCard ? (
         <p className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-luxury-orange">
           {t.join}
@@ -238,9 +254,9 @@ function LiveItem({
     </>
   );
 
-  const cls = `block w-full rounded-xl border-l-[3px] border-l-luxury-orange bg-[#faf7f3] px-2.5 py-2.5 text-left transition hover:bg-[#f6efe7] ${
-    past ? 'opacity-60' : ''
-  }`;
+  const cls = past
+    ? 'block w-full rounded-xl border-l-[3px] border-l-[#d8d1c9] bg-[#f2f0ed] px-2.5 py-2.5 text-left transition hover:bg-[#ebe8e4]'
+    : 'block w-full rounded-xl border-l-[3px] border-l-luxury-orange bg-[#faf7f3] px-2.5 py-2.5 text-left transition hover:bg-[#f6efe7]';
 
   if (directLink) {
     return (
@@ -422,12 +438,15 @@ export function PlanningV3({
     );
   };
 
-  // Mobile : une carte par jour (à partir d'aujourd'hui pour la semaine en cours), seulement les jours avec du contenu.
-  const mobileDays = days.filter((key) => {
-    if (weekOffset === 0 && key < todayKey) return false;
+  // Mobile : une carte par jour avec du contenu. Semaine en cours : les jours à venir d'abord, complétés par
+  // les derniers jours passés (grisés) pour que la semaine ne paraisse pas vide en fin de semaine.
+  const daysWithContent = days.filter((key) => {
     const entry = byDay.get(key);
-    return loading ? key === todayKey : Boolean(entry && (entry.lives.length || entry.sessions.length));
+    return Boolean(entry && (entry.lives.length || entry.sessions.length));
   });
+  const mobileDays = loading
+    ? days.filter((key) => key === todayKey)
+    : pickMobilePlanningDays(daysWithContent, weekOffset === 0 ? todayKey : null, mobileLimit);
 
   return (
     <div className="space-y-5">

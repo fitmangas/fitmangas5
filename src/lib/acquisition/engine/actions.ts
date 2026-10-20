@@ -406,11 +406,13 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
     actionType,
     payload,
     timeZone: timezoneForMarket(ctx.market),
+    channel: ctx.conversation.channel,
   });
+  const plannedHours = r.runAt ? Math.max(0, Math.round((Date.parse(r.runAt) - Date.now()) / 3600000)) : hours;
   return {
     type: 'schedule_followup',
     ok: r.ok,
-    detail: r.ok ? `Relance programmée dans ${hours}h (${actionType}).` : (r.error ?? 'Erreur relance'),
+    detail: r.ok ? `Relance programmée dans ${plannedHours}h (${actionType}).` : (r.error ?? 'Erreur relance'),
   };
 }
 

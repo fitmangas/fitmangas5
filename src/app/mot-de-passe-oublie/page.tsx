@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { ForgotPasswordForm } from '@/components/Auth/ForgotPasswordForm';
 
 export const metadata: Metadata = {
-  title: 'Mot de passe oublié | FitMangas',
+  title: 'Mot de passe oublié',
   robots: { index: false, follow: false },
 };
 

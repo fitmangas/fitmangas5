@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Politique de confidentialité — FitMangas',
+  title: { absolute: 'Politique de confidentialité — FitMangas' },
   description: 'Politique de confidentialité FitMangas : données personnelles, cookies et droits RGPD.',
   openGraph: {
     title: 'Politique de confidentialité — FitMangas',

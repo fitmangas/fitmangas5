@@ -8,7 +8,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 );
 
 export const metadata: Metadata = {
-  title: 'Tests de personalidad FitMangas — Big Five y apego',
+  title: { absolute: 'Tests de personalidad FitMangas — Big Five y apego' },
   description:
     'Cuestionarios validados (IPIP-50 Big Five, ECR apego). Vista previa de tus fortalezas y enlace a la prueba gratuita de cursos colectivos en visio.',
   alternates: {

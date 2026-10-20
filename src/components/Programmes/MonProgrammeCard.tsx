@@ -62,12 +62,15 @@ export function MonProgrammeCard({
   lang = 'fr',
   canTest = true,
   recommended = null,
+  hideKicker = false,
 }: {
   summary: ActiveSummary | null;
   lang?: Lang;
   canTest?: boolean;
   /** Programme recommandé par le test de niveau (cookie), ouvert directement sur la modale de démarrage. */
   recommended?: { slug: string; title: string } | null;
+  /** Tableau de bord : le titre « Mon programme sur mesure » est déjà au-dessus de la carte, on ne répète pas « Mon programme ». */
+  hideKicker?: boolean;
 }) {
   const t = C[lang];
   if (!summary) {
@@ -79,8 +82,10 @@ export function MonProgrammeCard({
               <Route size={24} aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">{t.kicker}</p>
-              <p className="mt-1 text-[16px] font-semibold text-luxury-ink">
+              {hideKicker ? null : (
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-orange">{t.kicker}</p>
+              )}
+              <p className={`${hideKicker ? '' : 'mt-1 '}text-[16px] font-semibold text-luxury-ink`}>
                 {t.emptyTitle} <span className="fm-display text-luxury-orange">{t.emptyAccent}</span>
               </p>
               <p className="mt-0.5 text-[13px] text-luxury-muted">{recommended ? t.recommended(recommended.title) : t.emptySub}</p>
@@ -103,7 +108,8 @@ export function MonProgrammeCard({
 
   const s = summary;
   const state = s.completable ? 'done' : s.paused ? 'paused' : 'active';
-  const kicker = `${t.kicker} · ${state === 'done' ? t.finished : state === 'paused' ? t.paused : t.week(s.weekIndex, s.weeks)}`;
+  const stateLabel = state === 'done' ? t.finished : state === 'paused' ? t.paused : t.week(s.weekIndex, s.weeks);
+  const kicker = hideKicker ? stateLabel : `${t.kicker} · ${stateLabel}`;
   const primary =
     state === 'done'
       ? { href: s.programHref, label: t.finish, icon: <Award size={13} aria-hidden /> }

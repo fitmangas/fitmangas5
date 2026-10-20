@@ -8,7 +8,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 );
 
 export const metadata: Metadata = {
-  title: 'Tests de personnalité FitMangas — Big Five et attachement',
+  title: { absolute: 'Tests de personnalité FitMangas — Big Five et attachement' },
   description: 'Des tests gratuits pour mieux te connaître et choisir ta pratique.',
   alternates: {
     canonical: '/quiz',
