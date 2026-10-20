@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 
 import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
 import { CompteSidebar } from '@/components/Compte/CompteSidebar';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { checkIsAdmin } from '@/lib/auth/admin';
 import { comptePlanLabel, getClientLang } from '@/lib/compte/i18n';
 import { getUserTier } from '@/lib/access-control';
 import { createClient } from '@/lib/supabase/server';
@@ -30,13 +32,15 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
     ? (await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle()).data
     : null;
   const tier = user ? await getUserTier(user.id).catch(() => null) : null;
+  /** Clientes connectées : menu de l'espace cliente. Visiteuses et admins : menu du site. */
+  const memberChrome = user ? !(await checkIsAdmin(supabase, user)).isAdmin : false;
 
   return (
     <div className="luxury-shell relative min-h-screen" lang={lang}>
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
-        {user ? (
+        {memberChrome ? (
           <>
             <CompteSidebar lang={lang} unreadNotifications={unreadNotifications} />
             <CompteMobileBottomNav
@@ -48,8 +52,11 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
               planLabel={comptePlanLabel(tier, lang)}
             />
           </>
-        ) : null}
-        <main className={user ? 'luxury-main pb-32 pt-24 md:pb-16 md:pt-0 md:pl-24' : ''}>{children}</main>
+        ) : (
+          /* Visiteuses non connectées et admins : le menu du site reste affiché sur le blog. */
+          <PublicSiteHeader lang="FR" activeHref="/blog" />
+        )}
+        <main className={memberChrome ? 'luxury-main pb-32 pt-24 md:pb-16 md:pt-0 md:pl-24' : ''}>{children}</main>
       </div>
     </div>
   );

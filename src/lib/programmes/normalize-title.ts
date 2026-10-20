@@ -1,5 +1,11 @@
 export function normalizeVideoTitle(raw: string): string {
-  return raw.normalize('NFC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr-FR');
+  return raw
+    .normalize('NFC')
+    .replace(/[\u2018\u2019\u02BC\u00B4`]/g, "'")
+    .replace(/[\u2013\u2014\u2212]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('fr-FR');
 }
 
 export type TitleMatch = { status: 'exact' | 'missing' | 'ambiguous'; ids: string[] };

@@ -25,6 +25,12 @@ export const PUBLIC_FORM_LIMITS = {
   support: { max: 10, windowSec: 3600 },
   gift_activation: { max: 10, windowSec: 3600 },
   gift_lookup: { max: 30, windowSec: 3600 },
+  /** Mot de passe oublié : par adresse IP… */
+  password_reset: { max: 5, windowSec: 3600 },
+  /** … et par adresse e-mail (passée à la place de l'IP, hachée pareil). */
+  password_reset_email: { max: 3, windowSec: 3600 },
+  /** Changement depuis l'espace cliente (vérifie le mot de passe actuel). */
+  password_change: { max: 10, windowSec: 3600 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type PublicFormScope = keyof typeof PUBLIC_FORM_LIMITS;

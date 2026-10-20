@@ -6,6 +6,7 @@ import type { PreferencesLang } from '@/components/Compte/Preferences/i18n';
 import { ProfileBillingCard } from '@/components/Compte/ProfileBillingCard';
 import { ProfileLanguageTimezoneCard } from '@/components/Compte/ProfileLanguageTimezoneCard';
 import { ProfileMonProfilCard } from '@/components/Compte/ProfileMonProfilCard';
+import { ProfilePasswordCard } from '@/components/Compte/ProfilePasswordCard';
 import { getClientLang } from '@/lib/compte/i18n';
 import { mergePrefs } from '@/lib/notifications/defaults';
 import type { NotificationPreferencesRow } from '@/lib/notifications/types';
@@ -160,6 +161,8 @@ export default async function ProfilPage() {
           cancelUnavailable={t.cancelUnavailable}
         />
       </div>
+
+      <ProfilePasswordCard lang={blogLang === 'en' ? 'en' : blogLang === 'es' ? 'es' : 'fr'} />
 
       <PreferencesClient
         embedded

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, LogIn } from 'lucide-react';
+import { forgotPasswordHref, loginErrorMessage } from '@/lib/auth/password-shared';
 import { createClient } from '@/lib/supabase/client';
 import { resolvePostLoginRedirectAction } from '@/app/auth/post-login/actions';
 
@@ -31,7 +32,7 @@ export function AdminLoginForm({ initialError }: Props) {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        setError(loginErrorMessage(signInError.message, 'fr'));
         return;
       }
 
@@ -76,6 +77,12 @@ export function AdminLoginForm({ initialError }: Props) {
             className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm outline-none ring-brand-accent/30 transition focus:ring-2"
           />
         </label>
+
+        <div className="-mt-1 text-right">
+          <Link href={forgotPasswordHref('fr')} className="text-[10px] font-semibold uppercase tracking-widest text-brand-accent hover:underline">
+            Mot de passe oublié ?
+          </Link>
+        </div>
 
         {error ? (
           <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">
