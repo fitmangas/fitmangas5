@@ -19,7 +19,8 @@ export async function verifySupabaseCronSecret(
 ): Promise<boolean> {
   const auth = request.headers.get('authorization') ?? '';
   const candidate = /^Bearer\s+(\S+)$/.exec(auth)?.[1] ?? '';
-  if (candidate.length < 32 || candidate.length > 256) return false;
+  // Le secret Vault est toujours 32 octets en hexadécimal : rien d'autre n'interroge la base.
+  if (!/^[0-9a-f]{64}$/i.test(candidate)) return false;
   try {
     if (matches) return await matches(candidate);
     const admin = createAdminClient();

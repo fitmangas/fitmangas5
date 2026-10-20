@@ -662,7 +662,7 @@ Constat du 19/10/2026 (lecture seule avec la clé publique `anon`) : `ad_campaig
 Vérifié : tout le code qui lit/écrit ces tables (`src/lib/acquisition/ads/repository.ts`, `intelligence-repository.ts`, `sync-intelligence.ts`) passe par `createAdminClient()` (service_role, qui ignore la RLS) → rien ne casse.
 
 ```sql
-begin;
+-- Sans begin/commit : le fichier de migration est déjà exécuté d'un seul tenant (tout ou rien).
 do $$
 declare t text;
 begin
@@ -685,7 +685,6 @@ end $$;
 grant select on public.ad_breakdowns_daily, public.ad_campaigns, public.ad_creatives, public.ad_insights_daily,
   public.ad_metrics_daily, public.ads_sync_runs, public.organic_account_snapshots, public.organic_media_snapshots
   to authenticated;
-commit;
 ```
 
 Vérification après application (doit renvoyer `[]` ou 401) :
@@ -880,15 +879,15 @@ Décisions (Claude, validées par Kevin le 20/10/2026) :
 
 ```sql
 -- À exécuter AVANT L1-c (la purge de rate_limits utilise pg_cron).
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
+create extension if not exists pg_cron with schema pg_catalog;
+create extension if not exists pg_net with schema extensions;
 
--- 1) Secret généré dans la base, jamais affiché (rien n'est recréé s'il existe déjà).
+-- 1) Secret généré dans la base, jamais affiché (rien n'est recréé s'il existe déjà) : la requête ne renvoie qu'un booléen.
 select vault.create_secret(
   encode(extensions.gen_random_bytes(32), 'hex'),
   'cron_secret',
   'Supabase Cron → fitmangas.com (routes cron)'
-)
+) is not null as created
 where not exists (select 1 from vault.secrets where name = 'cron_secret');
 
 -- 2) Comparaison faite par la base (clé de service seulement).
@@ -998,7 +997,8 @@ create table if not exists public.program_steps (
   program_id uuid not null references public.programs(id) on delete cascade,
   week smallint not null, position smallint not null,
   kind text not null check (kind in ('video','live')),
-  video_id uuid references public.standalone_vimeo_videos(id) on delete restrict,
+  -- set null : une vidéo retirée de la bibliothèque (synchro Vimeo) ne doit jamais bloquer la synchro ; l'étape est alors signalée sans vidéo.
+  video_id uuid references public.standalone_vimeo_videos(id) on delete set null,
   start_s int, end_s int, segment_to_validate boolean not null default false,
   minutes smallint, objective jsonb, objective_long jsonb, live_style text,
   unique (program_id, week, position)
@@ -1064,7 +1064,7 @@ alter table public.program_feedback enable row level security;
 revoke all on public.programs, public.program_weeks, public.program_steps,
   public.program_enrollments, public.program_step_progress,
   public.program_test_results, public.program_feedback from anon;
-revoke insert, update, delete on public.programs, public.program_weeks, public.program_steps,
+revoke all on public.programs, public.program_weeks, public.program_steps,
   public.program_enrollments, public.program_step_progress,
   public.program_test_results, public.program_feedback from authenticated;
 
@@ -1177,7 +1177,7 @@ create table if not exists public.gift_cards (
   status text not null default 'paid' check (status in ('paid','scheduled','sent','activated','expired','refunded')),
   expires_at timestamptz not null,
   activation_mode text check (activation_mode in ('new_trial','existing_no_access','balance_credit','trial_extension')),
-  activated_by uuid references public.profiles(id), activated_at timestamptz, access_ends_at timestamptz,
+  activated_by uuid references public.profiles(id) on delete set null, activated_at timestamptz, access_ends_at timestamptz,
   stripe_subscription_id text,
   reminder_14_sent_at timestamptz, reminder_3_sent_at timestamptz, converted_at timestamptz,
   refunded_at timestamptz, refund_amount_cents int,
@@ -1202,12 +1202,12 @@ Non appliqué.
 ```sql
 create table if not exists public.client_followups (
   id uuid primary key default gen_random_uuid(),
-  profile_id uuid not null references public.profiles(id),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
   followed_at timestamptz not null default now(),
   channel text not null check (channel in ('whatsapp','email')),
   reason text,
   note text,
-  author_id uuid references public.profiles(id)
+  author_id uuid references public.profiles(id) on delete set null
 );
 alter table public.client_followups enable row level security;
 revoke all on public.client_followups from anon, authenticated;

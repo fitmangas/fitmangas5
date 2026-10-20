@@ -123,7 +123,8 @@ async function apply() {
   });
   const json = (await res.json().catch(() => null)) as { code?: number; error?: { message?: string } } | null;
   if (!res.ok || json?.code !== 200) {
-    throw new Error(`Printful POST /webhooks : ${res.status} ${json?.error?.message ?? ''} — Vercel a déjà le nouveau secret : relancer --apply.`);
+    const reason = String(json?.error?.message ?? '').split(secret).join('***');
+    throw new Error(`Printful POST /webhooks : ${res.status} ${reason} — Vercel a déjà le nouveau secret : relancer --apply.`);
   }
   const after = await getConfig();
   const tokenOk = (() => {

@@ -37,6 +37,8 @@ describe('verifySupabaseCronSecret (Supabase Cron, secret dans Vault)', () => {
     expect(await verifySupabaseCronSecret(req('Bearer court'), matches)).toBe(false);
     expect(await verifySupabaseCronSecret(req(VAULT_SECRET), matches)).toBe(false);
     expect(await verifySupabaseCronSecret(req(`Bearer ${'x'.repeat(300)}`), matches)).toBe(false);
+    expect(await verifySupabaseCronSecret(req(`Bearer ${'z'.repeat(64)}`), matches)).toBe(false);
+    expect(await verifySupabaseCronSecret(req(`Bearer ${'a'.repeat(63)}`), matches)).toBe(false);
     expect(matches).not.toHaveBeenCalled();
   });
 
