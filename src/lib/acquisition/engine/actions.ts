@@ -92,7 +92,11 @@ async function actionSendMessage(ctx: ActionContext, config?: Record<string, unk
     localeBody ||
     (typeof config?.body === 'string' && config.body) ||
     (typeof config?.template === 'string' && config.template) ||
-    'Bonjour 💛 C’est Alejandra. Tu cherches un vrai suivi en visio — pas une vidéo seule ? Essai 7 jours gratuits ✨';
+    (await import('@/lib/acquisition/croissance-v2-flag')).isCroissanceV2Enabled()
+      ? ctx.market === 'mx'
+        ? 'Hola, soy Alejandra 💛\nMis clases de Pilates y Barre en grupo son en línea, con 7 días de prueba gratis.'
+        : 'Bonjour, c’est Alejandra 💛\nMes cours de Pilates et de Barre en groupe sont en visio, avec un essai 7 jours gratuits.'
+      : 'Bonjour 💛 C’est Alejandra. Tu cherches un vrai suivi en visio — pas une vidéo seule ? Essai 7 jours gratuits ✨';
 
   const hasTrialUrlButton =
     Array.isArray(config?.buttons) &&
@@ -291,6 +295,17 @@ function resolveCourseType(ctx: ActionContext, config?: Record<string, unknown>)
 async function actionBookSession(ctx: ActionContext, config?: Record<string, unknown>): Promise<ActionResult> {
   if (!ctx.contact) return { type: 'book_session_intent', ok: false, detail: 'Contact absent.' };
   const courseType = resolveCourseType(ctx, config);
+  const { isCroissanceV2Enabled } = await import('@/lib/acquisition/croissance-v2-flag');
+  if (isCroissanceV2Enabled() && courseType === 'nantes_presentiel') {
+    const locale = ctx.market === 'mx' ? 'es' : 'fr';
+    const { nantesPersonal } = await import('./croissance-v2-copy');
+    await actionSendMessage(ctx, {
+      body: nantesPersonal(locale),
+      appendTrialLink: false,
+    });
+    await tagContact(ctx.contact.id, 'interet_nantes');
+    return actionEscalateHuman(ctx);
+  }
   const r = await createBookingIntent({
     contactId: ctx.contact.id,
     courseType,
@@ -301,23 +316,34 @@ async function actionBookSession(ctx: ActionContext, config?: Record<string, unk
   }
 
   const locale = ctx.market === 'mx' ? 'es' : 'fr';
-  const confirmBody =
-    courseType === 'nantes_presentiel'
-      ? locale === 'es'
-        ? 'Perfecto 💛 Anoto tu interés por un curso presencial en Nantes. Te escribo yo con los horarios.'
-        : 'Parfait 💛 Je note ton intérêt pour un cours présentiel à Nantes. Je te recontacte moi-même avec les créneaux.'
-      : locale === 'es'
-        ? 'Perfecto 💛 Anoto tu interés por el visio colectivo. Te envío yo los horarios disponibles.'
-        : 'Parfait 💛 Je note ton intérêt pour le visio collectif. Je t’envoie moi-même les créneaux.';
+  const v2 = isCroissanceV2Enabled();
+  let confirmBody: string;
+  let trialLine: string;
+  if (v2) {
+    const { visioHoraires, nantesPersonal } = await import('./croissance-v2-copy');
+    if (courseType === 'nantes_presentiel') {
+      confirmBody = nantesPersonal(locale);
+      trialLine = '';
+    } else {
+      const packed = visioHoraires(locale);
+      confirmBody = packed.confirm;
+      trialLine = packed.trialLine;
+    }
+  } else {
+    confirmBody =
+      courseType === 'nantes_presentiel'
+        ? locale === 'es'
+          ? 'Perfecto 💛 Anoto tu interés por un curso presencial en Nantes. Te escribo yo con los horarios.'
+          : 'Parfait 💛 Je note ton intérêt pour un cours présentiel à Nantes. Je te recontacte moi-même avec les créneaux.'
+        : locale === 'es'
+          ? 'Perfecto 💛 Anoto tu interés por el visio colectivo. Te envío yo los horarios disponibles.'
+          : 'Parfait 💛 Je note ton intérêt pour le visio collectif. Je t’envoie moi-même les créneaux.';
+    trialLine = locale === 'es' ? 'O empieza ya — Prueba 7 días gratis ✨' : 'Ou démarre tout de suite — Essai 7 jours gratuits ✨';
+  }
 
   await actionSendMessage(ctx, {
-    body: confirmBody.includes('fitmangas.com')
-      ? confirmBody
-      : `${confirmBody}\n\nOu démarre tout de suite — Essai 7 jours gratuits ✨`,
-    bodyEs: locale === 'es'
-      ? `${confirmBody}\n\nO empieza ya — Prueba 7 días gratis ✨`
-      : undefined,
-    appendTrialLink: !confirmBody.includes('fitmangas.com'),
+    body: trialLine ? `${confirmBody}\n${trialLine}` : confirmBody,
+    appendTrialLink: Boolean(trialLine) && !confirmBody.includes('fitmangas.com'),
   });
   await tagContact(ctx.contact.id, courseType === 'nantes_presentiel' ? 'booking_nantes' : 'booking_visio');
   const { bumpContactLeadScore } = await import('./repository');
@@ -372,12 +398,14 @@ async function actionScheduleFollowup(ctx: ActionContext, config?: Record<string
   if (typeof config?.body === 'string') payload.body = config.body;
   if (typeof config?.bodyFr === 'string') payload.bodyFr = config.bodyFr;
   if (typeof config?.bodyEs === 'string') payload.bodyEs = config.bodyEs;
+  const { timezoneForMarket } = await import('./send-window');
   const r = await scheduleFollowup({
     contactId: ctx.contact.id,
     conversationId: ctx.conversation.id,
     runAt,
     actionType,
     payload,
+    timeZone: timezoneForMarket(ctx.market),
   });
   return {
     type: 'schedule_followup',
@@ -511,7 +539,11 @@ async function actionEscalateHuman(ctx: ActionContext): Promise<ActionResult> {
 
 /** Demande d’abonnement IG (voix Alejandra, pas de Bonjour). */
 export async function actionAskFollowGate(ctx: ActionContext): Promise<ActionResult> {
-  const send = await actionSendMessage(ctx, bilingualSend(followGateAskFr(), followGateAskEs(), false, QR_FOLLOW_GATE));
+  const { isCroissanceV2Enabled } = await import('@/lib/acquisition/croissance-v2-flag');
+  const send = await actionSendMessage(
+    ctx,
+    bilingualSend(followGateAskFr(), followGateAskEs(), isCroissanceV2Enabled(), QR_FOLLOW_GATE),
+  );
   if (ctx.contact) {
     await tagContact(ctx.contact.id, 'follow_gate_pending');
   }
@@ -628,7 +660,12 @@ async function actionVerifyFollowAndResume(
   if (!pass) {
     const retry = await actionSendMessage(
       ctx,
-      bilingualSend(followGateRetryFr(), followGateRetryEs(), false, QR_FOLLOW_DONE),
+      bilingualSend(
+        followGateRetryFr(),
+        followGateRetryEs(),
+        (await import('@/lib/acquisition/croissance-v2-flag')).isCroissanceV2Enabled(),
+        QR_FOLLOW_DONE,
+      ),
     );
     await tagContact(ctx.contact.id, mode === 'claim' ? 'follow_claimed' : 'follow_gate_pending');
     return {

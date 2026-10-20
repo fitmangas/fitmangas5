@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
 import { CheckoutPurchaseTracker } from '@/components/Marketing/CheckoutPurchaseTracker';
-import { SmartCalendar } from '@/components/Calendar/SmartCalendar';
+import { PlanningV3 } from '@/components/Compte/PlanningV3';
 import { NextLiveCompteCard } from '@/components/Compte/NextLiveCompteCard';
 import { MonthlyProgressRing } from '@/components/Compte/MonthlyProgressRing';
 import { VisioLock } from '@/components/Premium/VisioLock';
@@ -12,6 +13,8 @@ import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
 import { formatCompteGreeting, getClientLang, resolveFirstName } from '@/lib/compte/i18n';
+import { loadPlanningContext } from '@/lib/compte/planning-context';
+import { loadPlanningProgramSessions } from '@/lib/programmes/planning-sessions';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { hasVisioClientAccess } from '@/lib/access-control';
@@ -21,6 +24,11 @@ import { getReplayLibraryForUser } from '@/lib/replay-library';
 import { getStandaloneVimeoLibraryForUser } from '@/lib/standalone-vimeo-library';
 import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
 import { createClient } from '@/lib/supabase/server';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
+import { loadActiveProgram, loadProgramDefinition } from '@/lib/programmes/load';
+import { LEVEL_TEST_COOKIE } from '@/lib/programmes/level-test';
+import { buildActiveSummary } from '@/lib/programmes/view-models';
 
 function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
   const lines =
@@ -175,6 +183,8 @@ export default async function ComptePage({
       .is('read_at', null),
     supabase.from('blog_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
   ]);
+  const planningCtx = await loadPlanningContext(supabase, user.id);
+  const planningSessions = await loadPlanningProgramSessions(user.id, planningCtx.timeZone, lang);
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.jpg';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata, user.email);
@@ -378,6 +388,10 @@ export default async function ComptePage({
         </details>
       </section>
 
+      {isProgrammesEnabled() ? (
+        <DashboardProgramBlock userId={user.id} lang={lang === 'es' ? 'es' : 'fr'} timeZone={planningCtx.timeZone} />
+      ) : null}
+
       <section className="relative isolate space-y-3 md:space-y-4">
         <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
           <Image
@@ -397,8 +411,8 @@ export default async function ComptePage({
             <div className="max-md:mb-6">
               <div className="flex items-start justify-between gap-2 md:gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
-                  <p className="mt-1 text-luxury-muted max-md:whitespace-nowrap max-md:pb-3 max-md:text-[9px] max-md:tracking-[0.1em] md:mt-2 md:pb-0 md:text-xs">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.monthlyProgress}</p>
+                  <p className="mt-1 text-luxury-muted max-md:whitespace-nowrap max-md:pb-3 max-md:text-xs max-md:tracking-[0.1em] md:mt-2 md:pb-0 md:text-xs">
                     {t.coursesMonth}
                   </p>
                 </div>
@@ -425,9 +439,9 @@ export default async function ComptePage({
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.myLibrary} />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.replayLibraryTitle}</p>
                 <div className="mt-4 grid grid-cols-2 gap-3 md:mt-8 md:flex md:flex-col">
-                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-xs text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {replayStatIsCountFallback ? replayCount : `${replayHoursRounded}h`}
                     </span>
@@ -441,7 +455,7 @@ export default async function ComptePage({
                         : t.replayHoursAvailable}
                     </span>
                   </p>
-                  <p className="flex min-w-0 flex-col gap-1 text-center text-[11px] text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                  <p className="flex min-w-0 flex-col gap-1 text-center text-xs text-luxury-muted md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                     <span className="text-xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-2xl">
                       {vimeoHoursRounded}h
                     </span>
@@ -459,7 +473,7 @@ export default async function ComptePage({
               </span>
             ) : null}
             <div className="mt-auto pt-4 md:mt-5 md:pt-0">
-              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
+              <Link href="/compte/replays" className="btn-luxury-ghost relative z-20 flex min-h-[40px] w-full items-center justify-center px-3 text-center text-xs tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-xs">
                 {t.myLibrary}
               </Link>
             </div>
@@ -476,8 +490,8 @@ export default async function ComptePage({
           <GlassCard className="relative order-2 flex h-full flex-col p-3 md:order-none md:p-6">
             <div className="flex items-start justify-between gap-2 md:gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
-                <p className="mt-2 flex flex-col items-center gap-1 text-center text-[11px] text-luxury-muted md:mt-4 md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.blog}</p>
+                <p className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-luxury-muted md:mt-4 md:flex-row md:items-baseline md:gap-2 md:text-left md:text-sm">
                   <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-3xl">
                     {publishedBlogCount ?? 0}
                   </span>
@@ -495,7 +509,7 @@ export default async function ComptePage({
               </span>
             ) : null}
             <div className="mt-auto pt-2 md:mt-5 md:pt-0">
-              <Link href="/compte/blog" className="btn-luxury-ghost flex min-h-[40px] w-full items-center justify-center px-3 text-center text-[9px] tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-[11px]">
+              <Link href="/compte/blog" className="btn-luxury-ghost flex min-h-[40px] w-full items-center justify-center px-3 text-center text-xs tracking-[0.1em] md:min-h-[46px] md:w-auto md:min-w-[160px] md:text-xs">
                 {t.openBlog}
               </Link>
             </div>
@@ -504,14 +518,15 @@ export default async function ComptePage({
         </div>
       </section>
 
-      <section id="planning" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
-        <div className="relative z-10 px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.planning}</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.nextSessions}</h2>
-        </div>
-        <div className="relative z-0">
-          <SmartCalendar lang={lang} />
-        </div>
+      <section id="planning" className="relative isolate scroll-mt-24">
+        <PlanningV3
+          lang={lang}
+          variant="dashboard"
+          timeZone={planningCtx.timeZone}
+          languages={planningCtx.languages}
+          onsiteEnabled={planningCtx.onsiteEnabled}
+          programSessions={planningSessions}
+        />
       </section>
 
       <section id="replays" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
@@ -532,4 +547,35 @@ export default async function ComptePage({
       </section>
     </div>
   );
+}
+
+async function DashboardProgramBlock({ userId, lang, timeZone }: { userId: string; lang: 'fr' | 'es'; timeZone: string }) {
+  try {
+    const current = await loadActiveProgram(userId, timeZone, { includePaused: true });
+    if (current) {
+      const summary = buildActiveSummary({
+        def: current.definition,
+        data: current.data,
+        state: current.state,
+        live: null,
+        lang,
+        todayKey: current.todayKey,
+        timeZone,
+      });
+      return <MonProgrammeCard summary={summary} lang={lang} />;
+    }
+  } catch {
+    /* tables absentes tant que le GO Lot 3 n’est pas appliqué */
+  }
+  let recommended: { slug: string; title: string } | null = null;
+  try {
+    const slug = (await cookies()).get(LEVEL_TEST_COOKIE)?.value;
+    if (slug) {
+      const def = await loadProgramDefinition(decodeURIComponent(slug));
+      if (def?.programId && def.program.status === 'published') recommended = { slug: def.program.slug, title: def.program.title[lang] || def.program.title.fr };
+    }
+  } catch {
+    recommended = null;
+  }
+  return <MonProgrammeCard summary={null} lang={lang} recommended={recommended} />;
 }

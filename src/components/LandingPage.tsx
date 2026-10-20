@@ -12,8 +12,15 @@ import {
   Info,
   Mail,
   LockKeyhole,
-  UserCircle2,
 } from 'lucide-react';
+import { ManageCookiesButton } from '@/components/Marketing/ManageCookiesButton';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { HtmlLang } from '@/components/Marketing/HtmlLang';
+import { HowItWorks } from '@/components/Marketing/HowItWorks';
+import { LandingFaq } from '@/components/Marketing/LandingFaq';
+import { isGiftsEnabled } from '@/lib/gifts/flag';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { A_VALIDER_LOT1 } from '@/content/a-valider';
 import { SignupCheckoutModal } from './SignupCheckoutModal';
 import { ClientLoginModal } from './ClientLoginModal';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
@@ -56,6 +63,7 @@ type VimeoShowcaseItem = {
 };
 
 type BlogPreviewItem = {
+  slugFr: string;
   titleFr: string;
   titleEs: string | null;
   excerptFr: string | null;
@@ -77,9 +85,11 @@ export function LandingPage({
   initialLang = 'FR',
   openLoginRequired = false,
   initialOfferId,
+  offerFacts,
 }: {
   vimeoShowcase?: VimeoShowcaseItem[];
   blogPreviews?: BlogPreviewItem[];
+  offerFacts?: { libraryHours: number | null; programmesCount: number };
   initialLang?: Language;
   openLoginRequired?: boolean;
   initialOfferId?: string;
@@ -109,13 +119,15 @@ export function LandingPage({
   const l =
     lang === 'FR'
       ? {
-          member: 'Devenir membre',
-          login: 'Se connecter',
-          heroTitleTop: 'Visio Pilates',
-          heroTitleBottom: 'est ta thérapie',
-          heroBody: "J’aide les femmes à se sentir fortes et bien dans leur corps, en visio depuis chez elles.",
-          start: 'On démarre',
-          community: 'Rejoignez la communauté',
+          member: 'Essai gratuit',
+          login: 'Connexion',
+          heroTitleTop: 'Ta coach te voit.',
+          heroTitleBottom: 'Même en visio.',
+          heroBody: "J'aide les femmes à se sentir fortes et bien dans leur corps, en cours live depuis chez elles : je te vois, je te corrige, je t'encourage.",
+          start: 'Essai gratuit 7 jours',
+          startHint: '0 € aujourd’hui · sans engagement · annulable en ligne',
+          stylesCta: 'Faire le test de niveau',
+          community: 'Rejoins la communauté',
           liveReplay: 'Direct et Replay',
           available: 'Disponible',
           library: 'Bibliothèque',
@@ -130,8 +142,8 @@ export function LandingPage({
           trialCta: 'Essai gratuit 7 jours',
           blogLabel: 'Le Blog',
           blogTitle: 'Inspiration Pilates & bien-être',
-          blogCta: 'S’inscrire pour accéder au blog',
-          blogArticleCta: 'Réservé aux membres — S’inscrire',
+          blogCta: 'Tous les articles',
+          blogArticleCta: 'Lire l’article',
           privacy: 'Confidentialité',
           terms: 'Conditions',
           legal: 'Mentions légales',
@@ -151,12 +163,14 @@ export function LandingPage({
           },
         }
       : {
-          member: 'Hacerme miembro',
-          login: 'Conectarse',
-          heroTitleTop: 'Visio Pilates',
-          heroTitleBottom: 'es tu terapia',
-          heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases online desde casa.',
-          start: 'Empezamos',
+          member: 'Prueba gratis',
+          login: 'Conexión',
+          heroTitleTop: 'Tu coach te ve.',
+          heroTitleBottom: 'Incluso online.',
+          heroBody: 'Ayudo a las mujeres a sentirse fuertes y bien en su cuerpo, en clases en vivo desde casa: te veo, te corrijo, te animo.',
+          start: 'Prueba gratis 7 días',
+          startHint: '0 € hoy · sin compromiso · cancelas en línea',
+          stylesCta: 'Hacer el test de nivel',
           community: 'Únete a la comunidad',
           liveReplay: 'Directo y replay',
           available: 'Disponible',
@@ -172,8 +186,8 @@ export function LandingPage({
           trialCta: 'Prueba gratis 7 días',
           blogLabel: 'El Blog',
           blogTitle: 'Inspiración Pilates y bienestar',
-          blogCta: 'Inscribirse para acceder al blog',
-          blogArticleCta: 'Reservado a miembros — Inscribirse',
+          blogCta: 'Todos los artículos',
+          blogArticleCta: 'Leer el artículo',
           privacy: 'Privacidad',
           terms: 'Condiciones',
           legal: 'Aviso legal',
@@ -332,52 +346,14 @@ export function LandingPage({
   return (
     <div className="min-h-screen overflow-x-clip bg-brand-beige text-brand-ink font-sans selection:bg-brand-accent/20">
       <HomeScrollEffects />
-      {/* Top Bar */}
-      <div className="bg-white border-b border-brand-ink/[0.03] sticky top-0 z-50">
-        <div className="relative mx-auto max-w-6xl px-5 py-3 md:px-10 md:py-4">
-          <div className="flex items-center justify-center gap-4 md:gap-5">
-            <button
-              type="button"
-              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${terracottaCtaClass} px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em]`}
-            >
-              {l.member}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-ink/75 shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:border-[#c45d3e] hover:bg-[#c45d3e] hover:text-white hover:shadow-[0_12px_26px_rgba(196,93,62,0.28)]"
-            >
-              <UserCircle2 size={14} />
-              {l.login}
-            </button>
-          </div>
-          <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-5 md:flex md:right-10">
-            <button
-              type="button"
-              onClick={() => toggleLang('FR')}
-              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
-                lang === 'FR'
-                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
-                  : 'text-brand-ink/30 hover:text-brand-ink'
-              }`}
-            >
-              FR
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleLang('ES')}
-              className={`text-[10px] tracking-[0.3em] uppercase transition-all ${
-                lang === 'ES'
-                  ? 'text-brand-accent font-bold border-b border-[#F5C58D] pb-1'
-                  : 'text-brand-ink/30 hover:text-brand-ink'
-              }`}
-            >
-              ES
-            </button>
-          </div>
-        </div>
-      </div>
+      <HtmlLang lang={lang === 'ES' ? 'es' : 'fr'} />
+      <PublicSiteHeader
+        lang={lang}
+        onToggleLang={toggleLang}
+        onLogin={() => setShowLoginModal(true)}
+        onTrial={() => openTrialSignup(t.courses.visio[0], 'hero')}
+        homeHref={lang === 'ES' ? '/es' : '/'}
+      />
 
       <main className="mx-auto max-w-2xl overflow-x-clip px-5 pb-24 pt-1 md:max-w-6xl md:px-8 md:pt-10">
         <div className="mb-2 flex justify-end gap-6 md:mb-6 md:hidden">
@@ -398,7 +374,7 @@ export function LandingPage({
         {/* Hero: texte gauche + carte droite */}
         <section
           data-hero
-          className="mb-16 grid grid-cols-1 items-center gap-6 md:mb-28 md:grid-cols-[0.9fr_1.1fr] md:gap-16"
+          className="mb-16 grid grid-cols-1 items-center gap-6 md:mb-28 md:grid-cols-[0.9fr_1.1fr] md:gap-16 xl:grid-cols-2"
         >
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <div data-hero-copy className="flex flex-col items-center md:flex-col md:items-start md:gap-0">
@@ -410,15 +386,15 @@ export function LandingPage({
                 priority
                 className="mb-3 h-14 w-14 shrink-0 object-contain md:mb-5 md:h-14 md:w-14"
               />
-              <h1 className="min-w-0 font-serif italic leading-[1.12] tracking-tight text-brand-ink text-[2.125rem] md:flex-none md:text-7xl md:leading-[1.02]">
-                {l.heroTitleTop}
+              <h1 className="fm-display min-w-0 leading-[1.08] tracking-tight text-brand-ink text-[2.4rem] md:flex-none md:text-[3.4rem] md:leading-[1.04] xl:text-[3.7rem]">
+                <span className="whitespace-nowrap">{l.heroTitleTop}</span>
                 <br />
-                {l.heroTitleBottom}
+                <span className="whitespace-nowrap">{l.heroTitleBottom}</span>
               </h1>
             </div>
             <p
               data-hero-copy
-              className="mt-3 max-w-[22rem] text-[0.875rem] font-serif leading-[1.5] tracking-tight text-brand-ink/70 md:mt-6 md:max-w-xl md:text-[1.65rem] md:leading-[1.45] md:text-brand-ink/80"
+              className="mt-4 max-w-[22rem] text-[16px] leading-relaxed text-brand-ink/75 md:mt-6 md:max-w-xl md:text-[1.35rem] md:leading-[1.5]"
             >
               {l.heroBody}
             </p>
@@ -432,6 +408,7 @@ export function LandingPage({
             >
               {l.start}
             </button>
+            <p className="mt-2 text-center text-[12px] text-brand-ink/55 md:hidden">{l.startHint}</p>
 
             {/* Encadré stats — mobile : 2 colonnes ; 180 + avatars à droite ; cours centrés */}
             <div
@@ -446,7 +423,7 @@ export function LandingPage({
                 >
                   {coursesGivenCount.toLocaleString('fr-FR')}
                 </span>
-                <span className="mt-1.5 text-center text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+                <span className="mt-1.5 text-center text-[10px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofGiven}
                 </span>
               </div>
@@ -477,16 +454,16 @@ export function LandingPage({
                     ))}
                   </div>
                 </div>
-                <span className="inline-flex items-center justify-center gap-1 text-[9px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
+                <span className="inline-flex items-center justify-center gap-1 text-[10px] font-sans font-medium uppercase tracking-[0.1em] text-brand-ink/50">
                   {l.proofPeople}
                   <span className="relative group">
                     <span
-                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-brand-ink/20 text-[9px] text-brand-ink/60"
+                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-brand-ink/20 text-xs text-brand-ink/60"
                       aria-label="Information"
                     >
                       <Info className="size-2" />
                     </span>
-                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-xs normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                       {l.proofTooltip}
                     </span>
                   </span>
@@ -494,74 +471,76 @@ export function LandingPage({
               </div>
             </div>
 
-            {/* Bouton + communauté + stats — version DESKTOP inchangée */}
-            <div data-hero-copy className="mt-9 hidden flex-wrap items-center gap-6 md:flex">
+            {/* Bouton + communauté + phrase d'essai + chiffres — version DESKTOP (maquette D05) */}
+            <div data-hero-copy className="mt-8 hidden flex-wrap items-center gap-5 md:flex">
               <button
                 type="button"
                 onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-                className="btn-luxury-primary shrink-0 px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]"
+                className="btn-luxury-primary shrink-0 whitespace-nowrap px-7 py-4 text-[12px] font-bold uppercase tracking-[0.16em]"
               >
                 {l.start}
               </button>
-              <div className="h-14 w-[2px] rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)]" />
-              <div className="flex flex-col items-center gap-1 text-center">
-                <span className="text-[14px] font-medium tracking-[0.04em] text-brand-ink/70">{l.community}</span>
-                <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2.5 xl:border-l xl:border-brand-ink/10 xl:pl-5">
+                <span className="whitespace-nowrap text-[13px] text-brand-ink/60">{l.community}</span>
+                <div className="flex items-center justify-center gap-0.5">
                   <a
                     href={getWaLink(t.waMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-6 w-6 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="WhatsApp"
                   >
-                    <WhatsAppIcon size={19} />
+                    <WhatsAppIcon size={17} />
                   </a>
                   <a
                     href={LANDING_INSTAGRAM_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-6 w-6 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="Instagram"
                   >
-                    <Instagram className="size-[19px]" />
+                    <Instagram className="size-[17px]" />
                   </a>
                   <a
                     href={`mailto:${LANDING_CONTACT_EMAIL}`}
-                    className="inline-flex h-8 w-8 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
+                    className="inline-flex h-6 w-6 items-center justify-center text-brand-ink/70 transition hover:text-brand-accent"
                     aria-label="Mail"
                   >
-                    <Mail className="size-[19px]" />
+                    <Mail className="size-[17px]" />
                   </a>
                 </div>
               </div>
             </div>
-            <div data-hero-copy className="mt-11 hidden items-start gap-14 md:flex">
+            <p data-hero-copy className="mt-3 hidden text-[12.5px] text-brand-ink/55 md:block">
+              {l.startHint}
+            </p>
+            <div data-hero-copy className="mt-8 hidden items-center gap-10 md:flex">
               <div className="flex flex-col items-start">
                 <span
                   data-count
                   data-count-to={coursesGivenCount}
-                  className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                  className="whitespace-nowrap text-[2.6rem] font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
                 >
                   {coursesGivenCount.toLocaleString('fr-FR')}
                 </span>
-                <span className="mt-3 text-[12px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
+                <span className="mt-2 whitespace-nowrap text-[11px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
                   {l.proofGiven}
                 </span>
               </div>
               <div className="flex flex-col items-start">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <span
                     data-count
                     data-count-to={180}
-                    className="text-6xl font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
+                    className="text-[2.6rem] font-sans font-black leading-none tracking-[-0.02em] text-brand-ink"
                   >
                     180
                   </span>
-                  <div className="flex items-center -space-x-3" aria-hidden>
+                  <div className="flex items-center -space-x-2" aria-hidden>
                     {VIDEO_TESTIMONIALS.slice(0, 3).map((testimonial, i) => (
                       <span
                         key={`d-av-${testimonial.id}`}
-                        className="relative inline-block h-12 w-12 shrink-0 overflow-hidden rounded-full ring-[3px] ring-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                        className="relative inline-block h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                         style={{ zIndex: 3 - i }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -574,16 +553,16 @@ export function LandingPage({
                     ))}
                   </div>
                 </div>
-                <span className="mt-3 inline-flex items-center justify-start gap-2 text-[12px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
+                <span className="mt-2 inline-flex items-center justify-start gap-2 whitespace-nowrap text-[11px] font-sans font-medium uppercase tracking-[0.12em] text-brand-ink/55">
                   {l.proofPeople}
                   <span className="relative group">
                     <span
-                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-[11px] text-brand-ink/60"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brand-ink/20 text-xs text-brand-ink/60"
                       aria-label="Information"
                     >
                       <Info className="size-[11px]" />
                     </span>
-                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-[11px] normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-60 -translate-x-1/2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 text-xs normal-case tracking-normal text-brand-ink/75 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                       {l.proofTooltip}
                     </span>
                   </span>
@@ -610,7 +589,7 @@ export function LandingPage({
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#5c554c] sm:tracking-[0.4em] md:text-brand-accent">{t.subtitle}</p>
                 <Link
                   href="/cours-pilates-visio"
-                  className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-[11px]"
+                  className="group mt-4 inline-flex items-center gap-2 rounded-full border border-[#C45D3E]/30 bg-white/90 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-[#7a2e1a] shadow-[0_8px_20px_rgba(48,35,28,0.12)] backdrop-blur transition hover:-translate-y-0.5 hover:border-[#C45D3E]/50 hover:bg-white sm:text-xs"
                 >
                   <span>{lang === 'ES' ? '¿Por qué hacer Pilates en visio?' : 'Pourquoi faire du Pilates en visio ?'}</span>
                   <span aria-hidden className="text-[#C45D3E] transition group-hover:translate-x-0.5">
@@ -650,7 +629,18 @@ export function LandingPage({
           </div>
         </section>
 
-        <section id="offers" ref={offersReveal} className="scroll-mt-24">
+        <VideoTestimonialsCarousel
+          lang={lang}
+          label={l.testimonialsLabel}
+          title={l.reviews}
+          positiveReviews={l.positiveReviews}
+          ctaLabel={l.trialCta}
+          onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
+        />
+
+        <HowItWorks lang={lang} />
+
+        <section id="tarifs" ref={offersReveal} className="scroll-mt-24">
         {/* Offers Grid — visio uniquement */}
         <div className="mb-20 space-y-12">
           <div data-reveal className="space-y-3 text-center">
@@ -686,7 +676,7 @@ export function LandingPage({
                   <div className="absolute inset-0 bg-brand-ink/5 transition-colors duration-500 group-hover:bg-transparent" />
                   {course.badge && (
                     <div className="absolute left-6 top-6">
-                      <span className="rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white shadow-xl">
+                      <span className="rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-xl">
                         {course.badge}
                       </span>
                     </div>
@@ -705,33 +695,44 @@ export function LandingPage({
                     ) : null}
                   </div>
 
-                  <OfferCardFeatures course={course} lang={lang} />
+                  <OfferCardFeatures course={course} lang={lang} libraryHours={offerFacts?.libraryHours ?? null} programmesCount={offerFacts?.programmesCount ?? 0} />
 
                   <div className="mt-5 flex items-end justify-between border-t border-brand-ink/[0.06] pt-4">
-                    <div className="flex flex-col">
-                      <span className="mb-1 text-[8px] font-bold uppercase tracking-[0.3em] text-brand-ink/30 md:mb-2 md:text-[9px]">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="mb-1 whitespace-nowrap text-[8px] font-bold uppercase tracking-[0.3em] text-brand-ink/30 md:mb-2 md:text-[10px]">
                         {l.subscriptionLabel}
                       </span>
                       <div className="flex items-baseline gap-1.5">
                         <span className="font-sans text-3xl font-bold tracking-tighter text-brand-ink md:text-4xl">
                           {course.price.split(' ')[0]}
                         </span>
-                        <span className="text-[9px] font-semibold uppercase tracking-widest text-brand-ink/40 md:text-xs">
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-ink/40 md:text-xs">
                           {course.price.split(' ').slice(1).join(' ')}
                         </span>
                       </div>
+                      <p className="mt-1.5 text-[12px] font-medium leading-snug text-brand-ink/60">
+                        {lang === 'ES'
+                          ? `0 € hoy · 7 días gratis, luego ${course.id === 'v-ind' ? '269' : '39'} €/mes`
+                          : `0 € aujourd’hui · 7 jours gratuits, puis ${course.id === 'v-ind' ? '269' : '39'} €/mois`}
+                      </p>
                     </div>
 
-                    <div className="flex items-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-white shadow-lg transition-transform active:scale-95">
-                        <ArrowRight size={20} className="text-white" strokeWidth={2} aria-hidden />
-                      </div>
+                    <div className="ml-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#c45d3e_0%,#b35338_100%)] text-white shadow-lg transition-transform active:scale-95">
+                      <ArrowRight size={20} className="text-white" strokeWidth={2} aria-hidden />
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+          {isGiftsEnabled() ? (
+            <p className="mt-5 text-center text-[13px] text-brand-ink/60">
+              {lang === 'ES' ? '¿Quieres regalar clases?' : 'Tu veux offrir des cours ?'}{' '}
+              <Link href="/offrir" className="font-semibold text-luxury-orange underline-offset-4">
+                {lang === 'ES' ? 'Tarjeta regalo desde 39 €' : 'Carte cadeau dès 39 €'}
+              </Link>
+            </p>
+          ) : null}
         </div>
         </section>
 
@@ -755,15 +756,6 @@ export function LandingPage({
             <ArrowRight size={14} />
           </div>
         </a>
-
-        <VideoTestimonialsCarousel
-          lang={lang}
-          label={l.testimonialsLabel}
-          title={l.reviews}
-          positiveReviews={l.positiveReviews}
-          ctaLabel={l.trialCta}
-          onCta={() => openTrialSignup(t.courses.visio[0], 'testimonials')}
-        />
 
         {/* Pilates styles inspiration section */}
         <section
@@ -811,15 +803,24 @@ export function LandingPage({
           </div>
 
           <div data-reveal className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={() => openTrialSignup(t.courses.visio[0], 'hero')}
-              className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
-            >
-              {l.start}
-            </button>
+            {/* Test de niveau seulement si la page existe (programmes en ligne) ; sinon l'essai, comme avant. */}
+            {isProgrammesEnabled() ? (
+              <Link href="/test-niveau" className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}>
+                {l.stylesCta}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openTrialSignup(t.courses.visio[0], 'styles')}
+                className={`${terracottaCtaClass} px-9 py-3.5 text-[12px] font-bold uppercase tracking-[0.2em]`}
+              >
+                {l.start}
+              </button>
+            )}
           </div>
         </section>
+
+        <LandingFaq lang={lang} />
 
         {visibleBlogPreviews.length > 0 ? (
           <section ref={blogReveal} className="py-16 md:py-24">
@@ -843,44 +844,29 @@ export function LandingPage({
                 const excerpt = lang === 'ES' ? article.excerptEs?.trim() || article.excerptFr : article.excerptFr;
                 const categoryLabel = lang === 'ES' ? article.categoryLabelEs || article.categoryLabelFr : article.categoryLabelFr;
                 return (
-                <button
+                <Link
                   key={article.titleFr}
                   data-reveal
-                  type="button"
-                  onClick={() =>
-                    openTrialSignup(
-                      onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
-                      'blog_preview',
-                    )
-                  }
+                  href={`/blog/${article.slugFr}`}
                   className="group overflow-hidden rounded-[28px] border border-brand-ink/[0.06] bg-white/70 text-left shadow-[0_18px_50px_rgba(48,35,28,0.08)] transition hover:-translate-y-1"
                 >
                   <img src={article.coverImageUrl ?? HERO_IMAGE_URL} alt="" className="h-40 w-full object-cover opacity-90 transition group-hover:scale-[1.03]" />
                   <div className="p-5">
                     {categoryLabel ? (
-                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{categoryLabel}</p>
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">{categoryLabel}</p>
                     ) : null}
                     <h3 className="font-serif text-xl italic text-brand-ink">{title}</h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/55">{excerpt}</p>
                     <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-accent">{l.blogArticleCta}</p>
                   </div>
-                </button>
+                </Link>
               );
               })}
             </div>
             <div data-reveal className="mt-8 text-center">
-              <button
-                type="button"
-                onClick={() =>
-                  openTrialSignup(
-                    onboardingCourses.find((course) => course.id === 'v-coll') ?? onboardingCourses[0],
-                    'blog_cta',
-                  )
-                }
-                className={`${terracottaCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}
-              >
+              <Link href="/blog" className={`${terracottaCtaClass} px-7 py-4 text-[10px] font-bold uppercase tracking-[0.24em]`}>
                 {l.blogCta}
-              </button>
+              </Link>
             </div>
           </section>
         ) : null}
@@ -902,7 +888,7 @@ export function LandingPage({
                 href={`/${pillar.slug}`}
                 className="rounded-[28px] border border-brand-ink/[0.06] bg-white/65 p-5 text-left shadow-[0_18px_50px_rgba(48,35,28,0.07)] transition hover:-translate-y-1 hover:bg-white/85"
               >
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">
                   {lang === 'ES' ? 'Guía esencial' : 'Guide essentiel'}
                 </p>
                 <h3 className="mt-2 font-serif text-xl italic text-brand-ink">{pillar.shortTitle}</h3>
@@ -924,7 +910,7 @@ export function LandingPage({
           <p className="text-[10px] tracking-[0.3em] uppercase text-brand-ink/30 mb-2">
             © {currentYear} Alejandra Mangas
           </p>
-          <p className="mb-4 text-[10px] tracking-[0.12em] text-brand-ink/30">
+          <p className="mb-4 text-xs tracking-[0.12em] text-brand-ink/30">
             <span data-footer-brand className="inline-block">
               FitMangas
             </span>
@@ -934,6 +920,10 @@ export function LandingPage({
             <Link href="/mentions-legales" className="hover:text-brand-ink transition-colors">{l.legal}</Link>
             <Link href="/privacy" className="hover:text-brand-ink transition-colors">{l.privacy}</Link>
             <Link href="/terms" className="hover:text-brand-ink transition-colors">{l.terms}</Link>
+            <ManageCookiesButton
+              label={A_VALIDER_LOT1.cookies.manage[lang === 'ES' ? 'es' : 'fr']}
+              className="uppercase tracking-widest hover:text-brand-ink transition-colors"
+            />
           </div>
           <div className="mt-6 flex justify-center">
             <Link
@@ -954,6 +944,10 @@ export function LandingPage({
         onSelectCourse={setSelectedCourse}
         lang={lang}
         onClose={() => setSelectedCourse(null)}
+        onLogin={() => {
+          setSelectedCourse(null);
+          setShowLoginModal(true);
+        }}
       />
       <ClientLoginModal
         open={showLoginModal}

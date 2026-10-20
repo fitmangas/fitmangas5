@@ -191,13 +191,6 @@ export function VideoTestimonialsCarousel({
           ))}
         </div>
         <div className="mb-0 flex flex-col items-center gap-0.5">
-          <div className="flex gap-0.5 text-brand-accent" aria-hidden>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span key={i} className="text-[11px] leading-none">
-                ★
-              </span>
-            ))}
-          </div>
           <WordRevealText
             text={positiveReviews}
             className="text-[8px] font-bold uppercase tracking-[0.2em] text-brand-ink/30"
@@ -262,7 +255,7 @@ export function VideoTestimonialsCarousel({
                     loop
                     muted={muted}
                     autoPlay={isActive}
-                    preload={shouldLoad ? 'auto' : 'none'}
+                    preload="none"
                     src={shouldLoad ? item.videoSrc : undefined}
                   />
 

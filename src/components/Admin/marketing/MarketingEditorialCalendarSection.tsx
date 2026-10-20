@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { suggestEditorialTopicAction } from '@/app/admin/marketing/actions-editorial';
+import { nearbyKeywordAlert } from '@/lib/blog/nearby-keyword';
 
 type Scheduled = {
   id: string;
@@ -24,9 +25,11 @@ type Suggestion = {
 export function MarketingEditorialCalendarSection({
   scheduled,
   suggestions,
+  publishedTitles = [],
 }: {
   scheduled: Scheduled[];
   suggestions: Suggestion[];
+  publishedTitles?: string[];
 }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -82,7 +85,14 @@ export function MarketingEditorialCalendarSection({
               {scheduled.map((row) => (
                 <tr key={row.id} className="border-t border-white/50">
                   <td className="px-3 py-2 text-luxury-muted">{formatDate(row.scheduled_publication_at)}</td>
-                  <td className="px-3 py-2 font-medium text-luxury-ink">{row.title_fr}</td>
+                  <td className="px-3 py-2 font-medium text-luxury-ink">
+                    {row.title_fr}
+                    {nearbyKeywordAlert(row.title_fr, publishedTitles) ? (
+                      <span className="mt-1 block text-xs text-orange-800">
+                        {nearbyKeywordAlert(row.title_fr, publishedTitles)}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-3 py-2">{row.status}</td>
                   <td className="px-3 py-2">
                     <Link href={`/admin/blog/articles/${row.id}/edit`} className="text-xs font-semibold text-orange-700 underline underline-offset-2">

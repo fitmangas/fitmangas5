@@ -48,9 +48,9 @@ export function MonthlyProgressRing({
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
         <div className="inline-flex items-baseline gap-1">
           <span className="text-2xl font-semibold tabular-nums tracking-tight text-luxury-ink md:text-3xl">{followedCount}</span>
-          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-luxury-muted md:text-[10px]">/ {goal}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-muted md:text-[10px]">/ {goal}</span>
         </div>
-        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-[#ff7a00] md:mt-1 md:text-[9px]">{pct}%</span>
+        <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-[#ff7a00] md:mt-1 md:text-[10px]">{pct}%</span>
       </div>
     </div>
   );

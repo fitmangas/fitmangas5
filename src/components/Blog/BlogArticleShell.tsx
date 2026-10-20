@@ -41,6 +41,8 @@ type Props = {
   defaultLang: BlogLang;
   isLoggedIn: boolean;
   relatedArticles?: RelatedBlogArticle[];
+  /** Guide du thème de l'article (lot 7, CROISSANCE_V2) : lien de retour vers la page guide. */
+  guide?: { id: string; title: { fr: string; es: string } } | null;
 };
 
 function readingMinutes(text: string) {
@@ -48,7 +50,7 @@ function readingMinutes(text: string) {
   return Math.max(1, Math.round(words / 200));
 }
 
-export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArticles = [] }: Props) {
+export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArticles = [], guide = null }: Props) {
   const [lang, setLang] = useBlogLanguagePref(defaultLang, isLoggedIn);
 
   const loc = useMemo(() => pickLocalizedArticle(article, lang), [article, lang]);
@@ -143,12 +145,12 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
           <span>·</span>
           <span>⏱ ~{readingMinutes(loc.content)} min</span>
           <span>·</span>
-          <span>👁 {article.view_count ?? 0} vues</span>
+          {(article.view_count ?? 0) > 0 ? <span>👁 {article.view_count} vues</span> : null}
           <span className="hidden sm:inline">·</span>
           <BlogShareButtons title={loc.title} path={`/blog/${loc.slug}`} lang={lang} />
         </div>
         <div className="mt-5">
-          <Link href="/?offer=v-coll" className="btn-luxury-primary inline-flex px-6 py-2.5 text-[11px] tracking-[0.14em]">
+          <Link href="/?offer=v-coll" className="btn-luxury-primary inline-flex px-6 py-2.5 text-xs tracking-[0.14em]">
             Découvrir l’offre Visio
           </Link>
         </div>
@@ -177,6 +179,21 @@ export function BlogArticleShell({ article, defaultLang, isLoggedIn, relatedArti
               {lang === 'es' ? BLOG_AUTHOR_ALEJANDRA.bioEs : BLOG_AUTHOR_ALEJANDRA.bioFr}
             </p>
           </aside>
+
+          {guide ? (
+            <Link
+              href={`/blog/guides/${guide.id}${lang === 'es' ? '?lang=es' : ''}`}
+              className="mt-10 flex items-center justify-between gap-4 rounded-[1.75rem] border border-[#C45D3E]/20 bg-[#FFFAF5]/90 p-5 shadow-[0_14px_36px_rgba(120,80,20,0.06)] transition hover:border-[#C45D3E]/40"
+            >
+              <span>
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#C45D3E]">{lang === 'es' ? 'Guía' : 'Guide'}</span>
+                <span className="mt-1 block text-base font-semibold text-luxury-ink">
+                  {lang === 'es' ? `Este artículo forma parte de la guía «${guide.title.es}»` : `Cet article fait partie du guide «\u00a0${guide.title.fr}\u00a0»`}
+                </span>
+              </span>
+              <span className="shrink-0 text-[13px] font-semibold text-[#C45D3E]">{lang === 'es' ? 'Ver la guía →' : 'Voir le guide →'}</span>
+            </Link>
+          ) : null}
 
           {relatedArticles.length > 0 ? (
             <section className="mt-10 rounded-[1.75rem] border border-white/45 bg-white/45 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] backdrop-blur-xl">

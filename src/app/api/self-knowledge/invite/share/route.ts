@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 import { z } from 'zod';
 
 import { buildShareUrl, createShareInvite } from '@/lib/self-knowledge/invites';
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
+
+  const guard = await guardPublicFormRequest(request, 'invite_share', turnstileTokenFromBody(json), localeFromBody(json));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

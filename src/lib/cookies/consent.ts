@@ -28,3 +28,14 @@ export function writeCookieConsent(value: CookieConsentValue) {
 export function hasAnalyticsConsent(): boolean {
   return readCookieConsent() === 'accepted';
 }
+
+/** « Gérer mes cookies » : efface le choix, le bandeau réapparaît. */
+export function resetCookieConsent() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(COOKIE_CONSENT_KEY);
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_EVENT, { detail: null }));
+}

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createNewsletterConfirmationToken, sendNewsletterConfirmationEmail } from '@/lib/blog/newsletter-double-optin';
 
@@ -10,6 +12,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
+
+  const guard = await guardPublicFormRequest(request, 'newsletter', turnstileTokenFromBody(body), localeFromBody(body));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -50,7 +55,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[newsletter]', error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return publicServerError('newsletter/subscribe', error, 400);
     }
 
     if (!row?.id) {

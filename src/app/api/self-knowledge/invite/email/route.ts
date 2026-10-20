@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { guardPublicFormRequest, localeFromBody, turnstileTokenFromBody } from '@/lib/security/public-form-guard';
 import { z } from 'zod';
 
 import { wrapResendEmail, getEmailPublicBaseUrl } from '@/lib/email/base-template';
+import { sendEmail } from '@/lib/email/send';
 import {
   buildShareUrl,
   createEmailInvite,
@@ -72,17 +74,10 @@ async function sendInviteEmail(params: {
     unsubscribeUrl: unsubUrl,
   });
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to: params.to, subject, html }),
-  });
+  const res = await sendEmail({ from, to: params.to, subject, html });
 
   if (!res.ok) {
-    return { sent: false, reason: `provider_${res.status}` };
+    return { sent: false, reason: `provider_${res.error}` };
   }
   return { sent: true };
 }
@@ -98,6 +93,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
+
+  const guard = await guardPublicFormRequest(request, 'invite_email', turnstileTokenFromBody(json), localeFromBody(json));
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

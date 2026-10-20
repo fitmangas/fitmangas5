@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { dispatch } from '@/lib/notifications/dispatcher';
+import { guardPublicFormAction } from '@/lib/security/public-form-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -20,7 +21,11 @@ const TYPE_LABELS: Record<SupportTicketType, string> = {
 export async function submitSupportTicketAction(
   type: SupportTicketType,
   message: string,
+  turnstileToken?: string | null,
 ): Promise<SubmitSupportTicketResult> {
+  const guard = await guardPublicFormAction('support', turnstileToken ?? null);
+  if (!guard.ok) return { ok: false, message: guard.error };
+
   const supabase = await createClient();
   const {
     data: { user },

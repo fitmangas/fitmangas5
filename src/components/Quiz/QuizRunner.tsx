@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QuizChapterShell, type QuizChapterStep } from '@/components/Quiz/QuizChapterShell';
 import { QuizLeadCapture, type QuizLeadPayload } from '@/components/Quiz/QuizLeadCapture';
 import { QuizReport } from '@/components/Quiz/QuizReport';
+import { TurnstileWidget } from '@/components/Security/TurnstileWidget';
 import { DiscColorStrip } from '@/components/Quiz/QuizVisuals';
 import { clampChapterIndex, resolveChapterSteps } from '@/lib/quiz/chapter-steps';
 import { QUIZ_CARD_BY_SLUG } from '@/lib/quiz/media';
@@ -36,6 +37,7 @@ export function QuizRunner({ quiz, locale }: Props) {
   const [pickingOptionId, setPickingOptionId] = useState<string | null>(null);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const jumpToLead = useRef(false);
   const wasLeadDone = useRef(false);
   const advanceTimer = useRef<number | null>(null);
@@ -107,6 +109,7 @@ export function QuizRunner({ quiz, locale }: Props) {
             email: payload.email,
             phone: payload.phone,
             consent: true,
+            turnstileToken,
             resultId: score.resultId,
             secondaryId: score.secondaryId,
             percents: score.percents,
@@ -139,7 +142,7 @@ export function QuizRunner({ quiz, locale }: Props) {
         setLeadSubmitting(false);
       }
     },
-    [allAnswered, answers, leadSubmitting, locale, quiz.slug, score.percents, score.resultId, score.secondaryId],
+    [allAnswered, answers, leadSubmitting, locale, quiz.slug, score.percents, score.resultId, score.secondaryId, turnstileToken],
   );
 
   const steps: QuizChapterStep[] = useMemo(() => {
@@ -200,7 +203,7 @@ export function QuizRunner({ quiz, locale }: Props) {
                 {quiz.briefing[locale].map((line, i) => (
                   <li key={i} className="flex gap-3 text-[15px] leading-snug" style={{ color: 'var(--qc-ink)' }}>
                     <span
-                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                       style={{ background: 'var(--qc-accent)' }}
                     >
                       {String(i + 1).padStart(2, '0')}
@@ -299,13 +302,16 @@ export function QuizRunner({ quiz, locale }: Props) {
           label: locale === 'es' ? 'Tus datos' : 'Tes coordonnées',
           allowsNext: false,
           content: (
-            <QuizLeadCapture
-              locale={locale}
-              quizTitle={quiz.title[locale]}
-              submitting={leadSubmitting}
-              error={leadError}
-              onSubmit={submitLead}
-            />
+            <>
+              <QuizLeadCapture
+                locale={locale}
+                quizTitle={quiz.title[locale]}
+                submitting={leadSubmitting}
+                error={leadError}
+                onSubmit={submitLead}
+              />
+              <TurnstileWidget onToken={setTurnstileToken} locale={locale} />
+            </>
           ),
         }
       : null;

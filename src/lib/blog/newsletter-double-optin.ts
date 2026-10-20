@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { wrapResendEmail } from '@/lib/email/base-template';
+import { sendEmail } from '@/lib/email/send';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const TOKEN_TTL_HOURS = 48;
@@ -14,14 +15,7 @@ async function sendEmailViaResend(to: string, subject: string, html: string) {
   if (!apiKey || !from) return { sent: false as const, reason: 'missing_provider' };
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to, subject, html }),
-    });
+    const res = await sendEmail({ from, to, subject, html });
     if (res.ok) {
       return { sent: true as const, reason: 'provider_sent' };
     }
@@ -29,7 +23,7 @@ async function sendEmailViaResend(to: string, subject: string, html: string) {
       await new Promise((r) => setTimeout(r, 300 * attempt));
       continue;
     }
-    return { sent: false as const, reason: `provider_${res.status}` };
+    return { sent: false as const, reason: `provider_${res.error}` };
   }
   return { sent: false as const, reason: 'provider_unknown' };
 }

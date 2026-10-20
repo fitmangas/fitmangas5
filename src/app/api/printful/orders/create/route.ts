@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { publicServerError } from '@/lib/http/public-error';
 import { createPrintfulOrder } from '@/lib/printful';
 import { createClient } from '@/lib/supabase/server';
 
@@ -80,7 +81,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ order, status: 'draft' });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erreur inconnue';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return publicServerError('printful/orders/create', error);
   }
 }

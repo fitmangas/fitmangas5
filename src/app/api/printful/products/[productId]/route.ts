@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { publicServerError } from '@/lib/http/public-error';
 import { getPrintfulProductDetail } from '@/lib/printful';
 
 type Params = { params: Promise<{ productId: string }> };
@@ -17,7 +18,6 @@ export async function GET(_: Request, { params }: Params) {
     }
     return NextResponse.json({ product: detail });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erreur inconnue';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return publicServerError('printful/product', error);
   }
 }

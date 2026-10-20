@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 
+import { TurnstileWidget } from '@/components/Security/TurnstileWidget';
+
 export function NewsletterCta({ articleId }: { articleId?: string }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -14,7 +17,7 @@ export function NewsletterCta({ articleId }: { articleId?: string }) {
       const r = await fetch('/api/client/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, articleId: articleId ?? null }),
+        body: JSON.stringify({ email, articleId: articleId ?? null, turnstileToken }),
       });
       if (!r.ok) {
         setStatus('error');
@@ -45,11 +48,12 @@ export function NewsletterCta({ articleId }: { articleId?: string }) {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="btn-luxury-primary shrink-0 px-8 py-3 text-[11px] tracking-[0.14em] disabled:opacity-50"
+          className="btn-luxury-primary shrink-0 px-8 py-3 text-xs tracking-[0.14em] disabled:opacity-50"
         >
           {status === 'loading' ? '…' : "S'inscrire"}
         </button>
       </form>
+      <TurnstileWidget onToken={setTurnstileToken} />
       {status === 'done' ? (
         <p className="mt-3 text-xs text-emerald-800">
           Merci ! Vérifie tes emails pour confirmer ton inscription.

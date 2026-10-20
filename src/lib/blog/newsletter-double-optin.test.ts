@@ -22,6 +22,11 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }));
 
+const { sendEmail } = vi.hoisted(() => ({
+  sendEmail: vi.fn(async (_input: { to: string }) => ({ ok: true, id: 'test', safeMode: 'send' })),
+}));
+vi.mock('@/lib/email/send', () => ({ sendEmail }));
+
 import { sendPublicationNewsletter } from './newsletter-double-optin';
 
 describe('sendPublicationNewsletter', () => {
@@ -29,7 +34,6 @@ describe('sendPublicationNewsletter', () => {
     vi.clearAllMocks();
     process.env.RESEND_API_KEY = 'key';
     process.env.NEWSLETTER_FROM_EMAIL = 'alejandra@fitmangas.com';
-    global.fetch = vi.fn(async () => ({ ok: true })) as never;
     subscribers = [{ email: 'member@example.com' }, { email: 'newsletter@example.com' }];
     getUserById.mockResolvedValue({ data: { user: { email: 'member@example.com' } }, error: null });
   });
@@ -37,12 +41,13 @@ describe('sendPublicationNewsletter', () => {
   it('membre abonnée newsletter → reçoit via dispatcher uniquement', async () => {
     const result = await sendPublicationNewsletter({ articleId: 'a1', title: 'Pilates', slugFr: 'pilates', excludeUserIds: ['u1'] });
     expect(result.targeted).toBe(1);
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'newsletter@example.com' }));
   });
 
   it('newsletter-only → reçoit via sendPublicationNewsletter', async () => {
     const result = await sendPublicationNewsletter({ articleId: 'a1', title: 'Pilates', slugFr: 'pilates' });
     expect(result.targeted).toBe(2);
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(sendEmail).toHaveBeenCalledTimes(2);
   });
 });

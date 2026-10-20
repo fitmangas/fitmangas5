@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return publicServerError('blog/favorites', error, 500);
   return NextResponse.json({ favorites: (data ?? []).map((r) => r.article_id) });
 }
 
@@ -33,12 +34,12 @@ export async function POST(request: Request) {
   if (favorite) {
     const { error } = await supabase.from('blog_article_favorites').insert({ article_id: articleId, user_id: user.id });
     if (error && !error.message.includes('duplicate key')) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return publicServerError('blog/favorites', error, 500);
     }
     return NextResponse.json({ ok: true, favorite: true });
   }
 
   const { error } = await supabase.from('blog_article_favorites').delete().eq('article_id', articleId).eq('user_id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return publicServerError('blog/favorites', error, 500);
   return NextResponse.json({ ok: true, favorite: false });
 }

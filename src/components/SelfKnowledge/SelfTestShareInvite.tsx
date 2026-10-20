@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
+import { TurnstileWidget } from '@/components/Security/TurnstileWidget';
 import type { SelfTestLang } from '@/lib/self-knowledge/types';
 
 type Props = {
@@ -22,6 +23,7 @@ export function SelfTestShareInvite({ locale, firstName, inviterEmail }: Props) 
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const emailOk = Boolean(inviterEmail?.trim());
 
@@ -40,6 +42,7 @@ export function SelfTestShareInvite({ locale, firstName, inviterEmail }: Props) 
           locale,
           inviterEmail: inviterEmail.trim(),
           inviterFirstName: firstName ?? undefined,
+          turnstileToken,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -57,7 +60,7 @@ export function SelfTestShareInvite({ locale, firstName, inviterEmail }: Props) 
     } finally {
       setBusy(false);
     }
-  }, [firstName, fr, inviterEmail, locale, shareUrl]);
+  }, [firstName, fr, inviterEmail, locale, shareUrl, turnstileToken]);
 
   async function copyLink() {
     const url = await ensureShareLink();
@@ -94,6 +97,7 @@ export function SelfTestShareInvite({ locale, firstName, inviterEmail }: Props) 
           inviterEmail: inviterEmail.trim(),
           inviterFirstName: firstName ?? undefined,
           inviteeEmail: invitee,
+          turnstileToken,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
@@ -157,8 +161,9 @@ export function SelfTestShareInvite({ locale, firstName, inviterEmail }: Props) 
         </button>
       </div>
 
+      <TurnstileWidget onToken={setTurnstileToken} locale={locale === 'es' ? 'es' : 'fr'} />
       <form className="mt-4 space-y-2" onSubmit={(e) => void sendEmailInvite(e)}>
-        <label className="block text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-ink/45">
+        <label className="fm-label text-left text-brand-ink/45">
           {fr ? 'Ou invitation email (1 seule fois)' : 'O invitación email (1 sola vez)'}
           <input
             type="email"

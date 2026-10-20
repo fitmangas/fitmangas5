@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
 
 import { isRealStripeSubscriptionId } from '@/lib/admin/member-health';
+import { isPaidSubscriptionStatus } from '@/lib/acquisition/paid-definition';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 import type { SourceResult, StripeAcquisitionMetrics } from './types';
@@ -59,10 +61,14 @@ export async function fetchStripeAcquisitionMetrics(): Promise<SourceResult<Stri
     let mrrCents = 0;
     let paidArpuCents = 0;
     let paidArpuCount = 0;
+    // CROISSANCE_V2 : MRR = abonnements payants seulement (même définition que la Vue d'ensemble, SPEC §12.1).
+    const mrrCounts = isCroissanceV2Enabled()
+      ? (status: string | null) => isPaidSubscriptionStatus(status)
+      : (status: string | null) => status === 'active' || status === 'trialing';
     for (const row of rows) {
       if (!isRealStripeSubscriptionId(row.stripe_subscription_id)) continue;
       const cents = monthlyCents(row.price_cents ?? 0, row.interval ?? 'month');
-      if (row.status === 'active' || row.status === 'trialing') {
+      if (mrrCounts(row.status)) {
         mrrCents += cents;
       }
       if (row.status === 'active') {

@@ -56,7 +56,7 @@ export async function POST(request: Request, context: { params: Promise<{ articl
 
     if (insErr) {
       console.error('[blog scroll]', insErr);
-      return NextResponse.json({ error: insErr.message }, { status: 400 });
+      return NextResponse.json({ error: 'Impossible d’enregistrer le défilement.' }, { status: 400 });
     }
 
     if (scrollPct != null) {

@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 
+import { isPushSafeModeBlocking } from '@/lib/email/send';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const VAPID_SUBJECT = 'mailto:alejandra@fitmangas.com';
@@ -51,7 +52,11 @@ export async function sendPushNotification(
   title: string,
   body?: string | null,
   url?: string,
-): Promise<{ sent: number }> {
+): Promise<{ sent: number; safeMode?: true }> {
+  if (isPushSafeModeBlocking()) {
+    console.info('[push:safe-mode] journalisé sans envoi', { title });
+    return { sent: 0, safeMode: true };
+  }
   configureVapid();
 
   const supabase = createAdminClient();

@@ -55,7 +55,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const sp = await searchParams;
   const openLoginRequired = sp.compte === 'connexion-requise';
   const initialOfferId = sp.offer?.trim() || sp.course?.trim() || undefined;
-  const { vimeoShowcase, blogPreviews } = await loadLandingHomeData();
+  const { vimeoShowcase, blogPreviews, offerFacts } = await loadLandingHomeData();
   const acceptLang = landingLangFromAcceptLanguage((await headers()).get('accept-language'));
   // Sur /, on reste en FR par défaut pour le SEO FR ; le navigateur ES est renvoyé via hreflang /es.
   const initialLang = acceptLang === 'ES' ? 'ES' : 'FR';
@@ -84,6 +84,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
       <LandingPage
         vimeoShowcase={vimeoShowcase}
         blogPreviews={blogPreviews}
+        offerFacts={offerFacts}
         initialLang={initialLang}
         openLoginRequired={openLoginRequired}
         initialOfferId={initialOfferId}

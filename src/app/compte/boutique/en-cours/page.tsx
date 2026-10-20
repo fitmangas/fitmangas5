@@ -116,7 +116,7 @@ export default async function CompteBoutiqueEnCoursPage() {
         <div>
           <h1 className="hero-signature-title text-4xl md:text-5xl">{t.title}</h1>
         </div>
-        <Link href="/compte/boutique" className="btn-luxury-ghost px-4 py-2 text-[11px] tracking-[0.12em]">
+        <Link href="/compte/boutique" className="btn-luxury-ghost px-4 py-2 text-xs tracking-[0.12em]">
           {t.back}
         </Link>
       </header>

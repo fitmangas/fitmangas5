@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import {
@@ -109,6 +109,22 @@ describe('triggers resserrés', () => {
 });
 
 describe('concierge fallback (Claude OFF)', () => {
+  // « Claude OFF » doit le rester même si la machine qui lance les tests a une clé Anthropic
+  // dans son environnement : sinon runConcierge appelle la vraie API (réponse imprévisible, coût, délai).
+  const fetchMock = vi.fn(() => Promise.reject(new Error('réseau interdit dans ce test')));
+
+  beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('CLAUDE_API_KEY', '');
+    fetchMock.mockClear();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
   it('route thinking / factuel / warm sans pitch essai', async () => {
     const thinking = await runConcierge({ inboundText: 'Je réfléchis, plus tard', market: 'fr' });
     expect(thinking.ok && thinking.intent).toBe('thinking');
@@ -135,5 +151,7 @@ describe('concierge fallback (Claude OFF)', () => {
       expect(vague.suggestedActions).not.toContain('capture_email_optin');
       expect(vague.reply).toMatch(/Dis-moi|question/i);
     }
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

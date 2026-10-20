@@ -10,6 +10,8 @@ import { courseReminderCopy } from './course-reminder-copy';
 import { COACH_PUBLISH_TIMEZONE, calendarDayKeyInTimeZone, formatInUserTimezone, isWithinCoachMorningPublishWindow } from './timezone';
 import { dispatch } from './dispatcher';
 import { runPhase3DailyJobs } from './phase3';
+import { isNotifV2Enabled } from './v2/flag';
+import { runMissingReplayAlertsV2, runVisioRemindersV2 } from './v2/reminders';
 
 type DispatchFn = typeof dispatch;
 
@@ -192,6 +194,12 @@ function minutesUntil(startsAt: string, now: Date) {
 export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps = {}) {
   const now = deps.now ?? new Date();
   const dispatchFn = deps.dispatch ?? dispatch;
+  const v2 = isNotifV2Enabled();
+  let v2Sent = 0;
+  if (v2) {
+    const visio = await runVisioRemindersV2(client, now);
+    v2Sent = visio.sent;
+  }
   const lower = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
   const upper = new Date(now.getTime() + 36 * 60 * 60 * 1000).toISOString();
   const { data, error } = await client
@@ -220,7 +228,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
       joinUrl: courseJoinUrl(course),
       replayUrl: course.replay_url || `${APP_URL()}/compte/replays`,
     };
-    if (course.course_format === 'online' && dayDelta === 1 && hour === 18) {
+    if (!v2 && course.course_format === 'online' && dayDelta === 1 && hour === 18) {
       const copy = courseReminderCopy(locale, 'visio_j1', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
@@ -232,7 +240,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
       });
       sent += 1;
     }
-    if (course.course_format === 'online' && mins >= 55 && mins <= 65) {
+    if (!v2 && course.course_format === 'online' && mins >= 55 && mins <= 65) {
       const copy = courseReminderCopy(locale, 'visio_h1', course.title, courseTime);
       await send(client, dispatchFn, {
         userId: row.user_id,
@@ -286,6 +294,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
     const locale = profile?.preferred_locale === 'es' ? 'es' : 'fr';
     const tz = course.course_format === 'onsite' ? 'Europe/Paris' : profile?.display_timezone?.trim() || course.timezone || 'Europe/Paris';
     const courseTime = formatInUserTimezone(new Date(course.starts_at), tz, locale, 'HH:mm');
+    if (v2 && course.course_format === 'online') continue;
     const eventType = course.course_format === 'onsite' ? 'course.presential.missed' : 'course.visio.missed';
     const idempotencyKey = `course.${course.course_format === 'onsite' ? 'presential' : 'visio'}.missed:${course.id}:${row.user_id}`;
     const { data: already } = await client.from('notification_log').select('id').eq('idempotency_key', idempotencyKey).maybeSingle();
@@ -311,7 +320,7 @@ export async function runCourseCycles(client: SupabaseClient, deps: Phase2Deps =
     sent += 1;
   }
 
-  return { sent };
+  return { sent: sent + v2Sent };
 }
 
 export async function runBlogPublishScheduled(client: SupabaseClient, now = new Date()) {
@@ -343,6 +352,9 @@ export async function runBlogPublishScheduled(client: SupabaseClient, now = new 
 
 export async function runMissingCourseReplayAlerts(client: SupabaseClient, deps: Phase2Deps = {}) {
   const now = deps.now ?? new Date();
+  if (isNotifV2Enabled()) {
+    return runMissingReplayAlertsV2(client, now);
+  }
   const cutoffMs = now.getTime() - 24 * 60 * 60 * 1000;
   const cutoffIso = new Date(cutoffMs).toISOString();
   const dayKey = now.toISOString().slice(0, 10);
@@ -608,11 +620,27 @@ export async function dispatchPresentialPurchased(client: SupabaseClient, userId
 export async function dispatchCourseCancelledByCoach(client: SupabaseClient, courseId: string, deps: Phase2Deps = {}) {
   const { data: course, error: courseError } = await client
     .from('courses')
-    .select('id, title, starts_at, course_format')
+    .select('id, title, starts_at, course_format, course_language')
     .eq('id', courseId)
     .maybeSingle();
   if (courseError) throw courseError;
   if (!course) return { sent: 0 };
+
+  if (isNotifV2Enabled() && String(course.course_format) === 'online') {
+    const { dispatchVisioCancelledV2 } = await import('./v2/reminders');
+    return dispatchVisioCancelledV2(
+      client,
+      {
+        id: String(course.id),
+        title: String(course.title),
+        starts_at: String(course.starts_at),
+        ends_at: String(course.starts_at),
+        course_format: 'online',
+        course_language: (course as { course_language?: string | null }).course_language ?? 'fr',
+      },
+      deps.now ?? new Date(),
+    );
+  }
 
   const { data: enrollments, error } = await client.from('enrollments').select('user_id').eq('course_id', courseId).in('status', ['booked', 'attended']);
   if (error) throw error;
@@ -644,6 +672,34 @@ export async function dispatchReplayReady(client: SupabaseClient, courseId: stri
     .maybeSingle();
   if (courseError) throw courseError;
   if (!course || String(course.course_format) !== 'online') return { sent: 0 };
+
+  if (isNotifV2Enabled()) {
+    const { visioProfiles, isVisioLiveRecipient } = await import('./v2/reminders').then(async (m) => ({
+      visioProfiles: m.visioProfiles,
+      isVisioLiveRecipient: (await import('./v2/recipients')).isVisioLiveRecipient,
+    }));
+    const { data: full } = await client.from('courses').select('course_language').eq('id', courseId).maybeSingle();
+    const lang = (full as { course_language?: string } | null)?.course_language === 'es' ? 'es' : 'fr';
+    const profiles = await visioProfiles(client);
+    let sentV2 = 0;
+    for (const profile of profiles) {
+      if (!isVisioLiveRecipient(profile, lang)) continue;
+      await send(client, deps.dispatch ?? dispatch, {
+        userId: profile.id,
+        eventType: 'course.visio.replay_ready',
+        title: 'Replay disponible',
+        body: `Le replay de ${String(course.title)} est disponible.`,
+        idempotencyKey: `course.visio.replay_ready:${String(course.id)}:${profile.id}`,
+        payload: {
+          courseTitle: String(course.title),
+          replayUrl: String(course.replay_url || `${APP_URL()}/compte/replays`),
+        },
+        channelHints: ['in_app', 'email'],
+      });
+      sentV2 += 1;
+    }
+    return { sent: sentV2 };
+  }
 
   const { data: enrollments, error } = await client.from('enrollments').select('user_id').eq('course_id', courseId).in('status', ['booked', 'attended']);
   if (error) throw error;

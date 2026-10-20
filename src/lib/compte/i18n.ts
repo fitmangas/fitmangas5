@@ -84,11 +84,20 @@ export const compteNavLabels: Record<
     referral: string;
     notifications: string;
     selfKnowledge: string;
+    programmes: string;
+    gifts: string;
+    home: string;
+    more: string;
+    help: string;
+    logout: string;
   }
 > = {
   fr: {
     dashboard: 'Tableau de bord',
+    home: 'Accueil',
+    more: 'Plus',
     planning: 'Planning',
+    programmes: 'Programmes',
     blog: 'Blog',
     videos: 'Vidéos',
     shop: 'Boutique',
@@ -97,10 +106,16 @@ export const compteNavLabels: Record<
     referral: 'Parrainage',
     notifications: 'Notifications',
     selfKnowledge: 'Connaissance de soi',
+    gifts: 'Offrir',
+    help: 'Aide',
+    logout: 'Déconnexion',
   },
   en: {
     dashboard: 'Dashboard',
+    home: 'Home',
+    more: 'More',
     planning: 'Schedule',
+    programmes: 'Programs',
     blog: 'Blog',
     videos: 'Videos',
     shop: 'Shop',
@@ -109,10 +124,16 @@ export const compteNavLabels: Record<
     referral: 'Referrals',
     notifications: 'Notifications',
     selfKnowledge: 'Self-knowledge',
+    gifts: 'Gift',
+    help: 'Help',
+    logout: 'Log out',
   },
   es: {
     dashboard: 'Panel',
+    home: 'Inicio',
+    more: 'Más',
     planning: 'Planificación',
+    programmes: 'Programas',
     blog: 'Blog',
     videos: 'Videos',
     shop: 'Tienda',
@@ -121,5 +142,19 @@ export const compteNavLabels: Record<
     referral: 'Referidos',
     notifications: 'Notificaciones',
     selfKnowledge: 'Autoconocimiento',
+    gifts: 'Regalar',
+    help: 'Ayuda',
+    logout: 'Cerrar sesión',
   },
 };
+
+/** Libellé de la formule pour la feuille « Plus » (null = rien à afficher). */
+export function comptePlanLabel(tier: string | null | undefined, lang: ClientLang): string | null {
+  const labels: Record<ClientLang, Record<string, string>> = {
+    fr: { online_group_monthly: 'Visio collectif · actif', online_individual_monthly: 'Visio individuel · actif', none: 'Sans abonnement actif' },
+    es: { online_group_monthly: 'Visio grupal · activo', online_individual_monthly: 'Visio individual · activo', none: 'Sin suscripción activa' },
+    en: { online_group_monthly: 'Group online · active', online_individual_monthly: 'Individual online · active', none: 'No active plan' },
+  };
+  if (!tier) return labels[lang].none;
+  return labels[lang][tier] ?? null;
+}

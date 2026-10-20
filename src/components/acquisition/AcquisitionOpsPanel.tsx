@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import type { MetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
 
 import { Card } from './Card';
@@ -33,6 +35,7 @@ export function AcquisitionOpsPanel({
   onSyncInsights,
   onCheckLive,
 }: Props) {
+  const [open, setOpen] = useState(false);
   const appReviewOk = metaLive?.appReviewMessaging === 'approved';
   const appReviewLabel =
     metaLive?.appReviewMessaging === 'approved'
@@ -73,6 +76,9 @@ export function AcquisitionOpsPanel({
     },
   ];
 
+  const allGreen = steps.every((s) => s.ok);
+  const collapsed = allGreen && !open;
+
   return (
     <Card overlap padding="lg">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -80,6 +86,16 @@ export function AcquisitionOpsPanel({
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: acq.terracotta }}>
             Validation technique Messaging
           </p>
+          {allGreen ? (
+            <button
+              type="button"
+              className="mt-1 text-sm font-semibold underline"
+              style={{ color: acq.ink }}
+              onClick={() => setOpen((v) => !v)}
+            >
+              {collapsed ? 'Tout est connecté' : 'Replier la checklist'}
+            </button>
+          ) : null}
           <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: acq.muted }}>
             {messagingMode === 'live'
               ? 'Mode LIVE déjà actif (envois Meta réels). Cette checklist ne « active » pas le live — elle dit ce qui est vraiment prêt (App Review, WhatsApp Cloud).'
@@ -95,6 +111,8 @@ export function AcquisitionOpsPanel({
         </ChipRow>
       </div>
 
+      {collapsed ? null : (
+      <>
       <ul className="mt-6 space-y-2">
         {steps.map((s) => (
           <li key={s.label} className="flex items-start gap-2 text-sm" style={{ color: acq.ink }}>
@@ -165,6 +183,8 @@ export function AcquisitionOpsPanel({
           Webhook Meta → <code className="text-[11px]">{metaLive.webhookUrl}</code>
         </p>
       ) : null}
+      </>
+      )}
     </Card>
   );
 }

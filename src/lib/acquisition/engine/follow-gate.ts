@@ -1,3 +1,4 @@
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import type { AcqContact, WorkflowTriggerType } from '@/lib/acquisition/types';
 
 import { isRealInfoOrTrialRequest, isSoftDeclineText } from './soft-decline';
@@ -50,6 +51,10 @@ export function shouldAskFollowGate(params: {
   // pour isRealInfoOrTrialRequest (tests + reprise si intent non intercepté)
   if (isFollowGateBypassText(params.inboundText)) return false;
   if (isExistingPayingMember(params.contact)) return false;
+  if (isCroissanceV2Enabled()) {
+    const t = (params.inboundText ?? '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+    if (/prix|tarif|combien|cuesta|precio|essai|prueba|trial|7 jours|7 dias/.test(t)) return false;
+  }
   return isRealInfoOrTrialRequest(params.inboundText);
 }
 

@@ -18,7 +18,8 @@ type Lang = 'fr' | 'en' | 'es';
 type Props = {
   lang?: Lang;
   className?: string;
-  tone?: 'primary' | 'ghost';
+  /** `link` : lien texte terracotta (planning v3). */
+  tone?: 'primary' | 'ghost' | 'link';
 };
 
 function copy(lang: Lang) {
@@ -97,7 +98,9 @@ export function SubscribeCalendarButton({ lang = 'fr', className = '', tone = 'g
   const buttonClass =
     tone === 'primary'
       ? 'btn-luxury-primary inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-4 py-2.5 text-[10px] tracking-[0.14em] disabled:opacity-60 sm:w-auto md:px-5'
-      : 'btn-luxury-ghost inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[10px] tracking-[0.12em] disabled:opacity-60';
+      : tone === 'link'
+        ? 'inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-luxury-orange underline-offset-4 hover:underline disabled:opacity-60'
+        : 'btn-luxury-ghost inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[10px] tracking-[0.12em] disabled:opacity-60';
 
   async function handleSubscribe() {
     setBusy(true);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { checkIsAdmin } from '@/lib/auth/admin';
+import { checkAdminMfa } from '@/lib/auth/admin-mfa';
 import { savePrintfulProductOrder } from '@/lib/printful-product-order';
 import { createClient } from '@/lib/supabase/server';
 
@@ -21,6 +22,9 @@ export async function POST(request: Request) {
   const adminGate = await checkIsAdmin(supabase, user);
   if (!adminGate.isAdmin) {
     return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
+  }
+  if (!(await checkAdminMfa(supabase)).ok) {
+    return NextResponse.json({ error: 'Double authentification requise.' }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as Payload | null;

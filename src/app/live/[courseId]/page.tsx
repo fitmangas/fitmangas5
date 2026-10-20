@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { JitsiRoomLoader } from '@/components/Jitsi/JitsiRoomLoader';
 import { LiveVisitRecorder } from '@/components/Live/LiveVisitRecorder';
+import { LiveHabillage } from '@/components/Live/LiveHabillage';
 import { ReplayViewTracker } from '@/components/Replay/ReplayViewTracker';
 import { VimeoReplayWithResume } from '@/components/Replay/VimeoReplayWithResume';
 import {
@@ -138,7 +139,7 @@ export default async function LiveCoursePage({
 
   const { data: course, error } = await supabase
     .from('courses')
-    .select('id, title, jitsi_link, ends_at, spotify_playlist_url, course_language')
+    .select('id, title, jitsi_link, starts_at, ends_at, spotify_playlist_url, course_language')
     .eq('id', idParsed.data)
     .eq('is_published', true)
     .maybeSingle();
@@ -227,6 +228,36 @@ export default async function LiveCoursePage({
     );
   }
 
+  if (!showVimeoReplay && hasJitsi && !courseIsPastForReplay) {
+    return (
+      <LiveHabillage
+        title={course.title}
+        languageLabel={isCourseLanguage(course.course_language) ? (course.course_language === 'es' ? 'en español' : 'en français') : null}
+        startsAt={typeof course.starts_at === 'string' ? course.starts_at : null}
+        endsAt={typeof course.ends_at === 'string' ? course.ends_at : null}
+        backHref={backLink.href}
+        backLabel={backLink.href.startsWith('/compte') ? 'Mon espace' : backLink.label}
+        spotifyUrl={spotifyUrl || null}
+      >
+        {studentPreview ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[11px] leading-relaxed text-amber-950 shadow-sm">
+            <strong className="font-semibold">Aperçu élève</strong> — Rendu comme un élève avec accès complet (live / Jitsi). Pas de droits animateur.
+          </div>
+        ) : null}
+        <LiveVisitRecorder courseId={course.id} />
+        <JitsiRoomLoader
+          courseId={course.id}
+          roomUrl={course.jitsi_link!}
+          title={`Live — ${course.title}`}
+          displayName={displayName}
+          email={emailForJitsi}
+          isModerator={isModerator}
+          studentPreview={studentPreview}
+        />
+      </LiveHabillage>
+    );
+  }
+
   return (
     <div className="luxury-shell relative flex min-h-screen flex-col">
       <div className="luxury-bg-orbs" aria-hidden />
@@ -282,7 +313,7 @@ export default async function LiveCoursePage({
               </p>
             ) : null}
           </>
-        ) : !(hasJitsi && !courseIsPastForReplay) ? (
+        ) : (
           <div className="glass-card px-6 py-10 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-ink/45">Séance terminée</p>
             <h2 className="mt-3 font-serif text-xl italic text-brand-ink">Replay en préparation</h2>
@@ -297,32 +328,6 @@ export default async function LiveCoursePage({
               ← {backLink.label}
             </Link>
           </div>
-        ) : (
-          <>
-            <LiveVisitRecorder courseId={course.id} />
-            <JitsiRoomLoader
-              courseId={course.id}
-              roomUrl={course.jitsi_link!}
-              title={`Live — ${course.title}`}
-              displayName={displayName}
-              email={emailForJitsi}
-              isModerator={isModerator}
-              studentPreview={studentPreview}
-            />
-            {spotifyUrl ? (
-              <p className="text-sm text-brand-ink/70">
-                <span className="font-semibold text-brand-ink">Playlist séance :</span>{' '}
-                <a
-                  href={spotifyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-brand-accent underline-offset-4 hover:underline"
-                >
-                  Spotify
-                </a>
-              </p>
-            ) : null}
-          </>
         )}
       </main>
     </div>

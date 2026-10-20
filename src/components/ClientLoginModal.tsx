@@ -108,7 +108,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
             </button>
 
             <div className="border-b border-brand-ink/[0.06] px-5 pb-5 pt-6 sm:px-8 sm:pb-6 sm:pt-8">
-              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.35em] text-brand-accent">{t.eyebrow}</p>
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.35em] text-brand-accent">{t.eyebrow}</p>
               <h2 id="client-login-title" className="font-serif text-xl italic tracking-tight text-brand-ink sm:text-2xl">
                 {t.title}
               </h2>
@@ -118,7 +118,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5 px-5 py-6 sm:space-y-4 sm:px-8 sm:py-8">
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+              <label className="fm-label text-brand-ink/40">
                 E-mail
                 <input
                   required
@@ -130,7 +130,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
                 />
               </label>
 
-              <label className="block text-[9px] font-bold uppercase tracking-widest text-brand-ink/40">
+              <label className="fm-label text-brand-ink/40">
                 {t.password}
                 <input
                   required

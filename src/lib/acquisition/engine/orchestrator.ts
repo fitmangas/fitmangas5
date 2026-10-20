@@ -35,6 +35,9 @@ import {
   tagContact,
   wasWorkflowRunRecently,
 } from './repository';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { isStoryEmojiOrEmotional, STORY_WORKFLOW_ID, storyWarmNoTrial } from './croissance-v2-copy';
+import { overlayWorkflows } from './croissance-v2-overlay';
 import { textMatchesKeyword } from './workflow-catalog';
 
 export type OrchestratorResult = {
@@ -68,6 +71,13 @@ export function workflowMatchesInbound(
     const kw = workflow.triggerConfig.keyword;
     if (typeof kw === 'string' && kw.trim()) {
       if (!textMatchesKeyword(params.inboundText, kw)) return false;
+    }
+    if (
+      isCroissanceV2Enabled() &&
+      /quand tu es dispo|cuando estes disponible|cuando estés disponible/i.test(params.inboundText ?? '') &&
+      workflow.actions.some((a) => a.type === 'book_session_intent')
+    ) {
+      return false;
     }
   }
 
@@ -111,7 +121,14 @@ export async function runWorkflow(
   const steps: OrchestratorResult['steps'] = [];
   let allOk = true;
 
+  const croissanceV2 = isCroissanceV2Enabled();
+  const postpartumId = '00000000-0000-4000-8000-00000000000a';
+
   for (const action of workflow.actions) {
+    if (croissanceV2 && workflow.id === postpartumId && action.type === 'schedule_followup') {
+      steps.push({ type: action.type, ok: true, detail: 'Ignoré — post-partum V2 sans relance essai.' });
+      continue;
+    }
     if (
       contact &&
       isExistingPayingMember(contact) &&
@@ -142,9 +159,18 @@ export async function runWorkflow(
       continue;
     }
 
-    const step = await runWorkflowAction(action, fullCtx);
+    const spec =
+      croissanceV2 && workflow.id === postpartumId && action.type === 'send_message'
+        ? { ...action, config: { ...(action.config ?? {}), appendTrialLink: false, buttons: undefined } }
+        : action;
+    const step = await runWorkflowAction(spec, fullCtx);
     steps.push({ type: step.type, ok: step.ok, detail: step.detail });
     if (!step.ok) allOk = false;
+  }
+
+  if (croissanceV2 && workflow.id === postpartumId) {
+    const esc = await runWorkflowAction({ type: 'escalate_human', config: {} }, fullCtx);
+    steps.push({ type: esc.type, ok: esc.ok, detail: esc.detail });
   }
 
   await recordWorkflowRun({
@@ -179,7 +205,9 @@ export async function runInboundTrigger(params: {
   let workflows = params.workflows;
   if (!workflows) {
     const wfRes = await listWorkflows();
-    workflows = wfRes.ok ? wfRes.items : [];
+    workflows = wfRes.ok ? overlayWorkflows(wfRes.items) : [];
+  } else {
+    workflows = overlayWorkflows(workflows);
   }
 
   const market = params.market ?? detectAcquisitionMarket(params.inboundText);
@@ -251,8 +279,11 @@ export async function runInboundTrigger(params: {
   ) {
     await tagContact(contact.id, 'thinking_nudge_refused');
     await cancelScheduledFollowups(contact.id);
-    const body =
-      market === 'mx'
+    const body = isCroissanceV2Enabled()
+      ? market === 'mx'
+        ? 'Anotado 💛\nYa no te mando recordatorios. Cuídate mucho.'
+        : 'C’est noté 💛\nJe ne t’envoie plus de rappel. Prends soin de toi.'
+      : market === 'mx'
         ? 'Perfecto 💛 No te escribo más. Cuídate.'
         : 'Parfait 💛 Je n’écris plus. Prends soin de toi.';
     const send = await runWorkflowAction(
@@ -302,6 +333,40 @@ export async function runInboundTrigger(params: {
       log: steps,
     });
     return [{ workflowId: MEMBER_WARM_INTERCEPT_ID, ok: send.ok, steps }];
+  }
+
+  // 2c) Réponse story émoji / émotionnelle — merci sans essai + alerte Alejandra
+  if (
+    isCroissanceV2Enabled() &&
+    params.triggerType === 'ig_story_reply' &&
+    contact &&
+    !optedOut &&
+    isStoryEmojiOrEmotional(params.inboundText)
+  ) {
+    const body = storyWarmNoTrial(market === 'mx' ? 'es' : 'fr');
+    const send = await runWorkflowAction(
+      { type: 'send_message', config: { body, appendTrialLink: false } },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    await tagContact(contact.id, 'story_emotion');
+    await cancelScheduledFollowups(contact.id);
+    const esc = await runWorkflowAction(
+      { type: 'escalate_human', config: {} },
+      { contact, conversation: params.conversation, inboundText: params.inboundText, market },
+    );
+    const steps = [
+      { type: 'story_emotion', ok: true, detail: 'Story émoji/émotion — merci sans essai, pas de relance.' },
+      { type: send.type, ok: send.ok, detail: send.detail },
+      { type: esc.type, ok: esc.ok, detail: esc.detail },
+    ];
+    await recordWorkflowRun({
+      workflowId: STORY_WORKFLOW_ID,
+      contactId: contact.id,
+      conversationId: params.conversation.id,
+      status: send.ok ? 'ok' : 'error',
+      log: steps,
+    });
+    return [{ workflowId: STORY_WORKFLOW_ID, ok: send.ok, steps }];
   }
 
   // 3) Intentions conversationnelles — avant follow-gate

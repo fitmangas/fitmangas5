@@ -10,7 +10,7 @@ export function BlogConversionCta({ className = '' }: { className?: string }) {
       <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-luxury-muted">
         Continue ta progression avec les cours Visio, les replays et l’espace membre FitMangas.
       </p>
-      <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-6 py-2.5 text-[11px] tracking-[0.14em]">
+      <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-6 py-2.5 text-xs tracking-[0.14em]">
         Découvrir l’offre Visio
       </Link>
     </section>

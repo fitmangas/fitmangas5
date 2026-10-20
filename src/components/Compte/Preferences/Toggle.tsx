@@ -16,7 +16,7 @@ export function Toggle({ checked, onChange, disabled, label, description, id, co
   if (compact) {
     return (
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-[10px] font-medium text-luxury-muted">
+        <label htmlFor={id} className="text-xs font-medium text-luxury-muted">
           {label}
         </label>
         <button

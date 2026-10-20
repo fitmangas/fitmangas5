@@ -181,7 +181,7 @@ export function QuizVideoProof({ locale, title, subtitle, variant = 'full' }: Pr
                     loop
                     muted={muted}
                     autoPlay={isActive}
-                    preload={shouldLoad ? 'auto' : 'none'}
+                    preload="none"
                     src={shouldLoad ? item.videoSrc : undefined}
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/15" />
@@ -189,7 +189,7 @@ export function QuizVideoProof({ locale, title, subtitle, variant = 'full' }: Pr
                     <p className="text-[15px] font-bold tracking-tight">
                       {item.name} <span aria-hidden>{item.flag}</span>
                     </p>
-                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/75">
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
                       {locale === 'es' ? item.professionEs : item.professionFr}
                     </p>
                   </figcaption>

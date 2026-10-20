@@ -1,3 +1,4 @@
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import { getAppBaseUrl } from '@/lib/stripe/create-checkout-session';
 import { VISIO_FREE_TRIAL_DAYS } from '@/lib/stripe/create-checkout-session';
 
@@ -28,6 +29,11 @@ export function getPublicTrialSignupUrl(options?: {
 }
 
 export function getTrialOfferLabel(locale: 'fr' | 'es' = 'fr'): string {
+  if (isCroissanceV2Enabled()) {
+    return locale === 'es'
+      ? `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis`
+      : `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits`;
+  }
   if (locale === 'es') {
     return `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis ✨`;
   }
@@ -58,12 +64,32 @@ export function getTrialDmMessage(options?: {
   });
 
   if (style === 'compact') {
+    if (isCroissanceV2Enabled()) {
+      return locale === 'es'
+        ? `Aquí tienes tu enlace 💛\nTu prueba de ${VISIO_FREE_TRIAL_DAYS} días gratis empieza aquí:\n${url}`
+        : `Voici ton lien 💛\nTon essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits commence ici :\n${url}`;
+    }
     return locale === 'es'
       ? `Aquí tienes el enlace ✨\n\n${url}`
       : `Voici ton lien ✨\n\n${url}`;
   }
 
   if (style === 'reminder_j1') {
+    if (isCroissanceV2Enabled()) {
+      return locale === 'es'
+        ? [
+            'Un pequeño recordatorio 💛',
+            `La prueba de ${VISIO_FREE_TRIAL_DAYS} días gratis sigue disponible: clases en grupo en línea, te veo y te corrijo en vivo.`,
+            url,
+            'Responde STOP si prefieres no recibir más mensajes.',
+          ].join('\n')
+        : [
+            'Petit rappel 💛',
+            `L’essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits est toujours là : cours en groupe en visio, je te vois et je te corrige en direct.`,
+            url,
+            'Réponds STOP si tu préfères ne plus recevoir de messages.',
+          ].join('\n');
+    }
     if (locale === 'es') {
       return [
         'Solo un recordatorio 💛',
@@ -91,6 +117,23 @@ export function getTrialDmMessage(options?: {
   }
 
   if (style === 'social_proof') {
+    if (isCroissanceV2Enabled()) {
+      return locale === 'es'
+        ? [
+            'Por si quieres darte una idea 💛',
+            'Algunas alumnas cuentan su clase en video en la página de inicio.',
+            `Y la prueba de ${VISIO_FREE_TRIAL_DAYS} días gratis sigue abierta:`,
+            url,
+            'Responde STOP si prefieres no recibir más mensajes.',
+          ].join('\n')
+        : [
+            'Si tu veux te faire une idée 💛',
+            'Des élèves racontent leur cours en vidéo sur la page d’accueil.',
+            `Et l’essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits est toujours ouvert :`,
+            url,
+            'Réponds STOP si tu préfères ne plus recevoir de messages.',
+          ].join('\n');
+    }
     if (locale === 'es') {
       return [
         'Una cosa que oigo mucho de mis alumnas 💛',
@@ -120,6 +163,23 @@ export function getTrialDmMessage(options?: {
   }
 
   if (style === 'last_chance') {
+    if (isCroissanceV2Enabled()) {
+      return locale === 'es'
+        ? [
+            'Un mensajito de mi parte 💛',
+            `Si la prueba de ${VISIO_FREE_TRIAL_DAYS} días gratis te interesa, vienes a una clase en grupo conmigo y luego decides.`,
+            'Te pido la tarjeta al registrarte y el cobro es después de la prueba.',
+            url,
+            'Responde STOP si prefieres no recibir más mensajes.',
+          ].join('\n')
+        : [
+            'Petit mot de ma part 💛',
+            `Si l’essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits te tente, tu viens à un cours en groupe avec moi et tu décides ensuite.`,
+            'Carte demandée à l’inscription, prélèvement après l’essai.',
+            url,
+            'Réponds STOP si tu préfères ne plus recevoir de messages.',
+          ].join('\n');
+    }
     if (locale === 'es') {
       return [
         'Último mensaje de mi parte 💛',
@@ -144,6 +204,22 @@ export function getTrialDmMessage(options?: {
       'Voici le lien →',
       url,
     ].join('\n');
+  }
+
+  if (isCroissanceV2Enabled()) {
+    return locale === 'es'
+      ? [
+          'Aquí no estás sola frente a un video 💛',
+          'Mis clases en grupo son en línea: te veo y te corrijo en vivo.',
+          `Prueba ${VISIO_FREE_TRIAL_DAYS} días gratis (te pido la tarjeta al registrarte y el cobro es después de la prueba):`,
+          url,
+        ].join('\n')
+      : [
+          'Ici, tu n’es pas seule devant une vidéo 💛',
+          'Mes cours en groupe sont en visio : je te vois et je te corrige en direct.',
+          `Essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits (carte demandée à l’inscription, prélèvement après l’essai) :`,
+          url,
+        ].join('\n');
   }
 
   if (locale === 'es') {
@@ -186,7 +262,29 @@ export function getNaturalTrialInviteMessage(options?: {
   });
   const opener =
     options?.opener?.trim() ||
-    (locale === 'es' ? 'Gracias por escribir 💛 Soy Alejandra.' : 'Merci pour ton message 💛 C’est Alejandra.');
+    (isCroissanceV2Enabled()
+      ? locale === 'es'
+        ? 'Gracias por escribirme, soy Alejandra 💛'
+        : 'Merci pour ton message, c’est Alejandra 💛'
+      : locale === 'es'
+        ? 'Gracias por escribir 💛 Soy Alejandra.'
+        : 'Merci pour ton message 💛 C’est Alejandra.');
+
+  if (isCroissanceV2Enabled()) {
+    return locale === 'es'
+      ? [
+          opener,
+          'Mis clases en grupo son en línea: te veo y te corrijo en vivo.',
+          `Tu prueba de ${VISIO_FREE_TRIAL_DAYS} días gratis está aquí:`,
+          url,
+        ].join('\n')
+      : [
+          opener,
+          'Mes cours en groupe sont en visio : je te vois et je te corrige en direct.',
+          `Ton essai ${VISIO_FREE_TRIAL_DAYS} jours gratuits, c’est par ici :`,
+          url,
+        ].join('\n');
+  }
 
   if (locale === 'es') {
     return [

@@ -39,6 +39,12 @@ export function isSoftDeclineText(text: string | undefined): boolean {
 }
 
 export function softDeclineReplyFr(): string {
+  const { isCroissanceV2Enabled } = require('@/lib/acquisition/croissance-v2-flag') as {
+    isCroissanceV2Enabled: () => boolean;
+  };
+  if (isCroissanceV2Enabled()) {
+    return ['Merci de me l’avoir dit 💛', 'Je te souhaite une belle continuation. Si un jour tu as envie d’essayer les cours en visio avec moi, je serai là.'].join('\n');
+  }
   return [
     'Merci pour ta sincérité 💛',
     '',
@@ -48,6 +54,12 @@ export function softDeclineReplyFr(): string {
 }
 
 export function softDeclineReplyEs(): string {
+  const { isCroissanceV2Enabled } = require('@/lib/acquisition/croissance-v2-flag') as {
+    isCroissanceV2Enabled: () => boolean;
+  };
+  if (isCroissanceV2Enabled()) {
+    return ['Gracias por decírmelo 💛', 'Te deseo lo mejor. Si algún día quieres probar las clases en línea conmigo, aquí estaré.'].join('\n');
+  }
   return [
     'Gracias por tu sinceridad 💛',
     '',
@@ -57,6 +69,12 @@ export function softDeclineReplyEs(): string {
 }
 
 export function memberWarmReplyFr(): string {
+  const { isCroissanceV2Enabled } = require('@/lib/acquisition/croissance-v2-flag') as {
+    isCroissanceV2Enabled: () => boolean;
+  };
+  if (isCroissanceV2Enabled()) {
+    return ['Contente que tu sois déjà avec moi 💛', 'Dis-moi ce dont tu as besoin (horaires, replay, une question) et je te réponds ici.'].join('\n');
+  }
   return [
     'Contente que tu sois déjà avec moi 💛',
     '',
@@ -65,6 +83,12 @@ export function memberWarmReplyFr(): string {
 }
 
 export function memberWarmReplyEs(): string {
+  const { isCroissanceV2Enabled } = require('@/lib/acquisition/croissance-v2-flag') as {
+    isCroissanceV2Enabled: () => boolean;
+  };
+  if (isCroissanceV2Enabled()) {
+    return ['Qué gusto que ya estés conmigo 💛', 'Dime qué necesitas (horarios, replay, alguna duda) y te respondo aquí.'].join('\n');
+  }
   return [
     '¡Qué bien que ya estés conmigo 💛',
     '',

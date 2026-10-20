@@ -8,6 +8,7 @@ import {
   hasAnalyticsConsent,
   type CookieConsentValue,
 } from '@/lib/cookies/consent';
+import { ga4ConfigParams, isInternalTrafficCookie } from '@/lib/analytics/internal-traffic';
 
 function isPublicMarketingPath(pathname: string): boolean {
   if (pathname === '/' || pathname === '/es') return true;
@@ -34,8 +35,10 @@ type Props = {
 export function PublicMarketingScripts({ gaId, metaPixelId }: Props) {
   const pathname = usePathname();
   const [allowed, setAllowed] = useState(false);
+  const [internal, setInternal] = useState(false);
 
   useEffect(() => {
+    setInternal(isInternalTrafficCookie(document.cookie));
     const sync = () => setAllowed(hasAnalyticsConsent());
     sync();
     const onConsent = (event: Event) => {
@@ -58,7 +61,7 @@ export function PublicMarketingScripts({ gaId, metaPixelId }: Props) {
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${gaId}', { anonymize_ip: true });
+              gtag('config', '${gaId}', ${ga4ConfigParams(internal, { anonymize_ip: true })});
             `}
           </Script>
         </>

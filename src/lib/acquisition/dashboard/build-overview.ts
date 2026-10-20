@@ -13,6 +13,8 @@ import { getPerformanceLoopStatus } from '@/lib/acquisition/performance-loop';
 import { fetchAcqCrmFunnel } from '@/lib/acquisition/sources/acq-crm';
 import { getMetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
 import { summarizeAdsPerformance } from '@/lib/acquisition/ads/repository';
+import { PAID_DEFINITION_HINT } from '@/lib/acquisition/paid-definition';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import type {
   AcquisitionChannel,
   AcquisitionKpi,
@@ -87,19 +89,24 @@ async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from('post_metrics')
-      .select('id, hook, reach, saved, format, pilier, fetched_at')
+      .select('id, post_id, hook, reach, saved, format, pilier, fetched_at')
       .not('hook', 'is', null)
-      .order('saved', { ascending: false, nullsFirst: false })
-      .limit(20);
+      .order('fetched_at', { ascending: false, nullsFirst: false })
+      .limit(200);
     if (!error && data?.length) {
+      const seen = new Set<string>();
       for (const row of data) {
+        const postKey = String(row.post_id ?? row.id);
+        if (seen.has(postKey)) continue;
+        seen.add(postKey);
         const saves = row.saved ?? null;
         const reach = row.reach ?? null;
         const score =
           saves != null && reach != null && reach > 0 ? Math.round((saves / reach) * 10000) / 100 : saves;
+        const hookRaw = String(row.hook ?? '');
         rows.push({
-          id: String(row.id),
-          hook: String(row.hook ?? ''),
+          id: postKey,
+          hook: Array.from(hookRaw).join(''),
           channel: 'instagram',
           saves,
           reach,
@@ -108,6 +115,7 @@ async function loadPerformanceHooks(): Promise<PerformanceHookRow[]> {
           pilier: row.pilier ? String(row.pilier) : null,
           format: row.format ? String(row.format) : null,
         });
+        if (rows.length >= 20) break;
       }
     }
   } catch {
@@ -186,12 +194,29 @@ export async function buildAcquisitionOverview(
   const sitePaid = stripe.ok ? stripe.data.activePaid : supa.ok ? supa.data.paidCount : null;
   const siteRetentionRate = supa.ok ? supa.data.retention90d : null;
 
+  const paidCountForRetention = sitePaid ?? 0;
+  const retainedCount =
+    siteRetentionRate != null && paidCountForRetention > 0
+      ? Math.round((siteRetentionRate / 100) * paidCountForRetention)
+      : siteRetentionRate != null
+        ? siteRetentionRate
+        : null;
+
   const siteFunnel = buildSteps({
     reach: siteReach,
     clicks: siteClicks,
     trials: siteTrials,
     paid: sitePaid,
-    retentionValue: siteRetentionRate,
+    retentionValue: retainedCount,
+    retentionRate: siteRetentionRate,
+  });
+
+  const referenceFunnel = buildSteps({
+    reach: ga4.ok ? ga4.data.sessions : siteReach,
+    clicks: ga4.ok ? ga4.data.trialClicks : siteClicks,
+    trials: siteTrials,
+    paid: sitePaid,
+    retentionValue: retainedCount,
     retentionRate: siteRetentionRate,
   });
 
@@ -238,7 +263,7 @@ export async function buildAcquisitionOverview(
       id: 'arpu',
       label: 'ARPU mensuel',
       value: formatEur(arpu),
-      hint: 'Moyenne price_cents des abonnées actives (Stripe réel).',
+      hint: `Moyenne price_cents des abonnées actives (Stripe réel). ${PAID_DEFINITION_HINT}`,
       tone: 'good',
     },
     {
@@ -322,6 +347,33 @@ export async function buildAcquisitionOverview(
     },
   ];
 
+  // —— Lot 7 (CROISSANCE_V2) : mêmes compteurs CRM sans les contacts de test ni de l'équipe ——
+  const v2 = isCroissanceV2Enabled();
+  const crmNoTests = acqCrm.ok ? (acqCrm.data.withoutTests ?? null) : null;
+  const crmFunnelNoTests =
+    v2 && crmNoTests
+      ? buildSteps({
+          reach: crmNoTests.contacts,
+          clicks: crmNoTests.qualified + crmNoTests.trial,
+          trials: crmNoTests.trial,
+          paid: crmNoTests.paid + crmNoTests.member,
+          retentionValue: crmNoTests.member,
+          retentionRate: pct(crmNoTests.member, crmNoTests.paid + crmNoTests.member || crmNoTests.contacts),
+        })
+      : undefined;
+  const kpisNoTests =
+    v2 && crmNoTests
+      ? kpis.map((k) =>
+          k.id === 'hot_leads'
+            ? { ...k, value: formatNum(crmNoTests.hotLeads), tone: crmNoTests.hotLeads > 0 ? ('good' as const) : ('watch' as const) }
+            : k.id === 'avg_score'
+              ? { ...k, value: crmNoTests.avgLeadScore != null ? String(crmNoTests.avgLeadScore) : '—' }
+              : k.id === 'crm_contacts'
+                ? { ...k, value: formatNum(crmNoTests.contacts) }
+                : k,
+        )
+      : undefined;
+
   // Rétention site : étiqueter proxy dans le funnel
   const siteFunnelLabeled = siteFunnel.map((step) =>
     step.id === 'retention'
@@ -339,7 +391,11 @@ export async function buildAcquisitionOverview(
     funnel: crmFunnel,
     siteFunnel: siteFunnelLabeled,
     crmFunnel,
+    referenceFunnel: v2 ? referenceFunnel : undefined,
+    crmFunnelNoTests,
     kpis,
+    kpisNoTests,
+    croissanceV2: v2,
     performanceHooks,
     sourceErrors,
     schemaReady,

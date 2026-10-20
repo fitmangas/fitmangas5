@@ -77,7 +77,7 @@ export default async function ProfilPage() {
             emailLabel: 'E-mail',
             billingSection: 'Facturation',
             openStripeSub: 'Abonnement',
-            openUnsubscribe: 'Désabonnement',
+            openUnsubscribe: 'Résilier mon abonnement',
             openStripeInvoices: 'Factures',
             openShopArea: 'Commandes boutique',
             cancelConfirmTitle: 'Te désabonner ?',
@@ -169,7 +169,7 @@ export default async function ProfilPage() {
           preferred_locale,
           display_timezone: profile?.display_timezone ?? 'Europe/Paris',
           display_timezone_manual_locked: profile?.display_timezone_manual_locked ?? false,
-          marketing_email_opt_in: profile?.marketing_email_opt_in ?? true,
+          marketing_email_opt_in: profile?.marketing_email_opt_in ?? false,
           marketing_email_opt_in_at: profile?.marketing_email_opt_in_at ?? null,
         }}
         lang={prefLang}

@@ -171,11 +171,11 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
         <div className="relative z-10">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{t.title}</p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-luxury-ink md:mt-3 md:text-xl">
                 {hasUpcomingLive ? nextAppointment.title : t.none}
               </p>
-              <p className="mt-2 text-luxury-muted max-md:text-[9px] max-md:leading-[1.35] md:text-xs md:leading-snug">
+              <p className="mt-2 text-luxury-muted max-md:text-xs max-md:leading-[1.35] md:text-xs md:leading-snug">
                 {hasUpcomingLive ? scheduleLabel : t.reserve}
               </p>
             </div>

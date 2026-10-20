@@ -226,7 +226,7 @@ export function PreferencesClient({ userId, initialPrefs, initialProfile, lang, 
           </div>
           <div className="mt-3 flex gap-2 rounded-xl border border-white/50 bg-white/30 p-3">
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-luxury-muted" aria-hidden />
-            <p className="text-[10px] leading-relaxed text-luxury-muted">{l.essentialsBody}</p>
+            <p className="text-xs leading-relaxed text-luxury-muted">{l.essentialsBody}</p>
           </div>
         </GlassCard>
 

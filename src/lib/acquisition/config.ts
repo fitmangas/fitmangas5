@@ -1,3 +1,5 @@
+import { A_VALIDER_LOT7 } from '@/content/a-valider';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import type { AcquisitionChannel, WorkflowActionType, WorkflowTriggerType } from '@/lib/acquisition/types';
 
 export const ACQUISITION_CHANNELS: Array<{ id: AcquisitionChannel | 'all'; label: string }> = [
@@ -95,6 +97,11 @@ INTERDIT de répondre à un refus par une demande d’abonnement / follow / essa
 INTERDIT d’empiler email + WhatsApp + DM sur la même personne dans une réponse.
 
 captureEmail:true seulement si intérêt essai confirmé et pas d’e-mail (jamais soft_decline/optout/thinking/support/warm/offtopic).`;
+
+export function conciergeSystemPrompt(): string {
+  if (!isCroissanceV2Enabled()) return CONCIERGE_SYSTEM_PROMPT;
+  return `${CONCIERGE_SYSTEM_PROMPT}\n\n${A_VALIDER_LOT7.conciergeStyleBlock}`;
+}
 
 /** Mention IA — OFF par défaut (conformité FR/UE, MX). */
 export function isAiDisclosureEnabled(market: 'fr' | 'mx'): boolean {

@@ -167,7 +167,9 @@ describe('fallback sans clé = analyse complète', () => {
     const a = buildTemplateAnalysis(BIG_FIVE_TEST, highCLowEs(), 'fr');
     expect(a.full.length).toBeGreaterThan(a.teaser.length);
     expect(a.sections?.whoYouAre).toBeTruthy();
-    expect(a.portrait?.disclaimer).toMatch(/600\s*000/i);
+    // Lot 5 : chiffre « 600 000 » retiré (allégation non prouvée côté FitMangas, SPEC §1.3).
+    expect(a.portrait?.disclaimer).toMatch(/IPIP/);
+    expect(a.portrait?.disclaimer).not.toMatch(/600\s*000/);
   });
 
   it('buildTemplateAnalysis attachement complet', () => {

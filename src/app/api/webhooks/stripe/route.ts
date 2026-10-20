@@ -197,8 +197,28 @@ export async function POST(request: Request) {
 
   try {
     switch (event.type) {
+      case 'checkout.session.async_payment_succeeded': {
+        // Paiement différé confirmé : seules les cartes cadeaux en dépendent (les abonnements passent par les factures).
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === 'gift') {
+          const { fulfillGiftCheckout } = await import('@/lib/gifts/fulfill');
+          const gift = await fulfillGiftCheckout(admin, session);
+          console.info('[stripe webhook] gift async payment', { sessionId: session.id, gift });
+          // Carte payée mais pas créée : erreur pour que Stripe renvoie l'événement plus tard.
+          if (!gift.ok && session.payment_status === 'paid') throw new Error(`gift fulfillment: ${gift.reason}`);
+        }
+        break;
+      }
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === 'gift') {
+          const { fulfillGiftCheckout } = await import('@/lib/gifts/fulfill');
+          const gift = await fulfillGiftCheckout(admin, session);
+          console.info('[stripe webhook] gift checkout', { sessionId: session.id, gift });
+          // Carte payée mais pas créée : erreur pour que Stripe renvoie l'événement plus tard.
+          if (!gift.ok && session.payment_status === 'paid') throw new Error(`gift fulfillment: ${gift.reason}`);
+          break;
+        }
         const courseId = session.metadata?.course_id ?? null;
         const customerId = await resolveStripeCustomerIdFromSession(stripe, session);
         const customerEmail = session.customer_email ?? session.customer_details?.email ?? null;
@@ -316,7 +336,10 @@ export async function POST(request: Request) {
           await dispatchSubscriptionActivated(admin, userId, courseId, asString(subscription.customer), subscription.id, {
             subscriptionStatus: subscriptionStatusForAccess(subscription.status),
           });
-          await markReferralsSubscribedForUser(admin, userId, courseId, stripe);
+          // Essai offert par une carte cadeau : pas compté comme un essai pour le parrainage (compté au premier paiement).
+          if (!subscription.metadata?.gift_card_id) {
+            await markReferralsSubscribedForUser(admin, userId, courseId, stripe);
+          }
         }
         break;
       }
@@ -436,6 +459,22 @@ export async function POST(request: Request) {
             }
           }
 
+          if (event.type === 'invoice.paid' && amountPaid > 0 && subscription) {
+            const giftMeta = subscription.metadata ?? {};
+            if (giftMeta.gift_card_id || giftMeta.gift_extension_card_id) {
+              try {
+                const { markGiftConverted } = await import('@/lib/gifts/conversion');
+                const converted = await markGiftConverted(admin, subscription.id);
+                // Essai cadeau devenu payant : le parrainage compte maintenant (il avait été ignoré à la création).
+                if (converted && giftMeta.gift_card_id) {
+                  await markReferralsSubscribedForUser(admin, userId, subscription.metadata?.course_id ?? 'v-coll', stripe);
+                }
+              } catch (giftErr) {
+                console.error('[stripe webhook] gift conversion', giftErr);
+              }
+            }
+          }
+
           if (invoice.billing_reason === 'subscription_create') break;
           await dispatchSubscriptionRenewed(admin, userId, invoice.id);
           await syncReferrerRewardAfterReferredUserChange(admin, stripe, userId);
@@ -450,8 +489,21 @@ export async function POST(request: Request) {
         }
         break;
       }
+      case 'charge.refunded': {
+        // Remboursement fait depuis le tableau de bord Stripe : la carte cadeau non activée ne doit plus pouvoir servir.
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+        if (paymentIntentId && charge.refunded) {
+          const { markGiftRefundedFromStripe } = await import('@/lib/gifts/conversion');
+          const res = await markGiftRefundedFromStripe(admin, paymentIntentId, charge.amount_refunded);
+          if (res !== 'none') console.info('[stripe webhook] gift charge.refunded', { paymentIntentId, res });
+        }
+        break;
+      }
       case 'checkout.session.expired': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Achat de carte cadeau abandonné : pas de relance « finalise ton inscription ».
+        if (session.metadata?.kind === 'gift') break;
         const courseId = session.metadata?.course_id?.trim() || 'v-coll';
         let userId = session.metadata?.supabase_user_id ?? session.client_reference_id ?? null;
         if (!userId) {

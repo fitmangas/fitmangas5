@@ -90,6 +90,8 @@ import {
   reelCoverPublicUrl,
   REEL_COVER_API_SUPPORT,
 } from '@/lib/admin/reel-cover';
+import { findDuplicateCaption } from '@/lib/admin/caption-duplicate';
+import { A_VALIDER_LOT7 } from '@/content/a-valider';
 import { resolveGenerationNetworks, weekPlanSummary } from '@/lib/admin/social-week-planner';
 import type { AlejandraDoubleProfile } from '@/lib/admin/alejandra-double';
 import {
@@ -211,6 +213,8 @@ type Props = {
   doubleUiEnabled?: boolean;
   pillarHistoryLabels?: string[];
   weekMixLabel?: string | null;
+  /** Lot 7 (CROISSANCE_V2) : alerte de doublon au moment de programmer, jargon rangé derrière « ? ». */
+  croissanceV2?: boolean;
 };
 
 export function CommunityManagerBoard({
@@ -228,6 +232,7 @@ export function CommunityManagerBoard({
   doubleUiEnabled = false,
   pillarHistoryLabels = [],
   weekMixLabel = null,
+  croissanceV2 = false,
 }: Props) {
   const router = useRouter();
   const [workflowTab, setWorkflowTab] = useState<WorkflowTab>('en_cours');
@@ -1291,6 +1296,17 @@ export function CommunityManagerBoard({
               run={run}
               setMessage={setMessage}
               onWorkflowTabChange={setWorkflowTab}
+              croissanceV2={croissanceV2}
+              duplicate={
+                croissanceV2 && post.status !== 'published'
+                  ? findDuplicateCaption(
+                      draftCaptions[post.id] ?? post.caption,
+                      board.posts
+                        .filter((other) => other.id !== post.id && other.network === post.network)
+                        .map((other) => ({ id: other.id, caption: other.caption, plannedAt: other.plannedAt, title: other.title })),
+                    )
+                  : null
+              }
             />
           ))
         )}
@@ -1590,6 +1606,8 @@ function PostCard({
   run,
   setMessage,
   onWorkflowTabChange,
+  croissanceV2 = false,
+  duplicate = null,
 }: {
   post: SocialPost;
   hasLinkedInAdaptation: boolean;
@@ -1605,7 +1623,27 @@ function PostCard({
   run: (action: () => Promise<{ ok: boolean; error?: string; message?: string }>, successMessage: string) => void;
   setMessage: (msg: string) => void;
   onWorkflowTabChange: (tab: WorkflowTab) => void;
+  croissanceV2?: boolean;
+  duplicate?: { post: { id: string; caption: string; plannedAt?: string | null; title?: string | null }; score: number } | null;
 }) {
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
+  const schedulePost = () => {
+    setConfirmDuplicate(false);
+    run(async () => {
+      const result = await scheduleSocialPostAction(post.id);
+      if (result.ok) {
+        setActionFeedback({
+          kind: 'scheduled',
+          message: result.message || 'Post programmé.',
+        });
+        onWorkflowTabChange('programmes');
+        window.setTimeout(() => {
+          document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      }
+      return result;
+    }, 'Post programmé.');
+  };
   const captionAnalysis = analyzeCaptionForPost(caption, post.network, post.format, post.hashtags.length);
   const canPublishMeta = post.network === 'instagram' || post.network === 'facebook';
   const isManualNetwork = post.network === 'whatsapp' || post.network === 'linkedin';
@@ -2226,10 +2264,24 @@ function PostCard({
                   );
                 }}
               />
-              <p className="text-[11px] leading-snug text-luxury-soft">
-                {REEL_COVER_API_SUPPORT.instagram.how} · {REEL_COVER_API_SUPPORT.facebook.how} ·{' '}
-                {REEL_COVER_API_SUPPORT.tiktok.how}
-              </p>
+              {croissanceV2 ? (
+                <details className="text-[11px] leading-snug text-luxury-soft">
+                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    Envoyée à Instagram et Facebook ; sur TikTok, choisis-la à la main dans l’appli.{' '}
+                    <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#F3EDE6] text-[10px] font-bold text-luxury-ink" aria-label="Détails techniques">
+                      ?
+                    </span>
+                  </summary>
+                  <p className="mt-1">
+                    {REEL_COVER_API_SUPPORT.instagram.how} · {REEL_COVER_API_SUPPORT.facebook.how} · {REEL_COVER_API_SUPPORT.tiktok.how}
+                  </p>
+                </details>
+              ) : (
+                <p className="text-[11px] leading-snug text-luxury-soft">
+                  {REEL_COVER_API_SUPPORT.instagram.how} · {REEL_COVER_API_SUPPORT.facebook.how} ·{' '}
+                  {REEL_COVER_API_SUPPORT.tiktok.how}
+                </p>
+              )}
               {post.coverImagePath && isLocalHyperFramesCoverPath(post.coverImagePath) ? (
                 <p className="text-[11px] text-amber-800">
                   Chemin HyperFrames sur ton Mac : Meta ne peut pas le lire — importe le PNG ci-dessous ou colle une URL
@@ -2823,26 +2875,48 @@ function PostCard({
                 {post.manualSentAt ? 'Envoyé ✓' : 'Marquer envoyé'}
               </button>
             ) : null}
+            {confirmDuplicate && duplicate ? (
+              <div className="basis-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900" role="alert">
+                <p className="font-semibold">
+                  {A_VALIDER_LOT7.duplicateCaption.fr} ({Math.round(duplicate.score * 100)} %)
+                </p>
+                <p className="mt-1 line-clamp-3 italic">
+                  « {duplicate.post.caption.slice(0, 220)}
+                  {duplicate.post.caption.length > 220 ? '…' : ''} »
+                </p>
+                {duplicate.post.title || duplicate.post.plannedAt ? (
+                  <p className="mt-1 text-amber-800">
+                    {[duplicate.post.title, duplicate.post.plannedAt ? new Date(duplicate.post.plannedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" disabled={pending} onClick={schedulePost} className="rounded-full bg-[#C45D3E] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60">
+                    {A_VALIDER_LOT7.scheduleAnyway.fr}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDuplicate(false)}
+                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-amber-900 ring-1 ring-amber-200"
+                  >
+                    Modifier la légende
+                  </button>
+                </div>
+              </div>
+            ) : null}
             <button
               type="button"
               disabled={pending || post.status === 'published'}
               title={post.status === 'published' ? 'Post déjà publié — reprogrammation impossible.' : undefined}
-              onClick={() =>
-                run(async () => {
-                  const result = await scheduleSocialPostAction(post.id);
-                  if (result.ok) {
-                    setActionFeedback({
-                      kind: 'scheduled',
-                      message: result.message || 'Post programmé.',
-                    });
-                    onWorkflowTabChange('programmes');
-                    window.setTimeout(() => {
-                      document.getElementById(`post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 150);
-                  }
-                  return result;
-                }, 'Post programmé.')
-              }
+              onClick={() => {
+                // Lot 7 : légende trop proche d'un post récent → on montre le post similaire avant de programmer.
+                if (duplicate && post.status !== 'scheduled' && !confirmDuplicate) {
+                  setConfirmDuplicate(true);
+                  return;
+                }
+                schedulePost();
+              }}
               className={`min-h-[40px] px-4 text-[11px] disabled:opacity-60 ${
                 justScheduled || post.status === 'scheduled'
                   ? 'inline-flex items-center gap-2 rounded-full border border-[#93c5fd] bg-[#dbeafe] font-semibold text-[#1e40af]'

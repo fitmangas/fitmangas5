@@ -107,7 +107,7 @@ function NumberedList({ items, accent }: { items: string[]; accent: string }) {
           className="flex gap-3 border-b border-brand-ink/[0.06] py-3.5 last:border-b-0"
         >
           <span
-            className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ background: accent }}
           >
             {String(i + 1).padStart(2, '0')}
@@ -173,7 +173,7 @@ function FacetsByTrait({
         >
           <summary className="cursor-pointer list-none text-[13px] font-semibold text-brand-ink/80">
             <span className="text-[#c45d3e]">{group.label}</span>
-            <span className="ml-2 text-[11px] font-normal text-brand-ink/40">
+            <span className="ml-2 text-xs font-normal text-brand-ink/40">
               {group.facets.length} {locale === 'es' ? 'facetas' : 'facettes'}
             </span>
           </summary>
@@ -469,23 +469,23 @@ export function SelfTestReport({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-ink/40">{t.report}</p>
             {analysis.sourceBadge ? (
-              <span className="text-[10px] text-brand-ink/35">· {analysis.sourceBadge}</span>
+              <span className="text-xs text-brand-ink/35">· {analysis.sourceBadge}</span>
             ) : null}
-            <span className="text-[10px] text-brand-ink/30">· {modeLabel}</span>
+            <span className="text-xs text-brand-ink/30">· {modeLabel}</span>
           </div>
           <h1 className="mt-5 font-serif text-[2rem] italic leading-[1.05] tracking-tight text-brand-ink sm:text-[2.5rem]">
             {heroName}
           </h1>
           <p className="mt-4 text-[16px] leading-snug text-brand-ink/70">{heroTagline}</p>
           {portrait?.disclaimer ? (
-            <p className="mt-3 text-[11px] leading-relaxed text-brand-ink/40">{portrait.disclaimer}</p>
+            <p className="mt-3 text-xs leading-relaxed text-brand-ink/40">{portrait.disclaimer}</p>
           ) : null}
           {strengthsPreview.length > 0 ? (
             <div className="mt-5 flex flex-wrap gap-2">
               {strengthsPreview.map((s) => (
                 <span
                   key={s.slice(0, 32)}
-                  className="rounded-full border border-[#6B8F71]/25 bg-[#6B8F71]/8 px-3 py-1.5 text-[11px] text-brand-ink/65"
+                  className="rounded-full border border-[#6B8F71]/25 bg-[#6B8F71]/8 px-3 py-1.5 text-xs text-brand-ink/65"
                 >
                   {s}
                 </span>

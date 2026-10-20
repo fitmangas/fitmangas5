@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { checkIsAdmin } from '@/lib/auth/admin';
+import { checkAdminMfa } from '@/lib/auth/admin-mfa';
 import { createClient } from '@/lib/supabase/server';
 
 export async function requireAdminApi(): Promise<
@@ -19,6 +20,14 @@ export async function requireAdminApi(): Promise<
   const adminCheck = await checkIsAdmin(supabase, user);
   if (!adminCheck.isAdmin) {
     return { ok: false, response: NextResponse.json({ error: 'Accès refusé.' }, { status: 403 }) };
+  }
+
+  const mfa = await checkAdminMfa(supabase);
+  if (!mfa.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Double authentification requise.' }, { status: 403 }),
+    };
   }
 
   return { ok: true, userId: user.id };

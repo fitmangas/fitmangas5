@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email/send';
 
 import { getPublicTrialSignupUrl } from '@/lib/acquisition/trial-url';
 import { getWhatsAppDisplayPhoneE164 } from '@/lib/acquisition/providers/meta-live';
@@ -241,8 +241,8 @@ async function sendRawEmail(to: string, subject: string, innerHtml: string, loca
     locale,
     showPreferencesLink: false,
   });
-  const resend = new Resend(apiKey);
-  await resend.emails.send({ from, to, subject, html });
+  const result = await sendEmail({ from, to, subject, html });
+  if (!result.ok) return { ok: false as const, error: result.error };
   return { ok: true as const };
 }
 

@@ -310,7 +310,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
           <option value="rating">{t.topRated}</option>
           <option value="views">{t.mostViewed}</option>
         </select>
-        <button type="submit" className="btn-luxury-primary px-7 py-3 text-[11px] tracking-[0.14em]">
+        <button type="submit" className="btn-luxury-primary px-7 py-3 text-xs tracking-[0.14em]">
           {t.filter}
         </button>
       </form>
@@ -344,7 +344,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
             <p className="mt-3 text-sm text-luxury-muted">{pickLocalized(hero, 'description')}</p>
             <div className="mt-5 flex items-center gap-3">
               <BlogFavoriteToggle articleId={hero.id} initialFavorite={favoriteIds.has(hero.id)} />
-              <Link href={`/blog/${pickLocalized(hero, 'slug')}`} className="btn-luxury-primary px-6 py-2.5 text-[11px] tracking-[0.12em]">
+              <Link href={`/blog/${pickLocalized(hero, 'slug')}`} className="btn-luxury-primary px-6 py-2.5 text-xs tracking-[0.12em]">
                 {t.read}
               </Link>
             </div>
@@ -364,7 +364,7 @@ export default async function CompteBlogPage({ searchParams }: { searchParams: S
                 <img src={a.displayImageUrl} alt="" className="h-full w-full object-cover" />
               </div>
               <div className="p-4">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">
                 {pickCategoryLabel(a)}
               </p>
               <h3 className="mt-2 text-lg font-semibold text-luxury-ink">{pickLocalized(a, 'title')}</h3>

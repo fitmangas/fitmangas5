@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { applyConciergeResult } from '@/lib/acquisition/ai/concierge-actions';
 import { runConcierge } from '@/lib/acquisition/ai/concierge';
 import { runWorkflowAction } from '@/lib/acquisition/engine/actions';
@@ -35,6 +36,7 @@ function revalidateAcquisition() {
 }
 
 export async function acquisitionSendReply(conversationId: string, body: string) {
+  await requireAdmin();
   guardModule();
   const detail = await getConversationWithMessages(conversationId);
   if (!detail.ok) return { ok: false, error: detail.error };
@@ -82,6 +84,7 @@ export async function acquisitionSendReply(conversationId: string, body: string)
 }
 
 export async function acquisitionCreateThread() {
+  await requireAdmin();
   guardModule();
   const r = await createSandboxConversation();
   revalidateAcquisition();
@@ -89,6 +92,7 @@ export async function acquisitionCreateThread() {
 }
 
 export async function acquisitionSeedDemo() {
+  await requireAdmin();
   guardModule();
   const r = await seedSandboxDemoData();
   revalidateAcquisition();
@@ -104,6 +108,7 @@ export async function acquisitionSaveWorkflow(payload: {
   lifecycleIn?: string;
   actions: WorkflowActionSpec[];
 }) {
+  await requireAdmin();
   guardModule();
   const triggerConfig =
     payload.triggerKeyword?.trim() &&
@@ -130,6 +135,7 @@ export async function acquisitionSaveWorkflow(payload: {
 }
 
 export async function acquisitionDeleteWorkflow(workflowId: string) {
+  await requireAdmin();
   guardModule();
   const r = await deleteWorkflow(workflowId);
   revalidateAcquisition();
@@ -137,6 +143,7 @@ export async function acquisitionDeleteWorkflow(workflowId: string) {
 }
 
 export async function acquisitionToggleWorkflow(workflowId: string, enabled: boolean) {
+  await requireAdmin();
   guardModule();
   const r = await setWorkflowEnabled(workflowId, enabled);
   revalidateAcquisition();
@@ -144,6 +151,7 @@ export async function acquisitionToggleWorkflow(workflowId: string, enabled: boo
 }
 
 export async function acquisitionTestAction(conversationId: string, actionType: WorkflowActionType) {
+  await requireAdmin();
   guardModule();
   const detail = await getConversationWithMessages(conversationId);
   if (!detail.ok) return { ok: false, type: actionType, detail: detail.error };
@@ -189,6 +197,7 @@ export async function acquisitionTestAction(conversationId: string, actionType: 
 }
 
 export async function acquisitionRunWorkflowDemo(workflowId: string, conversationId: string) {
+  await requireAdmin();
   guardModule();
   const detail = await getConversationWithMessages(conversationId);
   if (!detail.ok) return { ok: false, detail: detail.error, steps: [] as Array<{ type: string; ok: boolean; detail: string }> };
@@ -212,6 +221,7 @@ export async function acquisitionRunWorkflowDemo(workflowId: string, conversatio
 }
 
 export async function acquisitionConciergeReply(conversationId: string, market: 'fr' | 'mx' = 'fr') {
+  await requireAdmin();
   guardModule();
   const detail = await getConversationWithMessages(conversationId);
   if (!detail.ok) return { ok: false, error: detail.error };
@@ -247,17 +257,20 @@ export async function acquisitionConciergeReply(conversationId: string, market: 
 }
 
 export async function acquisitionAskConcierge(inboundText: string, market: 'fr' | 'mx' = 'fr') {
+  await requireAdmin();
   guardModule();
   return runConcierge({ inboundText, market });
 }
 
 export async function acquisitionGetSandboxLog() {
+  await requireAdmin();
   guardModule();
   return getSandboxLog(30);
 }
 
 /** Exécute immédiatement les relances dues (même logique que le cron). */
 export async function acquisitionRunFollowupsNow() {
+  await requireAdmin();
   guardModule();
   const { runDueFollowups } = await import('@/lib/acquisition/engine/repository');
   const result = await runDueFollowups(40);
@@ -273,6 +286,7 @@ export async function acquisitionRunFollowupsNow() {
 
 /** Prépare acquisition_meta_connection depuis le token CM si besoin. */
 export async function acquisitionEnsureMetaConnection() {
+  await requireAdmin();
   guardModule();
   const { ensureAcquisitionMetaFromCm } = await import('@/lib/acquisition/providers/meta-live');
   const r = await ensureAcquisitionMetaFromCm();
@@ -287,6 +301,7 @@ export async function acquisitionEnsureMetaConnection() {
  * est lu depuis process.env (set via Vercel/.env).
  */
 export async function acquisitionCheckLiveReadiness() {
+  await requireAdmin();
   guardModule();
   const { getMetaLiveReadiness, ensureAcquisitionMetaFromCm } = await import(
     '@/lib/acquisition/providers/meta-live'
@@ -299,6 +314,7 @@ export async function acquisitionCheckLiveReadiness() {
 
 /** Sync Insights CM + scores hooks (manuel depuis Acquisition). */
 export async function acquisitionSyncInsightsAndHooks() {
+  await requireAdmin();
   guardModule();
   const { syncSocialPostInsights } = await import('@/lib/admin/social-insights-sync');
   const { applyInsightScoresToHooksBank } = await import('@/lib/admin/social-hooks-bank');
@@ -317,6 +333,7 @@ export async function acquisitionSyncInsightsAndHooks() {
 
 /** Installe / met à jour le catalogue de workflows opérationnels. */
 export async function acquisitionEnsureWorkflowCatalog() {
+  await requireAdmin();
   guardModule();
   const { ensureWorkflowCatalog } = await import('@/lib/acquisition/engine/repository');
   const r = await ensureWorkflowCatalog();
@@ -325,6 +342,7 @@ export async function acquisitionEnsureWorkflowCatalog() {
 }
 
 export async function acquisitionListRecentWorkflowRuns() {
+  await requireAdmin();
   guardModule();
   const { listRecentWorkflowRuns } = await import('@/lib/acquisition/engine/repository');
   return listRecentWorkflowRuns(25);

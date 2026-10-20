@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { BlogArticleShell } from '@/components/Blog/BlogArticleShell';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { guideForArticle } from '@/lib/blog/guides';
 import { alejandraPersonJsonLd } from '@/lib/blog/author-alejandra';
 import {
   fetchAnyArticleBySlugParam,
@@ -36,8 +38,9 @@ export async function generateMetadata(props: {
   const article = previewDraft ? await fetchAnyArticleBySlugParamAdmin(slug) : await fetchPublishedArticleBySlugParam(slug);
   if (!article) return { title: 'Article' };
   const lang = (sp.lang === 'es' ? 'es' : 'fr') as BlogLang;
-  const title =
+  const titleRaw =
     lang === 'es' ? article.title_es ?? article.title_fr : article.title_fr;
+  const title = (titleRaw ?? 'Article').replace(/\s*\|\s*FitMangas\s*$/i, '').trim() || 'Article';
   const description =
     lang === 'es'
       ? article.meta_description_es ?? article.description_es ?? article.description_fr ?? undefined
@@ -102,6 +105,7 @@ export default async function BlogArticlePage({
   }
   if (!article) notFound();
   const relatedArticles = await fetchRelatedArticles(article);
+  const guide = isCroissanceV2Enabled() ? guideForArticle(article as { title_fr?: string | null; title_es?: string | null }) : null;
 
   let defaultLang: BlogLang = queryLang ?? 'fr';
   if (!queryLang && user) {
@@ -119,6 +123,7 @@ export default async function BlogArticlePage({
         defaultLang={defaultLang}
         isLoggedIn={!!user}
         relatedArticles={relatedArticles}
+        guide={guide ? { id: guide.id, title: guide.title } : null}
       />
     </>
   );

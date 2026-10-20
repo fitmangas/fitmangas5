@@ -7,6 +7,7 @@ import type {
   LifecycleStage,
 } from '@/lib/acquisition/types';
 
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import { HOT_LEAD_SCORE_MIN, isHotLeadNoiseHandle } from './lead-score';
 
 type DbError = { ok: false; error: string; schemaReady: boolean };
@@ -26,7 +27,7 @@ export async function listHotLeads(limit = 40): Promise<
     const admin = createAdminClient();
     const { data: contacts, error } = await admin
       .from('acq_contacts')
-      .select('id, handle, email, channel, lifecycle_stage, lead_score, updated_at')
+      .select('id, handle, email, channel, lifecycle_stage, lead_score, updated_at, tags')
       .gte('lead_score', HOT_LEAD_SCORE_MIN)
       .order('lead_score', { ascending: false })
       .limit(Math.min(80, Math.max(limit * 2, limit)));
@@ -66,6 +67,13 @@ export async function listHotLeads(limit = 40): Promise<
         typeof row.lead_score === 'number' ? row.lead_score : Number(row.lead_score ?? 0) || 0;
       if (stage === 'paid' || stage === 'member') continue;
       if (isHotLeadNoiseHandle(handle) || !handle) continue;
+      const tags = Array.isArray(row.tags) ? row.tags.map(String) : [];
+      if (
+        isCroissanceV2Enabled() &&
+        tags.some((t) => t === 'equipe' || t === 'équipe' || t === 'prestataire' || t === 'vendor')
+      ) {
+        continue;
+      }
       const conv = convByContact.get(String(row.id));
       items.push({
         contactId: String(row.id),

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { checkIsAdmin } from '@/lib/auth/admin';
+import { checkAdminMfa } from '@/lib/auth/admin-mfa';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -13,6 +14,7 @@ export async function GET() {
 
   const adminCheck = await checkIsAdmin(supabase, user);
   if (!adminCheck.isAdmin) return NextResponse.json({ total: 0 }, { status: 403 });
+  if (!(await checkAdminMfa(supabase)).ok) return NextResponse.json({ total: 0 }, { status: 403 });
 
   const admin = createAdminClient();
 

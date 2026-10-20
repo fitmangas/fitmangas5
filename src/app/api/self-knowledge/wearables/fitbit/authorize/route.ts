@@ -24,7 +24,7 @@ export async function GET() {
   const state = randomBytes(16).toString('hex');
   const url = fitbitAuthorizeUrl(state);
   if (!url) {
-    return NextResponse.json({ error: 'FITBIT_CLIENT_ID manquant' }, { status: 500 });
+    return NextResponse.json({ error: 'Connexion Fitbit indisponible pour le moment.' }, { status: 500 });
   }
 
   const res = NextResponse.redirect(url);

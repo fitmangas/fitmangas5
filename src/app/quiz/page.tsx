@@ -9,15 +9,14 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 
 export const metadata: Metadata = {
   title: 'Tests de personnalité FitMangas — Big Five et attachement',
-  description:
-    'Questionnaires validés (IPIP-50 Big Five, ECR attachement). Aperçu de tes forces et lien vers l’essai gratuit des cours collectifs en visio.',
+  description: 'Des tests gratuits pour mieux te connaître et choisir ta pratique.',
   alternates: {
     canonical: '/quiz',
     languages: { fr: '/quiz', es: '/es/quiz' },
   },
   openGraph: {
     title: 'Tests de personnalité FitMangas',
-    description: 'Mieux te connaître pour tenir ta pratique — Big Five et attachement.',
+    description: 'Des tests gratuits pour mieux te connaître et choisir ta pratique.',
     url: `${APP_URL}/quiz`,
     type: 'website',
     images: ['/og-default.jpg'],

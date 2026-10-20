@@ -11,6 +11,7 @@ import type {
   LifecycleStage,
   WorkflowActionType,
 } from '@/lib/acquisition/types';
+import { overlayWorkflows } from './croissance-v2-overlay';
 import { WORKFLOW_CATALOG, WORKFLOW_CATALOG_COUNT } from './workflow-catalog';
 
 export { listHotLeads } from './list-hot-leads';
@@ -210,13 +211,13 @@ export async function listWorkflows(): Promise<
     if (error) {
       return { ok: true, items: defaultWorkflows(), schemaReady: true };
     }
-    const items = (data ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>));
+    const items = overlayWorkflows((data ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>)));
     if (!items.length) {
       await ensureWorkflowCatalog();
       const { data: again } = await admin.from('acq_workflows').select('*').order('name');
       return {
         ok: true,
-        items: (again ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>)),
+        items: overlayWorkflows((again ?? []).map((row) => mapWorkflowRow(row as Record<string, unknown>))),
         schemaReady: true,
       };
     }
@@ -232,7 +233,7 @@ export async function listWorkflows(): Promise<
 
 /** Workflows par défaut (mémoire) tant que la table n'existe pas ou est vide. */
 export function defaultWorkflows(): AcqWorkflow[] {
-  return WORKFLOW_CATALOG;
+  return overlayWorkflows(WORKFLOW_CATALOG);
 }
 
 function mapWorkflowRow(row: Record<string, unknown>): AcqWorkflow {
@@ -557,10 +558,20 @@ export async function scheduleFollowup(params: {
   runAt: string;
   actionType: string;
   payload?: Record<string, unknown>;
+  timeZone?: string;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const schemaReady = await isAcquisitionSchemaReady();
   if (!schemaReady) {
     return { ok: false, error: 'Table acq_followups absente — migration §9 requise.' };
+  }
+  const { isCroissanceV2Enabled } = await import('@/lib/acquisition/croissance-v2-flag');
+  let runAt = params.runAt;
+  if (isCroissanceV2Enabled()) {
+    const { clampFollowupToSendWindow } = await import('./send-window');
+    const { croissanceV2FollowupInsertPlan } = await import('./croissance-v2-overlay');
+    const plan = croissanceV2FollowupInsertPlan(params.runAt, params.timeZone || 'Europe/Paris', clampFollowupToSendWindow);
+    if (plan.cancelScheduledFirst) await cancelScheduledFollowups(params.contactId);
+    runAt = plan.runAt;
   }
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -568,7 +579,7 @@ export async function scheduleFollowup(params: {
     .insert({
       contact_id: params.contactId,
       conversation_id: params.conversationId,
-      run_at: params.runAt,
+      run_at: runAt,
       action_type: params.actionType,
       status: 'scheduled',
       payload: params.payload ?? {},

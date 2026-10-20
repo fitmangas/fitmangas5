@@ -6,7 +6,7 @@ import {
 
 export type SocialNetwork = 'instagram' | 'whatsapp' | 'facebook' | 'linkedin' | 'tiktok';
 export type SocialPostFormat = 'feed' | 'story' | 'reel' | 'carousel' | 'text';
-export type SocialPostStatus = 'idea' | 'ready' | 'scheduled' | 'published' | 'skipped';
+export type SocialPostStatus = 'idea' | 'ready' | 'scheduled' | 'publishing' | 'published' | 'skipped';
 
 /** Paramètres Direct Post TikTok (audit Content Sharing — consentement créateur). */
 export type TikTokDirectPostSettings = {
@@ -222,6 +222,7 @@ export const SOCIAL_STATUS_LABELS: Record<SocialPostStatus, string> = {
   idea: 'Idée',
   ready: 'Prêt',
   scheduled: 'Programmé',
+  publishing: 'Publication en cours',
   published: 'Publié',
   skipped: 'Ignoré',
 };
@@ -275,7 +276,14 @@ function isSocialNetwork(value: unknown): value is SocialNetwork {
 }
 
 function isSocialStatus(value: unknown): value is SocialPostStatus {
-  return value === 'idea' || value === 'ready' || value === 'scheduled' || value === 'published' || value === 'skipped';
+  return (
+    value === 'idea' ||
+    value === 'ready' ||
+    value === 'scheduled' ||
+    value === 'publishing' ||
+    value === 'published' ||
+    value === 'skipped'
+  );
 }
 
 function isSocialFormat(value: unknown): value is SocialPostFormat {

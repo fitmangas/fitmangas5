@@ -4,6 +4,7 @@ import { isAcquisitionSchemaReady } from '@/lib/acquisition/db';
 import type { AcquisitionChannel } from '@/lib/acquisition/types';
 
 import type { SourceResult } from './types';
+import { isTestOrTeamContact } from '@/lib/acquisition/test-contacts';
 
 const PROVIDER = 'acq_crm';
 
@@ -15,7 +16,25 @@ export type AcqCrmFunnel = {
   member: number;
   hotLeads: number;
   avgLeadScore: number | null;
+  /** Mêmes compteurs sans les contacts de test ni de l'équipe (interrupteur « Inclure les tests »). */
+  withoutTests?: Omit<AcqCrmFunnel, 'withoutTests'>;
 };
+
+type CrmRow = { lifecycle_stage: string | null; lead_score: number | string | null; handle?: string | null; email?: string | null; tags?: string[] | null };
+
+function summarize(rows: CrmRow[]): Omit<AcqCrmFunnel, 'withoutTests'> {
+  const scores = rows.map((r) => (typeof r.lead_score === 'number' ? r.lead_score : Number(r.lead_score ?? 0) || 0));
+  const avgLeadScore = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null;
+  return {
+    contacts: rows.length,
+    qualified: rows.filter((r) => r.lifecycle_stage === 'qualified').length,
+    trial: rows.filter((r) => r.lifecycle_stage === 'trial').length,
+    paid: rows.filter((r) => r.lifecycle_stage === 'paid').length,
+    member: rows.filter((r) => r.lifecycle_stage === 'member').length,
+    hotLeads: scores.filter((s) => s >= 40).length, // seuil = HOT_LEAD_SCORE_MIN (lead-score.ts)
+    avgLeadScore,
+  };
+}
 
 export async function fetchAcqCrmFunnel(
   channel: AcquisitionChannel | 'all',
@@ -26,7 +45,7 @@ export async function fetchAcqCrmFunnel(
   }
   try {
     const admin = createAdminClient();
-    let query = admin.from('acq_contacts').select('lifecycle_stage, channel, lead_score');
+    let query = admin.from('acq_contacts').select('lifecycle_stage, channel, lead_score, handle, email, tags');
     if (channel !== 'all') {
       query = query.eq('channel', channel);
     }
@@ -34,20 +53,10 @@ export async function fetchAcqCrmFunnel(
     if (error) {
       return { ok: false, provider: PROVIDER, error: error.message };
     }
-    const rows = data ?? [];
-    const scores = rows.map((r) =>
-      typeof r.lead_score === 'number' ? r.lead_score : Number(r.lead_score ?? 0) || 0,
-    );
-    const avgLeadScore =
-      scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null;
+    const rows = (data ?? []) as CrmRow[];
     const funnel: AcqCrmFunnel = {
-      contacts: rows.length,
-      qualified: rows.filter((r) => r.lifecycle_stage === 'qualified').length,
-      trial: rows.filter((r) => r.lifecycle_stage === 'trial').length,
-      paid: rows.filter((r) => r.lifecycle_stage === 'paid').length,
-      member: rows.filter((r) => r.lifecycle_stage === 'member').length,
-      hotLeads: scores.filter((s) => s >= 40).length, // seuil = HOT_LEAD_SCORE_MIN (lead-score.ts)
-      avgLeadScore,
+      ...summarize(rows),
+      withoutTests: summarize(rows.filter((r) => !isTestOrTeamContact(r))),
     };
     return { ok: true, data: funnel };
   } catch (e) {

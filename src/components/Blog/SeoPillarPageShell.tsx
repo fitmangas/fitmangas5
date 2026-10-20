@@ -1,13 +1,20 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { SeoPillarPage } from '@/lib/seo-pillar-pages';
+import { PublicSiteHeader } from '@/components/Marketing/PublicSiteHeader';
+import { ManageCookiesButton } from '@/components/Marketing/ManageCookiesButton';
+import { LesCoursExtras, type WeekLive } from '@/components/Marketing/LesCoursExtras';
+import { A_VALIDER_LOT1 } from '@/content/a-valider';
 
 type Props = {
   page: SeoPillarPage;
   relatedPages: SeoPillarPage[];
+  weekLives?: WeekLive[];
 };
 
-export function SeoPillarPageShell({ page, relatedPages }: Props) {
+export function SeoPillarPageShell({ page, relatedPages, weekLives = [] }: Props) {
+  // « Les cours » (D07) : en-tête de la maquette ; les autres guides gardent leur en-tête.
+  const isCoursPage = page.slug === 'cours-pilates-visio';
   const heroImage =
     page.slug === 'pilates-debutant-maison'
       ? '/Photo Alejandra exercice avec anneau.JPG'
@@ -22,19 +29,64 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
         : '/espace cliente dashboard.jpg';
 
   return (
+    <>
+    <PublicSiteHeader lang="FR" />
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6">
-      <nav className="mb-8 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted">
-        <Link href="/" className="hover:text-luxury-ink">
-          Accueil
-        </Link>
-        <span>/</span>
-        <Link href="/blog" className="hover:text-luxury-ink">
-          Blog Pilates
-        </Link>
-        <span>/</span>
-        <span className="text-luxury-ink">{page.shortTitle}</span>
-      </nav>
+      {isCoursPage ? (
+        <nav className="mb-6 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted" aria-label="Fil d’Ariane">
+          <Link href="/" className="hover:text-luxury-ink">
+            Accueil
+          </Link>
+          <span>/</span>
+          <span className="text-luxury-ink">Les cours</span>
+        </nav>
+      ) : (
+        <nav className="mb-8 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-muted" aria-label="Fil d’Ariane">
+          <Link href="/" className="hover:text-luxury-ink">
+            Accueil
+          </Link>
+          <span>/</span>
+          <Link href="/blog" className="hover:text-luxury-ink">
+            Blog Pilates
+          </Link>
+          <span>/</span>
+          <span className="text-luxury-ink">{page.shortTitle}</span>
+        </nav>
+      )}
 
+      {isCoursPage ? (
+        <header className="overflow-hidden rounded-[2.2rem] bg-white shadow-[0_18px_42px_-18px_rgba(29,26,23,0.18)]">
+          <div className="grid items-center gap-8 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-10">
+            <div>
+              <p className="fm-kicker">Les cours</p>
+              <h1 className="fm-display mt-4 text-[2.4rem] leading-[1.06] text-brand-ink md:text-[3.4rem]">
+                Cours de Pilates en visio, en direct avec Alejandra
+              </h1>
+              <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-luxury-muted">
+                Un cours en visio garde l’esprit du studio : une heure fixe, une coach présente qui te voit et te corrige, une séance pensée du début à la fin. Sans trajet.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-7 py-3.5 text-center text-[12px] tracking-[0.16em]">
+                  Essai gratuit 7 jours
+                </Link>
+                <Link href="/#tarifs" className="btn-luxury-ghost justify-center whitespace-nowrap px-7 py-3.5 text-center text-[12px] tracking-[0.16em]">
+                  Voir les tarifs
+                </Link>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-[1.8rem] shadow-[0_22px_48px_-24px_rgba(48,35,28,0.45)]">
+              <Image
+                src="/landing/comment-2-camera.jpg"
+                alt="Alejandra donne un cours de Barre en visio, son téléphone sur pied face à elle"
+                width={1200}
+                height={770}
+                className="aspect-[4/3] h-full w-full object-cover"
+                priority
+              />
+            </div>
+          </div>
+        </header>
+      ) : (
       <header className="overflow-hidden rounded-[2.2rem] border border-white/60 bg-white/70 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl">
         <div className="grid gap-6 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-10">
           <div>
@@ -45,10 +97,10 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
             <h1 className="hero-signature-title mt-4 max-w-4xl text-4xl text-luxury-ink md:text-6xl">{page.title}</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-luxury-muted">{page.intro}</p>
             <div className="mt-7 flex max-w-xl flex-col gap-3 xl:flex-row">
-              <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
+              <Link href="/?offer=v-coll" className="btn-luxury-primary justify-center whitespace-nowrap px-6 py-3 text-center text-xs tracking-[0.12em] sm:text-xs">
                 Découvrir l’offre visio à 39 €/mois
               </Link>
-              <Link href="/blog" className="btn-luxury-ghost justify-center whitespace-nowrap px-6 py-3 text-center text-[10px] tracking-[0.12em] sm:text-[11px]">
+              <Link href="/blog" className="btn-luxury-ghost justify-center whitespace-nowrap px-6 py-3 text-center text-xs tracking-[0.12em] sm:text-xs">
                 Lire le blog Pilates
               </Link>
             </div>
@@ -65,12 +117,15 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
               />
             </div>
             <div className="absolute -bottom-4 left-4 right-4 rounded-[1.35rem] border border-white/70 bg-white/90 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Inclus avec FitMangas</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Inclus avec FitMangas</p>
               <p className="mt-1 text-sm font-semibold text-luxury-ink">Lives, replays, blog et espace cliente</p>
             </div>
           </div>
         </div>
       </header>
+      )}
+
+      {page.slug === 'cours-pilates-visio' ? <LesCoursExtras lives={weekLives} /> : null}
 
       <section className="mt-8 grid gap-4 md:grid-cols-2">
         <div className="rounded-[1.75rem] border border-white/60 bg-white/55 p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
@@ -94,7 +149,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
               Ces pages servent à te donner les bases, mais le vrai progrès vient de la pratique régulière :
               cours en visio, replays, planning et suivi dans l’espace cliente.
             </p>
-            <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-7 py-3 text-[11px] tracking-[0.14em]">
+            <Link href="/?offer=v-coll" className="btn-luxury-primary mt-5 inline-flex px-7 py-3 text-xs tracking-[0.14em]">
               Voir l’offre visio
             </Link>
           </div>
@@ -108,7 +163,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
                 className="h-full max-h-[360px] w-full object-cover object-top"
               />
               <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Aperçu espace cliente</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Aperçu espace cliente</p>
                 <p className="mt-1 text-sm font-semibold text-luxury-ink">Planning, replays, blog et progression</p>
               </div>
             </div>
@@ -134,7 +189,7 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
       </section>
 
       <section className="mt-12 rounded-[2rem] border border-[#C45D3E]/20 bg-[#fffaf5]/90 p-6 shadow-[0_18px_42px_rgba(120,80,20,0.08)] md:p-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Maillage interne</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-luxury-soft">Guides liés</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-luxury-ink">Guides liés pour progresser</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {relatedPages.map((related) => (
@@ -168,5 +223,17 @@ export function SeoPillarPageShell({ page, relatedPages }: Props) {
         </div>
       </section>
     </main>
+    <footer className="border-t border-brand-ink/[0.06] bg-white/60">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8 text-[12px] text-brand-ink/55">
+        <span>© {new Date().getFullYear()} FitMangas</span>
+        <span className="flex flex-wrap gap-4">
+          <Link href="/terms">CGV</Link>
+          <Link href="/privacy">Confidentialité</Link>
+          <Link href="/mentions-legales">Mentions légales</Link>
+          <ManageCookiesButton label={A_VALIDER_LOT1.cookies.manage.fr} className="hover:text-brand-ink" />
+        </span>
+      </div>
+    </footer>
+    </>
   );
 }

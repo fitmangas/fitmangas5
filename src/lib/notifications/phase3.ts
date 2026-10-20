@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { sendEmail as sendEmailCentral } from '@/lib/email/send';
 
 import { wrapResendEmail } from '@/lib/email/base-template';
 import { countActiveQualifiedReferrals, REFERRAL_REWARD_THRESHOLD } from '@/lib/referrals/reward';
@@ -8,12 +8,15 @@ import { dispatch } from './dispatcher';
 import { mergePrefs } from './defaults';
 import { calendarDayKeyInTimeZone, formatInUserTimezone } from './timezone';
 import { renderTemplate, getEmailTemplate } from './templates';
+import { filterDigestRowsForFlush } from './v2/cutoff';
 
 type DispatchFn = typeof dispatch;
 
 type Phase3Deps = {
   dispatch?: DispatchFn;
   now?: Date;
+  /** Accès Visio actuel (le récapitulatif est réservé aux clientes). Par défaut : `hasVisioClientAccessServiceRole`. */
+  hasVisioAccess?: (userId: string) => Promise<boolean>;
 };
 
 function appUrl() {
@@ -36,7 +39,8 @@ async function sendEmail(to: string, subject: string, html: string) {
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.NEWSLETTER_FROM_EMAIL?.trim();
   if (!key || !from) return false;
-  await new Resend(key).emails.send({ from, to, subject, html });
+  const result = await sendEmailCentral({ from, to, subject, html });
+  if (!result.ok) throw new Error(`Envoi email échoué : ${result.error}`);
   return true;
 }
 
@@ -355,10 +359,20 @@ function formatDigestSummaryLines(
 
 export async function processDigestQueue(client: SupabaseClient, deps: Phase3Deps = {}) {
   const now = deps.now ?? new Date();
+  const gate = filterDigestRowsForFlush([{ id: 'probe', created_at: now.toISOString() }]);
+  if (gate.skippedFlagOff) {
+    return { sent: 0, skipped: 'flag_off' as const };
+  }
+  if (gate.missingCutoff) {
+    console.error('[digest] NOTIF_V2_CUTOFF manquant : aucun récapitulatif envoyé.');
+    return { sent: 0, skipped: 'missing_cutoff' as const };
+  }
 
-  // Destinataires = members (pas seulement les lignes prefs existantes).
+  // Destinataires = members (pas seulement les lignes prefs existantes), filtrés ensuite sur l'accès Visio.
   const { data: members, error: membersError } = await client.from('profiles').select('id, display_timezone, preferred_locale').eq('role', 'member');
   if (membersError) throw membersError;
+  const hasVisioAccess =
+    deps.hasVisioAccess ?? (await import('@/lib/access-control')).hasVisioClientAccessServiceRole;
 
   let sent = 0;
   for (const member of (members ?? []) as {
@@ -374,6 +388,8 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
     const prefs = mergePrefs(prefRow ?? null);
     if (prefs.silence_mode_enabled) continue;
     if (!prefs.content_email_enabled) continue;
+    // Interrupteur « Ta semaine » des préférences (A09) : coupé = aucun récapitulatif.
+    if ((prefRow as { weekly_digest_email?: boolean | null } | null)?.weekly_digest_email === false) continue;
 
     const tz = member.display_timezone?.trim() || 'Europe/Paris';
     if (localHour(now, tz) !== 8) continue;
@@ -387,12 +403,34 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
       (prefs.digest_frequency === 'off' && contentDigestDay);
     if (!scheduledDigest) continue;
 
+    // Réservé aux clientes qui ont l'accès Visio (abonnées ou en essai) : pas d'envoi aux comptes
+    // sans abonnement ni aux anciennes clientes (ce serait de la prospection, qui demande un consentement).
+    let canReceive = false;
+    try {
+      canReceive = await hasVisioAccess(member.id);
+    } catch (e) {
+      console.error('[digest] accès illisible, pas d’envoi', member.id, e instanceof Error ? e.message : e);
+    }
+    if (!canReceive) continue;
+
+    // Un seul récapitulatif par jour et par cliente, même si la tâche passe deux fois dans l'heure.
+    const idempotencyKey = `digest.summary:${member.id}:${calendarDayKeyInTimeZone(tz, now)}:${prefs.digest_frequency}`;
+    const { data: alreadySent } = await client
+      .from('notification_log')
+      .select('id')
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle();
+    if (alreadySent) continue;
+
     const { data: queued } = await client
       .from('notification_digest_queue')
-      .select('id, digest_bucket, payload')
+      .select('id, digest_bucket, payload, created_at')
       .eq('user_id', member.id)
       .is('processed_at', null);
-    const rows = (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
+    const filtered = filterDigestRowsForFlush(
+      (queued ?? []) as { id: string; digest_bucket: string; payload: Record<string, unknown>; created_at?: string }[],
+    );
+    const rows = filtered.allowed as { id: string; digest_bucket: string; payload: Record<string, unknown> }[];
 
     const locale: DigestLocale = member.preferred_locale === 'es' ? 'es' : 'fr';
     const summary = await buildDigestSummaryForUser(client, member.id, tz, locale, now);
@@ -439,7 +477,7 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
         replayCount: summary.replayTitles.length,
         attendedThisWeek: summary.attendedThisWeek,
       },
-      idempotency_key: `digest.summary:${member.id}:${calendarDayKeyInTimeZone(tz, now)}:${prefs.digest_frequency}`,
+      idempotency_key: idempotencyKey,
     });
     sent += 1;
   }
@@ -447,10 +485,10 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
 }
 
 export async function runPhase3DailyJobs(client: SupabaseClient, deps: Phase3Deps = {}) {
-  const [community, weMissYou, digestResult] = await Promise.all([
+  const [community, weMissYou] = await Promise.all([
     runCommunityCycles(client, deps),
     runWeMissYouCycles(client, deps),
-    processDigestQueue(client, deps),
   ]);
-  return { community, weMissYou, digest: digestResult };
+  // Flush digest retiré de daily-jobs (SPEC §3.7) : horaire /api/admin/cron/hourly + cutoff.
+  return { community, weMissYou, digest: { sent: 0, skipped: 'moved_to_hourly' as const } };
 }

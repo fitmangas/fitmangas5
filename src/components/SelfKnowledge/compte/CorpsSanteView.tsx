@@ -172,7 +172,7 @@ export function CorpsSanteView({
                 {fitbitConnected ? t.connected : t.fitbit}
               </a>
             </div>
-            <p className="mt-4 text-[11px] leading-relaxed text-brand-ink/45">{t.apple}</p>
+            <p className="mt-4 text-xs leading-relaxed text-brand-ink/45">{t.apple}</p>
           </div>
         </>
       )}

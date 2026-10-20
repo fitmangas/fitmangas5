@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error('[self-knowledge/pdf]', e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Échec génération PDF' },
+      { error: 'La génération du PDF a échoué. Réessaie dans un instant.' },
       { status: 500 }
     );
   }

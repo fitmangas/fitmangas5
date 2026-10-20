@@ -1,3 +1,4 @@
+import { isPaidSubscriptionStatus } from '@/lib/acquisition/paid-definition';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 import type { SourceResult, SupabaseAcquisitionMetrics } from './types';
@@ -27,7 +28,7 @@ export async function fetchSupabaseAcquisitionMetrics(): Promise<SourceResult<Su
     }
 
     const trialingCount = (subs ?? []).filter((s) => s.status === 'trialing').length;
-    const paidCount = (subs ?? []).filter((s) => s.status === 'active').length;
+    const paidCount = (subs ?? []).filter((s) => isPaidSubscriptionStatus(s.status)).length;
 
     const { count: cohort90 } = await admin
       .from('subscriptions')

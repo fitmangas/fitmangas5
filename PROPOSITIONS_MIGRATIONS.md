@@ -647,3 +647,615 @@ on conflict (id) do nothing;
 ```
 
 **Note :** les UUID fixes ci-dessus nécessitent que `acq_workflows.id` accepte les inserts explicites (déjà le cas). Adapter les IDs si conflit.
+
+---
+
+# Chantier octobre 2026
+
+> Rien de ce qui suit n’a été exécuté. Chaque bloc attend le **GO écrit de Kevin**. Ordre conseillé : migration → déploiement → drapeau.
+
+## Lot 1 — Sécurité, conformité
+
+### L1-a. RLS sur les 8 tables publicité / organique (fuite constatée)
+
+Constat du 19/10/2026 (lecture seule avec la clé publique `anon`) : `ad_campaigns`, `ad_creatives`, `ads_sync_runs`, `organic_account_snapshots`, `organic_media_snapshots` **renvoient des lignes** à n’importe quel visiteur ; `ad_breakdowns_daily`, `ad_insights_daily`, `ad_metrics_daily` répondent 200 (vides aujourd’hui). Aucune RLS dans les migrations `20260924140000` et `20260924180000`.
+Vérifié : tout le code qui lit/écrit ces tables (`src/lib/acquisition/ads/repository.ts`, `intelligence-repository.ts`, `sync-intelligence.ts`) passe par `createAdminClient()` (service_role, qui ignore la RLS) → rien ne casse.
+
+```sql
+-- Sans begin/commit : le fichier de migration est déjà exécuté d'un seul tenant (tout ou rien).
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'ad_breakdowns_daily','ad_campaigns','ad_creatives','ad_insights_daily',
+    'ad_metrics_daily','ads_sync_runs','organic_account_snapshots','organic_media_snapshots'
+  ] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon', t);
+    execute format('revoke all on public.%I from authenticated', t);
+    execute format('grant all on public.%I to service_role', t);
+    execute format('drop policy if exists %I on public.%I', t || '_admin_select', t);
+    execute format(
+      'create policy %I on public.%I for select to authenticated using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = ''admin''))',
+      t || '_admin_select', t
+    );
+  end loop;
+end $$;
+-- La politique admin ne sert que si un écran lit un jour ces tables avec la session (aujourd’hui : service_role).
+grant select on public.ad_breakdowns_daily, public.ad_campaigns, public.ad_creatives, public.ad_insights_daily,
+  public.ad_metrics_daily, public.ads_sync_runs, public.organic_account_snapshots, public.organic_media_snapshots
+  to authenticated;
+```
+
+Vérification après application (doit renvoyer `[]` ou 401) :
+`curl "$SUPABASE_URL/rest/v1/ad_campaigns?select=id&limit=1" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"`
+
+### L1-b. Supprimer la politique « Users can insert own enrollments »
+
+Vérifié : aucune insertion d’inscription depuis le navigateur. Les seules écritures (`src/lib/notifications/phase2.ts` → appelée par le webhook Stripe, `src/app/admin/attendance/actions.ts`) utilisent service_role.
+
+```sql
+drop policy if exists "Users can insert own enrollments" on public.enrollments;
+```
+
+(Destructif au sens « suppression de politique » : GO écrit requis.)
+
+### L1-c. Table `rate_limits` (IP hachées, purge 24 h)
+
+Utilisée par `src/lib/security/rate-limit.ts` quand `RATE_LIMIT_ENABLED=1`. Sans la table, le drapeau reste off (le code renvoie une erreur explicite côté serveur et laisse passer : la limite n’est pas appliquée, c’est journalisé).
+
+```sql
+create table if not exists public.rate_limits (
+  id bigserial primary key,
+  scope text not null,
+  ip_hash text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists rate_limits_scope_ip_created on public.rate_limits (scope, ip_hash, created_at desc);
+alter table public.rate_limits enable row level security;
+revoke all on public.rate_limits from anon, authenticated;
+grant all on public.rate_limits to service_role;
+grant usage, select on sequence public.rate_limits_id_seq to service_role;
+
+-- Purge : lignes de plus de 24 h (pg_cron, toutes les heures)
+select cron.schedule('rate_limits_purge', '17 * * * *',
+  $$delete from public.rate_limits where created_at < now() - interval '24 hours'$$);
+```
+
+### L1-d. Opt-in marketing : défaut à `false` + correction des profils sans preuve
+
+Comptes du 19/10/2026 (lecture seule) : **15 profils**, dont **14** avec `marketing_email_opt_in = true`. **Avec preuve** (`marketing_email_opt_in_at` renseignée) : **0**. **Sans preuve** : **14**. Origine : migrations `20260521120000` / `20260522140000` qui ont mis tout le monde à `true` sans consentement.
+Code déjà modifié (lot 1) : défaut applicatif à `false` (`DEFAULT_MARKETING_EMAIL_OPT_IN`, page profil). Quand une cliente coche, `marketing_email_opt_in_at` est daté (`src/app/compte/preferences/actions.ts`).
+
+```sql
+-- 1) Nouveaux profils : non par défaut
+alter table public.profiles alter column marketing_email_opt_in set default false;
+
+-- 2) Contrôle avant correction (doit afficher 14 / 0 au 19/10)
+select
+  count(*) filter (where marketing_email_opt_in and marketing_email_opt_in_at is null)  as sans_preuve,
+  count(*) filter (where marketing_email_opt_in and marketing_email_opt_in_at is not null) as avec_preuve
+from public.profiles;
+
+-- 3) Correction (UPDATE en masse → GO écrit)
+update public.profiles
+set marketing_email_opt_in = false
+where marketing_email_opt_in = true
+  and marketing_email_opt_in_at is null;
+```
+
+### L1-e. Bucket `avatars` : fichiers `text/html` (proposition, non appliquée)
+
+Voir le rapport du lot 1 (§10) : le bucket public `avatars` sert aussi au montage des Reels (`social-cm/…`), dont des fichiers `text/html`. Proposition : bucket privé `cm-private` + URL signées 1 h pour les `text/html` ; `avatars` limité à `image/jpeg, image/png, image/webp, video/mp4` côté stockage.
+
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('cm-private', 'cm-private', false, 209715200, array['text/html','application/json'])
+on conflict (id) do nothing;
+-- Seulement APRÈS bascule du code CM sur cm-private + URL signées :
+-- update storage.buckets set allowed_mime_types = array['image/jpeg','image/png','image/webp','video/mp4','image/gif']
+-- where id = 'avatars';
+```
+
+## Lot 2 — Notifications (moteur)
+
+> Rien de ce bloc n’a été exécuté. `NOTIF_V2_CUTOFF` à poser au moment du GO (horodatage du déploiement). Cron-job.org appelle encore `course-reminders` (GET) : le couper **le jour de la bascule** pg_cron, sinon double déclencheur.
+
+### L2-a. Préférences (défauts SPEC §3.8)
+
+```sql
+alter table public.notification_preferences
+  add column if not exists live_eve_email boolean not null default true,
+  add column if not exists live_eve_inapp boolean not null default true,
+  add column if not exists live_eve_push boolean not null default false,
+  add column if not exists live_hour_email boolean not null default true,
+  add column if not exists live_hour_inapp boolean not null default true,
+  add column if not exists live_hour_push boolean not null default false,
+  add column if not exists live_other_language boolean not null default false,
+  add column if not exists program_session_email boolean not null default true,
+  add column if not exists program_session_inapp boolean not null default true,
+  add column if not exists program_session_push boolean not null default false,
+  add column if not exists program_nudge_email boolean not null default true,
+  add column if not exists program_nudge_inapp boolean not null default true,
+  add column if not exists content_replay_email boolean not null default true,
+  add column if not exists content_replay_inapp boolean not null default true,
+  add column if not exists content_replay_push boolean not null default false,
+  add column if not exists blog_email boolean not null default false,
+  add column if not exists blog_inapp boolean not null default true,
+  add column if not exists blog_push boolean not null default false,
+  add column if not exists weekly_digest_email boolean not null default true,
+  add column if not exists silence_mode_hours boolean not null default true;
+
+-- miroir aussi sur le profil (filtre destinataires lives)
+alter table public.profiles
+  add column if not exists live_other_language boolean not null default false;
+```
+
+`Offres et nouveautés` = colonne existante `profiles.marketing_email_opt_in` (défaut false, lot 1). Ne pas dupliquer.
+
+### L2-b. `user_notifications` (centre A08)
+
+```sql
+alter table public.user_notifications
+  add column if not exists category text,
+  add column if not exists action_url text,
+  add column if not exists action_label text,
+  add column if not exists meta jsonb not null default '{}'::jsonb,
+  add column if not exists group_key text;
+
+create unique index if not exists user_notifications_group_key_uniq
+  on public.user_notifications (user_id, group_key)
+  where group_key is not null;
+```
+
+### L2-c. Heartbeats + anti-doublon
+
+`notification_log.idempotency_key` est **déjà unique**. Rien à ajouter.
+
+```sql
+create table if not exists public.cron_heartbeats (
+  job text primary key,
+  last_run_at timestamptz not null default now(),
+  meta jsonb not null default '{}'::jsonb
+);
+alter table public.cron_heartbeats enable row level security;
+revoke all on public.cron_heartbeats from anon, authenticated;
+grant all on public.cron_heartbeats to service_role;
+create policy cron_heartbeats_admin_select on public.cron_heartbeats
+  for select to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+grant select on public.cron_heartbeats to authenticated;
+```
+
+### L2-d. Style de live (SPEC §3.10)
+
+Le type de cours admin sert déjà de style (titre). Colonne additive optionnelle :
+
+```sql
+alter table public.courses
+  add column if not exists live_style text;
+```
+
+Le code du lot 2a **n’écrit pas** cette colonne tant qu’elle n’existe pas.
+
+### L2-e. Cutoff file digest
+
+```sql
+-- À renseigner au GO (horodatage UTC du déploiement notif v2), ex. :
+-- insert into public.admin_settings (key, value) values ('NOTIF_V2_CUTOFF', '"2026-10-20T00:00:00.000Z"')
+-- on conflict (key) do update set value = excluded.value;
+-- Variable d’environnement équivalente : NOTIF_V2_CUTOFF (lue par le code).
+```
+
+Comptage backlog (lecture, `/admin/sante` au lot 2b) :
+
+```sql
+select digest_bucket,
+       coalesce(payload->>'event_type', '—') as event_type,
+       count(*) as n
+from public.notification_digest_queue
+where processed_at is null
+group by 1, 2
+order by n desc;
+```
+
+Archivage **sans envoi** (GO écrit obligatoire) :
+
+```sql
+update public.notification_digest_queue
+set processed_at = now(),
+    payload = coalesce(payload, '{}'::jsonb) || jsonb_build_object('archived_reason', 'archived_backlog')
+where processed_at is null
+  and created_at < :cutoff_timestamptz;
+```
+
+### L2-f. Supabase Cron (pg_cron + pg_net) — version retenue le 20/10/2026
+
+Décisions (Claude, validées par Kevin le 20/10/2026) :
+- **cron-job.org garde `course-reminders`** (toutes les 10 min, `CRON_SECRET`) : rappels des lives, publication sociale (filet déjà dans cette route) et emails cadeaux programmés ne changent pas de déclencheur.
+- **Supabase Cron ne déclenche que `/api/admin/cron/hourly`** (récapitulatifs, rappels « séance du jour », rappels J-14 / J-3 des cartes cadeaux, alerte de retard) : cette route n'a aucun déclencheur aujourd'hui, donc aucun doublon.
+- **Le secret de Supabase Cron est généré dans la base** et rangé dans Vault (`cron_secret`) : il n'est jamais affiché ni copié (ni dans Vercel, ni dans un chat). La base compare elle-même la valeur reçue (`public.cron_secret_matches`, réservée à la clé de service). Les routes `course-reminders`, `social` et `hourly` acceptent `CRON_SECRET` **ou** ce secret (`verifyAnyCronSecret`).
+- Le jour où Kevin coupe cron-job.org : programmer aussi `course-reminders` avec le même modèle (une seule source par tâche).
+
+```sql
+-- À exécuter AVANT L1-c (la purge de rate_limits utilise pg_cron).
+create extension if not exists pg_cron with schema pg_catalog;
+create extension if not exists pg_net with schema extensions;
+
+-- 1) Secret généré dans la base, jamais affiché (rien n'est recréé s'il existe déjà) : la requête ne renvoie qu'un booléen.
+select vault.create_secret(
+  encode(extensions.gen_random_bytes(32), 'hex'),
+  'cron_secret',
+  'Supabase Cron → fitmangas.com (routes cron)'
+) is not null as created
+where not exists (select 1 from vault.secrets where name = 'cron_secret');
+
+-- 2) Comparaison faite par la base (clé de service seulement).
+create or replace function public.cron_secret_matches(candidate text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from vault.decrypted_secrets
+    where name = 'cron_secret' and decrypted_secret = candidate
+  );
+$$;
+revoke all on function public.cron_secret_matches(text) from public, anon, authenticated;
+grant execute on function public.cron_secret_matches(text) to service_role;
+```
+
+Après le déploiement du code (sinon la route n'existe pas encore en ligne) :
+
+```sql
+select cron.schedule(
+  'fitmangas-hourly',
+  '5 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://fitmangas.com/api/admin/cron/hourly',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 60000
+  );
+  $$
+);
+```
+
+Vérifications (sans jamais lire la valeur du secret) :
+
+```sql
+select public.cron_secret_matches('essai');           -- false
+select jobname, schedule, active from cron.job;       -- fitmangas-hourly + rate_limits_purge
+-- après le prochain passage à :05
+select status, return_message, start_time from cron.job_run_details
+where jobid = (select jobid from cron.job where jobname = 'fitmangas-hourly')
+order by start_time desc limit 3;
+select status_code, created from net._http_response order by created desc limit 3;  -- 200
+select job, last_run_at from public.cron_heartbeats;  -- ligne « hourly »
+```
+
+Modèle pour `course-reminders` le jour où cron-job.org est coupé (même requête, URL `/api/admin/cron/course-reminders`, `*/10 * * * *`, nom `fitmangas-course-reminders`). Ne pas programmer `/api/admin/cron/social` tant que `course-reminders` publie déjà les posts.
+
+### L2-g. Visites de live — diagnostic (aucune écriture)
+
+Cause probable (voir rapport lot-2a) : RPC `record_live_course_visit` exige `auth.uid()`, cours publié, et `course_access_level = full` ; les erreurs sont avalées côté client. Table sans policy SELECT cliente. Correctif proposé **hors zone interdite** si Kevin le décide : journaliser l’échec RPC (hors `LiveVisitRecorder`) ou assouplir `course_access_level` — **non appliqué**.
+
+```sql
+-- Lecture seule
+select count(*) as n_30j
+from public.live_course_daily_visits
+where visit_date >= current_date - 30;
+
+select course_id, count(*) as n
+from public.live_course_daily_visits
+where visit_date >= current_date - 30
+group by 1
+order by n desc
+limit 20;
+```
+
+Présence = `created_at` (pas `visit_date`) entre 15 min avant `courses.starts_at` et `courses.ends_at`, calculée à la lecture.
+
+## Lot 3 — Programmes
+
+> Rien de ce bloc n’a été exécuté. Import `--apply` : Kevin seulement, après GO. `standalone_vimeo_videos.id` = **uuid** (migration `010_standalone_vimeo_library.sql`) → FK uuid OK.
+
+### L3-a. Tables
+
+```sql
+create table if not exists public.programs (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  status text not null default 'draft' check (status in ('draft','published','archived')),
+  level smallint not null check (level between 0 and 3),
+  track text not null,
+  goals text[] not null default '{}',
+  intensity smallint, impact text, live_style text,
+  title jsonb not null, promise jsonb, for_who jsonb, not_for jsonb, coach_note jsonb,
+  benefits jsonb not null default '[]', equipment jsonb not null default '[]', tests jsonb not null default '[]',
+  weeks smallint not null, sessions_per_week smallint not null, minutes_range text,
+  cover_url text, next_program_id uuid references public.programs(id),
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+
+create table if not exists public.program_weeks (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references public.programs(id) on delete cascade,
+  week smallint not null, focus jsonb not null, cues jsonb not null default '[]',
+  unique (program_id, week)
+);
+
+create table if not exists public.program_steps (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references public.programs(id) on delete cascade,
+  week smallint not null, position smallint not null,
+  kind text not null check (kind in ('video','live')),
+  -- set null : une vidéo retirée de la bibliothèque (synchro Vimeo) ne doit jamais bloquer la synchro ; l'étape est alors signalée sans vidéo.
+  video_id uuid references public.standalone_vimeo_videos(id) on delete set null,
+  start_s int, end_s int, segment_to_validate boolean not null default false,
+  minutes smallint, objective jsonb, objective_long jsonb, live_style text,
+  unique (program_id, week, position)
+);
+
+create sequence if not exists public.program_certificate_seq;
+
+create table if not exists public.program_enrollments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  program_id uuid not null references public.programs(id),
+  status text not null default 'active' check (status in ('active','paused','completed','abandoned')),
+  start_date date not null,
+  chosen_days smallint[] not null default '{1,3,5}',
+  reminder_time time not null default '18:00',
+  reminder_email boolean not null default true,
+  reminder_inapp boolean not null default true,
+  reminder_push boolean not null default false,
+  paused_at timestamptz, completed_at timestamptz, certificate_number text unique,
+  postponed_until date,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists program_enrollments_one_active
+  on public.program_enrollments(user_id) where status = 'active';
+
+create table if not exists public.program_step_progress (
+  id uuid primary key default gen_random_uuid(),
+  enrollment_id uuid not null references public.program_enrollments(id) on delete cascade,
+  step_id uuid not null references public.program_steps(id) on delete cascade,
+  watched_s int not null default 0, completed_at timestamptz,
+  feeling text check (feeling in ('easy','right','hard')),
+  unique (enrollment_id, step_id)
+);
+
+create table if not exists public.program_test_results (
+  id uuid primary key default gen_random_uuid(),
+  enrollment_id uuid not null references public.program_enrollments(id) on delete cascade,
+  phase text not null check (phase in ('start','end')),
+  results jsonb not null, created_at timestamptz not null default now(),
+  unique (enrollment_id, phase)
+);
+
+create table if not exists public.program_feedback (
+  id uuid primary key default gen_random_uuid(),
+  enrollment_id uuid not null references public.program_enrollments(id) on delete cascade,
+  rating smallint check (rating between 1 and 5), message text,
+  publish_consent boolean not null default false, consent_withdrawn_at timestamptz,
+  created_at timestamptz not null default now()
+);
+```
+
+### L3-b. RLS — SELECT cliente seulement, écritures via service_role
+
+```sql
+alter table public.programs enable row level security;
+alter table public.program_weeks enable row level security;
+alter table public.program_steps enable row level security;
+alter table public.program_enrollments enable row level security;
+alter table public.program_step_progress enable row level security;
+alter table public.program_test_results enable row level security;
+alter table public.program_feedback enable row level security;
+
+revoke all on public.programs, public.program_weeks, public.program_steps,
+  public.program_enrollments, public.program_step_progress,
+  public.program_test_results, public.program_feedback from anon;
+revoke all on public.programs, public.program_weeks, public.program_steps,
+  public.program_enrollments, public.program_step_progress,
+  public.program_test_results, public.program_feedback from authenticated;
+
+grant select on public.programs, public.program_weeks, public.program_steps to authenticated;
+grant select on public.program_enrollments, public.program_step_progress,
+  public.program_test_results, public.program_feedback to authenticated;
+grant all on public.programs, public.program_weeks, public.program_steps,
+  public.program_enrollments, public.program_step_progress,
+  public.program_test_results, public.program_feedback to service_role;
+grant usage, select on sequence public.program_certificate_seq to service_role;
+
+create policy programs_select_published on public.programs
+  for select to authenticated
+  using (
+    status = 'published'
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+create policy program_weeks_select on public.program_weeks
+  for select to authenticated
+  using (
+    exists (select 1 from public.programs pr where pr.id = program_id and pr.status = 'published')
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+create policy program_steps_select on public.program_steps
+  for select to authenticated
+  using (
+    exists (select 1 from public.programs pr where pr.id = program_id and pr.status = 'published')
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+create policy enrollments_select_own on public.program_enrollments
+  for select to authenticated using (user_id = auth.uid());
+create policy progress_select_own on public.program_step_progress
+  for select to authenticated
+  using (exists (select 1 from public.program_enrollments e where e.id = enrollment_id and e.user_id = auth.uid()));
+create policy tests_select_own on public.program_test_results
+  for select to authenticated
+  using (exists (select 1 from public.program_enrollments e where e.id = enrollment_id and e.user_id = auth.uid()));
+create policy feedback_select_own on public.program_feedback
+  for select to authenticated
+  using (exists (select 1 from public.program_enrollments e where e.id = enrollment_id and e.user_id = auth.uid()));
+```
+
+### L3-c. Fonction atomique « démarrer un programme »
+
+Met en pause l’inscription `active` éventuelle, puis crée la nouvelle. `security definer` réservé à `service_role` (actions serveur).
+
+```sql
+create or replace function public.start_program(
+  p_user_id uuid,
+  p_program_id uuid,
+  p_start_date date,
+  p_chosen_days smallint[],
+  p_reminder_time time,
+  p_reminder_email boolean,
+  p_reminder_inapp boolean,
+  p_reminder_push boolean
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_id uuid;
+begin
+  update public.program_enrollments
+    set status = 'paused', paused_at = now()
+    where user_id = p_user_id and status = 'active';
+
+  insert into public.program_enrollments (
+    user_id, program_id, status, start_date, chosen_days,
+    reminder_time, reminder_email, reminder_inapp, reminder_push
+  ) values (
+    p_user_id, p_program_id, 'active', p_start_date, p_chosen_days,
+    p_reminder_time, p_reminder_email, p_reminder_inapp, p_reminder_push
+  ) returning id into new_id;
+
+  return new_id;
+end;
+$$;
+
+revoke all on function public.start_program(uuid, uuid, date, smallint[], time, boolean, boolean, boolean) from public, anon, authenticated;
+grant execute on function public.start_program(uuid, uuid, date, smallint[], time, boolean, boolean, boolean) to service_role;
+
+create or replace function public.nextval_program_certificate()
+returns bigint
+language sql
+security definer
+set search_path = public
+as $$ select nextval('public.program_certificate_seq'); $$;
+revoke all on function public.nextval_program_certificate() from public, anon, authenticated;
+grant execute on function public.nextval_program_certificate() to service_role;
+```
+
+## Lot 4 — Cartes cadeaux
+
+Non appliqué. Lecture admin ; écritures `service_role` uniquement.
+
+```sql
+create table if not exists public.gift_cards (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  months smallint not null check (months in (1,3,6,12)),
+  amount_cents int not null, currency text not null default 'eur', locale text not null default 'fr',
+  stripe_checkout_session_id text unique, stripe_payment_intent_id text,
+  buyer_name text not null, buyer_email text not null, buyer_timezone text,
+  recipient_name text not null, recipient_email text,
+  message text check (char_length(message) <= 250),
+  delivery text not null check (delivery in ('email','print')),
+  send_at timestamptz, buyer_email_sent_at timestamptz, recipient_email_sent_at timestamptz,
+  status text not null default 'paid' check (status in ('paid','scheduled','sent','activated','expired','refunded')),
+  expires_at timestamptz not null,
+  activation_mode text check (activation_mode in ('new_trial','existing_no_access','balance_credit','trial_extension')),
+  activated_by uuid references public.profiles(id) on delete set null, activated_at timestamptz, access_ends_at timestamptz,
+  stripe_subscription_id text,
+  reminder_14_sent_at timestamptz, reminder_3_sent_at timestamptz, converted_at timestamptz,
+  refunded_at timestamptz, refund_amount_cents int,
+  created_at timestamptz not null default now()
+);
+alter table public.gift_cards enable row level security;
+revoke all on public.gift_cards from anon, authenticated;
+grant select, insert, update on public.gift_cards to service_role;
+```
+
+Ajout du 20/10 (finition lot 4, facultatif vu les volumes) : index utilisés par la tâche des 10 minutes (envois programmés), les rappels J-14/J-3 et la conversion (webhook `invoice.paid`).
+
+```sql
+create index if not exists gift_cards_scheduled_idx on public.gift_cards (send_at) where status = 'scheduled';
+create index if not exists gift_cards_subscription_idx on public.gift_cards (stripe_subscription_id) where stripe_subscription_id is not null;
+```
+
+## Lot 5 — Conversion et expérience
+
+Non appliqué.
+
+```sql
+create table if not exists public.client_followups (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  followed_at timestamptz not null default now(),
+  channel text not null check (channel in ('whatsapp','email')),
+  reason text,
+  note text,
+  author_id uuid references public.profiles(id) on delete set null
+);
+alter table public.client_followups enable row level security;
+revoke all on public.client_followups from anon, authenticated;
+grant select, insert on public.client_followups to service_role;
+
+-- Noms boutique FR/ES éditables (sans changer le slug Printful)
+create table if not exists public.printful_product_names (
+  printful_product_id bigint primary key,
+  name_fr text,
+  name_es text,
+  slug text unique,
+  updated_at timestamptz not null default now()
+);
+alter table public.printful_product_names enable row level security;
+revoke all on public.printful_product_names from anon, authenticated;
+grant select, insert, update on public.printful_product_names to service_role;
+```
+
+## Lot 7 — Croissance
+
+Non appliqué. **Aucun SQL obligatoire pour allumer le code** (overlay mémoire derrière `CROISSANCE_V2`).
+
+Réglage « comptes de l’équipe » (Instagram, e-mails, téléphones à ignorer dans les compteurs, SPEC §12.1) — table proposée, GO Kevin :
+
+```sql
+create table if not exists public.acq_team_accounts (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('instagram', 'email', 'phone')),
+  value text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.acq_team_accounts enable row level security;
+revoke all on public.acq_team_accounts from anon, authenticated;
+grant select, insert, update, delete on public.acq_team_accounts to service_role;
+```
+
+Sans cette table : interrupteur « Inclure les tests » masque seulement les handles démo déjà connus ; la liste équipe n’est pas encore persistée.
+
+---
+
+## Lot 6 — Fonction d'accès unique
+
+Non appliqué. **Aucun SQL obligatoire.** ACCESS_V2 lit `subscriptions` (status active/trialing, `sub_…`, `ends_at`, `livemode` via Stripe si clé live).
+
+Activation bloquée tant que le comparatif `scripts/chantier-oct/compare-access-v2.ts` affiche des écarts (lot 1 : 3 profils `active` sans subscription active, 2 `customer_tier` orphelins). Correction des **données** = GO Kevin, pas une migration de schéma.
+
+```sql
+-- Optionnel, après GO : mémoriser livemode pour ne plus dépendre d'un retrieve Stripe
+-- alter table public.subscriptions add column if not exists livemode boolean;
+```
+

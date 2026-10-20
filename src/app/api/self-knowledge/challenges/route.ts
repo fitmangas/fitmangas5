@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicServerError } from '@/lib/http/public-error';
 import { z } from 'zod';
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -30,6 +31,6 @@ export async function POST(req: Request) {
     { onConflict: 'profile_id,challenge_id' },
   );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return publicServerError('self-knowledge/challenges', error, 500);
   return NextResponse.json({ ok: true });
 }

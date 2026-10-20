@@ -27,6 +27,62 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 — Préparation de la mise en ligne du chantier d'octobre (Claude)
+
+- GO écrit de Kevin (20/10, 14 h 17) sur les migrations, corrections de données, réglages Stripe en mode réel (sans paiement test) et la mise en ligne ; mot de passe admin et double authentification : Kevin plus tard.
+- Compte démo « Margaux Demo » (`cliente.demo@fitmangas.com`, `f694a7d9…`) : **option 1 de Kevin (14 h 40)** — garde l'accès visio sans abonnement (`DEMO_ACCESS_USER_IDS`, `src/lib/access/access-v2.ts`) et archivé dans l'admin (hors liste Clients et compteurs). C'était le seul écart bloquant ACCESS_V2.
+- Supabase Cron : seule la route `/api/admin/cron/hourly` est programmée (pg_cron + pg_net) ; cron-job.org garde `course-reminders`. Secret généré dans la base (Vault `cron_secret`), jamais copié : la base le compare (`public.cron_secret_matches`). Routes `course-reminders`, `social`, `hourly` : `verifyAnyCronSecret`.
+- Récapitulatif « Ta semaine » : plus aucun envoi si `NOTIF_V2_CUTOFF` manque (l'ancien arriéré ne peut plus partir par erreur) ; réservé aux clientes qui ont l'accès Visio (abonnées ou en essai : pas de prospection sans consentement) ; un seul par jour (vérifié avant l'envoi) ; respecte l'interrupteur « Ta semaine » (`weekly_digest_email`).
+- Programmes : tables créées à la mise en ligne, **import des 12 programmes reporté** à l'activation (après relecture d'Alejandra). `program_steps.video_id` en `on delete set null` pour ne jamais bloquer la synchro Vimeo.
+- Webhook Printful : l'API v1 ne signe pas → jeton dans l'URL (`?token=`) ou signature HMAC (`src/lib/printful-webhook-auth.ts`) ; script `scripts/chantier-oct/setup-printful-webhook.ts` (secret jamais affiché).
+- GA4 : cookie `fm_internal` posé par l'admin → `traffic_type: 'internal'` sur les pages publiques (filtre GA4 « Internal Traffic » à passer en Actif).
+
+### 2026-10-20 — Chantier oct. : finitions de Claude (branche locale `chantier-oct-2026`, pas de push)
+
+- Écrans mis au niveau des maquettes et rendus fonctionnels derrière les drapeaux (tous éteints) : emails A01–A07 et écrans A08–A10 (centre, préférences, santé), lot 5 (D01 essai, D02 boutique, D03 habillage live sans toucher à la visio, D04 planning, D06 nav mobile, D07 Les cours, D09 suivi clientes).
+- Programmes (`NEXT_PUBLIC_FEATURE_PROGRAMMES`) : moteur de dates (jours choisis, report, pause), B01–B10 réels, test de niveau D08, certificat PDF et story, rappels « séance du jour » à l'heure locale + relance douce hebdomadaire.
+- Cartes cadeaux (`NEXT_PUBLIC_FEATURE_GIFTS`) : achat C01 FR/ES (heure d'envoi dans le fuseau de l'acheteuse), PDF C02 avec QR, emails C03 + confirmation acheteuse, activation C04 (compte créé ou connexion, essai offert sans carte, crédit au prix du Visio collectif, essai prolongé), admin C05 (remboursement au prorata, carte offerte), rappels J-14/J-3, conversion au premier paiement. Écritures Stripe seulement en clé test (ou GO production).
+- Croissance (`CROISSANCE_V2`) : « Inclure les tests » recalcule le pipeline CRM, MRR = payantes, doublon au clic « Programmer », guides du blog avec lien retour.
+- Build de production vert, tests verts (hors test d'archive absent de la copie de travail). Migrations : toutes dans `PROPOSITIONS_MIGRATIONS.md`, aucune appliquée.
+
+### 2026-10-19 — Chantier oct. lot 7 (branche locale, pas de push)
+
+- Croissance : overlay `CROISSANCE_V2` (off). 43 règles conservées. Relance unique + fenêtre 9–20 h. Textes `croissance-messages.md` en mémoire seulement.
+- UI additive : entonnoir de référence, Test masqués, liste moteur, À filmer, doublons, guides `/blog/guides/[theme]`. Table `acq_team_accounts` proposée, non appliquée.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-7.md` + `synthese.md`. Pas de push.
+
+### 2026-10-19 — Chantier oct. lot 6 (branche locale, pas de push)
+
+- ACCESS_V2 préparé (off). Comparatif SELECT : 1 écart (`f694a7d9…`) → activation bloquée. `hasVisioClientAccess` inchangé tant que le drapeau est off.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-6.md`. Pas de push.
+
+### 2026-10-19 — Chantier oct. lot 5 (branche locale, pas de push)
+
+- Conversion : menu public, titre A accueil, modale D01 (case immédiat seulement v-ind), planning v3, habillage live D03, D09 suivi clientes, D06 nav mobile, D10 info-bulles, D07 Les cours.
+- Présentiel masqué (`ONSITE_ENABLED` off). Tables `client_followups` / noms boutique : SQL proposé, non appliqué.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-5.md`. Pas de push.
+
+### 2026-10-19 — Chantier oct. lot 3b (branche locale, pas de push)
+
+- Espace client programmes derrière `NEXT_PUBLIC_FEATURE_PROGRAMMES` (off) : catalogue, page slug, lecteur Vimeo dnt, fin, certificat PDF, story OG, `/test-niveau`.
+- Dashboard : bloc « Mon programme » sous Bonjour (état vide tant que SQL/import absents).
+- A07 + décaler à demain (lien sans écriture) ; cron hourly no-op si drapeaux/tables absents.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-3b.md`.
+
+### 2026-10-19 — Chantier oct. lot 2b (branche locale, pas de push)
+
+- Gabarit email v2 (drapeau off) : `wrapResendEmailV2`, A01–A06, Instagram `@fit.mangas`, désinscription signée.
+- Écrans A08/A09/A10 en aperçu `/dev/apercu` + pages réelles si `NEXT_PUBLIC_FEATURE_NOTIF_V2`. Cloche → page, plus de dropdown.
+- Rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-2b.md`.
+
+### 2026-10-19 — Chantier oct. lot 2a (branche locale `chantier-oct-2026`, pas de push)
+
+- Moteur notif v2 derrière `NEXT_PUBLIC_FEATURE_NOTIF_V2` (off) : destinataires visio = accès actuel + langue ; veille ≥18h locale ; 1 h = 0<min≤75 ; plus de missed visio.
+- Digest retiré de `daily-jobs` ; cutoff + flag bloquent tout flush. Routes `/api/admin/cron/social` et `/hourly` (GET+POST).
+- Lives récurrents admin (drapeau on). SQL Lot 2 dans `PROPOSITIONS_MIGRATIONS.md` (non appliqué).
+- Visites live : 0 ligne (RPC `full` + erreurs avalées). Recorder non modifié.
+- Fichiers : `src/lib/notifications/v2/*`, `social-publish-due.ts`, `AdminCoursesManager.tsx`, rapport `docs/maquettes/chantier-octobre-2026/rapports/lot-2a.md`.
+
 ### 2026-10-13 — Audit TikTok Content Posting soumis + UX Direct Post
 
 - Formulaire Apply Direct Post **soumis** (réponse TikTok annoncée 2–4 semaines). App ID `7685356596200900629`.

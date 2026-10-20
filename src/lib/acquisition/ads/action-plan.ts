@@ -90,6 +90,23 @@ export function buildDeterministicActionPlan(bundle: IntelligenceBundle): Action
 
   const items: ActionPlanItem[] = [
     {
+      id: 'create-video-temoignage-3sem',
+      priority: 2,
+      emoji: '🎥',
+      wantId: 'etre-vue',
+      evidence,
+      title: 'Témoignage vidéo d’une élève : ce que je ressens après 3 semaines',
+      hypothesis:
+        'Hypothèse : un témoignage parlé (ressenti après 3 semaines), sans images avant / après, convertit mieux qu’un carrousel posture — règles Meta santé / apparence.',
+      creativeType: 'ugc_temoignage',
+      framework: 'Hook-Problème-Solution-Preuve',
+      market: 'FR',
+      budgetHint: 'Brouillon 0 € — à filmer, pas à booster tel quel',
+      honesty: 'Pas d’avant / après visuel. Une élève réelle, ou anonyme « une élève ».',
+      action: { type: 'create_cm_draft', label: 'Créer le brouillon', planItemId: 'create-video-temoignage-3sem' },
+      source: 'rules',
+    },
+    {
       id: 'create-th-pas-dos',
       priority: 1,
       emoji: '🎥',

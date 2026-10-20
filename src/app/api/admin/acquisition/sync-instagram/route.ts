@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { checkAdminMfa } from '@/lib/auth/admin-mfa';
 import { isAcquisitionModuleEnabled } from '@/lib/acquisition/feature-flag';
 import { pollInstagramInbox } from '@/lib/acquisition/providers/instagram-poll';
 import { createClient } from '@/lib/supabase/server';
@@ -23,6 +24,9 @@ export async function POST() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (profile?.role !== 'admin') {
     return NextResponse.json({ error: 'Réservé admin.' }, { status: 403 });
+  }
+  if (!(await checkAdminMfa(supabase)).ok) {
+    return NextResponse.json({ error: 'Double authentification requise.' }, { status: 403 });
   }
 
   const result = await pollInstagramInbox({ conversationLimit: 15, messagesPerThread: 30 });

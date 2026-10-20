@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email/send';
 
 import { wrapResendEmail } from '@/lib/email/base-template';
 
@@ -95,13 +95,13 @@ async function sendAcquisitionOpsEmail(params: {
   `;
 
   try {
-    const resend = new Resend(apiKey);
-    await resend.emails.send({
+    const result = await sendEmail({
       from,
       to,
       subject: `[FitMangas] ${params.subjectPrefix} — ${who} (${params.channel})`,
       html: wrapResendEmail({ innerHtml, locale: 'fr', showPreferencesLink: false }),
     });
+    if (!result.ok) return { ok: false, error: result.error };
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Envoi Resend échoué' };

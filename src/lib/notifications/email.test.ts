@@ -37,6 +37,7 @@ describe('sendDispatcherEmail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.RESEND_API_KEY = 'resend-key';
+    process.env.EMAIL_SAFE_MODE = 'off';
     process.env.NEWSLETTER_FROM_EMAIL = 'alejandra@fitmangas.com';
     mocks.maybeSingle.mockResolvedValue({ data: { id: 'user-1' }, error: null });
     mocks.getUserById.mockResolvedValue({ data: { user: { email: 'client@example.com' } }, error: null });
@@ -54,7 +55,7 @@ describe('sendDispatcherEmail', () => {
     expect(mocks.send).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'alejandra@fitmangas.com',
-        to: 'client@example.com',
+        to: ['client@example.com'],
         subject: 'Cours',
       }),
     );

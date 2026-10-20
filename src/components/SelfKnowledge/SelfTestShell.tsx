@@ -81,7 +81,7 @@ export function SelfTestShell({
               <Link
                 href={frHref}
                 hrefLang="fr"
-                className={`rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide transition ${
+                className={`rounded-full px-2.5 py-1 text-xs font-bold tracking-wide transition ${
                   locale === 'fr' ? 'bg-[#c45d3e] text-white' : 'text-brand-ink/50 hover:text-brand-ink'
                 }`}
                 aria-current={locale === 'fr' ? 'true' : undefined}
@@ -91,7 +91,7 @@ export function SelfTestShell({
               <Link
                 href={esHref}
                 hrefLang="es"
-                className={`rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide transition ${
+                className={`rounded-full px-2.5 py-1 text-xs font-bold tracking-wide transition ${
                   locale === 'es' ? 'bg-[#c45d3e] text-white' : 'text-brand-ink/50 hover:text-brand-ink'
                 }`}
                 aria-current={locale === 'es' ? 'true' : undefined}
