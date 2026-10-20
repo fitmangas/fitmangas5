@@ -11,16 +11,31 @@
  *   npx tsx scripts/chantier-oct/setup-printful-webhook.ts --verify   # après déploiement : 401 sans jeton, 200 avec
  *
  * Le secret n'est jamais écrit dans la console. Aucun webhook n'est créé s'il n'en existe pas déjà un vers fitmangas.com.
+ *
+ * Vercel : le CLI du Mac est connecté à un autre compte. La connexion au compte FitMangas vit dans un dossier à part,
+ * créé une fois par `npx vercel@58.7.1 login -Q ~/.vercel-fitmangas` (ou le dossier indiqué par FM_VERCEL_GLOBAL_CONFIG).
  */
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const SITE_HOST = 'fitmangas.com';
 const ROUTE_PATH = '/api/webhooks/printful';
 const ENV_FILE = join(process.cwd(), '.env.local');
-const VERCEL_CLI = ['--yes', 'vercel@58.7.1'];
+const VERCEL_PACKAGE = ['--yes', 'vercel@58.7.1'];
+
+/** Dossier de connexion Vercel du compte FitMangas (jamais la connexion par défaut du Mac). */
+function vercelGlobalConfigDir(): string {
+  const fromEnv = process.env.FM_VERCEL_GLOBAL_CONFIG?.trim();
+  if (fromEnv) return fromEnv;
+  const dir = join(homedir(), '.vercel-fitmangas');
+  if (existsSync(dir)) return dir;
+  throw new Error(
+    'Connexion Vercel FitMangas absente : lancer `npx vercel@58.7.1 login -Q ~/.vercel-fitmangas` avec le compte Vercel de FitMangas.',
+  );
+}
 
 type WebhookConfig = { url: string | null; types: string[]; params?: Record<string, unknown> };
 
@@ -63,9 +78,11 @@ function pointsToSite(url: string | null): boolean {
 }
 
 function setVercelSecret(value: string) {
+  const globalConfig = vercelGlobalConfigDir();
+  console.log(`Vercel CLI : connexion lue dans ${globalConfig}`);
   const run = spawnSync(
     'npx',
-    [...VERCEL_CLI, 'env', 'add', 'PRINTFUL_WEBHOOK_SECRET', 'production', '--sensitive', '--force'],
+    [...VERCEL_PACKAGE, '-Q', globalConfig, 'env', 'add', 'PRINTFUL_WEBHOOK_SECRET', 'production', '--sensitive', '--force'],
     { input: value, encoding: 'utf8', cwd: process.cwd() },
   );
   const output = `${run.stdout ?? ''}${run.stderr ?? ''}`.split(value).join('***');
