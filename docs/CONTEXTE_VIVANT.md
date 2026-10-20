@@ -27,14 +27,24 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 (soir) — Finitions : mot de passe, blog, programmes, Croissance
+
+- Feu vert Kevin (20 h 39) : tout valider. PR #47 merge `b88a12d` + catalogue titre vidéo `e2850d6`.
+- **Ce lot (code)** : 1) Mot de passe oublié (`/mot-de-passe-oublie` → e-mail → `/auth/reinitialiser` → `/nouveau-mot-de-passe`, limites IP/e-mail). 2) Changer MDP depuis `/compte/profil`. 3) Admin : bouton lien « nouveau mot de passe » fiche cliente. 4) Messages connexion FR/ES clairs. 5) Menu site sur `/blog` (visiteuses/admins). 6) Import programmes complété (objectifs, durées, extraits, live_style ; refuse si vidéo manque).
+- **Programmes allumés** : import APPLY 12 programmes / 42 semaines / 178 étapes ; publiés ; `NEXT_PUBLIC_FEATURE_PROGRAMMES=1`.
+- **Croissance allumée** : `CROISSANCE_V2=1` (44 messages réécrits). Vérif bac à sable non faite ce run.
+- **Jenny** (lecture seule) : id `44b98152…`, e-mail confirmé, dernière connexion 2026-07-24, abo `trialing` depuis 2026-10-17. Rien envoyé (Kevin enverra le lien MDP depuis l'admin s'il veut).
+- Drapeaux **encore éteints** : `TURNSTILE_ENABLED`, `ADMIN_REQUIRE_MFA`, `ONSITE_ENABLED` (+ `NEXT_PUBLIC_ONSITE_ENABLED`).
+- Notes Claude (non bloquant) : `/connexion` `/login` 500 si admin déjà connectée (cookie demo) ; titre onglet doublé « | FitMangas ».
+
 ### 2026-10-20 — Mise en ligne du chantier d'octobre
 
 - Code fusionné sur `main` (PR #45, merge `e9edc03`). Migrations L1–L7 appliquées en prod (versions `20261020170742` … `20261020170857`). **Ne pas** `supabase db push` sur ces fichiers.
-- Drapeaux **allumés** : `RATE_LIMIT_ENABLED`, `NEXT_PUBLIC_FEATURE_NOTIF_V2`, `ACCESS_V2`, `NEXT_PUBLIC_FEATURE_GIFTS`.
-- Drapeaux **éteints** : `NEXT_PUBLIC_FEATURE_PROGRAMMES`, `CROISSANCE_V2`, `TURNSTILE_ENABLED`, `ADMIN_REQUIRE_MFA`, `ONSITE_ENABLED` (+ `NEXT_PUBLIC_ONSITE_ENABLED`).
+- Drapeaux **allumés** (après-midi) : `RATE_LIMIT_ENABLED`, `NEXT_PUBLIC_FEATURE_NOTIF_V2`, `ACCESS_V2`, `NEXT_PUBLIC_FEATURE_GIFTS`. (Programmes + Croissance allumés le soir — voir entrée ci-dessus.)
+- Drapeaux **éteints** (après-midi ; mis à jour le soir) : `TURNSTILE_ENABLED`, `ADMIN_REQUIRE_MFA`, `ONSITE_ENABLED` (+ `NEXT_PUBLIC_ONSITE_ENABLED`).
 - Stripe live : produit cadeau `prod_VTdpe4kLFAIAu2` + 4 prix one_time (1/3/6/12 mois). `NOTIF_V2_CUTOFF=2026-10-20T17:21:29Z`. Arriéré digest archivé (≈9532). Cron `fitmangas-hourly` + `rate_limits_purge`. cron-job.org inchangé (`course-reminders` heartbeat OK après deploy).
 - Printful webhook : aucun webhook existant vers fitmangas.com → secret non créé. `ADMIN_ALERT_EMAIL` toujours absent.
-- Reste : import 12 programmes (après Alejandra), Turnstile/MFA/programmes/croissance, Printful webhook si Kevin en crée un, contrôle navigateur Claude.
+- Reste (soir) : Turnstile, MFA admin obligatoire, présentiel ; correctifs mineurs Claude (cookie demo connexion, titre onglet).
 
 ### 2026-10-20 — Préparation de la mise en ligne du chantier d'octobre (Claude)
 
