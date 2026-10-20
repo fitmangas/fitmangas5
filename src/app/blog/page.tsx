@@ -37,7 +37,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
       : 'Blog Pilates FitMangas : exercices simples, respiration, posture, souplesse et conseils pour progresser à la maison avec Alejandra.';
 
   return {
-    title,
+    // Titre complet (déjà suffixé « | FitMangas ») : `absolute` évite le doublon du modèle du layout.
+    title: { absolute: title },
     description,
     alternates: {
       // Une seule URL indexable pour le listing — évite les doublons GSC (?lang=&category=)

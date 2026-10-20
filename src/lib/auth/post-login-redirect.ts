@@ -10,7 +10,13 @@ const LEGACY_DEMO_CLIENT_COOKIE = 'fm_demo_client';
 
 export async function clearDemoClientModeCookie(): Promise<void> {
   const store = await cookies();
-  store.delete(LEGACY_DEMO_CLIENT_COOKIE);
+  if (!store.has(LEGACY_DEMO_CLIENT_COOKIE)) return;
+  try {
+    store.delete(LEGACY_DEMO_CLIENT_COOKIE);
+  } catch {
+    // Appelé depuis une page serveur (ex. /connexion ouverte par une admin déjà connectée) : Next interdit d'y
+    // modifier les cookies. Sans importance (cookie d'un ancien mode démo) : on continue la redirection.
+  }
 }
 
 export async function resolvePostLoginPath(

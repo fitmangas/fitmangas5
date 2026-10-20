@@ -123,10 +123,20 @@ export async function runWorkflow(
 
   const croissanceV2 = isCroissanceV2Enabled();
   const postpartumId = '00000000-0000-4000-8000-00000000000a';
+  /** V2 : une seule relance par déclenchement (la première de la suite J+2 / J+5 / J+7), placée avant la limite Meta des 24 h. */
+  let followupHandled = false;
 
   for (const action of workflow.actions) {
     if (croissanceV2 && workflow.id === postpartumId && action.type === 'schedule_followup') {
       steps.push({ type: action.type, ok: true, detail: 'Ignoré — post-partum V2 sans relance essai.' });
+      continue;
+    }
+    if (croissanceV2 && action.type === 'schedule_followup' && followupHandled) {
+      steps.push({
+        type: action.type,
+        ok: true,
+        detail: 'Ignoré — une seule relance (Meta refuse les messages automatiques après 24 h).',
+      });
       continue;
     }
     if (
@@ -166,6 +176,7 @@ export async function runWorkflow(
     const step = await runWorkflowAction(spec, fullCtx);
     steps.push({ type: step.type, ok: step.ok, detail: step.detail });
     if (!step.ok) allOk = false;
+    if (action.type === 'schedule_followup') followupHandled = true;
   }
 
   if (croissanceV2 && workflow.id === postpartumId) {

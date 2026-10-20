@@ -5,7 +5,7 @@ import { NewPasswordForm } from '@/components/Auth/NewPasswordForm';
 import { RESET_TOKEN_COOKIE, RESET_VERIFIED_COOKIE } from '@/lib/auth/password-reset';
 
 export const metadata: Metadata = {
-  title: 'Nouveau mot de passe | FitMangas',
+  title: 'Nouveau mot de passe',
   robots: { index: false, follow: false },
 };
 

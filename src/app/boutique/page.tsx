@@ -8,7 +8,7 @@ import { formatBoutiquePrice, getBoutiqueCatalogue, type BoutiqueItem } from '@/
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Boutique FitMangas — tapis, tenues et accessoires de Pilates',
+  title: { absolute: 'Boutique FitMangas — tapis, tenues et accessoires de Pilates' },
   description: 'Les pièces FitMangas pour bouger : fabriquées à la demande, livrées chez toi. Commande depuis ton espace cliente.',
   alternates: { canonical: '/boutique' },
 };

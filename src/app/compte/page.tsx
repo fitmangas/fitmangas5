@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { BookOpenText, PlayCircle, Target } from 'lucide-react';
+import { ArrowRight, BookOpenText, PlayCircle, Target } from 'lucide-react';
 
 import { CheckoutPurchaseTracker } from '@/components/Marketing/CheckoutPurchaseTracker';
 import { PlanningV3 } from '@/components/Compte/PlanningV3';
@@ -228,6 +228,8 @@ export default async function ComptePage({
           library: 'Library',
           onDemand: 'Your on-demand content',
           openProgress: 'Open detailed progress',
+          programTitle: 'My tailored programme',
+          selfKnowledge: 'Self-knowledge',
         }
       : lang === 'es'
         ? {
@@ -258,6 +260,8 @@ export default async function ComptePage({
             library: 'Biblioteca',
             onDemand: 'Tus contenidos a la carta',
             openProgress: 'Abrir progreso detallado',
+            programTitle: 'Mi programa a medida',
+            selfKnowledge: 'Autoconocimiento',
           }
         : {
             hello: 'Bonjour',
@@ -287,6 +291,8 @@ export default async function ComptePage({
             library: 'Bibliothèque',
             onDemand: 'Tes contenus à la demande',
             openProgress: 'Ouvrir la progression détaillée',
+            programTitle: 'Mon programme sur mesure',
+            selfKnowledge: 'Connaissance de soi',
           };
   const replayCount = replayItems.length;
   const replaySecondsTotal = replayItems.reduce((sum, item) => sum + Math.max(0, item.durationSeconds ?? 0), 0);
@@ -298,6 +304,7 @@ export default async function ComptePage({
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
   const gaId = marketingSettings.google_analytics_id?.startsWith('G-') ? marketingSettings.google_analytics_id : null;
   const metaPixelId = marketingSettings.meta_pixel_id ?? null;
+  const programmesOn = isProgrammesEnabled();
   const trackedPurchaseValue =
     isTrialCheckout
       ? 0
@@ -388,22 +395,42 @@ export default async function ComptePage({
         </details>
       </section>
 
-      {isProgrammesEnabled() ? (
-        <DashboardProgramBlock userId={user.id} lang={lang === 'es' ? 'es' : 'fr'} timeZone={planningCtx.timeZone} />
+      {programmesOn ? (
+        <section className="relative isolate space-y-3 md:space-y-4">
+          <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
+            <Image
+              src="/logo.png"
+              alt="Logo FitMangas"
+              width={56}
+              height={56}
+              className="h-9 w-9 shrink-0 object-contain md:h-[56px] md:w-[56px]"
+            />
+            <h2 className="text-xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.programTitle}</h2>
+          </div>
+          <DashboardProgramBlock userId={user.id} lang={lang === 'es' ? 'es' : 'fr'} timeZone={planningCtx.timeZone} />
+        </section>
       ) : null}
 
       <section className="relative isolate space-y-3 md:space-y-4">
-        <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
-          <Image
-            src="/logo.png"
-            alt="Logo FitMangas"
-            width={56}
-            height={56}
-            className="h-9 w-9 shrink-0 object-contain md:h-[56px] md:w-[56px]"
-          />
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
-          </div>
+        <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+          {/* Le logo accompagne le premier titre de la page : « Mon programme sur mesure » quand les programmes sont allumés. */}
+          {!programmesOn ? (
+            <Image
+              src="/logo.png"
+              alt="Logo FitMangas"
+              width={56}
+              height={56}
+              className="h-9 w-9 shrink-0 object-contain md:h-[56px] md:w-[56px]"
+            />
+          ) : null}
+          <h2 className="text-xl font-semibold tracking-tight text-luxury-ink md:text-[1.7rem]">{t.liveTracking}</h2>
+          <Link
+            href="/compte/connaissance-de-soi"
+            className="ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-luxury-orange"
+          >
+            {t.selfKnowledge}
+            <ArrowRight size={14} aria-hidden />
+          </Link>
         </div>
         <div className="relative z-0 grid grid-cols-2 items-stretch gap-3 md:gap-5 xl:grid-cols-4">
           <GlassCard className="relative order-1 flex h-full flex-col p-3 md:order-none md:p-6">
@@ -562,7 +589,7 @@ async function DashboardProgramBlock({ userId, lang, timeZone }: { userId: strin
         todayKey: current.todayKey,
         timeZone,
       });
-      return <MonProgrammeCard summary={summary} lang={lang} />;
+      return <MonProgrammeCard summary={summary} lang={lang} hideKicker />;
     }
   } catch {
     /* tables absentes tant que le GO Lot 3 n’est pas appliqué */
@@ -577,5 +604,5 @@ async function DashboardProgramBlock({ userId, lang, timeZone }: { userId: strin
   } catch {
     recommended = null;
   }
-  return <MonProgrammeCard summary={null} lang={lang} recommended={recommended} />;
+  return <MonProgrammeCard summary={null} lang={lang} recommended={recommended} hideKicker />;
 }

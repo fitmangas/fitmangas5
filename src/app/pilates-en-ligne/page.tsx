@@ -6,7 +6,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http
 const page = getSeoPillarPage('pilates-en-ligne')!;
 
 export const metadata: Metadata = {
-  title: `${page.shortTitle} — cours, méthode et progression | FitMangas`,
+  title: { absolute: `${page.shortTitle} — cours, méthode et progression | FitMangas` },
   description: page.description,
   keywords: page.keywords,
   alternates: { canonical: '/pilates-en-ligne' },

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Conditions générales — FitMangas',
+  title: { absolute: 'Conditions générales — FitMangas' },
   description: 'Conditions générales FitMangas : abonnements, essai gratuit 7 jours, paiements et accès aux cours.',
   openGraph: {
     title: 'Conditions générales — FitMangas',

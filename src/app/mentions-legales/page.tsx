@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Mentions légales — FitMangas',
+  title: { absolute: 'Mentions légales — FitMangas' },
   description: 'Mentions légales FitMangas : éditeur, hébergeur, contact et informations légales.',
   openGraph: {
     title: 'Mentions légales — FitMangas',

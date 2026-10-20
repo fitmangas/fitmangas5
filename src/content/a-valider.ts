@@ -279,9 +279,9 @@ export const A_VALIDER_LOT7 = {
   ],
   intents: {
     thinkingFr:
-      'Bien sûr 💛\nPrends le temps qu’il te faut. Si tu veux, je t’écris un petit rappel dans quelques jours — sinon dis-le-moi.',
+      'Bien sûr 💛\nPrends le temps qu’il te faut. Si tu veux, je t’écris un petit rappel d’ici demain — sinon dis-le-moi.',
     thinkingEs:
-      'Por supuesto 💛\nTómate el tiempo que necesites. Si quieres, te escribo un recordatorio en unos días — si no, dímelo.',
+      'Por supuesto 💛\nTómate el tiempo que necesites. Si quieres, te escribo un recordatorio a más tardar mañana — si no, dímelo.',
     priceFr:
       'Avec plaisir 💛\nVisio en groupe : 39 €/mois pour 8 cours live (2 par semaine).\nReplays illimités et bibliothèque de vidéos inclus.\nEssai 7 jours gratuits : carte à l’inscription, prélèvement après l’essai.',
     priceEs:
