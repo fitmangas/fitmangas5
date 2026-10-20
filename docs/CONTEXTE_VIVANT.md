@@ -27,6 +27,13 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 (nuit) — Petit lot
+
+- PR #49 merge `6f52ab2` ; deploy prod `dpl_w8q5xfuWUoq2fML9oBUC3h39j6VL` (READY). Contrôle Claude : **PETIT LOT : OK**.
+- Contenu : planning lives passés grisés (« Terminé · Voir le replay ») + jours mobile ; dashboard « Mon programme sur mesure » + lien Connaissance de soi ; `/connexion`/`/login` admin sans 500 ; titres onglet sans double « | FitMangas » ; Croissance V2 relances dans fenêtre Meta 24 h (1 relance, ≤21 h, 9–18 h locale) ; texte « d'ici demain ».
+- `ADMIN_ALERT_EMAIL` en place (prod) → `ale.mangas5@gmail.com` ; `ACQUISITION_ESCALATION_EMAIL` toujours absent (filet = ADMIN_ALERT_EMAIL).
+- Turnstile et double authentification admin reportés par Kevin (drapeaux éteints : `TURNSTILE_ENABLED`, `ADMIN_REQUIRE_MFA`).
+
 ### 2026-10-20 (soir) — Finitions : mot de passe, blog, programmes, Croissance
 
 - Feu vert Kevin (20 h 39) : tout valider. PR #47 merge `b88a12d` + catalogue titre vidéo `e2850d6`.
