@@ -652,11 +652,11 @@ on conflict (id) do nothing;
 
 # Chantier octobre 2026
 
-> Rien de ce qui suit n’a été exécuté. Chaque bloc attend le **GO écrit de Kevin**. Ordre conseillé : migration → déploiement → drapeau.
+> Mise en ligne 20/10/2026 : blocs L1-a…d, L2-a…f, L3-a…c, L4, L5, L7 **APPLIQUÉS**. L1-e, L2-g, import programmes, colonne livemode : **non appliqué**.
 
 ## Lot 1 — Sécurité, conformité
 
-### L1-a. RLS sur les 8 tables publicité / organique (fuite constatée)
+### L1-a. — APPLIQUÉ (20/10/2026) RLS sur les 8 tables publicité / organique (fuite constatée)
 
 Constat du 19/10/2026 (lecture seule avec la clé publique `anon`) : `ad_campaigns`, `ad_creatives`, `ads_sync_runs`, `organic_account_snapshots`, `organic_media_snapshots` **renvoient des lignes** à n’importe quel visiteur ; `ad_breakdowns_daily`, `ad_insights_daily`, `ad_metrics_daily` répondent 200 (vides aujourd’hui). Aucune RLS dans les migrations `20260924140000` et `20260924180000`.
 Vérifié : tout le code qui lit/écrit ces tables (`src/lib/acquisition/ads/repository.ts`, `intelligence-repository.ts`, `sync-intelligence.ts`) passe par `createAdminClient()` (service_role, qui ignore la RLS) → rien ne casse.
@@ -690,7 +690,7 @@ grant select on public.ad_breakdowns_daily, public.ad_campaigns, public.ad_creat
 Vérification après application (doit renvoyer `[]` ou 401) :
 `curl "$SUPABASE_URL/rest/v1/ad_campaigns?select=id&limit=1" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"`
 
-### L1-b. Supprimer la politique « Users can insert own enrollments »
+### L1-b. — APPLIQUÉ (20/10/2026) Supprimer la politique « Users can insert own enrollments »
 
 Vérifié : aucune insertion d’inscription depuis le navigateur. Les seules écritures (`src/lib/notifications/phase2.ts` → appelée par le webhook Stripe, `src/app/admin/attendance/actions.ts`) utilisent service_role.
 
@@ -700,7 +700,7 @@ drop policy if exists "Users can insert own enrollments" on public.enrollments;
 
 (Destructif au sens « suppression de politique » : GO écrit requis.)
 
-### L1-c. Table `rate_limits` (IP hachées, purge 24 h)
+### L1-c. — APPLIQUÉ (20/10/2026) Table `rate_limits` (IP hachées, purge 24 h)
 
 Utilisée par `src/lib/security/rate-limit.ts` quand `RATE_LIMIT_ENABLED=1`. Sans la table, le drapeau reste off (le code renvoie une erreur explicite côté serveur et laisse passer : la limite n’est pas appliquée, c’est journalisé).
 
@@ -722,7 +722,7 @@ select cron.schedule('rate_limits_purge', '17 * * * *',
   $$delete from public.rate_limits where created_at < now() - interval '24 hours'$$);
 ```
 
-### L1-d. Opt-in marketing : défaut à `false` + correction des profils sans preuve
+### L1-d. — APPLIQUÉ (20/10/2026) Opt-in marketing : défaut à `false` + correction des profils sans preuve
 
 Comptes du 19/10/2026 (lecture seule) : **15 profils**, dont **14** avec `marketing_email_opt_in = true`. **Avec preuve** (`marketing_email_opt_in_at` renseignée) : **0**. **Sans preuve** : **14**. Origine : migrations `20260521120000` / `20260522140000` qui ont mis tout le monde à `true` sans consentement.
 Code déjà modifié (lot 1) : défaut applicatif à `false` (`DEFAULT_MARKETING_EMAIL_OPT_IN`, page profil). Quand une cliente coche, `marketing_email_opt_in_at` est daté (`src/app/compte/preferences/actions.ts`).
@@ -761,7 +761,7 @@ on conflict (id) do nothing;
 
 > Rien de ce bloc n’a été exécuté. `NOTIF_V2_CUTOFF` à poser au moment du GO (horodatage du déploiement). Cron-job.org appelle encore `course-reminders` (GET) : le couper **le jour de la bascule** pg_cron, sinon double déclencheur.
 
-### L2-a. Préférences (défauts SPEC §3.8)
+### L2-a. — APPLIQUÉ (20/10/2026) Préférences (défauts SPEC §3.8)
 
 ```sql
 alter table public.notification_preferences
@@ -793,7 +793,7 @@ alter table public.profiles
 
 `Offres et nouveautés` = colonne existante `profiles.marketing_email_opt_in` (défaut false, lot 1). Ne pas dupliquer.
 
-### L2-b. `user_notifications` (centre A08)
+### L2-b. — APPLIQUÉ (20/10/2026) `user_notifications` (centre A08)
 
 ```sql
 alter table public.user_notifications
@@ -808,7 +808,7 @@ create unique index if not exists user_notifications_group_key_uniq
   where group_key is not null;
 ```
 
-### L2-c. Heartbeats + anti-doublon
+### L2-c. — APPLIQUÉ (20/10/2026) Heartbeats + anti-doublon
 
 `notification_log.idempotency_key` est **déjà unique**. Rien à ajouter.
 
@@ -827,7 +827,7 @@ create policy cron_heartbeats_admin_select on public.cron_heartbeats
 grant select on public.cron_heartbeats to authenticated;
 ```
 
-### L2-d. Style de live (SPEC §3.10)
+### L2-d. — APPLIQUÉ (20/10/2026) Style de live (SPEC §3.10)
 
 Le type de cours admin sert déjà de style (titre). Colonne additive optionnelle :
 
@@ -838,7 +838,7 @@ alter table public.courses
 
 Le code du lot 2a **n’écrit pas** cette colonne tant qu’elle n’existe pas.
 
-### L2-e. Cutoff file digest
+### L2-e. — APPLIQUÉ (20/10/2026) Cutoff file digest
 
 ```sql
 -- À renseigner au GO (horodatage UTC du déploiement notif v2), ex. :
@@ -869,7 +869,7 @@ where processed_at is null
   and created_at < :cutoff_timestamptz;
 ```
 
-### L2-f. Supabase Cron (pg_cron + pg_net) — version retenue le 20/10/2026
+### L2-f. — APPLIQUÉ (20/10/2026) Supabase Cron (pg_cron + pg_net) — version retenue le 20/10/2026
 
 Décisions (Claude, validées par Kevin le 20/10/2026) :
 - **cron-job.org garde `course-reminders`** (toutes les 10 min, `CRON_SECRET`) : rappels des lives, publication sociale (filet déjà dans cette route) et emails cadeaux programmés ne changent pas de déclencheur.
@@ -966,7 +966,7 @@ Présence = `created_at` (pas `visit_date`) entre 15 min avant `courses.starts_a
 
 > Rien de ce bloc n’a été exécuté. Import `--apply` : Kevin seulement, après GO. `standalone_vimeo_videos.id` = **uuid** (migration `010_standalone_vimeo_library.sql`) → FK uuid OK.
 
-### L3-a. Tables
+### L3-a. — APPLIQUÉ (20/10/2026) Tables
 
 ```sql
 create table if not exists public.programs (
@@ -1050,7 +1050,7 @@ create table if not exists public.program_feedback (
 );
 ```
 
-### L3-b. RLS — SELECT cliente seulement, écritures via service_role
+### L3-b. — APPLIQUÉ (20/10/2026) RLS — SELECT cliente seulement, écritures via service_role
 
 ```sql
 alter table public.programs enable row level security;
@@ -1107,7 +1107,7 @@ create policy feedback_select_own on public.program_feedback
   using (exists (select 1 from public.program_enrollments e where e.id = enrollment_id and e.user_id = auth.uid()));
 ```
 
-### L3-c. Fonction atomique « démarrer un programme »
+### L3-c. — APPLIQUÉ (20/10/2026) Fonction atomique « démarrer un programme »
 
 Met en pause l’inscription `active` éventuelle, puis crée la nouvelle. `security definer` réservé à `service_role` (actions serveur).
 
@@ -1158,9 +1158,9 @@ revoke all on function public.nextval_program_certificate() from public, anon, a
 grant execute on function public.nextval_program_certificate() to service_role;
 ```
 
-## Lot 4 — Cartes cadeaux
+## Lot 4 — Cartes cadeaux — APPLIQUÉ (20/10/2026)
 
-Non appliqué. Lecture admin ; écritures `service_role` uniquement.
+Appliqué. Lecture admin ; écritures `service_role` uniquement.
 
 ```sql
 create table if not exists public.gift_cards (
@@ -1195,9 +1195,9 @@ create index if not exists gift_cards_scheduled_idx on public.gift_cards (send_a
 create index if not exists gift_cards_subscription_idx on public.gift_cards (stripe_subscription_id) where stripe_subscription_id is not null;
 ```
 
-## Lot 5 — Conversion et expérience
+## Lot 5 — Conversion et expérience — APPLIQUÉ (20/10/2026)
 
-Non appliqué.
+Tables client_followups + printful_product_names appliquées.
 
 ```sql
 create table if not exists public.client_followups (
@@ -1226,9 +1226,9 @@ revoke all on public.printful_product_names from anon, authenticated;
 grant select, insert, update on public.printful_product_names to service_role;
 ```
 
-## Lot 7 — Croissance
+## Lot 7 — Croissance — table acq_team_accounts APPLIQUÉE (20/10/2026)
 
-Non appliqué. **Aucun SQL obligatoire pour allumer le code** (overlay mémoire derrière `CROISSANCE_V2`).
+Overlay CROISSANCE_V2 reste éteint. **Aucun SQL obligatoire pour allumer le code** (overlay mémoire derrière `CROISSANCE_V2`).
 
 Réglage « comptes de l’équipe » (Instagram, e-mails, téléphones à ignorer dans les compteurs, SPEC §12.1) — table proposée, GO Kevin :
 

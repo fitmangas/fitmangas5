@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 — Mise en ligne du chantier d'octobre
+
+- Code fusionné sur `main` (PR #45, merge `e9edc03`). Migrations L1–L7 appliquées en prod (versions `20261020170742` … `20261020170857`). **Ne pas** `supabase db push` sur ces fichiers.
+- Drapeaux **allumés** : `RATE_LIMIT_ENABLED`, `NEXT_PUBLIC_FEATURE_NOTIF_V2`, `ACCESS_V2`, `NEXT_PUBLIC_FEATURE_GIFTS`.
+- Drapeaux **éteints** : `NEXT_PUBLIC_FEATURE_PROGRAMMES`, `CROISSANCE_V2`, `TURNSTILE_ENABLED`, `ADMIN_REQUIRE_MFA`, `ONSITE_ENABLED` (+ `NEXT_PUBLIC_ONSITE_ENABLED`).
+- Stripe live : produit cadeau `prod_VTdpe4kLFAIAu2` + 4 prix one_time (1/3/6/12 mois). `NOTIF_V2_CUTOFF=2026-10-20T17:21:29Z`. Arriéré digest archivé (≈9532). Cron `fitmangas-hourly` + `rate_limits_purge`. cron-job.org inchangé (`course-reminders` heartbeat OK après deploy).
+- Printful webhook : aucun webhook existant vers fitmangas.com → secret non créé. `ADMIN_ALERT_EMAIL` toujours absent.
+- Reste : import 12 programmes (après Alejandra), Turnstile/MFA/programmes/croissance, Printful webhook si Kevin en crée un, contrôle navigateur Claude.
+
 ### 2026-10-20 — Préparation de la mise en ligne du chantier d'octobre (Claude)
 
 - GO écrit de Kevin (20/10, 14 h 17) sur les migrations, corrections de données, réglages Stripe en mode réel (sans paiement test) et la mise en ligne ; mot de passe admin et double authentification : Kevin plus tard.
