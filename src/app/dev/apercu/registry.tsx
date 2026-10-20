@@ -43,8 +43,14 @@ import { PreviewTrialModal } from '@/components/dev/Lot5Previews';
 import { AdminClientsFollowup } from '@/components/Admin/AdminClientsFollowup';
 import { LesCoursExtras } from '@/components/Marketing/LesCoursExtras';
 import { CompteMobileBottomNav } from '@/components/Compte/CompteMobileBottomNav';
+import { CompteSidebar } from '@/components/Compte/CompteSidebar';
 import { SidebarTooltip } from '@/components/Compte/SidebarTooltip';
 import { CalendarDays, Users } from 'lucide-react';
+import {
+  PremiersPasHelpPreview,
+  PremiersPasListPreview,
+  PremiersPasTourPreview,
+} from '@/components/dev/PremiersPasPreviews';
 
 const DEMO_PREFS = Object.fromEntries(
   (Object.keys(PREF_KEYS) as PrefKey[]).map((k) => [k, PREF_KEYS[k].defaultValue]),
@@ -725,6 +731,61 @@ export const PREVIEWS: PreviewEntry[] = [
             </div>
           ))}
         </div>
+      </div>
+    ),
+  },
+  {
+    slug: 'premiers-pas-bienvenue',
+    lot: 'Premiers pas',
+    title: 'Tuto guidé — fenêtre de bienvenue',
+    render: () => <PremiersPasTourPreview step={0} />,
+  },
+  {
+    slug: 'premiers-pas-etape-1',
+    lot: 'Premiers pas',
+    title: 'Tuto guidé — étape 1 (prochain live)',
+    render: () => <PremiersPasTourPreview step={1} />,
+  },
+  {
+    slug: 'premiers-pas-etape-3',
+    lot: 'Premiers pas',
+    title: 'Tuto guidé — étape 3 (planning)',
+    render: () => <PremiersPasTourPreview step={3} />,
+  },
+  {
+    slug: 'premiers-pas-etape-4',
+    lot: 'Premiers pas',
+    title: 'Tuto guidé — dernière étape (replays)',
+    render: () => <PremiersPasTourPreview step={4} />,
+  },
+  {
+    slug: 'premiers-pas-liste',
+    lot: 'Premiers pas',
+    title: 'Liste « Tes premiers pas »',
+    render: () => <PremiersPasListPreview />,
+  },
+  {
+    slug: 'premiers-pas-aide',
+    lot: 'Premiers pas',
+    title: 'Aide « Comment ça marche ? » — page Planning',
+    render: () => <PremiersPasHelpPreview pathname="/compte/planning" />,
+  },
+  {
+    slug: 'premiers-pas-menus',
+    lot: 'Premiers pas',
+    title: 'Bouton « ? » — menu latéral et barre haute du téléphone',
+    render: () => (
+      <div className="luxury-shell relative min-h-screen">
+        <CompteSidebar lang="fr" unreadNotifications={2} helpEnabled />
+        <CompteMobileBottomNav
+          lang="fr"
+          unreadNotifications={2}
+          firstName="Jenny"
+          lastName="M."
+          planLabel="Visio collectif · essai"
+          helpEnabled
+        />
+        <p className="px-6 pt-8 text-sm text-luxury-muted md:pl-28">Aperçu du bouton « ? » (données fictives).</p>
       </div>
     ),
   },

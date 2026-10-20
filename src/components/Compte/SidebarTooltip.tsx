@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FocusEvent, type ReactNode } from 'react';
 
 /** Info-bulle D10 : 150 ms au survol / focus, Échap, role=tooltip. Desktop only. */
 export function SidebarTooltip({ label, children }: { label: string; children: ReactNode }) {
@@ -10,6 +10,16 @@ export function SidebarTooltip({ label, children }: { label: string; children: R
 
   function show() {
     timer.current = setTimeout(() => setOpen(true), 150);
+  }
+  /** Au focus : seulement au clavier (pas quand une fenêtre rend le focus après un clic). */
+  function showOnFocus(e: FocusEvent<HTMLSpanElement>) {
+    let keyboard = true;
+    try {
+      keyboard = (e.target as HTMLElement).matches(':focus-visible');
+    } catch {
+      /* navigateur ancien : comportement d'origine */
+    }
+    if (keyboard) show();
   }
   function hide() {
     if (timer.current) clearTimeout(timer.current);
@@ -25,7 +35,7 @@ export function SidebarTooltip({ label, children }: { label: string; children: R
   }, []);
 
   return (
-    <span className="relative hidden md:block" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+    <span className="relative hidden md:block" onMouseEnter={show} onMouseLeave={hide} onFocus={showOnFocus} onBlur={hide}>
       {children}
       {open ? (
         <span

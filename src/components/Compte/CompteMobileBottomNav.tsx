@@ -10,6 +10,8 @@ import type { ClientLang } from '@/lib/compte/i18n';
 import { compteNavLabels } from '@/lib/compte/i18n';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { isGiftsEnabled } from '@/lib/gifts/flag';
+import { PageHelpButton } from '@/components/Onboarding/PageHelpButton';
+import { onboardingLang } from '@/lib/onboarding/premiers-pas';
 
 const TITLE_BY_PATH: Array<{ test: (p: string) => boolean; key: keyof (typeof compteNavLabels)['fr'] }> = [
   { test: (p) => p === '/compte', key: 'home' },
@@ -33,6 +35,8 @@ type Props = {
   avatarUrl?: string | null;
   /** « Visio collectif · actif », etc. */
   planLabel?: string | null;
+  /** « Premiers pas » : bouton « ? Comment ça marche ? » dans la barre haute. */
+  helpEnabled?: boolean;
 };
 
 function Avatar({ name, url, size }: { name: string; url?: string | null; size: number }) {
@@ -44,7 +48,15 @@ function Avatar({ name, url, size }: { name: string; url?: string | null; size: 
   return <span>{initial}</span>;
 }
 
-export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0, firstName, lastName, avatarUrl, planLabel }: Props) {
+export function CompteMobileBottomNav({
+  lang = 'fr',
+  unreadNotifications = 0,
+  firstName,
+  lastName,
+  avatarUrl,
+  planLabel,
+  helpEnabled = false,
+}: Props) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const labels = compteNavLabels[lang];
@@ -78,11 +90,14 @@ export function CompteMobileBottomNav({ lang = 'fr', unreadNotifications = 0, fi
   return (
     <>
       <header className="sticky top-0 z-50 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+0.75rem)] md:hidden">
-        <div className="flex h-14 items-center justify-between gap-3 rounded-full border border-white/60 bg-white/70 pl-2 pr-2 shadow-[0_10px_28px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+        <div
+          className={`flex h-14 items-center justify-between ${helpEnabled ? 'gap-1' : 'gap-3'} rounded-full border border-white/60 bg-white/70 pl-2 pr-2 shadow-[0_10px_28px_rgba(15,23,42,0.10)] backdrop-blur-xl`}
+        >
           <Link href="/compte" className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/70 bg-white/90 shadow-sm">
             <Image src="/logo.png" alt="FitMangas" width={24} height={24} className="h-6 w-6 object-contain" />
           </Link>
           <p className="min-w-0 flex-1 truncate text-center text-[15px] font-semibold tracking-tight text-luxury-ink">{title}</p>
+          {helpEnabled ? <PageHelpButton lang={onboardingLang(lang)} variant="header" /> : null}
           <Link href="/compte/notifications" aria-label={labels.notifications} className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-luxury-ink">
             <Bell size={21} />
             {unreadNotifications > 0 ? (

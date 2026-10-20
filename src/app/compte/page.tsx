@@ -29,6 +29,12 @@ import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
 import { loadActiveProgram, loadProgramDefinition } from '@/lib/programmes/load';
 import { LEVEL_TEST_COOKIE } from '@/lib/programmes/level-test';
 import { buildActiveSummary } from '@/lib/programmes/view-models';
+import { isPremiersPasEnabled } from '@/lib/onboarding/flag';
+import { onboardingLang } from '@/lib/onboarding/premiers-pas';
+import { loadPremiersPas } from '@/lib/onboarding/premiers-pas-data';
+import { PremiersPasCard } from '@/components/Onboarding/PremiersPasCard';
+import { WelcomeTour } from '@/components/Onboarding/WelcomeTour';
+import { SubscribeCalendarButton } from '@/components/Calendar/SubscribeCalendarButton';
 
 function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
   const lines =
@@ -183,7 +189,24 @@ export default async function ComptePage({
       .is('read_at', null),
     supabase.from('blog_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
   ]);
-  const planningCtx = await loadPlanningContext(supabase, user.id);
+  const programmesOn = isProgrammesEnabled();
+  const premiersPasOn = isPremiersPasEnabled();
+  // « Premiers pas » lu en même temps que le planning (pas de requête en série en plus).
+  const [planningCtx, premiersPas] = await Promise.all([
+    loadPlanningContext(supabase, user.id),
+    premiersPasOn
+      ? loadPremiersPas({
+          supabase,
+          userId: user.id,
+          accountCreatedAt: user.created_at,
+          lang,
+          liveVisits: profile?.live_visit_count,
+          replaySeconds: profile?.total_replay_watch_seconds,
+          programmesOn,
+          hasVisioAccess,
+        })
+      : Promise.resolve(null),
+  ]);
   const planningSessions = await loadPlanningProgramSessions(user.id, planningCtx.timeZone, lang);
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.jpg';
@@ -304,7 +327,6 @@ export default async function ComptePage({
   const remainingToGoal = Math.max(monthly.goal - monthly.followedCount, 0);
   const gaId = marketingSettings.google_analytics_id?.startsWith('G-') ? marketingSettings.google_analytics_id : null;
   const metaPixelId = marketingSettings.meta_pixel_id ?? null;
-  const programmesOn = isProgrammesEnabled();
   const trackedPurchaseValue =
     isTrialCheckout
       ? 0
@@ -395,8 +417,10 @@ export default async function ComptePage({
         </details>
       </section>
 
+      {premiersPas?.show ? <PremiersPasCard lang={onboardingLang(lang)} items={premiersPas.items} /> : null}
+
       {programmesOn ? (
-        <section className="relative isolate space-y-3 md:space-y-4">
+        <section data-tour="programme" className="relative isolate space-y-3 md:space-y-4">
           <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
             <Image
               src="/logo.png"
@@ -462,7 +486,10 @@ export default async function ComptePage({
             featureDescription_es="Los replays están incluidos en la suscripción Visio grupal a 39€/mes."
             className="order-4 col-span-2 md:order-none md:col-span-1"
           >
-          <GlassCard className="relative order-4 col-span-2 flex h-full flex-col p-4 md:order-none md:col-span-1 md:p-6">
+          <GlassCard
+            data-tour={hasVisioAccess ? 'replays' : undefined}
+            className="relative order-4 col-span-2 flex h-full flex-col p-4 md:order-none md:col-span-1 md:p-6"
+          >
             <Link href="/compte/replays" className="absolute inset-0 z-10 rounded-[inherit]" aria-label={t.myLibrary} />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -545,7 +572,7 @@ export default async function ComptePage({
         </div>
       </section>
 
-      <section id="planning" className="relative isolate scroll-mt-24">
+      <section id="planning" data-tour="planning" className="relative isolate scroll-mt-24">
         <PlanningV3
           lang={lang}
           variant="dashboard"
@@ -554,6 +581,12 @@ export default async function ComptePage({
           onsiteEnabled={planningCtx.onsiteEnabled}
           programSessions={planningSessions}
         />
+        {premiersPasOn && hasVisioAccess ? (
+          // « Premiers pas » : abonnement calendrier aussi depuis le tableau de bord (montré dans la vidéo et le tuto).
+          <div className="mt-3 flex justify-end px-1">
+            <SubscribeCalendarButton lang={lang} />
+          </div>
+        ) : null}
       </section>
 
       <section id="replays" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
@@ -572,6 +605,15 @@ export default async function ComptePage({
           />
         </VisioLock>
       </section>
+
+      {premiersPasOn ? (
+        <WelcomeTour
+          lang={onboardingLang(lang)}
+          firstName={firstName}
+          programmesOn={programmesOn}
+          autoStart={hasVisioAccess}
+        />
+      ) : null}
     </div>
   );
 }

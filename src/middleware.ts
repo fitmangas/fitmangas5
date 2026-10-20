@@ -39,6 +39,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Exclut ICS (Apple) + webhooks Meta (HMAC sur body brut — ne pas toucher la requête).
-    '/((?!_next/static|_next/image|favicon.ico|api/calendar/feed|api/acquisition/webhooks/meta|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/calendar/feed|api/acquisition/webhooks/meta|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)',
   ],
 };

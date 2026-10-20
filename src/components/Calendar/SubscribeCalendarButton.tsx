@@ -13,6 +13,22 @@
 import { useState } from 'react';
 import { CalendarPlus, Copy, Link2 } from 'lucide-react';
 
+import { CALENDAR_SUBSCRIBED_EVENT, CALENDAR_SUBSCRIBED_KEY } from '@/lib/onboarding/premiers-pas';
+
+/** « Tes premiers pas » : l'abonnement calendrier n'est pas gardé en base, on le note dans ce navigateur. */
+function markCalendarSubscribed(): void {
+  try {
+    window.localStorage.setItem(CALENDAR_SUBSCRIBED_KEY, '1');
+  } catch {
+    /* stockage indisponible */
+  }
+  try {
+    window.dispatchEvent(new Event(CALENDAR_SUBSCRIBED_EVENT));
+  } catch {
+    /* rien */
+  }
+}
+
 type Lang = 'fr' | 'en' | 'es';
 
 type Props = {
@@ -148,6 +164,7 @@ export function SubscribeCalendarButton({ lang = 'fr', className = '', tone = 'g
           setIosHintVisible(true);
           if (httpsUrl) setFallbackUrl(httpsUrl);
         }
+        markCalendarSubscribed();
         window.location.href = webcalUrl;
         return;
       }
@@ -158,6 +175,7 @@ export function SubscribeCalendarButton({ lang = 'fr', className = '', tone = 'g
         if (httpsUrl) setFallbackUrl(httpsUrl);
         return;
       }
+      markCalendarSubscribed();
       const opened = window.open(googleUrl, '_blank', 'noopener,noreferrer');
       if (!opened) {
         window.location.assign(googleUrl);
@@ -174,6 +192,7 @@ export function SubscribeCalendarButton({ lang = 'fr', className = '', tone = 'g
     if (!fallbackUrl) return;
     try {
       await navigator.clipboard.writeText(fallbackUrl);
+      markCalendarSubscribed();
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch (e) {

@@ -11,6 +11,8 @@ import { compteNavLabels } from '@/lib/compte/i18n';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { isGiftsEnabled } from '@/lib/gifts/flag';
 import { SidebarTooltip } from '@/components/Compte/SidebarTooltip';
+import { PageHelpButton } from '@/components/Onboarding/PageHelpButton';
+import { onboardingLang } from '@/lib/onboarding/premiers-pas';
 
 type NavKey = Exclude<keyof (typeof compteNavLabels)['fr'], 'dashboard'>;
 
@@ -29,7 +31,16 @@ const links: Array<{ href: string; key: NavKey; icon: typeof CalendarDays; exact
   { href: '/compte/profil', key: 'profile', icon: UserRound, exact: true },
 ];
 
-export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?: ClientLang; unreadNotifications?: number }) {
+export function CompteSidebar({
+  lang = 'fr',
+  unreadNotifications = 0,
+  helpEnabled = false,
+}: {
+  lang?: ClientLang;
+  unreadNotifications?: number;
+  /** « Premiers pas » : bouton « ? Comment ça marche ? » en bas du menu. */
+  helpEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const [hash, setHash] = useState('');
   const labels = compteNavLabels[lang];
@@ -42,7 +53,13 @@ export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?:
   }, []);
 
   return (
-    <aside className="luxury-floating-rail luxury-floating-rail--compte fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex">
+    <aside
+      className={`luxury-floating-rail luxury-floating-rail--compte fixed left-4 top-1/2 z-[100] hidden -translate-y-1/2 flex-col gap-2 rounded-full p-2 md:flex ${
+        helpEnabled
+          ? 'origin-left [@media(min-height:701px)_and_(max-height:780px)]:scale-[0.9] [@media(min-height:621px)_and_(max-height:700px)]:scale-[0.8] [@media(max-height:620px)]:scale-[0.7]'
+          : ''
+      }`}
+    >
       <SidebarTooltip label={labels.dashboard}>
       <Link
         href="/compte"
@@ -102,6 +119,7 @@ export function CompteSidebar({ lang = 'fr', unreadNotifications = 0 }: { lang?:
           </SidebarTooltip>
         );
       })}
+      {helpEnabled ? <PageHelpButton lang={onboardingLang(lang)} variant="rail" /> : null}
     </aside>
   );
 }
