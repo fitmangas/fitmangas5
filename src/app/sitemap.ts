@@ -2,6 +2,10 @@ import type { MetadataRoute } from 'next';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+import { isGiftsEnabled } from '@/lib/gifts/flag';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { BLOG_GUIDES } from '@/lib/blog/guides';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
 
@@ -67,12 +71,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    {
-      url: `${APP_URL}/test-niveau`,
-      lastModified: HOME_LAST_MODIFIED,
-      changeFrequency: 'monthly',
-      priority: 0.75,
-    },
+    // Page présente seulement quand les programmes sont en ligne (sinon 404 : à ne pas déclarer).
+    ...(isProgrammesEnabled()
+      ? [
+          {
+            url: `${APP_URL}/test-niveau`,
+            lastModified: HOME_LAST_MODIFIED,
+            changeFrequency: 'monthly' as const,
+            priority: 0.75,
+          },
+        ]
+      : []),
+    // Carte cadeau : page publique seulement quand le lot 4 est en ligne.
+    ...(isGiftsEnabled()
+      ? [
+          {
+            url: `${APP_URL}/offrir`,
+            lastModified: HOME_LAST_MODIFIED,
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+          },
+        ]
+      : []),
+    // Guides du blog par thème (lot 7, derrière CROISSANCE_V2).
+    ...(isCroissanceV2Enabled()
+      ? BLOG_GUIDES.map((g) => ({
+          url: `${APP_URL}/blog/guides/${g.id}`,
+          lastModified: HOME_LAST_MODIFIED,
+          changeFrequency: 'weekly' as const,
+          priority: 0.8,
+        }))
+      : []),
     {
       url: `${APP_URL}/mentions-legales`,
       lastModified: LEGAL_LAST_MODIFIED,

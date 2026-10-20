@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { BlogArticleShell } from '@/components/Blog/BlogArticleShell';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { guideForArticle } from '@/lib/blog/guides';
 import { alejandraPersonJsonLd } from '@/lib/blog/author-alejandra';
 import {
   fetchAnyArticleBySlugParam,
@@ -103,6 +105,7 @@ export default async function BlogArticlePage({
   }
   if (!article) notFound();
   const relatedArticles = await fetchRelatedArticles(article);
+  const guide = isCroissanceV2Enabled() ? guideForArticle(article as { title_fr?: string | null; title_es?: string | null }) : null;
 
   let defaultLang: BlogLang = queryLang ?? 'fr';
   if (!queryLang && user) {
@@ -120,6 +123,7 @@ export default async function BlogArticlePage({
         defaultLang={defaultLang}
         isLoggedIn={!!user}
         relatedArticles={relatedArticles}
+        guide={guide ? { id: guide.id, title: guide.title } : null}
       />
     </>
   );

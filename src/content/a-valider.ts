@@ -99,24 +99,106 @@ export const A_VALIDER_LOT3 = {
     fr: 'L’import réel (--apply) est réservé à Kevin après GO écrit.',
     es: 'La importación real (--apply) está reservada a Kevin después del GO escrito.',
   },
+  pickDay: {
+    fr: 'Choisis au moins un jour.',
+    es: 'Elige al menos un día.',
+  },
+  badTime: {
+    fr: 'Indique une heure au format 18:30.',
+    es: 'Indica una hora con el formato 18:30.',
+  },
+  /** D08 — test de niveau : raisons affichées avec le résultat et textes des clientes déjà abonnées. */
+  levelTest: {
+    goalReason: {
+      douceur: { fr: 'Parce que tu veux te (re)mettre au sport en douceur', es: 'Porque quieres empezar o retomar el deporte con calma' },
+      tonifier: { fr: 'Parce que tu veux tonifier et sculpter', es: 'Porque quieres tonificar y esculpir' },
+      dos: { fr: 'Parce que tu veux soulager ton dos et ta posture', es: 'Porque quieres aliviar tu espalda y tu postura' },
+      cardio: { fr: 'Parce que tu veux faire du cardio en t’amusant', es: 'Porque quieres hacer cardio divirtiéndote' },
+      souplesse: { fr: 'Parce que tu veux gagner en souplesse', es: 'Porque quieres ganar flexibilidad' },
+    },
+    xpReason: {
+      lt6: { fr: 'Parce que tu débutes : on pose les bases d’abord', es: 'Porque empiezas: primero ponemos las bases' },
+      '6to24': { fr: 'Parce que tu as déjà les bases : on monte d’un cran', es: 'Porque ya tienes las bases: subimos un nivel' },
+      gt24: { fr: 'Parce que tu pratiques depuis longtemps : place au défi', es: 'Porque practicas desde hace tiempo: llegó el reto' },
+    },
+    partialHint: {
+      fr: 'Tu as 20 minutes ? Fais une partie de la séance : c’est déjà très bien, et tu reprends la suite la fois d’après.',
+      es: '¿Tienes 20 minutos? Haz una parte de la sesión: ya está muy bien, y sigues la próxima vez.',
+    },
+    memberStart: { fr: 'Démarrer ce programme', es: 'Empezar este programa' },
+    memberAll: { fr: 'Voir tous les programmes', es: 'Ver todos los programas' },
+    visitorOffers: { fr: 'Voir les offres', es: 'Ver las ofertas' },
+  },
+  /** Relance douce (aucune séance depuis 4 jours, au plus une fois par semaine) : notification et email. */
+  nudge: {
+    subject: { fr: 'On t’attend, sans pression', es: 'Te esperamos, sin presión' },
+    headline: { fr: 'On reprend en douceur ?', es: '¿Retomamos con calma?' },
+    body: {
+      fr: 'Quelques jours sans séance, ça arrive à tout le monde. Ta prochaine séance t’attend là où tu l’as laissée : quelques minutes suffisent pour reprendre le fil.',
+      es: 'Unos días sin sesión le pasan a todo el mundo. Tu próxima sesión te espera donde la dejaste: unos minutos bastan para retomar.',
+    },
+    button: { fr: 'Reprendre ma séance', es: 'Retomar mi sesión' },
+    pause: {
+      fr: 'Besoin d’une vraie pause ? Mets ton programme en pause dans « Mes réglages » : tu le reprendras quand tu veux.',
+      es: '¿Necesitas una pausa de verdad? Pon tu programa en pausa en « Mis ajustes »: lo retomarás cuando quieras.',
+    },
+    inApp: { fr: 'On reprend en douceur ? Ta prochaine séance t’attend.', es: '¿Retomamos con calma? Tu próxima sesión te espera.' },
+  },
+  /** B01 — carte conseil du niveau « Je me dépasse » (citation d'exemple de la maquette : à valider ou réécrire par Alejandra). */
+  catalogAdvice: {
+    before: { fr: 'Termine un programme ', es: 'Termina un programa ' },
+    highlight: { fr: 'Je progresse', es: 'Progreso' },
+    after: { fr: ' avant de te lancer ici. Ton dos te dira merci.', es: ' antes de lanzarte aquí. Tu espalda te lo agradecerá.' },
+    note: { fr: 'Rien n’est bloqué : c’est un conseil, pas une règle.', es: 'Nada está bloqueado: es un consejo, no una regla.' },
+  },
 } as const;
 
 export const A_VALIDER_LOT5 = {
+  /**
+   * FAQ de l'accueil (D05) — textes à faire valider par Alejandra.
+   * `aProgrammes` : variante utilisée seulement quand les programmes sont en ligne (drapeau allumé).
+   * `aVerifier` : note interne (jamais affichée) — rien n'est promis sur l'image avant la vérification
+   * Jitsi / enregistrement (SPEC §7.12).
+   */
   faq: {
     fr: [
-      { q: 'Je n’ai jamais fait de Pilates, c’est pour moi ?', a: 'Oui. Alejandra adapte chaque exercice pendant le live, et le programme « Les Fondations » t’apprend les bases en 3 semaines.' },
+      {
+        q: 'Je n’ai jamais fait de Pilates, c’est pour moi ?',
+        a: 'Oui. Alejandra adapte chaque exercice pendant le live et te montre les bases pas à pas. Les replays te permettent de revoir les mouvements à ton rythme.',
+        aProgrammes: 'Oui. Alejandra adapte chaque exercice pendant le live, et le programme « Les Fondations du Pilates » t’apprend les bases en 3 semaines.',
+      },
       { q: 'Comment Alejandra peut me corriger à travers un écran ?', a: 'Ta caméra est allumée : elle te voit en direct, t’appelle par ton prénom et te montre le bon placement.' },
-      { q: 'Je suis gênée d’être filmée.', a: 'Tu choisis ton cadrage, de côté ou en plan large : l’important, c’est qu’Alejandra voie ta posture pour te corriger. [Caméra / enregistrement : à confirmer après vérif. lot 1.]' },
-      { q: 'Je n’ai pas le temps.', a: 'Les lives durent 45 à 60 minutes à heure fixe, et les programmes proposent des séances de 20 minutes.' },
+      {
+        q: 'Je suis gênée d’être filmée.',
+        a: 'Tu choisis ton cadrage, de côté ou en plan large : l’important, c’est qu’Alejandra voie ta posture pour te corriger.',
+        aVerifier: 'Caméra / enregistrement : à confirmer après la vérification du lot 1 (les élèves se voient-elles entre elles ? l’enregistrement des replays les filme-t-il ?).',
+      },
+      {
+        q: 'Je n’ai pas le temps.',
+        a: 'Les lives durent 45 à 60 minutes à heure fixe. Tu en rates un ? Le replay t’attend, et tu le fais quand tu peux.',
+        aProgrammes: 'Les lives durent 45 à 60 minutes à heure fixe, et les programmes proposent aussi des séances courtes, dès 20 minutes.',
+      },
       { q: 'De quel matériel ai-je besoin ?', a: 'Un tapis suffit. Les accessoires (petit ballon, bande) sont indiqués avant chaque cours.' },
       { q: 'Comment j’annule ?', a: 'En ligne, en 3 clics, depuis ton espace. Pendant l’essai, tu ne paies rien.' },
     ],
     es: [
-      { q: 'Nunca he hecho Pilates, ¿es para mí?', a: 'Sí. Alejandra adapta cada ejercicio en el live, y el programa « Las bases » te enseña en 3 semanas.' },
+      {
+        q: 'Nunca he hecho Pilates, ¿es para mí?',
+        a: 'Sí. Alejandra adapta cada ejercicio en el live y te enseña las bases paso a paso. Con los replays repasas los movimientos a tu ritmo.',
+        aProgrammes: 'Sí. Alejandra adapta cada ejercicio en el live, y el programa « Los Fundamentos del Pilates » te enseña las bases en 3 semanas.',
+      },
       { q: '¿Cómo puede corregirme a través de una pantalla?', a: 'Tu cámara está encendida: te ve en directo, te llama por tu nombre y te muestra el gesto.' },
-      { q: 'Me da vergüenza que me filmen.', a: 'Tú eliges el encuadre. Lo importante es que Alejandra vea tu postura. [Cámara / grabación: por confirmar.]' },
-      { q: 'No tengo tiempo.', a: 'Los lives duran 45 a 60 minutos a hora fija, y los programas proponen sesiones de 20 minutos.' },
-      { q: '¿Qué material necesito?', a: 'Un tapete basta. Los accesorios se indican antes de cada clase.' },
+      {
+        q: 'Me da vergüenza que me filmen.',
+        a: 'Tú eliges el encuadre, de lado o en plano amplio: lo importante es que Alejandra vea tu postura para corregirte.',
+        aVerifier: 'Cámara / grabación: por confirmar tras la verificación del lote 1.',
+      },
+      {
+        q: 'No tengo tiempo.',
+        a: 'Los lives duran de 45 a 60 minutos a hora fija. ¿Te perdiste uno? El replay te espera y lo haces cuando puedas.',
+        aProgrammes: 'Los lives duran de 45 a 60 minutos a hora fija, y los programas proponen también sesiones cortas, desde 20 minutos.',
+      },
+      { q: '¿Qué material necesito?', a: 'Un tapete basta. Los accesorios (pelota pequeña, banda) se indican antes de cada clase.' },
       { q: '¿Cómo cancelo?', a: 'En línea, en 3 clics, desde tu espacio. Durante la prueba no pagas nada.' },
     ],
   },
@@ -136,12 +218,12 @@ export const A_VALIDER_LOT5 = {
     es: 'FitMangas — un mensaje de Alejandra',
   },
   courseStyles: [
-    { title: 'Pilates Mat', level: 'Tous niveaux', body: 'Au sol, sur le tapis : le centre, la respiration, la posture.', image: '/Photo%20Alejandra%20exercice%20avec%20anneau.JPG' },
-    { title: 'Pilates Accessoires', level: 'Tous niveaux', body: 'Petit ballon, bande, cercle : plus de précision et de tonus.', image: '/Photo%20Alejandra%20exercice%20sur%20la%20plage.JPG' },
-    { title: 'Barre / Pilates Flow', level: 'Tous niveaux', body: 'Entre danse et Pilates, debout puis au sol : jambes et fessiers.', image: '/Photo%20Alejandra%20pose%20pour%20photographe.JPG' },
-    { title: 'Fit-Dance', level: 'Dynamique', body: 'Du cardio en dansant, sans impact pour les articulations.', image: '/landing/offer-v-coll.jpg' },
-    { title: 'Stretching & Yoga Flow', level: 'Doux', body: 'Souplesse et récupération, pour relâcher le dos et les hanches.', image: '/landing/hero.jpg' },
-    { title: 'Boot Camp', level: 'Intense', body: 'Renforcement et cardio par intervalles, pour celles qui veulent transpirer.', image: '/landing/offer-v-ind.jpg' },
+    { title: 'Pilates Mat', level: 'Tous niveaux', body: 'Au sol, sur le tapis : le centre, la respiration, la posture.', image: '/cours/style-pilates-mat.jpg' },
+    { title: 'Pilates Accessoires', level: 'Tous niveaux', body: 'Petit ballon, bande, cercle : plus de précision et de tonus.', image: '/cours/style-pilates-accessoires.jpg' },
+    { title: 'Barre / Pilates Flow', level: 'Tous niveaux', body: 'Entre danse et Pilates, debout puis au sol : jambes et fessiers.', image: '/cours/style-barre-flow.jpg' },
+    { title: 'Fit-Dance', level: 'Dynamique', body: 'Du cardio en dansant, sans impact pour les articulations.', image: '/cours/style-fit-dance.jpg' },
+    { title: 'Stretching & Yoga Flow', level: 'Doux', body: 'Souplesse et récupération, pour relâcher le dos et les hanches.', image: '/cours/style-stretching.jpg' },
+    { title: 'Boot Camp', level: 'Intense', body: 'Renforcement et cardio par intervalles, pour celles qui veulent transpirer.', image: '/cours/style-boot-camp.jpg' },
   ],
   liveRundown: {
     kicker: 'Comment se passe un live',

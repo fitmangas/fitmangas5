@@ -14,6 +14,7 @@ import { fetchAcqCrmFunnel } from '@/lib/acquisition/sources/acq-crm';
 import { getMetaLiveReadiness } from '@/lib/acquisition/providers/meta-live';
 import { summarizeAdsPerformance } from '@/lib/acquisition/ads/repository';
 import { PAID_DEFINITION_HINT } from '@/lib/acquisition/paid-definition';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 import type {
   AcquisitionChannel,
   AcquisitionKpi,
@@ -346,6 +347,33 @@ export async function buildAcquisitionOverview(
     },
   ];
 
+  // —— Lot 7 (CROISSANCE_V2) : mêmes compteurs CRM sans les contacts de test ni de l'équipe ——
+  const v2 = isCroissanceV2Enabled();
+  const crmNoTests = acqCrm.ok ? (acqCrm.data.withoutTests ?? null) : null;
+  const crmFunnelNoTests =
+    v2 && crmNoTests
+      ? buildSteps({
+          reach: crmNoTests.contacts,
+          clicks: crmNoTests.qualified + crmNoTests.trial,
+          trials: crmNoTests.trial,
+          paid: crmNoTests.paid + crmNoTests.member,
+          retentionValue: crmNoTests.member,
+          retentionRate: pct(crmNoTests.member, crmNoTests.paid + crmNoTests.member || crmNoTests.contacts),
+        })
+      : undefined;
+  const kpisNoTests =
+    v2 && crmNoTests
+      ? kpis.map((k) =>
+          k.id === 'hot_leads'
+            ? { ...k, value: formatNum(crmNoTests.hotLeads), tone: crmNoTests.hotLeads > 0 ? ('good' as const) : ('watch' as const) }
+            : k.id === 'avg_score'
+              ? { ...k, value: crmNoTests.avgLeadScore != null ? String(crmNoTests.avgLeadScore) : '—' }
+              : k.id === 'crm_contacts'
+                ? { ...k, value: formatNum(crmNoTests.contacts) }
+                : k,
+        )
+      : undefined;
+
   // Rétention site : étiqueter proxy dans le funnel
   const siteFunnelLabeled = siteFunnel.map((step) =>
     step.id === 'retention'
@@ -363,8 +391,11 @@ export async function buildAcquisitionOverview(
     funnel: crmFunnel,
     siteFunnel: siteFunnelLabeled,
     crmFunnel,
-    referenceFunnel,
+    referenceFunnel: v2 ? referenceFunnel : undefined,
+    crmFunnelNoTests,
     kpis,
+    kpisNoTests,
+    croissanceV2: v2,
     performanceHooks,
     sourceErrors,
     schemaReady,

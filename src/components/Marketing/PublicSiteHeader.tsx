@@ -14,9 +14,11 @@ type Props = {
   onLogin?: () => void;
   onTrial?: () => void;
   homeHref?: string;
+  /** Lien du menu à souligner (page en cours). */
+  activeHref?: string;
 };
 
-export function PublicSiteHeader({ lang, onToggleLang, onLogin, onTrial, homeHref = '/' }: Props) {
+export function PublicSiteHeader({ lang, onToggleLang, onLogin, onTrial, homeHref = '/', activeHref }: Props) {
   const [open, setOpen] = useState(false);
   const items = publicNavItems({ gifts: isGiftsEnabled() });
   const isEs = lang === 'ES';
@@ -30,11 +32,18 @@ export function PublicSiteHeader({ lang, onToggleLang, onLogin, onTrial, homeHre
         </Link>
         <nav className="relative hidden flex-1 items-center justify-center gap-7 text-[13px] font-medium text-brand-ink/70 lg:flex" aria-label="Menu principal">
           {items.map((item) => (
-            <Link key={item.href} href={item.href} className="relative py-1 hover:text-brand-ink">
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={activeHref === item.href ? 'page' : undefined}
+              className={`relative py-1 hover:text-brand-ink ${
+                activeHref === item.href ? 'text-brand-ink after:absolute after:inset-x-0 after:-bottom-1.5 after:h-[2px] after:rounded-full after:bg-luxury-orange' : ''
+              }`}
+            >
               {isEs ? item.labelEs : item.labelFr}
               {item.badge ? (
                 <span className="ml-1.5 rounded-full bg-[#fbf1ec] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-luxury-orange">
-                  {item.badge}
+                  {isEs ? (item.badgeEs ?? item.badge) : item.badge}
                 </span>
               ) : null}
             </Link>

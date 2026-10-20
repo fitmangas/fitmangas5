@@ -7,6 +7,8 @@ import { BlogConversionCta } from '@/components/Blog/BlogConversionCta';
 import { NewsletterCta } from '@/components/Blog/NewsletterCta';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
+import { BLOG_GUIDES } from '@/lib/blog/guides';
 import type { BlogLang } from '@/types/blog';
 
 const PAGE = 12;
@@ -235,6 +237,21 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           ))}
         </div>
       </section>
+
+      {isCroissanceV2Enabled() ? (
+        <nav className="mt-6 flex flex-wrap items-center gap-2" aria-label={lang === 'es' ? 'Guías por tema' : 'Guides par thème'}>
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-luxury-soft">{lang === 'es' ? 'Guías por tema' : 'Guides par thème'}</span>
+          {BLOG_GUIDES.map((g) => (
+            <Link
+              key={g.id}
+              href={`/blog/guides/${g.id}${lang === 'es' ? '?lang=es' : ''}`}
+              className="rounded-full border border-[#C45D3E]/25 bg-white/70 px-4 py-2 text-[12px] font-semibold text-luxury-ink hover:border-[#C45D3E]/50"
+            >
+              {g.title[lang]}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       {page === 1 && hero ? <HeroArticle article={asListArticle(hero)} lang={lang} copy={copy} /> : null}
 

@@ -1175,6 +1175,13 @@ revoke all on public.gift_cards from anon, authenticated;
 grant select, insert, update on public.gift_cards to service_role;
 ```
 
+Ajout du 20/10 (finition lot 4, facultatif vu les volumes) : index utilisés par la tâche des 10 minutes (envois programmés), les rappels J-14/J-3 et la conversion (webhook `invoice.paid`).
+
+```sql
+create index if not exists gift_cards_scheduled_idx on public.gift_cards (send_at) where status = 'scheduled';
+create index if not exists gift_cards_subscription_idx on public.gift_cards (stripe_subscription_id) where stripe_subscription_id is not null;
+```
+
 ## Lot 5 — Conversion et expérience
 
 Non appliqué.

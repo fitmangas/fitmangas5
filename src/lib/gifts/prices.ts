@@ -17,7 +17,8 @@ export type GiftPrice = {
   amountCents: number | null;
   currency: string;
   perMonthCents: number | null;
-  badge: string | null;
+  /** Mois « offerts » par rapport au prix de la carte 1 mois (calculé depuis les prix Stripe, jamais écrit en dur). */
+  freeMonths: number | null;
 };
 
 function stripe(): Stripe | null {
@@ -49,10 +50,20 @@ export async function loadGiftPrices(): Promise<GiftPrice[]> {
       amountCents,
       currency,
       perMonthCents: amountCents != null ? Math.round(amountCents / months) : null,
-      badge: months === 6 ? '1 mois offert' : months === 12 ? '3 mois offerts' : null,
+      freeMonths: null,
     });
   }
-  return rows;
+  return withFreeMonths(rows);
+}
+
+/** 6 mois à 195 € quand 1 mois coûte 39 € : 234 − 195 = 39 € d'écart, soit « 1 mois offert ». */
+export function withFreeMonths(rows: GiftPrice[]): GiftPrice[] {
+  const unit = rows.find((r) => r.months === 1)?.amountCents ?? null;
+  return rows.map((r) => {
+    if (!unit || r.amountCents == null || r.months === 1) return { ...r, freeMonths: null };
+    const free = Math.floor((r.months * unit - r.amountCents) / unit + 0.05);
+    return { ...r, freeMonths: free >= 1 ? free : null };
+  });
 }
 
 export function formatEurFromCents(cents: number | null): string {

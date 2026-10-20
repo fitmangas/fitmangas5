@@ -24,6 +24,7 @@ export const PUBLIC_FORM_LIMITS = {
   invite_share: { max: 20, windowSec: 3600 },
   support: { max: 10, windowSec: 3600 },
   gift_activation: { max: 10, windowSec: 3600 },
+  gift_lookup: { max: 30, windowSec: 3600 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type PublicFormScope = keyof typeof PUBLIC_FORM_LIMITS;

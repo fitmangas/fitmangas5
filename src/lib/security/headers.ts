@@ -36,6 +36,7 @@ export function buildContentSecurityPolicy(): string {
       'https://player.vimeo.com',
       'https://challenges.cloudflare.com',
       jitsi,
+      'https://meet.jit.si',
     ],
     'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
@@ -59,6 +60,8 @@ export function buildContentSecurityPolicy(): string {
       'https://files.cdn.printful.com',
       jitsi,
       jitsiWss,
+      'https://meet.jit.si',
+      'wss://meet.jit.si',
     ],
     'frame-src': [
       "'self'",
@@ -71,6 +74,7 @@ export function buildContentSecurityPolicy(): string {
       'https://www.instagram.com',
       'https://challenges.cloudflare.com',
       jitsi,
+      'https://meet.jit.si',
     ],
     'worker-src': ["'self'", 'blob:'],
     'frame-ancestors': ["'self'"],
@@ -86,7 +90,6 @@ export function buildContentSecurityPolicy(): string {
 }
 
 export function buildSecurityHeaders(): Array<{ key: string; value: string }> {
-  const jitsi = jitsiOrigin();
   return [
     { key: 'Content-Security-Policy-Report-Only', value: buildContentSecurityPolicy() },
     { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -94,8 +97,10 @@ export function buildSecurityHeaders(): Array<{ key: string; value: string }> {
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     {
       key: 'Permissions-Policy',
-      // fullscreen, autoplay et display-capture volontairement non restreints (live, replays).
-      value: `camera=(self "${jitsi}"), microphone=(self "${jitsi}"), geolocation=(), browsing-topics=()`,
+      // Caméra, micro, plein écran, lecture auto et partage d'écran volontairement NON restreints :
+      // l'hôte de la visio vient de NEXT_PUBLIC_JITSI_DOMAIN ou, à défaut, de l'URL de salle en base
+      // (ex. meet.jit.si). Une liste trop stricte couperait caméra et micro pendant un live.
+      value: 'geolocation=(), browsing-topics=()',
     },
   ];
 }

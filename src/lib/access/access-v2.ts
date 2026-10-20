@@ -4,6 +4,8 @@ export type AccessV2Subscription = {
   status: string | null;
   ends_at: string | null;
   stripe_subscription_id: string | null;
+  /** Formule de l'abonnement (online_group_monthly, online_individual_monthly, …). Si fournie, seules les formules visio comptent. */
+  tier?: string | null;
   /** Si connu (Stripe retrieve). Les lignes test sont exclues. */
   livemode?: boolean | null;
 };
@@ -15,7 +17,8 @@ export type AccessV2Result = {
 
 /**
  * Accès visio ACCESS_V2 : une ligne `subscriptions` active ou en essai,
- * identifiant Stripe réel (`sub_…`), non expirée, livemode !== false.
+ * identifiant Stripe réel (`sub_…`), non expirée, livemode !== false,
+ * et formule visio quand la formule est connue (un abonnement présentiel ne donne pas les lives en visio).
  */
 export function computeVisioAccessV2(
   subscriptions: AccessV2Subscription[],
@@ -27,6 +30,7 @@ export function computeVisioAccessV2(
     const status = (row.status ?? '').toLowerCase();
     if (status !== 'active' && status !== 'trialing') return false;
     if (row.ends_at && new Date(row.ends_at).getTime() < now) return false;
+    if (row.tier != null && row.tier !== '' && !currentVisioFromTier(row.tier)) return false;
     return true;
   });
   if (eligible.length === 0) {

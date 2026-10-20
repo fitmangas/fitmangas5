@@ -1,7 +1,11 @@
 import { A_VALIDER_LOT5 } from '@/content/a-valider';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
+
+type FaqItem = { q: string; a: string; aProgrammes?: string; aVerifier?: string };
 
 export function LandingFaq({ lang }: { lang: 'FR' | 'ES' }) {
-  const items = lang === 'ES' ? A_VALIDER_LOT5.faq.es : A_VALIDER_LOT5.faq.fr;
+  const programmes = isProgrammesEnabled();
+  const items: FaqItem[] = (lang === 'ES' ? A_VALIDER_LOT5.faq.es : A_VALIDER_LOT5.faq.fr) as readonly FaqItem[] as FaqItem[];
   return (
     <section className="relative pb-16 md:pb-24">
       <p className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-brand-ink/45">
@@ -16,7 +20,7 @@ export function LandingFaq({ lang }: { lang: 'FR' | 'ES' }) {
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-brand-ink [&::-webkit-details-marker]:hidden">
               {item.q}
             </summary>
-            <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/60">{item.a}</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-brand-ink/60">{programmes && item.aProgrammes ? item.aProgrammes : item.a}</p>
           </details>
         ))}
       </div>

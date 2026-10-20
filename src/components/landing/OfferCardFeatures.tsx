@@ -23,7 +23,18 @@ type Props = {
   course: Course;
   lang: Language;
   onsiteCityLabel?: string;
+  /** Heures de vidéothèque publiées (calculées). Sous 50 h ou inconnu : texte prudent actuel. */
+  libraryHours?: number | null;
+  /** Programmes guidés publiés. 0 : la 4ᵉ case garde « Suivi de progression ». */
+  programmesCount?: number;
 };
+
+/** « 55 h+ » : arrondi aux 5 h inférieures, affiché seulement à partir de 50 h (SPEC §1.3). */
+function libraryLabel(hours: number | null | undefined, lang: Language): string | null {
+  if (hours == null || !Number.isFinite(hours) || hours < 50) return null;
+  const rounded = Math.floor(hours / 5) * 5;
+  return lang === 'ES' ? `Biblioteca ${rounded} h+` : `Bibliothèque ${rounded} h+`;
+}
 
 function isVisioOffer(course: Course): boolean {
   return course.id.startsWith('v-');
@@ -119,21 +130,30 @@ function ExpandablePanel({
   );
 }
 
-function copy(lang: Language, onsiteCityLabel: string, course: Course) {
+function copy(
+  lang: Language,
+  onsiteCityLabel: string,
+  course: Course,
+  facts: { libraryHours?: number | null; programmesCount?: number } = {},
+) {
   const isGroup = isGroupOnsite(course);
+  const library = libraryLabel(facts.libraryHours, lang);
+  const programmes = facts.programmesCount ?? 0;
   if (lang === 'ES') {
     return {
       visioPillars: [
         { title: 'Clases LIVE cada semana', subtitle: '2 lives FR por semana' },
         { title: 'Replay ilimitado', subtitle: 'Todos los lives, a la carta' },
-        { title: 'Biblioteca 25h+', subtitle: 'Pilates, Barre, Stretch — 24h/24' },
-        { title: 'Seguimiento de progreso', subtitle: 'En 3 niveles' },
+        { title: library ?? 'Biblioteca 25h+', subtitle: 'Pilates, Barre, Stretch — 24h/24' },
+        programmes > 0
+          ? { title: `${programmes} programas guiados`, subtitle: 'Un plan semana tras semana' }
+          : { title: 'Seguimiento de progreso', subtitle: 'En 3 niveles' },
       ],
       visioIncludedTrigger: 'Y además',
+      // Pas de chiffre non calculé ni de promesse future ici (SPEC §1.3).
       visioIncludedItems: [
-        'Bonus: 2 lives adicionales en español / semana',
-        'Programas de entrenamiento estructurados todo el año',
-        'Blog bienestar — 8 artículos nuevos al mes',
+        'Bonus: los lives en español de la semana',
+        'Blog completo y tests de autoconocimiento',
         'Tienda fitness integrada',
       ],
       onsitePillars: [
@@ -150,14 +170,16 @@ function copy(lang: Language, onsiteCityLabel: string, course: Course) {
     visioPillars: [
       { title: 'Cours live chaque semaine', subtitle: '2 lives FR par semaine' },
       { title: 'Replay illimité', subtitle: 'Tous les lives, à la demande' },
-      { title: 'Bibliothèque 25h+', subtitle: 'Pilates, Barre, Stretch — 24h/24' },
-      { title: 'Suivi de progression', subtitle: 'Sur 3 niveaux' },
+      { title: library ?? 'Bibliothèque 25h+', subtitle: 'Pilates, Barre, Stretch — 24h/24' },
+      programmes > 0
+        ? { title: `${programmes} programmes guidés`, subtitle: 'Un plan semaine après semaine' }
+        : { title: 'Suivi de progression', subtitle: 'Sur 3 niveaux' },
     ],
     visioIncludedTrigger: 'Et aussi',
+    // Pas de chiffre non calculé ni de promesse future ici (SPEC §1.3).
     visioIncludedItems: [
-      'Bonus : 2 lives supplémentaires en espagnol / semaine',
-      "Programmes d'entraînement structurés toute l'année",
-      'Blog bien-être — 8 nouveaux articles par mois',
+      'Bonus : les lives en espagnol de la semaine',
+      'Blog complet et tests de connaissance de soi',
       'Boutique fitness intégrée',
     ],
     onsitePillars: [
@@ -171,9 +193,9 @@ function copy(lang: Language, onsiteCityLabel: string, course: Course) {
   };
 }
 
-export function OfferCardFeatures({ course, lang, onsiteCityLabel = 'Nantes' }: Props) {
+export function OfferCardFeatures({ course, lang, onsiteCityLabel = 'Nantes', libraryHours = null, programmesCount = 0 }: Props) {
   const panelId = useId();
-  const t = copy(lang, onsiteCityLabel, course);
+  const t = copy(lang, onsiteCityLabel, course, { libraryHours, programmesCount });
 
   if (isVisioOffer(course)) {
     const icons = [CalendarDays, PlayCircle, Film, LineChart] as const;

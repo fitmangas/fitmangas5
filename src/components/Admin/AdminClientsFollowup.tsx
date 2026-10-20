@@ -236,22 +236,50 @@ export function AdminClientsFollowup({
       <section className="glass-card admin-form-refined overflow-hidden">
         <div className="px-6 pb-3 pt-5">
           <h2 className="text-[18px] font-semibold tracking-tight text-luxury-ink">
-            Nouvelles clientes · 30 jours <span className="text-luxury-soft">· {newcomers.length}</span>
+            Nouvelles clientes <span className="text-luxury-soft">· 30 jours · {newcomers.length}</span>
           </h2>
+          <p className="mt-0.5 text-[12.5px] text-luxury-muted">Où en est chacune : compte créé, essai, payée.</p>
         </div>
-        {newcomers.map((row) => (
-          <div key={row.id} className="grid grid-cols-1 items-center gap-3 border-t border-black/[0.05] px-6 py-3.5 md:grid-cols-[1.2fr_0.8fr_1.4fr]">
-            <p className="text-[14px] font-medium text-luxury-ink">{displayName(row)}</p>
-            <p className="text-[12.5px] text-luxury-muted">{row.createdAt ? new Date(row.createdAt).toLocaleDateString('fr-FR') : '—'} · {offerLabel(row.lastCheckout)}</p>
-            <div className="flex items-center gap-1 text-[11px]">
-              <span className="rounded-full bg-black/[0.04] px-2 py-1">Compte</span>
-              <span className="text-luxury-soft">→</span>
-              <span className={`rounded-full px-2 py-1 ${row.paymentBadge === 'trial' || row.paymentBadge === 'paid' ? 'bg-[#fdf2ec] text-[#B0583A]' : 'bg-black/[0.04]'}`}>Essai</span>
-              <span className="text-luxury-soft">→</span>
-              <span className={`rounded-full px-2 py-1 ${row.paymentBadge === 'paid' ? 'bg-[#eef6ef] text-[#3d7a4a]' : 'bg-black/[0.04]'}`}>Payée</span>
-            </div>
+        {newcomers.length > 0 ? (
+          <div className="hidden grid-cols-[minmax(0,1.2fr)_0.7fr_1fr_1.1fr] gap-3 border-t border-black/[0.05] px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-luxury-soft md:grid">
+            <span>Cliente</span>
+            <span>Inscrite</span>
+            <span>Offre</span>
+            <span>Étape</span>
           </div>
-        ))}
+        ) : null}
+        {newcomers.map((row) => {
+          const step = row.paymentBadge === 'paid' ? 3 : row.paymentBadge === 'trial' ? 2 : 1;
+          const stepLabel = ['Compte créé', 'Essai en cours', 'Payée'][step - 1];
+          return (
+            <div
+              key={row.id}
+              className="grid grid-cols-1 items-center gap-2 border-t border-black/[0.05] px-6 py-3 md:grid-cols-[minmax(0,1.2fr)_0.7fr_1fr_1.1fr] md:gap-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3e3d6] text-[13px] font-semibold text-[#8a4a33]">
+                  {initial(row)}
+                </span>
+                <span className="truncate text-[14px] font-medium text-luxury-ink">{displayName(row)}</span>
+              </div>
+              <span className="text-[12.5px] text-luxury-muted">
+                {row.createdAt ? new Date(row.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'}
+              </span>
+              <span className="text-[12.5px] text-luxury-ink">{offerLabel(row.lastCheckout)}</span>
+              <div>
+                <div className="flex items-center gap-1" aria-hidden>
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 flex-1 rounded-full ${i < step ? (step === 3 ? 'bg-[#3f8f6b]' : 'bg-[#e6a285]') : 'bg-black/[0.08]'}`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-1 text-[11.5px] text-luxury-muted">{stepLabel}</p>
+              </div>
+            </div>
+          );
+        })}
         {newcomers.length === 0 ? <p className="border-t border-black/[0.05] px-6 py-6 text-sm text-luxury-muted">Aucune nouvelle cliente sur 30 jours.</p> : null}
       </section>
 
@@ -281,8 +309,8 @@ export function AdminClientsFollowup({
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="sticky top-0 bg-white/90">
-              <tr className="text-[11px] uppercase tracking-[0.12em] text-luxury-soft">
+            <thead className="sticky top-0 bg-[#3a3632] text-white">
+              <tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/80">
                 <th className="px-6 py-3">Cliente</th>
                 <th className="px-3 py-3">Abonnement</th>
                 <th className="px-3 py-3">Depuis</th>

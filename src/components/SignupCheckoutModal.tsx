@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2, Lock, ChevronDown, Ticket } from 'lucide-react';
+import { X, Loader2, Lock, ChevronDown, Ticket, Eye, EyeOff } from 'lucide-react';
 import type { Course, Language, Segment } from '@/types';
 import { detectBrowserLocale, detectBrowserTimeZone, type DetectedLocale } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 import { REF_COOKIE } from '@/lib/referrals/cookie';
 import { trackBeginCheckout } from '@/lib/analytics/ga4-client';
 import { COURSE_PRICE_CENTS } from '@/lib/checkout-courses';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 
 function readReferralCookie(): string {
   if (typeof document === 'undefined') return '';
@@ -27,9 +28,11 @@ type Props = {
   onSelectCourse: (course: Course) => void;
   lang: Language;
   onClose: () => void;
+  /** « Déjà un compte ? » : ouvre la connexion (sinon lien vers /?compte=connexion-requise). */
+  onLogin?: () => void;
 };
 
-export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lang, onClose }: Props) {
+export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lang, onClose, onLogin }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,6 +44,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
   const [error, setError] = useState<string | null>(null);
   const [formulaMenuOpen, setFormulaMenuOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [immediateAccess, setImmediateAccess] = useState(false);
   const [detectedLocale, setDetectedLocale] = useState<DetectedLocale>('fr');
   const [detectedTimeZone, setDetectedTimeZone] = useState('Europe/Paris');
@@ -64,6 +68,7 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
     };
   }, [course]);
 
+  const programmes = isProgrammesEnabled();
   const labels =
     lang === 'FR'
       ? {
@@ -81,7 +86,22 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           phoneHint: 'Pour te joindre en cas de souci avec ton inscription.',
           birthDate: 'Date d’anniversaire (facultatif)',
           birthHint: 'Pour une petite attention le jour J (jour et mois seulement).',
-          legal: '0 € aujourd’hui · 7 jours gratuits, puis {price} · Carte demandée · Annulable en ligne en 3 clics',
+          legal: '0 € aujourd’hui · 7 jours gratuits, puis {price}',
+          legalSub: 'Carte demandée · Annulable en ligne en 3 clics',
+          passwordHint: '8 caractères minimum.',
+          showPassword: 'Afficher le mot de passe',
+          hidePassword: 'Masquer le mot de passe',
+          optional: '(facultatif)',
+          birthLabel: 'Date d’anniversaire',
+          secure: 'Paiement sécurisé Stripe',
+          already: 'Déjà un compte ?',
+          consentA: 'En continuant, tu acceptes les ',
+          cgv: 'CGV',
+          consentB: ' et tu confirmes avoir lu la ',
+          privacy: 'politique de confidentialité',
+          kicker: 'Essai gratuit · 7 jours',
+          planCollectif: programmes ? 'Lives FR + bonus ES, replays, programmes, vidéothèque' : 'Lives FR + bonus ES, replays, vidéothèque',
+          planIndividuel: '5 cours individuels par mois + les lives collectifs',
           change: 'Changer',
           immediate: 'Je demande à commencer tout de suite. Si je me rétracte dans les 14 jours, seule la période déjà utilisée me sera facturée.',
         }
@@ -100,7 +120,22 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
           phoneHint: 'Para contactarte si hay algún problema con tu inscripción.',
           birthDate: 'Cumpleaños (opcional)',
           birthHint: 'Para un detalle especial en tu cumpleaños (día y mes).',
-          legal: '0 € hoy · 7 días gratis, luego {price} · Se pide tarjeta · Cancelas en línea en 3 clics',
+          legal: '0 € hoy · 7 días gratis, luego {price}',
+          legalSub: 'Se pide tarjeta · Cancelas en línea en 3 clics',
+          passwordHint: 'Mínimo 8 caracteres.',
+          showPassword: 'Mostrar la contraseña',
+          hidePassword: 'Ocultar la contraseña',
+          optional: '(opcional)',
+          birthLabel: 'Cumpleaños',
+          secure: 'Pago seguro con Stripe',
+          already: '¿Ya tienes cuenta?',
+          consentA: 'Al continuar, aceptas las ',
+          cgv: 'condiciones de venta',
+          consentB: ' y confirmas haber leído la ',
+          privacy: 'política de privacidad',
+          kicker: 'Prueba gratis · 7 días',
+          planCollectif: programmes ? 'Lives en francés + bonus en español, replays, programas, videoteca' : 'Lives en francés + bonus en español, replays, videoteca',
+          planIndividuel: '5 clases individuales al mes + los lives grupales',
           change: 'Cambiar',
           immediate: 'Pido empezar de inmediato. Si desisto en los 14 días, solo se me cobrará el periodo ya utilizado.',
         };
@@ -287,7 +322,17 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
               >
                 <X size={18} />
               </button>
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-luxury-orange">Essai gratuit · 7 jours</p>
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/landing/alejandra-avatar.jpg"
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="h-11 w-11 rounded-full object-cover object-top shadow ring-2 ring-white"
+                />
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-luxury-orange">{labels.kicker}</p>
+              </div>
               <h2 id="signup-title" className="fm-display mt-4 text-[2rem] leading-[1.05] text-brand-ink">
                 {labels.title}
               </h2>
@@ -295,26 +340,29 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
               <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-brand-ink/10 bg-sand/60 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-[13.5px] font-semibold text-brand-ink">{course.title}</p>
+                  <p className="text-[12px] text-brand-ink/55">{isIndividuel ? labels.planIndividuel : labels.planCollectif}</p>
                 </div>
                 <div className="relative shrink-0 text-right">
                   <p className="text-[13.5px] font-semibold text-brand-ink">{course.price}</p>
-                  <button
-                    type="button"
-                    onClick={() => setFormulaMenuOpen((prev) => !prev)}
-                    className="text-[11.5px] font-semibold text-luxury-orange"
-                    aria-haspopup="listbox"
-                    aria-expanded={formulaMenuOpen}
-                  >
-                    {labels.change}
-                    <ChevronDown size={12} className="ml-0.5 inline" />
-                  </button>
+                  {visioOnlyOptions.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setFormulaMenuOpen((prev) => !prev)}
+                      className="text-[11.5px] font-semibold text-luxury-orange"
+                      aria-haspopup="listbox"
+                      aria-expanded={formulaMenuOpen}
+                    >
+                      {labels.change}
+                      <ChevronDown size={12} className="ml-0.5 inline" />
+                    </button>
+                  ) : null}
                   <AnimatePresence>
                     {formulaMenuOpen && (
                       <motion.div
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 6 }}
-                        className="absolute left-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-ink/10 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
+                        className="absolute right-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-ink/10 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
                         role="listbox"
                       >
                         {visioOnlyOptions.map((option) => {
@@ -323,18 +371,20 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                             <button
                               key={option.id}
                               type="button"
+                              role="option"
+                              aria-selected={isActive}
                               onClick={() => {
                                 onSelectCourse(option);
                                 setFormulaMenuOpen(false);
                               }}
-                              className={`flex w-full items-center justify-between gap-4 whitespace-nowrap px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] transition ${
+                              className={`flex w-full items-center justify-between gap-4 whitespace-nowrap px-4 py-3 text-left text-[12px] font-semibold transition ${
                                 isActive
                                   ? 'bg-brand-accent/10 text-brand-accent'
                                   : 'text-brand-ink/70 hover:bg-brand-sand/25 hover:text-brand-ink'
                               }`}
                             >
                               <span className="whitespace-nowrap">{option.title}</span>
-                              <span className="whitespace-nowrap text-xs normal-case tracking-normal opacity-80">{option.price}</span>
+                              <span className="whitespace-nowrap text-xs font-normal opacity-80">{option.price}</span>
                             </button>
                           );
                         })}
@@ -347,106 +397,123 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
 
             <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
               {/* Corps scrollable */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="fm-label text-brand-ink/40">
-                      {labels.firstName}
-                      <input
-                        required
-                        autoComplete="given-name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                      />
-                    </label>
-                    <label className="fm-label text-brand-ink/40">
-                      {labels.lastName}
-                      <input
-                        required
-                        autoComplete="family-name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                      />
-                    </label>
-                  </div>
-                  <label className="fm-label text-brand-ink/40">
-                    {labels.email}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-2 md:px-8">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="fm-label">{labels.firstName}</span>
                     <input
                       required
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                      autoComplete="given-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="fm-input outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
                     />
                   </label>
-                  <label className="fm-label text-brand-ink/40">
-                    {labels.phone}
+                  <label className="block">
+                    <span className="fm-label">{labels.lastName}</span>
                     <input
                       required
-                      type="tel"
-                      autoComplete="tel"
-                      inputMode="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="06 12 34 56 78"
-                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                      autoComplete="family-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="fm-input outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
                     />
-                    <span className="fm-hint mt-1 block">{labels.phoneHint}</span>
                   </label>
-                  <label className="fm-label text-brand-ink/40">
-                    {labels.birthDate}
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="jj / mm"
-                      value={birthDate}
-                      onChange={(e) => setBirthDate(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                    />
-                    <span className="fm-hint mt-1 block">{labels.birthHint}</span>
-                  </label>
-                  <button type="button" onClick={() => setCodeOpen((v) => !v)} className="inline-flex items-center gap-2 text-[13px] font-semibold text-brand-ink/70">
-                    <Ticket size={16} className="text-luxury-orange" />
-                    {labels.offerCode}
-                  </button>
-                  {codeOpen ? (
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      value={offerCode}
-                      onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
-                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 font-mono text-sm uppercase tracking-wide text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
-                    />
-                  ) : null}
-                  {isIndividuel ? (
-                    <label className="flex items-start gap-3 text-[13px] leading-relaxed text-brand-ink/80">
-                      <input type="checkbox" checked={immediateAccess} onChange={(e) => setImmediateAccess(e.target.checked)} className="mt-1" />
-                      {labels.immediate}
-                    </label>
-                  ) : null}
-                  <label className="fm-label text-brand-ink/40">
-                    <span className="inline-flex items-center gap-1">
-                      <Lock size={10} className="opacity-50" />
-                      {labels.password}
-                    </span>
+                </div>
+                <label className="mt-3 block">
+                  <span className="fm-label">{labels.email}</span>
+                  <input
+                    required
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="fm-input outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <span className="fm-label">{labels.phone}</span>
+                  <input
+                    required
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder={lang === 'FR' ? '06 12 34 56 78' : '55 1234 5678'}
+                    className="fm-input outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
+                  />
+                  <span className="fm-hint block">{labels.phoneHint}</span>
+                </label>
+                <label className="mt-3 block">
+                  <span className="fm-label">{labels.password}</span>
+                  <span className="relative block">
                     <input
                       required
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
                       minLength={8}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-3 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2"
+                      className="fm-input pr-12 outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-brand-ink/40 hover:text-brand-ink/70"
+                      aria-label={showPassword ? labels.hidePassword : labels.showPassword}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </span>
+                  <span className="fm-hint block">{labels.passwordHint}</span>
+                </label>
+                <label className="mt-3 block">
+                  <span className="fm-label">
+                    {labels.birthLabel} <span className="font-normal text-brand-ink/45">{labels.optional}</span>
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={lang === 'FR' ? 'jj / mm' : 'dd / mm'}
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="fm-input outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
+                  />
+                  <span className="fm-hint block">{labels.birthHint}</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCodeOpen((v) => !v)}
+                  className="mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-brand-ink/70"
+                  aria-expanded={codeOpen}
+                >
+                  <Ticket size={16} className="text-luxury-orange" />
+                  {labels.offerCode}
+                </button>
+                {codeOpen ? (
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={offerCode}
+                    onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+                    aria-label={labels.offerCode}
+                    className="fm-input mt-2 font-mono uppercase tracking-wide outline-none focus:border-luxury-orange focus:ring-4 focus:ring-luxury-orange/10"
+                  />
+                ) : null}
+                {isIndividuel ? (
+                  <label className="mt-4 flex items-start gap-3 text-[13px] leading-relaxed text-brand-ink/80">
+                    <input type="checkbox" checked={immediateAccess} onChange={(e) => setImmediateAccess(e.target.checked)} className="mt-1 accent-[#c45d3e]" />
+                    {labels.immediate}
                   </label>
+                ) : null}
 
-                  {error ? (
-                    <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</p>
-                  ) : null}
-                </div>
+                {error ? (
+                  <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+                <div className="h-3" aria-hidden />
               </div>
 
               {/* Pied fixe */}
@@ -457,6 +524,34 @@ export function SignupCheckoutModal({ course, courseOptions, onSelectCourse, lan
                 </button>
                 <p className="mt-3 text-center text-[12.5px] font-medium leading-relaxed text-brand-ink/70">
                   {labels.legal.replace('{price}', course.price)}
+                  <br />
+                  <span className="font-normal text-brand-ink/50">{labels.legalSub}</span>
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-4 text-[12px] text-brand-ink/45">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Lock size={13} aria-hidden />
+                    {labels.secure}
+                  </span>
+                  {onLogin ? (
+                    <button type="button" onClick={onLogin} className="underline underline-offset-2 hover:text-brand-ink/70">
+                      {labels.already}
+                    </button>
+                  ) : (
+                    <a href="/connexion" className="underline underline-offset-2 hover:text-brand-ink/70">
+                      {labels.already}
+                    </a>
+                  )}
+                </div>
+                <p className="mt-2 text-center text-[11px] leading-snug text-brand-ink/40">
+                  {labels.consentA}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline">
+                    {labels.cgv}
+                  </a>
+                  {labels.consentB}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">
+                    {labels.privacy}
+                  </a>
+                  .
                 </p>
               </div>
             </form>

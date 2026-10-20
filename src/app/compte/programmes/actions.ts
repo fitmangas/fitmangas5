@@ -13,6 +13,8 @@ import {
   restartProgramInternal,
   setEnrollmentStatusInternal,
   startProgramInternal,
+  updateEnrollmentSettingsInternal,
+  withdrawFeedbackConsentInternal,
   type ProgramActionResult,
 } from '@/lib/programmes/actions-core';
 import { A_VALIDER_LOT1 } from '@/content/a-valider';
@@ -41,7 +43,19 @@ export async function startProgramAction(input: {
 }): Promise<ProgramActionResult> {
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
-  const res = await startProgramInternal({ userId, ...input });
+  const res = await startProgramInternal({ ...input, userId });
+  if (res.ok) revalidateProgrammes();
+  return res;
+}
+
+export async function updateEnrollmentSettingsAction(input: {
+  enrollmentId: string;
+  chosenDays: number[];
+  reminderTime: string;
+}): Promise<ProgramActionResult> {
+  const userId = await sessionUserId();
+  if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
+  const res = await updateEnrollmentSettingsInternal({ ...input, userId });
   if (res.ok) revalidateProgrammes();
   return res;
 }
@@ -86,7 +100,7 @@ export async function recordWatchedAction(input: {
 }): Promise<ProgramActionResult> {
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
-  return recordWatchedInternal({ userId, autoComplete: Boolean(input.autoComplete), ...input });
+  return recordWatchedInternal({ ...input, userId, autoComplete: Boolean(input.autoComplete) });
 }
 
 export async function recordFeelingAction(input: {
@@ -96,7 +110,7 @@ export async function recordFeelingAction(input: {
 }): Promise<ProgramActionResult> {
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
-  return recordFeelingInternal({ userId, ...input });
+  return recordFeelingInternal({ ...input, userId });
 }
 
 export async function recordProgramTestAction(input: {
@@ -106,7 +120,7 @@ export async function recordProgramTestAction(input: {
 }): Promise<ProgramActionResult> {
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
-  return recordTestInternal({ userId, ...input });
+  return recordTestInternal({ ...input, userId });
 }
 
 export async function completeProgramAction(enrollmentId: string): Promise<ProgramActionResult> {
@@ -133,5 +147,11 @@ export async function recordProgramFeedbackAction(input: {
 }): Promise<ProgramActionResult> {
   const userId = await sessionUserId();
   if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
-  return recordFeedbackInternal({ userId, ...input });
+  return recordFeedbackInternal({ ...input, userId });
+}
+
+export async function withdrawFeedbackConsentAction(enrollmentId: string): Promise<ProgramActionResult> {
+  const userId = await sessionUserId();
+  if (!userId) return { ok: false, message: A_VALIDER_LOT1.errors.generic.fr };
+  return withdrawFeedbackConsentInternal(enrollmentId, userId);
 }

@@ -128,11 +128,33 @@ export async function hasVisioClientAccess(userId: string): Promise<boolean> {
     const admin = createAdminClient();
     const { data } = await admin
       .from('subscriptions')
-      .select('status, ends_at, stripe_subscription_id')
+      .select('status, ends_at, stripe_subscription_id, tier')
       .eq('user_id', sanitizeUuid(userId));
     return computeVisioAccessV2(data ?? []).visio;
   }
   return isOnlineCustomerTier(await getUserTier(userId));
+}
+
+/**
+ * Accès Visio sans session (tâches planifiées, rappels) : même règle que `hasVisioClientAccess`,
+ * lue avec la clé de service (ne dépend ni des cookies ni des droits « anon » sur la fonction SQL).
+ * Un profil admin garde l'accès (comptes de test).
+ */
+export async function hasVisioClientAccessServiceRole(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const safeUserId = sanitizeUuid(userId);
+  const { data: profile } = await admin.from('profiles').select('role').eq('id', safeUserId).maybeSingle();
+  if ((profile as { role?: string | null } | null)?.role === 'admin') return true;
+  if (isAccessV2Enabled()) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('status, ends_at, stripe_subscription_id, tier')
+      .eq('user_id', safeUserId);
+    return computeVisioAccessV2(data ?? []).visio;
+  }
+  const { data, error } = await admin.rpc('current_customer_tier', { target_user_id: safeUserId });
+  if (error) throw new Error(`Impossible de déterminer le profil: ${error.message}`);
+  return isOnlineCustomerTier((data as CustomerTier | null) ?? null);
 }
 
 /**

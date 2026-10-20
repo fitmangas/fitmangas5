@@ -1,4 +1,5 @@
 import { uniqueBlogImageUrl } from '@/lib/blog/images';
+import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export type LandingBlogPreview = {
@@ -17,15 +18,53 @@ export type LandingVimeoShowcaseItem = {
   thumbnailUrl: string | null;
 };
 
+/** Chiffres publics calculés depuis la base (SPEC §1.3) : null = inconnu → la carte garde son texte prudent. */
+export type LandingOfferFacts = {
+  /** Somme des durées des vidéos publiées de la vidéothèque, en heures. */
+  libraryHours: number | null;
+  /** Programmes guidés publiés (0 tant que la table n'existe pas ou que le drapeau est coupé). */
+  programmesCount: number;
+};
+
+export async function loadOfferFacts(admin: ReturnType<typeof createAdminClient>): Promise<LandingOfferFacts> {
+  let libraryHours: number | null = null;
+  let programmesCount = 0;
+  try {
+    const { data, error } = await admin
+      .from('standalone_vimeo_videos')
+      .select('duration_seconds')
+      .eq('validation_status', 'published')
+      .limit(5000);
+    if (!error && data) {
+      const seconds = data.reduce((sum, row) => sum + (Number((row as { duration_seconds?: number | null }).duration_seconds) || 0), 0);
+      libraryHours = seconds > 0 ? seconds / 3600 : null;
+    }
+  } catch {
+    libraryHours = null;
+  }
+  if (isProgrammesEnabled()) {
+    try {
+      const { count, error } = await admin.from('programs').select('id', { count: 'exact', head: true }).eq('status', 'published');
+      if (!error && typeof count === 'number') programmesCount = count;
+    } catch {
+      programmesCount = 0;
+    }
+  }
+  return { libraryHours, programmesCount };
+}
+
 export async function loadLandingHomeData(): Promise<{
   vimeoShowcase: LandingVimeoShowcaseItem[];
   blogPreviews: LandingBlogPreview[];
+  offerFacts: LandingOfferFacts;
 }> {
   let vimeoShowcase: LandingVimeoShowcaseItem[] = [];
   let blogPreviews: LandingBlogPreview[] = [];
+  let offerFacts: LandingOfferFacts = { libraryHours: null, programmesCount: 0 };
 
   try {
     const admin = createAdminClient();
+    offerFacts = await loadOfferFacts(admin);
     const { data } = await admin
       .from('standalone_vimeo_videos')
       .select('title, thumbnail_url')
@@ -81,5 +120,5 @@ export async function loadLandingHomeData(): Promise<{
     blogPreviews = [];
   }
 
-  return { vimeoShowcase, blogPreviews };
+  return { vimeoShowcase, blogPreviews, offerFacts };
 }

@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 — Chantier oct. : finitions de Claude (branche locale `chantier-oct-2026`, pas de push)
+
+- Écrans mis au niveau des maquettes et rendus fonctionnels derrière les drapeaux (tous éteints) : emails A01–A07 et écrans A08–A10 (centre, préférences, santé), lot 5 (D01 essai, D02 boutique, D03 habillage live sans toucher à la visio, D04 planning, D06 nav mobile, D07 Les cours, D09 suivi clientes).
+- Programmes (`NEXT_PUBLIC_FEATURE_PROGRAMMES`) : moteur de dates (jours choisis, report, pause), B01–B10 réels, test de niveau D08, certificat PDF et story, rappels « séance du jour » à l'heure locale + relance douce hebdomadaire.
+- Cartes cadeaux (`NEXT_PUBLIC_FEATURE_GIFTS`) : achat C01 FR/ES (heure d'envoi dans le fuseau de l'acheteuse), PDF C02 avec QR, emails C03 + confirmation acheteuse, activation C04 (compte créé ou connexion, essai offert sans carte, crédit au prix du Visio collectif, essai prolongé), admin C05 (remboursement au prorata, carte offerte), rappels J-14/J-3, conversion au premier paiement. Écritures Stripe seulement en clé test (ou GO production).
+- Croissance (`CROISSANCE_V2`) : « Inclure les tests » recalcule le pipeline CRM, MRR = payantes, doublon au clic « Programmer », guides du blog avec lien retour.
+- Build de production vert, tests verts (hors test d'archive absent de la copie de travail). Migrations : toutes dans `PROPOSITIONS_MIGRATIONS.md`, aucune appliquée.
+
 ### 2026-10-19 — Chantier oct. lot 7 (branche locale, pas de push)
 
 - Croissance : overlay `CROISSANCE_V2` (off). 43 règles conservées. Relance unique + fenêtre 9–20 h. Textes `croissance-messages.md` en mémoire seulement.

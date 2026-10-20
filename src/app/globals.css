@@ -616,6 +616,16 @@ html[data-quiz-native-scroll='1'] body {
   background: rgba(255, 250, 245, 0.94);
 }
 
+/* Espace icône / texte des boutons (comme les maquettes) — en couche « components » pour que
+   les utilitaires gap-* posés sur un bouton gardent la priorité. */
+@layer components {
+  .btn-luxury-primary,
+  .btn-luxury-ghost,
+  .btn-luxury-gold {
+    gap: 0.5rem;
+  }
+}
+
 /* CTA terracotta — accent principal admin / compte */
 .btn-luxury-primary {
   @apply inline-flex items-center justify-center rounded-full px-8 py-3.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-lg transition-all duration-300;

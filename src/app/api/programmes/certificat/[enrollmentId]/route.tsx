@@ -2,54 +2,56 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { NextResponse } from 'next/server';
 
 import { CertificatePdf } from '@/lib/programmes/certificate-pdf';
+import { demoCompletion, loadCompletion, periodLabel, statsLine, type CompletionData } from '@/lib/programmes/completion';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { isDevPreviewEnabled } from '@/lib/dev/preview-guard';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { checkIsAdmin } from '@/lib/auth/admin';
+import { isAdminWithMfa } from '@/lib/auth/require-admin';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: Request, { params }: { params: Promise<{ enrollmentId: string }> }) {
+/** B08 — certificat PDF d'un programme terminé (la cliente ou un admin). « apercu » : aperçu de développement. */
+export async function GET(req: Request, { params }: { params: Promise<{ enrollmentId: string }> }) {
   if (!isProgrammesEnabled() && !isDevPreviewEnabled()) {
     return new NextResponse(null, { status: 404 });
   }
   const { enrollmentId } = await params;
-  let name = 'Margaux';
-  let program = 'Les Fondations du Pilates';
-  let number = 'FM-2026-1019-0001';
+  let data: CompletionData | null = null;
 
   if (enrollmentId === 'apercu') {
     if (!isDevPreviewEnabled()) return new NextResponse(null, { status: 404 });
+    const url = new URL(req.url);
+    data = demoCompletion(url.searchParams.get('slug') ?? 'les-fondations', url.searchParams.get('lang') === 'es' ? 'es' : 'fr');
   } else {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return new NextResponse(null, { status: 404 });
-    const adminCheck = await checkIsAdmin(supabase, user);
-    try {
-      const admin = createAdminClient();
-      const { data } = await admin
-        .from('program_enrollments')
-        .select('user_id, certificate_number, program_id, programs(title)')
-        .eq('id', enrollmentId)
-        .maybeSingle();
-      if (!data) return new NextResponse(null, { status: 404 });
-      if (data.user_id !== user.id && !adminCheck.isAdmin) return new NextResponse(null, { status: 404 });
-      number = String(data.certificate_number ?? number);
-      const title = (data as { programs?: { title?: { fr?: string } } }).programs?.title?.fr;
-      if (title) program = title;
-    } catch {
-      return new NextResponse(null, { status: 404 });
+    data = await loadCompletion(enrollmentId);
+    if (!data) return new NextResponse(null, { status: 404 });
+    if (data.userId !== user.id) {
+      if (!(await isAdminWithMfa(supabase, user))) return new NextResponse(null, { status: 404 });
     }
+    if (data.status !== 'completed' || !data.certificateNumber) return new NextResponse(null, { status: 404 });
   }
 
-  const buf = await renderToBuffer(<CertificatePdf name={name} program={program} number={number} />);
+  const buf = await renderToBuffer(
+    <CertificatePdf
+      lang={data.lang}
+      name={data.fullName || data.firstName || ''}
+      program={data.title}
+      stats={statsLine(data, data.lang)}
+      period={periodLabel(data.startKey, data.endKey, data.lang)}
+      number={data.certificateNumber ?? ''}
+    />,
+  );
+  const file = `${data.lang === 'es' ? 'certificado' : 'certificat'}-fitmangas-${data.slug}.pdf`;
   return new NextResponse(Buffer.from(buf), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="certificat-fitmangas.pdf"`,
+      'Content-Disposition': `inline; filename="${file}"`,
+      'Cache-Control': 'private, no-store',
     },
   });
 }

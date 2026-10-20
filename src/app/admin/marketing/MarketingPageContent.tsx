@@ -26,6 +26,8 @@ import { SEO_PILLAR_PAGES } from '@/lib/seo-pillar-pages';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 import { saveMarketingSettings, toggleMarketingChecklist } from './actions';
+import { isPaidSubscriptionStatus } from '@/lib/acquisition/paid-definition';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://fitmangas.com';
 
@@ -741,7 +743,8 @@ function summarizeSubscriptions(
     const hasAccess = !row.ends_at || new Date(row.ends_at).getTime() > now;
     if ((status === 'active' || status === 'trialing') && hasAccess) {
       activeSubscribers += 1;
-      mrrCents += row.price_cents ?? 0;
+      // CROISSANCE_V2 : le MRR ne compte que les payantes (même définition que la Vue d'ensemble, SPEC §12.1).
+      if (!isCroissanceV2Enabled() || isPaidSubscriptionStatus(status)) mrrCents += row.price_cents ?? 0;
     }
     if (status === 'past_due' || status === 'unpaid') failedPayments += 1;
   }

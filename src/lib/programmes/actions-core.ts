@@ -3,6 +3,14 @@ import { hasVisioClientAccess } from '@/lib/access-control';
 import { A_VALIDER_LOT1, A_VALIDER_LOT3 } from '@/content/a-valider';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { assertEnrollmentOwner, formatCertificateNumber, isStepCompleteAt80, segmentDurationS } from '@/lib/programmes/progress';
+import { addDays, dayKeyInTimeZone } from '@/lib/programmes/engine';
+import { resolveDisplayTimeZone } from '@/lib/time/tz-label';
+
+/** Fuseau de la cliente (pour « aujourd'hui » / « demain » côté serveur). */
+async function userTimeZone(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<string> {
+  const { data } = await admin.from('profiles').select('display_timezone, preferred_locale').eq('id', userId).maybeSingle();
+  return resolveDisplayTimeZone((data?.display_timezone as string | null) ?? null, (data?.preferred_locale as string | null) ?? 'fr');
+}
 
 export type ProgramActionResult = { ok: true; id?: string } | { ok: false; message: string };
 
@@ -120,15 +128,25 @@ export async function setEnrollmentStatusInternal(
 export async function restartProgramInternal(enrollmentId: string, userId: string): Promise<ProgramActionResult> {
   const row = await loadOwnedEnrollment(enrollmentId, userId);
   if ('ok' in row) return row;
+  // Nouvelle inscription avec les mêmes réglages ; l'ancienne reste dans l'historique (SPEC §4.2).
+  const admin = createAdminClient();
+  const [{ data: prev }, tz] = await Promise.all([
+    admin
+      .from('program_enrollments')
+      .select('chosen_days, reminder_time, reminder_email, reminder_inapp, reminder_push')
+      .eq('id', enrollmentId)
+      .maybeSingle(),
+    userTimeZone(admin, userId),
+  ]);
   return startProgramInternal({
     userId,
     programId: row.program_id,
-    startDate: new Date().toISOString().slice(0, 10),
-    chosenDays: [1, 3, 5],
-    reminderTime: '18:00',
-    reminderEmail: true,
-    reminderInapp: true,
-    reminderPush: false,
+    startDate: dayKeyInTimeZone(new Date(), tz),
+    chosenDays: Array.isArray(prev?.chosen_days) && prev.chosen_days.length ? (prev.chosen_days as number[]) : [1, 3, 5],
+    reminderTime: typeof prev?.reminder_time === 'string' ? prev.reminder_time.slice(0, 5) : '18:00',
+    reminderEmail: prev?.reminder_email !== false,
+    reminderInapp: prev?.reminder_inapp !== false,
+    reminderPush: prev?.reminder_push === true,
   });
 }
 
@@ -159,13 +177,23 @@ export async function recordWatchedInternal(input: {
       .maybeSingle();
     duration = Number(vid?.duration_seconds ?? 0);
   }
-  const complete = input.autoComplete || isStepCompleteAt80(input.watchedS, duration);
+  // Lecture de la ligne existante : la validation est définitive (revoir une séance ne la « dé-valide » pas)
+  // et le temps regardé ne diminue jamais.
+  const { data: existing } = await admin
+    .from('program_step_progress')
+    .select('watched_s, completed_at')
+    .eq('enrollment_id', input.enrollmentId)
+    .eq('step_id', input.stepId)
+    .maybeSingle();
+  const watched = Math.max(Number(existing?.watched_s ?? 0), Math.max(0, Math.round(input.watchedS)));
+  const complete = input.autoComplete || isStepCompleteAt80(watched, duration);
+  const completedAt = (existing?.completed_at as string | null) ?? (complete ? new Date().toISOString() : null);
   const { error } = await admin.from('program_step_progress').upsert(
     {
       enrollment_id: input.enrollmentId,
       step_id: input.stepId,
-      watched_s: input.watchedS,
-      completed_at: complete ? new Date().toISOString() : null,
+      watched_s: watched,
+      completed_at: completedAt,
     },
     { onConflict: 'enrollment_id,step_id' },
   );
@@ -173,7 +201,37 @@ export async function recordWatchedInternal(input: {
     console.error('[programmes] watched', error.message);
     return { ok: false, message: GENERIC };
   }
+  if (completedAt && !existing?.completed_at) {
+    // Une séance faite annule un éventuel « Décaler à demain ».
+    await admin.from('program_enrollments').update({ postponed_until: null }).eq('id', input.enrollmentId);
+  }
   return { ok: true };
+}
+
+/** Jours d'entraînement et heure du rappel (« Mes réglages »). */
+export async function updateEnrollmentSettingsInternal(input: {
+  userId: string;
+  enrollmentId: string;
+  chosenDays: number[];
+  reminderTime: string;
+}): Promise<ProgramActionResult> {
+  const gated = programmesGate() ?? (await requireVisioUser(input.userId));
+  if (gated) return gated;
+  const row = await loadOwnedEnrollment(input.enrollmentId, input.userId);
+  if ('ok' in row) return row;
+  const days = Array.from(new Set(input.chosenDays.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))).sort((a, b) => a - b);
+  if (!days.length) return { ok: false, message: A_VALIDER_LOT3.pickDay.fr };
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.reminderTime)) return { ok: false, message: A_VALIDER_LOT3.badTime.fr };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('program_enrollments')
+    .update({ chosen_days: days, reminder_time: input.reminderTime })
+    .eq('id', input.enrollmentId);
+  if (error) {
+    console.error('[programmes] settings', error.message);
+    return { ok: false, message: GENERIC };
+  }
+  return { ok: true, id: input.enrollmentId };
 }
 
 export async function recordFeelingInternal(input: {
@@ -289,15 +347,32 @@ export async function recordFeedbackInternal(input: {
   return { ok: true };
 }
 
+/** Retire l'accord de publication des messages laissés pour Alejandra sur cette inscription. */
+export async function withdrawFeedbackConsentInternal(enrollmentId: string, userId: string): Promise<ProgramActionResult> {
+  const row = await loadOwnedEnrollment(enrollmentId, userId);
+  if ('ok' in row) return row;
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('program_feedback')
+    .update({ consent_withdrawn_at: new Date().toISOString() })
+    .eq('enrollment_id', enrollmentId)
+    .eq('publish_consent', true)
+    .is('consent_withdrawn_at', null);
+  if (error) {
+    console.error('[programmes] feedback consent', error.message);
+    return { ok: false, message: GENERIC };
+  }
+  return { ok: true };
+}
+
 export async function postponeSessionInternal(enrollmentId: string, userId: string): Promise<ProgramActionResult> {
   const gated = programmesGate() ?? (await requireVisioUser(userId));
   if (gated) return gated;
   const row = await loadOwnedEnrollment(enrollmentId, userId);
   if ('ok' in row) return row;
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const until = tomorrow.toISOString().slice(0, 10);
   const admin = createAdminClient();
+  const tz = await userTimeZone(admin, userId);
+  const until = addDays(dayKeyInTimeZone(new Date(), tz), 1);
   const { error } = await admin.from('program_enrollments').update({ postponed_until: until }).eq('id', enrollmentId);
   if (error) {
     console.error('[programmes] postpone', error.message);

@@ -162,7 +162,13 @@ export type AcquisitionOverview = {
   crmFunnel: FunnelStep[];
   /** Entonnoir de référence (GA4 visites → clics essai → essais → payantes → 90 j) */
   referenceFunnel?: FunnelStep[];
+  /** Lot 7 : pipeline CRM sans les contacts de test ni de l'équipe (interrupteur « Inclure les tests » éteint). */
+  crmFunnelNoTests?: FunnelStep[];
   kpis: AcquisitionKpi[];
+  /** Lot 7 : indicateurs avec les compteurs CRM sans les tests. */
+  kpisNoTests?: AcquisitionKpi[];
+  /** Lot 7 : CROISSANCE_V2 allumé. */
+  croissanceV2?: boolean;
   performanceHooks: PerformanceHookRow[];
   sourceErrors: SourceError[];
   schemaReady: boolean;

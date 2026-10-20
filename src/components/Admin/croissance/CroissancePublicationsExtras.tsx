@@ -25,6 +25,8 @@ export function CroissancePublicationsExtras({ posts }: Props) {
     (p) => p.format === 'reel' && !p.rawVideoPath && !p.editedVideoPath && p.status !== 'published',
   );
   const stuck = posts.filter(isStuckPublishing);
+  // Chiffre non sourcé repéré à l'audit : signalé seulement dans les posts non publiés qui le reprennent.
+  const unsourced = posts.filter((p) => p.status !== 'published' && /160\s?€/.test(p.caption) && /studio/i.test(p.caption));
   const duplicate = posts
     .filter((p) => p.status === 'scheduled' || p.status === 'ready')
     .map((p) => ({
@@ -38,7 +40,7 @@ export function CroissancePublicationsExtras({ posts }: Props) {
 
   return (
     <div className="mb-6 space-y-4 rounded-[1.75rem] border border-[#E8DFD4] bg-white/90 p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">Publications · lot 7</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C45D3E]">À surveiller</p>
       <div>
         <h3 className="text-sm font-semibold text-[#2A2420]">{A_VALIDER_LOT7.toFilm.fr}</h3>
         {toFilm.length ? (
@@ -107,13 +109,16 @@ export function CroissancePublicationsExtras({ posts }: Props) {
           </ul>
         </div>
       ) : null}
-      <p className="text-xs text-[#78716C]">{A_VALIDER_LOT7.unsourced160.fr}</p>
-      <details className="text-xs text-[#78716C]">
-        <summary className="cursor-pointer font-semibold">?</summary>
-        <p className="mt-1">
-          Jargon technique (cover_url, POST /{'{ig-user-id}'}/media) : miniature Instagram, pas un bouton à copier.
-        </p>
-      </details>
+      {unsourced.length ? (
+        <div>
+          <h3 className="text-sm font-semibold text-[#2A2420]">{A_VALIDER_LOT7.unsourced160.fr}</h3>
+          <ul className="mt-2 space-y-1 text-sm text-[#5A5550]">
+            {unsourced.slice(0, 5).map((p) => (
+              <li key={p.id}>{p.title || p.caption.slice(0, 60)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

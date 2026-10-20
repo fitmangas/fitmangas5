@@ -60,3 +60,14 @@ describe('currentVisioFromTier', () => {
     expect(currentVisioFromTier(null)).toBe(false);
   });
 });
+
+describe('computeVisioAccessV2 — formule', () => {
+  it('ignore un abonnement présentiel', () => {
+    const r = computeVisioAccessV2([{ status: 'active', ends_at: null, stripe_subscription_id: 'sub_123', tier: 'onsite_monthly' }]);
+    expect(r.visio).toBe(false);
+  });
+  it('accepte un abonnement visio collectif', () => {
+    const r = computeVisioAccessV2([{ status: 'active', ends_at: null, stripe_subscription_id: 'sub_123', tier: 'online_group_monthly' }]);
+    expect(r.visio).toBe(true);
+  });
+});

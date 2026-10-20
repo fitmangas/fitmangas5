@@ -2,13 +2,15 @@ import { CommunityManagerBoard } from '@/components/Admin/community/CommunityMan
 import { CroissancePublicationsExtras } from '@/components/Admin/croissance/CroissancePublicationsExtras';
 
 import { loadCommunityBoardProps } from './load-community-board';
+import { isCroissanceV2Enabled } from '@/lib/acquisition/croissance-v2-flag';
 
 export async function CommunityManagerSection() {
   const props = await loadCommunityBoardProps();
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-2 sm:px-6">
-      <CroissancePublicationsExtras posts={props.board.posts} />
+      {/* Lot 7 : derrière CROISSANCE_V2 (drapeau éteint = écran actuel). */}
+      {isCroissanceV2Enabled() ? <CroissancePublicationsExtras posts={props.board.posts} /> : null}
       {props.boardLoadError ? (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           Board CM indisponible : {props.boardLoadError}
@@ -29,6 +31,7 @@ export async function CommunityManagerSection() {
         doubleUiEnabled={props.doubleUiEnabled}
         pillarHistoryLabels={props.pillarHistoryLabels}
         weekMixLabel={props.weekMixLabel}
+        croissanceV2={isCroissanceV2Enabled()}
       />
     </div>
   );

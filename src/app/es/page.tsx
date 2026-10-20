@@ -46,7 +46,7 @@ export default async function EsHomePage({ searchParams }: { searchParams: HomeS
   const sp = await searchParams;
   const openLoginRequired = sp.compte === 'connexion-requise';
   const initialOfferId = sp.offer?.trim() || sp.course?.trim() || undefined;
-  const { vimeoShowcase, blogPreviews } = await loadLandingHomeData();
+  const { vimeoShowcase, blogPreviews, offerFacts } = await loadLandingHomeData();
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -73,6 +73,7 @@ export default async function EsHomePage({ searchParams }: { searchParams: HomeS
       <LandingPage
         vimeoShowcase={vimeoShowcase}
         blogPreviews={blogPreviews}
+        offerFacts={offerFacts}
         initialLang="ES"
         openLoginRequired={openLoginRequired}
         initialOfferId={initialOfferId}

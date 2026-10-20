@@ -36,7 +36,12 @@ export function verifyUnsubscribeToken(
   }
 }
 
-export function unsubscribeUrlForUser(userId: string, env: Record<string, string | undefined> = process.env): string {
+export function unsubscribeUrlForUser(
+  userId: string,
+  env: Record<string, string | undefined> = process.env,
+  lang: 'fr' | 'es' = 'fr',
+): string {
   const base = (env.NEXT_PUBLIC_APP_URL || env.APP_URL || 'https://fitmangas.com').replace(/\/$/, '');
-  return `${base}/api/notifications/unsubscribe?token=${encodeURIComponent(signUnsubscribeToken(userId, env))}`;
+  const langParam = lang === 'es' ? '&lang=es' : '';
+  return `${base}/api/notifications/unsubscribe?token=${encodeURIComponent(signUnsubscribeToken(userId, env))}${langParam}`;
 }

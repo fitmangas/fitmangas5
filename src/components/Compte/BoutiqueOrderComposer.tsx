@@ -1,13 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import NextImage from 'next/image';
-import { ArrowDownRight, ArrowUpRight, Loader2, X } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Package, Plus, X } from 'lucide-react';
 
+import { formatBoutiquePrice, type BoutiqueCategory } from '@/lib/boutique-format';
+
+/** Produit de la grille (D02) : prix de vente Printful calculés côté serveur (catalogue en cache). */
 type ProductInput = {
   id: number;
   name: string;
   image: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  currency?: string;
+  category?: BoutiqueCategory;
 };
 
 type Variant = {
@@ -83,7 +90,18 @@ async function detectTransparentPixels(imageUrl: string): Promise<boolean> {
   return false;
 }
 
-export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: ProductInput[]; lang?: 'fr' | 'en' | 'es' }) {
+export function BoutiqueOrderComposer({
+  products,
+  lang = 'fr',
+  ordersCount = 0,
+  inProgressCount = 0,
+}: {
+  products: ProductInput[];
+  lang?: 'fr' | 'en' | 'es';
+  ordersCount?: number;
+  inProgressCount?: number;
+}) {
+  const [category, setCategory] = useState<'all' | BoutiqueCategory>('all');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [openProductModal, setOpenProductModal] = useState(false);
   const [detail, setDetail] = useState<ProductDetail | null>(null);
@@ -107,10 +125,10 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const t =
     lang === 'en'
-      ? { cart: 'Cart', products: 'product', detail: 'Product detail', loading: 'Loading...', chooseVariant: 'Choose a variant', variant: 'Variant', quantity: 'Quantity', fullName: 'Full name', address: 'Address', city: 'City', zip: 'Zip code', country: 'Country code (ISO)', edit: 'Edit', product: 'Product', estTotal: 'Estimated total', pending: 'Pending cart', item: 'item(s)', addContinue: 'Add and continue', addOrder: 'Add and checkout', sending: 'Sending...', added: 'Product added to cart. Your info is saved.', created: 'draft created. Payment confirmation is still required.', unavailable: 'Mockup unavailable', allShown: 'All products are already displayed as best sellers.', bestSeller: 'Best Seller Collection', topReviews: 'Top reviews', explore: 'Explore best sellers', fullShop: 'Full shop', dropLabel: 'Best Seller Drop', heroTagline: 'The most requested FitMangas pieces of the moment, selected to move in style.', fresh: 'The Boutique', stylish: 'Pilates', byline: 'by fitmangas', unknownError: 'Unknown error', createImpossible: 'Unable to create order', productFallback: 'Product' }
+      ? { cart: 'Cart', products: 'product', detail: 'Product detail', loading: 'Loading...', chooseVariant: 'Choose a variant', variant: 'Variant', quantity: 'Quantity', fullName: 'Full name', address: 'Address', city: 'City', zip: 'Zip code', country: 'Country code (ISO)', edit: 'Edit', product: 'Product', estTotal: 'Estimated total', pending: 'Pending cart', item: 'item(s)', addContinue: 'Add and continue', addOrder: 'Add and checkout', sending: 'Sending...', added: 'Product added to cart. Your info is saved.', created: 'draft created. Payment confirmation is still required.', unavailable: 'Image unavailable', unknownError: 'Unknown error', createImpossible: 'Unable to create order', productFallback: 'Product', kicker: 'FitMangas shop', title: 'The shop', subtitle: 'Pieces made for moving, printed on demand and delivered to your door.', orders: 'My orders', inProgress: 'In progress', all: 'All', cat: { bouger: 'For moving', accessoires: 'Accessories', quotidien: 'Everyday' }, open: 'See the product' }
       : lang === 'es'
-        ? { cart: 'Carrito', products: 'producto', detail: 'Detalle producto', loading: 'Cargando...', chooseVariant: 'Elegir variante', variant: 'Variante', quantity: 'Cantidad', fullName: 'Nombre completo', address: 'Dirección', city: 'Ciudad', zip: 'Código postal', country: 'Código país (ISO)', edit: 'Editar', product: 'Producto', estTotal: 'Total estimado', pending: 'Carrito pendiente', item: 'artículo(s)', addContinue: 'Añadir y continuar', addOrder: 'Añadir y pagar', sending: 'Enviando...', added: 'Producto añadido al carrito. Tu información está guardada.', created: 'borrador creado. Falta confirmar el pago.', unavailable: 'Mockup no disponible', allShown: 'Todos los productos ya se muestran en best sellers.', bestSeller: 'Colección best seller', topReviews: 'Reseñas top', explore: 'Explorar best sellers', fullShop: 'Tienda completa', dropLabel: 'Drop Best Seller', heroTagline: 'Las piezas FitMangas más solicitadas del momento, seleccionadas para moverte con estilo.', fresh: 'La Boutique', stylish: 'Pilates', byline: 'por fitmangas', unknownError: 'Error desconocido', createImpossible: 'No se puede crear', productFallback: 'Producto' }
-        : { cart: 'Panier', products: 'produit', detail: 'Détail produit', loading: 'Chargement...', chooseVariant: 'Choisir une variante', variant: 'Variante', quantity: 'Quantité', fullName: 'Nom complet', address: 'Adresse', city: 'Ville', zip: 'Code postal', country: 'Code pays (ISO)', edit: 'Modifier', product: 'Produit', estTotal: 'Total estimé', pending: 'Panier en attente', item: 'article(s)', addContinue: 'Ajouter et continuer', addOrder: 'Ajouter et commander', sending: 'Envoi...', added: 'Produit ajouté au panier. Tes informations sont conservées.', created: 'brouillon créé. Le paiement reste à confirmer.', unavailable: 'Mockup indisponible', allShown: 'Tous les produits sont déjà affichés en best sellers.', bestSeller: 'Collection best seller', topReviews: 'Meilleures notes', explore: 'Explorer les best sellers', fullShop: 'Boutique complète', dropLabel: 'Drop best seller', heroTagline: 'Les pièces FitMangas les plus demandées du moment, sélectionnées pour bouger avec style.', fresh: 'La Boutique', stylish: 'Pilates', byline: 'de fitmangas', unknownError: 'Erreur inconnue', createImpossible: 'Création impossible', productFallback: 'Produit' };
+        ? { cart: 'Carrito', products: 'producto', detail: 'Detalle producto', loading: 'Cargando...', chooseVariant: 'Elegir variante', variant: 'Variante', quantity: 'Cantidad', fullName: 'Nombre completo', address: 'Dirección', city: 'Ciudad', zip: 'Código postal', country: 'Código país (ISO)', edit: 'Editar', product: 'Producto', estTotal: 'Total estimado', pending: 'Carrito pendiente', item: 'artículo(s)', addContinue: 'Añadir y continuar', addOrder: 'Añadir y pagar', sending: 'Enviando...', added: 'Producto añadido al carrito. Tu información está guardada.', created: 'borrador creado. Falta confirmar el pago.', unavailable: 'Imagen no disponible', unknownError: 'Error desconocido', createImpossible: 'No se puede crear', productFallback: 'Producto', kicker: 'Tienda FitMangas', title: 'La tienda', subtitle: 'Piezas pensadas para moverte, fabricadas bajo pedido y enviadas a tu casa.', orders: 'Mis pedidos', inProgress: 'En curso', all: 'Todo', cat: { bouger: 'Para moverte', accessoires: 'Accesorios', quotidien: 'Para el día a día' }, open: 'Ver el producto' }
+        : { cart: 'Panier', products: 'produit', detail: 'Détail produit', loading: 'Chargement...', chooseVariant: 'Choisir une variante', variant: 'Variante', quantity: 'Quantité', fullName: 'Nom complet', address: 'Adresse', city: 'Ville', zip: 'Code postal', country: 'Code pays (ISO)', edit: 'Modifier', product: 'Produit', estTotal: 'Total estimé', pending: 'Panier en attente', item: 'article(s)', addContinue: 'Ajouter et continuer', addOrder: 'Ajouter et commander', sending: 'Envoi...', added: 'Produit ajouté au panier. Tes informations sont conservées.', created: 'brouillon créé. Le paiement reste à confirmer.', unavailable: 'Image indisponible', unknownError: 'Erreur inconnue', createImpossible: 'Création impossible', productFallback: 'Produit', kicker: 'Boutique FitMangas', title: 'La boutique', subtitle: 'Des pièces pensées pour bouger, fabriquées à la demande et livrées chez toi.', orders: 'Mes commandes', inProgress: 'En cours', all: 'Tout', cat: { bouger: 'Pour bouger', accessoires: 'Accessoires', quotidien: 'Au quotidien' }, open: 'Voir le produit' };
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedProductId) ?? null,
@@ -121,38 +139,14 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
     [detail?.variants, variantId],
   );
   const estimatedTotal = (selectedVariant?.retailPrice ?? 0) * quantity;
-  const bestSellerProducts = useMemo(() => {
-    const used = new Set<number>();
-    const pick = (keywords: string[]) => {
-      const found = products.find(
-        (p) => !used.has(p.id) && keywords.some((kw) => p.name.toLowerCase().includes(kw)),
-      );
-      if (found) used.add(found.id);
-      return found;
-    };
-
-    const picks = [
-      pick(['pilates tapis', 'tapis pilates', 'pilates mat', 'mat']),
-      pick(['hat style', 'bucket hat', 'hat', 'casquette']),
-      pick(['padded sports bra', 'sports bra', 'brassière']),
-    ].filter(Boolean) as ProductInput[];
-
-    if (picks.length < 3) {
-      for (const p of products) {
-        if (picks.length >= 3) break;
-        if (used.has(p.id)) continue;
-        picks.push(p);
-        used.add(p.id);
-      }
-    }
-    return picks;
+  const categories = useMemo(() => {
+    const order: BoutiqueCategory[] = ['bouger', 'accessoires', 'quotidien'];
+    return order.filter((c) => products.some((p) => p.category === c));
   }, [products]);
-  const bestSellerIds = useMemo(() => new Set(bestSellerProducts.map((p) => p.id)), [bestSellerProducts]);
-  const fullBoutiqueProducts = useMemo(
-    () => products.filter((p) => !bestSellerIds.has(p.id)),
-    [products, bestSellerIds],
+  const visibleProducts = useMemo(
+    () => (category === 'all' ? products : products.filter((p) => p.category === category)),
+    [products, category],
   );
-  const heroProduct = bestSellerProducts[0] ?? products[0] ?? null;
 
   useEffect(() => {
     if (selectedProductId == null) {
@@ -357,48 +351,86 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
     }
   }
 
-  function renderProductCard(p: ProductInput, compact = false) {
-    const selected = selectedProductId === p.id;
+  function renderProductCard(p: ProductInput) {
     const transparentImage = isTransparentImage(p.image);
-    const isCopperVacuum = p.name.toLowerCase().includes('copper vacuum');
+    const price = formatBoutiquePrice({ minPrice: p.minPrice ?? null, maxPrice: p.maxPrice ?? null, currency: p.currency ?? 'EUR' }, locale);
+    const open = () => {
+      setSelectedProductId(p.id);
+      setOpenProductModal(true);
+    };
     return (
-      <button
+      <article
         key={p.id}
-        type="button"
-        onClick={() => {
-          setSelectedProductId(p.id);
-          setOpenProductModal(true);
-        }}
-        className={`group overflow-hidden rounded-2xl border text-left transition-all duration-200 hover:scale-[1.02] ${
-          selected
-            ? 'border-luxury-orange/55 bg-white shadow-[0_14px_32px_rgba(255,122,0,0.18)]'
-            : 'border-black/8 bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-luxury-orange/35 hover:shadow-[0_12px_26px_rgba(0,0,0,0.12)]'
-        }`}
+        className="group flex flex-col overflow-hidden rounded-[1.6rem] bg-white shadow-[0_14px_34px_-20px_rgba(29,26,23,0.32)] transition duration-200 hover:-translate-y-0.5"
       >
-        <div className={`${compact ? 'aspect-[5/4]' : 'aspect-[4/3]'} rounded-t-2xl ${transparentImage ? 'bg-transparent' : 'bg-[#f5f1eb]'}`}>
-          {p.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={p.image}
-              alt={p.name}
-              className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
-                transparentImage ? 'object-contain p-2' : 'object-cover'
-              } ${isCopperVacuum ? 'scale-[0.9]' : ''}`}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-luxury-soft">{t.unavailable}</div>
-          )}
+        <button type="button" onClick={open} className="block text-left" aria-label={`${t.open} : ${p.name}`}>
+          <div className={`relative aspect-[4/4.1] overflow-hidden ${transparentImage ? 'bg-[#f3ece4]' : 'bg-[#efe6dc]'}`}>
+            {p.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={p.image}
+                alt=""
+                loading="lazy"
+                className={`h-full w-full transition duration-300 group-hover:scale-[1.03] ${transparentImage ? 'object-contain p-4' : 'object-cover'}`}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[12px] text-luxury-soft">{t.unavailable}</div>
+            )}
+          </div>
+        </button>
+        <div className="flex flex-1 flex-col p-4">
+          <p className="line-clamp-2 text-[14px] font-semibold leading-snug text-luxury-ink">{p.name}</p>
+          {p.category ? <p className="mt-0.5 text-[12px] text-luxury-muted">{t.cat[p.category]}</p> : null}
+          <div className="mt-auto flex items-center justify-between pt-3">
+            <p className="text-[15px] font-bold text-luxury-ink">{price ?? ''}</p>
+            <button
+              type="button"
+              onClick={open}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-luxury-ink text-white transition hover:bg-luxury-orange"
+              aria-label={`${t.open} : ${p.name}`}
+            >
+              <Plus size={16} />
+            </button>
+          </div>
         </div>
-        <div className="space-y-1 p-3">
-          <p className="line-clamp-1 text-[1.05rem] font-semibold tracking-tight text-luxury-ink">{p.name}</p>
-          <p className="text-xs tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
-        </div>
-      </button>
+      </article>
     );
   }
 
+  const chipClass = (active: boolean) =>
+    `rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition ${
+      active ? 'bg-luxury-ink text-white' : 'bg-white/80 text-luxury-ink/70 shadow-[0_6px_16px_-12px_rgba(29,26,23,0.3)] hover:text-luxury-ink'
+    }`;
+
   return (
-    <div className="space-y-12">
+    <div className="space-y-6">
+      <section className="flex flex-wrap items-end justify-between gap-4 px-1">
+        <div>
+          <p className="fm-kicker">{t.kicker}</p>
+          <h1 className="hero-signature-title mt-2 text-[2.6rem] text-luxury-ink md:text-[4rem]">{t.title}</h1>
+          <p className="hero-signature-subtitle mt-2 text-[14px]">{t.subtitle}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {inProgressCount > 0 ? (
+            <Link
+              href="/compte/boutique/en-cours"
+              className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-ink shadow-[0_6px_16px_-10px_rgba(29,26,23,0.3)]"
+            >
+              <span className="h-2 w-2 rounded-full bg-luxury-orange" aria-hidden />
+              {t.inProgress} · {inProgressCount}
+            </Link>
+          ) : null}
+          <Link
+            href="/compte/boutique/commandes"
+            className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-luxury-ink shadow-[0_6px_16px_-10px_rgba(29,26,23,0.3)]"
+          >
+            <Package size={14} aria-hidden />
+            {t.orders}
+            {ordersCount > 0 ? ` · ${ordersCount}` : ''}
+          </Link>
+        </div>
+      </section>
+
       {cartItems.length > 0 ? (
         <div className="flex items-center justify-end">
           <div className="inline-flex items-center gap-2 rounded-full border border-luxury-orange/35 bg-white/85 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-ink shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
@@ -407,121 +439,23 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
           </div>
         </div>
       ) : null}
-      <section className="overflow-hidden rounded-[34px] border border-white/55 bg-white/85 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.12)] md:p-6">
-          <div className="grid gap-6 md:grid-cols-[1.08fr_1fr] md:items-stretch">
-            <div className="flex flex-col justify-center">
-              <div className="mt-3">
-                <NextImage
-                  src="/logo.png"
-                  alt="Logo FitMangas"
-                  width={72}
-                  height={72}
-                  className="mb-4 h-[72px] w-[72px] object-contain md:mb-5 md:h-[84px] md:w-[84px]"
-                />
-                <h3 className="font-serif text-[4.4rem] font-normal italic leading-[0.9] tracking-tight text-luxury-ink md:text-[5.9rem]">{t.fresh}</h3>
-                <div className="mt-1 flex items-end">
-                  <h3 className="translate-y-1 font-serif text-[4.4rem] font-normal italic leading-[0.9] tracking-tight text-[#606066] md:translate-y-2 md:text-[5.9rem]">
-                    {t.stylish}
-                  </h3>
-                  <span className="ml-4 mb-[0.6rem] font-['Playfair_Display'] text-[1.55rem] italic font-semibold leading-none tracking-[0.01em] text-[#606066] md:mb-[0.78rem] md:text-[1.75rem]">
-                    {t.byline}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-7 max-w-md text-sm leading-relaxed text-luxury-muted">
-                {t.heroTagline}
-              </p>
-            </div>
 
-            <div
-              className={`relative overflow-hidden rounded-[28px] border border-white/55 p-2 ${
-                isTransparentImage(heroProduct?.image ?? null) ? 'bg-transparent' : 'bg-[#f5f1eb]'
-              }`}
-            >
-              <div className="relative aspect-[4/4.4] overflow-hidden rounded-[24px] bg-white/40">
-                {heroProduct?.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={heroProduct.image}
-                    alt={heroProduct.name}
-                    className={`h-full w-full ${isTransparentImage(heroProduct.image) ? 'object-contain p-3' : 'object-cover'}`}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-luxury-soft">Best seller</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {heroProduct ? (
-            <div className="mt-3 flex justify-start">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProductId(heroProduct.id);
-                  setOpenProductModal(true);
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-[#131313] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:brightness-110"
-              >
-                {t.explore}
-                <ArrowDownRight size={14} />
-              </button>
-            </div>
-          ) : null}
-          <div className="mt-3 grid items-center gap-4 md:grid-cols-3">
-            {bestSellerProducts.map((p) => (
-              <button
-                key={`collection-${p.id}`}
-                type="button"
-                onClick={() => {
-                  setSelectedProductId(p.id);
-                  setOpenProductModal(true);
-                }}
-                className={`group flex min-h-[142px] items-center gap-4 rounded-2xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
-                  selectedProductId === p.id
-                    ? 'border-luxury-orange/55 bg-white shadow-[0_10px_24px_rgba(255,122,0,0.16)]'
-                    : 'border-black/8 bg-white shadow-[0_7px_16px_rgba(0,0,0,0.08)] hover:border-luxury-orange/35 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,0,0,0.12)]'
-                }`}
-              >
-                <div
-                  className={`h-28 w-28 shrink-0 overflow-hidden rounded-[18px] ${
-                    isTransparentImage(p.image) ? 'bg-transparent' : 'bg-[#f5f1eb]'
-                  }`}
-                >
-                  {p.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className={`h-full w-full ${isTransparentImage(p.image) ? 'object-contain p-1.5' : 'object-cover'}`}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-luxury-soft">Image</div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-[1.9rem] font-semibold leading-[0.88] tracking-tight text-luxury-ink">{p.name}</p>
-                  <p className="mt-2 text-sm text-luxury-muted">{t.bestSeller}</p>
-                  <p className="mt-1 text-xs tracking-[0.08em] text-[#f3a11a]">★★★★★</p>
-                </div>
-                <ArrowUpRight size={16} className="ml-auto shrink-0 text-luxury-ink/70 transition group-hover:text-luxury-ink" />
-              </button>
-            ))}
-          </div>
-      </section>
-
-      <section>
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-[2.35rem] font-semibold tracking-tight text-luxury-ink">{t.fullShop}</h3>
+      {categories.length > 1 ? (
+        <div className="flex flex-wrap gap-2 px-1" role="tablist">
+          <button type="button" role="tab" aria-selected={category === 'all'} onClick={() => setCategory('all')} className={chipClass(category === 'all')}>
+            {t.all} · {products.length}
+          </button>
+          {categories.map((c) => (
+            <button key={c} type="button" role="tab" aria-selected={category === c} onClick={() => setCategory(c)} className={chipClass(category === c)}>
+              {t.cat[c]}
+            </button>
+          ))}
         </div>
-        {fullBoutiqueProducts.length === 0 ? (
-          <p className="text-sm text-luxury-muted">{t.allShown}</p>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {fullBoutiqueProducts.map((p) => renderProductCard(p))}
-          </div>
-        )}
-      </section>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">{visibleProducts.map((p) => renderProductCard(p))}</div>
+
+      {message && !openProductModal ? <p className="rounded-xl bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800">{message}</p> : null}
 
       {openProductModal && selectedProduct ? (
         <div
@@ -601,7 +535,11 @@ export function BoutiqueOrderComposer({ products, lang = 'fr' }: { products: Pro
 
               <div className="space-y-4">
                 <h4 className="text-3xl font-semibold tracking-tight text-luxury-ink">{selectedProduct.name}</h4>
-                <p className="text-sm text-luxury-muted">★★★★★ • {t.topReviews}</p>
+                {formatBoutiquePrice({ minPrice: selectedProduct.minPrice ?? null, maxPrice: selectedProduct.maxPrice ?? null, currency: selectedProduct.currency ?? 'EUR' }, locale) ? (
+                  <p className="text-[15px] font-semibold text-luxury-ink">
+                    {formatBoutiquePrice({ minPrice: selectedProduct.minPrice ?? null, maxPrice: selectedProduct.maxPrice ?? null, currency: selectedProduct.currency ?? 'EUR' }, locale)}
+                  </p>
+                ) : null}
 
                 <div>
                   <label className="fm-label text-luxury-soft">{t.variant}</label>

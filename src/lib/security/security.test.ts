@@ -157,3 +157,13 @@ describe('garde des formulaires publics', () => {
     });
   });
 });
+
+describe('en-têtes de sécurité — lives', () => {
+  it('ne restreint ni la caméra ni le micro (salles Jitsi sur un autre hôte possibles)', async () => {
+    const { buildSecurityHeaders } = await import('./headers');
+    const policy = buildSecurityHeaders().find((h) => h.key === 'Permissions-Policy')?.value ?? '';
+    expect(policy).not.toMatch(/camera=/);
+    expect(policy).not.toMatch(/microphone=/);
+    expect(policy).toContain('geolocation=()');
+  });
+});

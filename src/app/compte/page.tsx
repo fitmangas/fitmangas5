@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { BookOpenText, PlayCircle, Target } from 'lucide-react';
 
 import { CheckoutPurchaseTracker } from '@/components/Marketing/CheckoutPurchaseTracker';
@@ -12,6 +13,8 @@ import { MyReplaysSection } from '@/components/Replay/MyReplaysSection';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { computeGamificationGrade, gradeLabel } from '@/lib/gamification';
 import { formatCompteGreeting, getClientLang, resolveFirstName } from '@/lib/compte/i18n';
+import { loadPlanningContext } from '@/lib/compte/planning-context';
+import { loadPlanningProgramSessions } from '@/lib/programmes/planning-sessions';
 import { getNextAppointment, getMonthlyProgress } from '@/lib/compte/dashboard';
 import { getMonthlySessionGoal } from '@/lib/compte/monthly-goal';
 import { hasVisioClientAccess } from '@/lib/access-control';
@@ -23,8 +26,9 @@ import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-
 import { createClient } from '@/lib/supabase/server';
 import { isProgrammesEnabled } from '@/lib/programmes/flag';
 import { MonProgrammeCard } from '@/components/Programmes/MonProgrammeCard';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { programBySlug } from '@/lib/programmes/catalogue';
+import { loadActiveProgram, loadProgramDefinition } from '@/lib/programmes/load';
+import { LEVEL_TEST_COOKIE } from '@/lib/programmes/level-test';
+import { buildActiveSummary } from '@/lib/programmes/view-models';
 
 function weeklyMotivation(firstName: string | null, lang: 'fr' | 'en' | 'es'): string {
   const lines =
@@ -179,6 +183,8 @@ export default async function ComptePage({
       .is('read_at', null),
     supabase.from('blog_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
   ]);
+  const planningCtx = await loadPlanningContext(supabase, user.id);
+  const planningSessions = await loadPlanningProgramSessions(user.id, planningCtx.timeZone, lang);
 
   const avatarUrl = profile?.avatar_url?.trim() || '/client-contact-photo.jpg';
   const firstName = resolveFirstName(profile?.first_name, user.user_metadata, user.email);
@@ -382,7 +388,9 @@ export default async function ComptePage({
         </details>
       </section>
 
-      {isProgrammesEnabled() ? <DashboardProgramBlock userId={user.id} /> : null}
+      {isProgrammesEnabled() ? (
+        <DashboardProgramBlock userId={user.id} lang={lang === 'es' ? 'es' : 'fr'} timeZone={planningCtx.timeZone} />
+      ) : null}
 
       <section className="relative isolate space-y-3 md:space-y-4">
         <div className="relative z-10 flex items-center gap-2 px-1 md:gap-3">
@@ -510,14 +518,15 @@ export default async function ComptePage({
         </div>
       </section>
 
-      <section id="planning" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
-        <div className="relative z-10 px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-soft">{t.planning}</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-luxury-ink md:mt-2 md:text-[1.7rem]">{t.nextSessions}</h2>
-        </div>
-        <div className="relative z-0">
-          <PlanningV3 lang={lang} compact />
-        </div>
+      <section id="planning" className="relative isolate scroll-mt-24">
+        <PlanningV3
+          lang={lang}
+          variant="dashboard"
+          timeZone={planningCtx.timeZone}
+          languages={planningCtx.languages}
+          onsiteEnabled={planningCtx.onsiteEnabled}
+          programSessions={planningSessions}
+        />
       </section>
 
       <section id="replays" className="relative isolate scroll-mt-24 space-y-3 md:space-y-4">
@@ -540,34 +549,33 @@ export default async function ComptePage({
   );
 }
 
-async function DashboardProgramBlock({ userId }: { userId: string }) {
+async function DashboardProgramBlock({ userId, lang, timeZone }: { userId: string; lang: 'fr' | 'es'; timeZone: string }) {
   try {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from('program_enrollments')
-      .select('id, program_id, programs(slug, title)')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (data) {
-      const prog = data.programs as { slug?: string; title?: { fr?: string } } | { slug?: string; title?: { fr?: string } }[] | null;
-      const program = Array.isArray(prog) ? prog[0] : prog;
-      const slug = program?.slug ?? '';
-      const catalog = slug ? programBySlug(slug) : undefined;
-      return (
-        <MonProgrammeCard
-          state="active"
-          title={program?.title?.fr ?? catalog?.title.fr}
-          nextSession={catalog?.weeks_detail?.[0]?.steps?.find((s) => s.kind === 'video')?.objective?.fr ?? 'Ta prochaine séance'}
-          minutes={catalog?.weeks_detail?.[0]?.steps?.find((s) => s.kind === 'video')?.minutes ?? 20}
-          progressLabel="en cours"
-          percent={0}
-          href={slug ? `/compte/programmes/${slug}` : '/compte/programmes'}
-        />
-      );
+    const current = await loadActiveProgram(userId, timeZone, { includePaused: true });
+    if (current) {
+      const summary = buildActiveSummary({
+        def: current.definition,
+        data: current.data,
+        state: current.state,
+        live: null,
+        lang,
+        todayKey: current.todayKey,
+        timeZone,
+      });
+      return <MonProgrammeCard summary={summary} lang={lang} />;
     }
   } catch {
     /* tables absentes tant que le GO Lot 3 n’est pas appliqué */
   }
-  return <MonProgrammeCard state="empty" href="/compte/programmes" />;
+  let recommended: { slug: string; title: string } | null = null;
+  try {
+    const slug = (await cookies()).get(LEVEL_TEST_COOKIE)?.value;
+    if (slug) {
+      const def = await loadProgramDefinition(decodeURIComponent(slug));
+      if (def?.programId && def.program.status === 'published') recommended = { slug: def.program.slug, title: def.program.title[lang] || def.program.title.fr };
+    }
+  } catch {
+    recommended = null;
+  }
+  return <MonProgrammeCard summary={null} lang={lang} recommended={recommended} />;
 }

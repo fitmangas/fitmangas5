@@ -436,18 +436,18 @@ export function AcquisitionBoard({
                 })
               }
             />
-            <label className="mb-2 inline-flex items-center gap-2 text-sm" style={{ color: acq.ink }}>
-              <input
-                type="checkbox"
-                checked={includeTests}
-                onChange={(e) => setIncludeTests(e.target.checked)}
-              />
-              Inclure les tests
-            </label>
-            {!includeTests ? (
-              <p className="mb-4 text-xs" style={{ color: acq.muted }}>
-                Compteurs sans comptes test / équipe (liste équipe : réglage après GO, voir PROPOSITIONS Lot 7).
-              </p>
+            {overview.croissanceV2 ? (
+              <>
+                <label className="mb-2 inline-flex items-center gap-2 text-sm" style={{ color: acq.ink }}>
+                  <input type="checkbox" checked={includeTests} onChange={(e) => setIncludeTests(e.target.checked)} />
+                  Inclure les tests
+                </label>
+                <p className="mb-4 text-xs" style={{ color: acq.muted }}>
+                  {includeTests
+                    ? 'Tous les contacts sont comptés, fils de test et de l’équipe compris.'
+                    : 'Pipeline, leads chauds et score : sans les fils de test ni ceux de l’équipe (étiquettes test, démo, équipe, prestataire). Les fils restent visibles dans Conversations.'}
+                </p>
+              </>
             ) : null}
             {overview.referenceFunnel?.length ? (
               <FunnelChart
@@ -468,11 +468,11 @@ export function AcquisitionBoard({
             <FunnelChart
               title="Pipeline CRM"
               subtitle="Contacts inbox Acquisition — Portée → Intérêt → Essais → Payant → Membres"
-              steps={overview.crmFunnel}
+              steps={!includeTests && overview.crmFunnelNoTests ? overview.crmFunnelNoTests : overview.crmFunnel}
               conversations={conversations}
               activeStepId="trial"
             />
-            <KpiGrid kpis={overview.kpis} />
+            <KpiGrid kpis={!includeTests && overview.kpisNoTests ? overview.kpisNoTests : overview.kpis} />
             {overview.metaLiveReadiness ? (
               <MetaLiveReadinessPanel status={overview.metaLiveReadiness} />
             ) : null}

@@ -21,9 +21,20 @@ export type WrapResendEmailOptions = {
   /** Lien de désinscription (ex. newsletter) — optionnel. */
   unsubscribeUrl?: string | null;
   heroUrl?: string | null;
+  /** En-tête en HTML (pleine largeur, à la place de l'image) — ex. bloc sombre de la carte cadeau C03. */
+  heroHtml?: string | null;
+  /** Lien de l'image d'en-tête (ex. lancer la séance). */
+  heroHref?: string | null;
+  heroAlt?: string | null;
+  /** Hauteur d'affichage de l'image d'en-tête (px, largeur 600). L'image doit être recadrée à ce ratio. */
+  heroHeight?: number;
   kicker?: string | null;
   headline?: string | null;
   preheader?: string | null;
+  /** Petite phrase au-dessus des liens du pied (« Tu reçois ce rappel car… »). HTML autorisé. */
+  footerNote?: string | null;
+  /** Formule avant la signature « Alejandra » (« À demain, »). null = pas de signature. */
+  signOff?: string | null;
 };
 
 function escapeAttr(value: string) {
@@ -150,28 +161,43 @@ export function wrapResendEmailV2(options: WrapResendEmailOptions): string {
   const hero = options.heroUrl ?? null;
   const prefsUrl = `${base}/compte/preferences`;
   const instagramUrl = 'https://www.instagram.com/fit.mangas/';
-  const brand =
-    options.locale === 'es' ? 'FitMangas · Pilates & Barre en visio · fitmangas.com' : 'FitMangas · Pilates & Barre en visio · fitmangas.com';
-  const prefsLabel = options.locale === 'es' ? 'Gestionar mis notificaciones' : 'Gérer mes notifications';
+  const es = options.locale === 'es';
+  const brand = es ? 'FitMangas · Pilates y Barre en línea' : 'FitMangas · Pilates & Barre en visio';
+  const prefsLabel = es ? 'Gestionar mis notificaciones' : 'Gérer mes notifications';
   const showPrefs = options.showPreferencesLink !== false;
+  const serif = "'Playfair Display',Georgia,'Times New Roman',serif";
+  const sans = 'Inter,Helvetica,Arial,sans-serif';
   const preheader = options.preheader
-    ? `<div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(options.preheader)}</div>`
+    ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(options.preheader)}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>`
     : '';
   const kicker = options.kicker
     ? `<div style="font-size:11px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:#C45D3E;">${escapeHtml(options.kicker)}</div>`
     : '';
   const headline = options.headline
-    ? `<h1 style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;font-size:34px;line-height:40px;letter-spacing:-0.5px;color:#2D2D2D;">${escapeHtml(options.headline)}</h1>`
+    ? `<h1 class="fm-h1" style="margin:10px 0 0;font-family:${serif};font-style:italic;font-weight:600;font-size:34px;line-height:40px;letter-spacing:-0.5px;color:#2D2D2D;">${escapeHtml(options.headline)}</h1>`
     : '';
-  const heroBlock = hero
-    ? `<tr><td><img src="${escapeAttr(hero)}" alt="" width="600" style="display:block;border-radius:28px 28px 0 0;width:100%;height:270px;border:0;"></td></tr>`
+  const heroImg = hero
+    ? `<img class="fm-hero" src="${escapeAttr(hero)}" alt="${escapeAttr(options.heroAlt ?? '')}" width="600" height="${options.heroHeight ?? 270}" style="display:block;border-radius:28px 28px 0 0;width:100%;height:auto;border:0;">`
     : '';
-  const prefs = showPrefs
-    ? `<a href="${escapeAttr(prefsUrl)}" style="color:#8B8178;text-decoration:underline;">${escapeHtml(prefsLabel)}</a> · `
-    : '';
-  const unsub = options.unsubscribeUrl
-    ? `<div style="margin-top:8px;"><a href="${escapeAttr(options.unsubscribeUrl)}" style="color:#8B8178;text-decoration:underline;">${options.locale === 'es' ? 'Darse de baja' : 'Se désinscrire'}</a></div>`
-    : '';
+  const heroBlock = options.heroHtml
+    ? `<tr><td>${options.heroHtml}</td></tr>`
+    : hero
+      ? `<tr><td>${options.heroHref ? `<a href="${escapeAttr(options.heroHref)}" style="display:block;text-decoration:none;">${heroImg}</a>` : heroImg}</td></tr>`
+      : '';
+  const signOff =
+    options.signOff === null
+      ? ''
+      : `<p style="margin:26px 0 0;font-size:15px;color:#4A443F;">${escapeHtml(options.signOff ?? (es ? '¡Hasta pronto!' : 'À bientôt,'))}<br><span style="font-family:${serif};font-style:italic;font-size:22px;color:#2D2D2D;">Alejandra</span></p>`;
+  const footerNote = options.footerNote ? `<div>${options.footerNote}</div>` : '';
+  const links = [
+    showPrefs ? `<a href="${escapeAttr(prefsUrl)}" style="color:#8B8178;text-decoration:underline;">${escapeHtml(prefsLabel)}</a>` : '',
+    options.unsubscribeUrl
+      ? `<a href="${escapeAttr(options.unsubscribeUrl)}" style="color:#8B8178;text-decoration:underline;">${es ? 'Darme de baja' : 'Se désabonner'}</a>`
+      : '',
+    `<a href="${escapeAttr(instagramUrl)}" style="color:#8B8178;text-decoration:underline;">Instagram @fit.mangas</a>`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return `<!DOCTYPE html>
 <html lang="${options.locale}">
@@ -179,33 +205,43 @@ export function wrapResendEmailV2(options: WrapResendEmailOptions): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="color-scheme" content="light" />
   <title>FitMangas</title>
+  <style>
+    @media (max-width: 620px) {
+      .fm-wrap { padding: 0 !important; }
+      .fm-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
+      .fm-pad { padding-left: 22px !important; padding-right: 22px !important; }
+      .fm-h1 { font-size: 28px !important; line-height: 34px !important; }
+      .fm-hero { border-radius: 0 !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#F5F0EB;">
 ${preheader}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F5F0EB" style="background:#F5F0EB;">
-  <tr><td align="center" style="padding:32px 16px 40px;">
+  <tr><td align="center" class="fm-wrap" style="padding:32px 16px 40px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
       <tr><td align="center" style="padding:0 0 22px;">
         <img src="${escapeAttr(logoUrl)}" width="46" height="46" alt="FitMangas" style="display:block;width:46px;height:46px;border:0;">
-        <div style="margin-top:8px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#8B8178;">FITMANGAS</div>
+        <div style="margin-top:8px;font-family:${sans};font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#8B8178;">FitMangas</div>
       </td></tr>
-      <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EFE6DC;border-radius:28px;overflow:hidden;">
+      <tr><td class="fm-card" bgcolor="#FFFFFF" style="background:#FFFFFF;border:1px solid #EFE6DC;border-radius:28px;overflow:hidden;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           ${heroBlock}
-          <tr><td style="padding:34px 44px 8px;font-family:Helvetica,Arial,sans-serif;">
+          <tr><td class="fm-pad" style="padding:34px 44px 8px;font-family:${sans};">
             ${kicker}${headline}
           </td></tr>
-          <tr><td style="padding:14px 44px 36px;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;color:#4A443F;">
+          <tr><td class="fm-pad" style="padding:14px 44px 36px;font-family:${sans};font-size:16px;line-height:26px;color:#4A443F;">
             ${options.innerHtml}
-            <p style="margin:26px 0 0;font-size:15px;color:#4A443F;">${options.locale === 'es' ? 'Un abrazo,' : 'À bientôt,'}<br><span style="font-family:Georgia,serif;font-style:italic;font-size:22px;color:#2D2D2D;">Alejandra</span></p>
+            ${signOff}
           </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding:26px 24px 0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#8B8178;">
-        ${prefs}<a href="${escapeAttr(instagramUrl)}" style="color:#8B8178;text-decoration:underline;">Instagram @fit.mangas</a>
-        <div style="margin-top:10px;color:#A39A92;">${escapeHtml(brand)}</div>
-        ${unsub}
+      <tr><td align="center" style="padding:26px 24px 0;font-family:${sans};font-size:12px;line-height:19px;color:#8B8178;">
+        ${footerNote}
+        <div style="margin-top:10px;">${links}</div>
+        <div style="margin-top:10px;color:#A39A92;">${escapeHtml(brand)} · <a href="${escapeAttr(base)}" style="color:#A39A92;">fitmangas.com</a></div>
       </td></tr>
     </table>
   </td></tr>

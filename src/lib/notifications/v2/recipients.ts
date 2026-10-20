@@ -4,6 +4,7 @@ export type LiveLanguage = 'fr' | 'es';
 
 export type RecipientProfile = {
   id: string;
+  first_name?: string | null;
   preferred_locale: string | null;
   live_other_language?: boolean | null;
   customer_tier?: string | null;

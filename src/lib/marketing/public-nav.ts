@@ -6,6 +6,7 @@ export type PublicNavItem = {
   labelFr: string;
   labelEs: string;
   badge?: string;
+  badgeEs?: string;
 };
 
 export function publicNavItems(opts?: { gifts?: boolean; levelTest?: boolean }): PublicNavItem[] {
@@ -20,7 +21,7 @@ export function publicNavItems(opts?: { gifts?: boolean; levelTest?: boolean }):
   }
   items.push({ href: '/blog', labelFr: 'Blog', labelEs: 'Blog' });
   if (gifts) {
-    items.push({ href: '/offrir', labelFr: 'Offrir', labelEs: 'Regalar', badge: 'Nouveau' });
+    items.push({ href: '/offrir', labelFr: 'Offrir', labelEs: 'Regalar', badge: 'Nouveau', badgeEs: 'Nuevo' });
   }
   return items;
 }

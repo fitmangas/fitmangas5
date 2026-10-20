@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { A_VALIDER_LOT2 } from '@/content/a-valider';
 import { sendEmailBatch, type SendEmailInput } from '@/lib/email/send';
+import { formatEmailFirstName } from '@/lib/email/format-first-name';
+import { renderV2Email, type V2Live } from '@/lib/email/v2-templates';
 import { isOnlineCustomerTier, type CustomerTier } from '@/lib/access-control';
 
 import { dispatch } from '../dispatcher';
@@ -42,25 +44,65 @@ function liveLang(course: CourseRow): 'fr' | 'es' {
   return course.course_language === 'es' ? 'es' : 'fr';
 }
 
+function liveOf(course: CourseRow): V2Live {
+  return { id: course.id, title: course.title, startsAt: course.starts_at, endsAt: course.ends_at, language: liveLang(course) };
+}
+
 function joinUrl(courseId: string) {
   return `${APP_URL()}/live/${courseId}`;
 }
 
+/**
+ * Abonnées qui ont aujourd'hui l'accès Visio, avec la MÊME règle que l'espace client
+ * (`current_customer_tier`) : dernier abonnement actif ou en essai non expiré, sinon `profiles.customer_tier`.
+ * Les comptes admin (Kevin, Alejandra) ne reçoivent pas les rappels clientes.
+ */
 export async function visioProfiles(client: SupabaseClient): Promise<RecipientProfile[]> {
-  const { data: subs, error } = await client
-    .from('subscriptions')
-    .select('user_id, tier, status, profiles!inner(id, preferred_locale, display_timezone, live_other_language, customer_tier, subscription_status)')
-    .in('status', ['active', 'trialing']);
-  if (error) {
-    // Colonne live_other_language absente tant que la migration n’est pas appliquée.
-    const fallback = await client
-      .from('subscriptions')
-      .select('user_id, tier, status, profiles!inner(id, preferred_locale, display_timezone, customer_tier, subscription_status)')
-      .in('status', ['active', 'trialing']);
-    if (fallback.error) throw fallback.error;
-    return mapSubs(fallback.data ?? [], false);
+  const nowIso = new Date().toISOString();
+  const withOther = 'id, role, first_name, preferred_locale, display_timezone, live_other_language, customer_tier, subscription_status';
+  const withoutOther = 'id, role, first_name, preferred_locale, display_timezone, customer_tier, subscription_status';
+
+  let hasOther = true;
+  let profilesRes = await client.from('profiles').select(withOther);
+  if (profilesRes.error) {
+    // Colonne live_other_language absente tant que la migration du lot 2 n'est pas appliquée.
+    hasOther = false;
+    profilesRes = await client.from('profiles').select(withoutOther);
   }
-  return mapSubs(subs ?? [], true);
+  if (profilesRes.error) throw profilesRes.error;
+
+  const { data: subs, error: subsError } = await client
+    .from('subscriptions')
+    .select('user_id, tier, status, ends_at, created_at')
+    .in('status', ['active', 'trialing']);
+  if (subsError) throw subsError;
+
+  const activeTier = new Map<string, { tier: string; status: string; created_at: string }>();
+  for (const s of (subs ?? []) as Array<{ user_id: string; tier: string; status: string; ends_at: string | null; created_at: string }>) {
+    if (s.ends_at && s.ends_at <= nowIso) continue;
+    const prev = activeTier.get(s.user_id);
+    if (!prev || prev.created_at < s.created_at) activeTier.set(s.user_id, { tier: s.tier, status: s.status, created_at: s.created_at });
+  }
+
+  const out: RecipientProfile[] = [];
+  for (const p of (profilesRes.data ?? []) as Array<ProfileJoin & { role?: string | null; first_name?: string | null }>) {
+    if ((p.role ?? '').toLowerCase() === 'admin') continue;
+    const sub = activeTier.get(p.id);
+    const tier = (sub?.tier ?? p.customer_tier ?? null) as CustomerTier | null;
+    const visioAccess = isOnlineCustomerTier(tier);
+    if (!visioAccess) continue;
+    out.push({
+      id: p.id,
+      first_name: p.first_name ?? null,
+      preferred_locale: p.preferred_locale ?? null,
+      live_other_language: hasOther ? Boolean(p.live_other_language) : false,
+      customer_tier: tier,
+      subscription_status: sub?.status ?? p.subscription_status ?? null,
+      display_timezone: p.display_timezone ?? null,
+      visioAccess,
+    });
+  }
+  return out;
 }
 
 function first<T>(v: T | T[] | null | undefined): T | null {
@@ -76,31 +118,6 @@ type ProfileJoin = {
   customer_tier?: string | null;
   subscription_status?: string | null;
 };
-
-function mapSubs(rows: unknown[], hasOther: boolean): RecipientProfile[] {
-  const out: RecipientProfile[] = [];
-  for (const raw of rows as Array<{
-    user_id: string;
-    tier: string;
-    status: string;
-    profiles?: ProfileJoin | ProfileJoin[] | null;
-  }>) {
-    const p = first(raw.profiles);
-    if (!p?.id) continue;
-    const expired = raw.status !== 'active' && raw.status !== 'trialing';
-    const visioAccess = !expired && isOnlineCustomerTier((raw.tier as CustomerTier) ?? null);
-    out.push({
-      id: p.id,
-      preferred_locale: p.preferred_locale ?? null,
-      live_other_language: hasOther ? Boolean(p.live_other_language) : false,
-      customer_tier: p.customer_tier ?? raw.tier,
-      subscription_status: p.subscription_status ?? raw.status,
-      display_timezone: p.display_timezone ?? null,
-      visioAccess,
-    });
-  }
-  return out;
-}
 
 async function alreadySent(client: SupabaseClient, key: string): Promise<boolean> {
   const { data } = await client.from('notification_log').select('id').eq('idempotency_key', key).maybeSingle();
@@ -175,12 +192,15 @@ export async function runVisioRemindersV2(client: SupabaseClient, now = new Date
         const key = `course.visio.reminder_J-1:${course.id}:${profile.id}`;
         if (!(await alreadySent(client, key))) {
           const subject = A_VALIDER_LOT2.liveEveSubject[locale](time, course.title);
+          const email = renderV2Email(locale === 'es' ? 'A02' : 'A01', {
+            locale,
+            timeZone: tz,
+            firstName: formatEmailFirstName(profile.first_name ?? '') || undefined,
+            live: liveOf(course),
+            joinUrl: join,
+          });
           emailBatch.push({
-            input: {
-              to: '', // résolu plus bas si on a l’email ; sinon in-app seulement
-              subject,
-              html: `<p>${A_VALIDER_LOT2.liveEvePreview[locale]}</p><p><a href="${join}">Rejoindre</a></p><p>${A_VALIDER_LOT2.liveJoinHint[locale]}</p>`,
-            },
+            input: { to: '', subject: email.subject, html: email.html },
             userId: profile.id,
             key,
             eventType: 'course.visio.reminder_J-1',
@@ -199,18 +219,21 @@ export async function runVisioRemindersV2(client: SupabaseClient, now = new Date
 
       if (isOneHourReminderWindow(now, course.starts_at)) {
         const mins = oneHourCopyMinutes(now, course.starts_at);
-        const key = `course.visio.reminder_H-1:${course.id}:${profile.id}`;
+        const key = `course.visio.reminder_H-1:${course.id}:${course.starts_at}:${profile.id}`;
         if (!(await alreadySent(client, key))) {
           const subject =
             mins < 50
               ? A_VALIDER_LOT2.liveOneHourSoonSubject[locale](mins, course.title)
               : A_VALIDER_LOT2.liveOneHourSubject[locale](course.title);
+          const email = renderV2Email('A03', {
+            locale,
+            timeZone: tz,
+            firstName: formatEmailFirstName(profile.first_name ?? '') || undefined,
+            live: liveOf(course),
+            joinUrl: join,
+          });
           emailBatch.push({
-            input: {
-              to: '',
-              subject,
-              html: `<p>${A_VALIDER_LOT2.liveJoinHint[locale]}</p><p><a href="${join}">Rejoindre</a></p>`,
-            },
+            input: { to: '', subject: email.subject, html: email.html },
             userId: profile.id,
             key,
             eventType: 'course.visio.reminder_H-1',
@@ -288,7 +311,6 @@ export async function dispatchVisioScheduleChangedV2(
   if (!isNotifV2Enabled()) return { sent: 0, skipped: 'flag_off' as const };
   if (previousStartsAt === course.starts_at) return { sent: 0 };
   const eveKeyPrefix = `course.visio.reminder_J-1:${course.id}:`;
-  const hourKeyPrefix = `course.visio.reminder_H-1:${course.id}:`;
   const { data: eveLogs } = await client
     .from('notification_log')
     .select('id')
@@ -296,19 +318,7 @@ export async function dispatchVisioScheduleChangedV2(
     .limit(1);
   if (!eveLogs?.length) return { sent: 0 };
 
-  const { data: hourLogs } = await client
-    .from('notification_log')
-    .select('id, idempotency_key')
-    .like('idempotency_key', `${hourKeyPrefix}%`);
-  if (hourLogs?.length) {
-    await client
-      .from('notification_log')
-      .delete()
-      .in(
-        'id',
-        hourLogs.map((r) => (r as { id: string }).id),
-      );
-  }
+  // La clé « 1 h avant » contient l'horaire : un nouvel horaire déclenche naturellement un nouveau rappel.
 
   const profiles = await visioProfiles(client);
   let sent = 0;

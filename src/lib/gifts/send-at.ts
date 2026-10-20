@@ -1,8 +1,8 @@
 export const TIME_SHORTCUTS = [
-  { id: 'matin', label: 'Le matin · 8:00', time: '08:00' },
-  { id: 'midi', label: 'Le midi · 12:00', time: '12:00' },
-  { id: 'aprem', label: 'L’après-midi · 14:00', time: '14:00' },
-  { id: 'soir', label: 'Le soir · 19:00', time: '19:00' },
+  { id: 'matin', label: 'Le matin · 8:00', labelEs: 'Por la mañana · 8:00', time: '08:00' },
+  { id: 'midi', label: 'Le midi · 12:00', labelEs: 'Al mediodía · 12:00', time: '12:00' },
+  { id: 'aprem', label: 'L’après-midi · 14:00', labelEs: 'Por la tarde · 14:00', time: '14:00' },
+  { id: 'soir', label: 'Le soir · 19:00', labelEs: 'Por la noche · 19:00', time: '19:00' },
 ] as const;
 
 export const DEFAULT_SEND_TIME = '08:00';
@@ -62,6 +62,17 @@ export function computeSendAtUtc(dateYmd: string, timeHm: string, timeZone: stri
     if (delta === 0) break;
   }
   return new Date(utc);
+}
+
+/** Date du jour (YYYY-MM-DD) dans un fuseau, décalée de `addDays` jours. */
+export function ymdInZone(at: Date, timeZone: string, addDays = 0): string {
+  const p = partsInZone(at.getTime() + addDays * 86_400_000, timeZone);
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
+/** Fuseau d'envoi déduit du navigateur : Mexico pour les Amériques, Paris sinon. */
+export function guessGiftTimezone(browserTz: string | null | undefined): GiftTimezone {
+  return browserTz && browserTz.startsWith('America/') ? 'America/Mexico_City' : 'Europe/Paris';
 }
 
 export function maxSendDateYmd(purchasedAt: Date): string {
