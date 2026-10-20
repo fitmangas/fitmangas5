@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2, LogIn, X } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { updateDetectedTimezoneOnLogin } from '@/app/auth/detected-preferences/actions';
 import { resolvePostLoginRedirectAction } from '@/app/auth/post-login/actions';
+import { forgotPasswordHref, loginErrorMessage } from '@/lib/auth/password-shared';
 import { detectBrowserTimeZone } from '@/lib/locale-timezone-detection';
 import { createClient } from '@/lib/supabase/client';
 import type { Language } from '@/types';
@@ -33,6 +35,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
           title: 'Conectarse',
           intro: 'Accede a tu espacio cliente, tu planificación y tus replays.',
           password: 'Contraseña',
+          forgot: '¿Olvidaste tu contraseña?',
           fallbackError: 'No se puede conectar por el momento.',
           submit: 'Conectarse',
         }
@@ -42,6 +45,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
           title: 'Se connecter',
           intro: 'Accède à ton espace client, ton planning et tes replays.',
           password: 'Mot de passe',
+          forgot: 'Mot de passe oublié ?',
           fallbackError: 'Connexion impossible pour le moment.',
           submit: 'Se connecter',
         };
@@ -59,7 +63,7 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
       });
 
       if (signInError) {
-        setError(signInError.message);
+        setError(loginErrorMessage(signInError.message, lang === 'ES' ? 'es' : 'fr'));
         return;
       }
 
@@ -141,6 +145,16 @@ export function ClientLoginModal({ open, onClose, lang = 'FR', loginRequiredMess
                   className="mt-2 w-full rounded-2xl border border-brand-ink/[0.08] bg-brand-beige/40 px-4 py-2.5 text-sm text-brand-ink outline-none ring-brand-accent/30 transition focus:ring-2 sm:py-3"
                 />
               </label>
+
+              <div className="-mt-1 text-right">
+                <Link
+                  href={forgotPasswordHref(lang)}
+                  onClick={onClose}
+                  className="text-[10px] font-semibold uppercase tracking-widest text-brand-accent hover:underline"
+                >
+                  {t.forgot}
+                </Link>
+              </div>
 
               {error ? (
                 <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</p>

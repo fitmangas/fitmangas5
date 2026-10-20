@@ -3,7 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
-import { archiveClientAction, deleteClientAction, unarchiveClientAction } from '@/app/admin/clients/actions';
+import {
+  archiveClientAction,
+  deleteClientAction,
+  sendPasswordResetLinkAction,
+  unarchiveClientAction,
+} from '@/app/admin/clients/actions';
 
 type Props = {
   profileId: string;
@@ -14,6 +19,7 @@ export function ClientAdminActions({ profileId, archived }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>, onSuccess?: () => void) {
     setMessage(null);
@@ -56,6 +62,23 @@ export function ClientAdminActions({ profileId, archived }: Props) {
         type="button"
         disabled={pending}
         onClick={() => {
+          if (!window.confirm('Envoyer à cette cliente un e-mail pour choisir un nouveau mot de passe ?')) return;
+          setMessage(null);
+          setInfo(null);
+          startTransition(async () => {
+            const result = await sendPasswordResetLinkAction(profileId);
+            if (result.ok) setInfo(result.message);
+            else setMessage(result.message);
+          });
+        }}
+        className="btn-luxury-gold px-4 py-2 text-xs disabled:opacity-50"
+      >
+        Envoyer un lien « nouveau mot de passe »
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
           if (
             !window.confirm(
               'Supprimer définitivement ce client et son compte ? Cette action est irréversible (comptes de test).',
@@ -70,6 +93,7 @@ export function ClientAdminActions({ profileId, archived }: Props) {
         Supprimer
       </button>
       {message ? <p className="w-full text-xs text-rose-700">{message}</p> : null}
+      {info ? <p className="w-full text-xs text-emerald-700">{info}</p> : null}
     </div>
   );
 }
