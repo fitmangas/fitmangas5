@@ -361,6 +361,10 @@ export async function processDigestQueue(client: SupabaseClient, deps: Phase3Dep
   if (gate.skippedFlagOff) {
     return { sent: 0, skipped: 'flag_off' as const };
   }
+  if (gate.missingCutoff) {
+    console.error('[digest] NOTIF_V2_CUTOFF manquant : aucun récapitulatif envoyé.');
+    return { sent: 0, skipped: 'missing_cutoff' as const };
+  }
 
   // Destinataires = members (pas seulement les lignes prefs existantes).
   const { data: members, error: membersError } = await client.from('profiles').select('id, display_timezone, preferred_locale').eq('role', 'member');

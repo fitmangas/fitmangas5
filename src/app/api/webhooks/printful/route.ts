@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { authorizePrintfulWebhook } from '@/lib/printful-webhook-auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   dispatchBoutiqueOrderDelivered,
@@ -24,17 +24,6 @@ type PrintfulWebhookPayload = {
   };
 };
 
-function verifyPrintfulSignature(body: string, signature: string, secret: string): boolean {
-  const normalized = signature.replace(/^sha256=/i, '').trim();
-  const hex = createHmac('sha256', secret).update(body, 'utf8').digest('hex');
-  const base64 = createHmac('sha256', secret).update(body, 'utf8').digest('base64');
-  return [hex, base64].some((candidate) => {
-    const a = Buffer.from(candidate);
-    const b = Buffer.from(normalized);
-    return a.length === b.length && timingSafeEqual(a, b);
-  });
-}
-
 async function userIdFromEmail(email: string | null | undefined) {
   if (!email) return null;
   const admin = createAdminClient();
@@ -44,24 +33,19 @@ async function userIdFromEmail(email: string | null | undefined) {
 }
 
 export async function POST(request: Request) {
-  const signatureSecret = process.env.PRINTFUL_WEBHOOK_SECRET?.trim();
   const rawBody = await request.text();
-  if (!signatureSecret && process.env.VERCEL_ENV === 'production') {
-    console.error('[printful webhook] PRINTFUL_WEBHOOK_SECRET manquant en production — requête refusée.');
-    return NextResponse.json({ error: 'Webhook non configuré.' }, { status: 503 });
-  }
-  if (signatureSecret) {
-    const signature = (
-      request.headers.get('x-pf-signature') ??
-      request.headers.get('x-printful-signature') ??
-      ''
-    ).trim();
-    if (!signature) {
-      return NextResponse.json({ error: 'Signature Printful manquante.' }, { status: 401 });
+  const auth = authorizePrintfulWebhook({
+    url: request.url,
+    headers: request.headers,
+    body: rawBody,
+    secret: process.env.PRINTFUL_WEBHOOK_SECRET,
+    production: process.env.VERCEL_ENV === 'production',
+  });
+  if (!auth.ok) {
+    if (auth.status === 503) {
+      console.error('[printful webhook] PRINTFUL_WEBHOOK_SECRET manquant en production — requête refusée.');
     }
-    if (!verifyPrintfulSignature(rawBody, signature, signatureSecret)) {
-      return NextResponse.json({ error: 'Signature Printful invalide.' }, { status: 401 });
-    }
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const payload = (() => {

@@ -870,49 +870,47 @@ where processed_at is null
   and created_at < :cutoff_timestamptz;
 ```
 
-### L2-f. Supabase Cron (pg_cron + pg_net)
+### L2-f. Supabase Cron (pg_cron + pg_net) — version retenue le 20/10/2026
 
-Prérequis : extension `pg_cron` + `pg_net` ; secret `CRON_SECRET` dans **Vault** (nom `cron_secret`). Couper cron-job.org le jour J. Routes : GET **et** POST exportées.
+Décisions (Claude, validées par Kevin le 20/10/2026) :
+- **cron-job.org garde `course-reminders`** (toutes les 10 min, `CRON_SECRET`) : rappels des lives, publication sociale (filet déjà dans cette route) et emails cadeaux programmés ne changent pas de déclencheur.
+- **Supabase Cron ne déclenche que `/api/admin/cron/hourly`** (récapitulatifs, rappels « séance du jour », rappels J-14 / J-3 des cartes cadeaux, alerte de retard) : cette route n'a aucun déclencheur aujourd'hui, donc aucun doublon.
+- **Le secret de Supabase Cron est généré dans la base** et rangé dans Vault (`cron_secret`) : il n'est jamais affiché ni copié (ni dans Vercel, ni dans un chat). La base compare elle-même la valeur reçue (`public.cron_secret_matches`, réservée à la clé de service). Les routes `course-reminders`, `social` et `hourly` acceptent `CRON_SECRET` **ou** ce secret (`verifyAnyCronSecret`).
+- Le jour où Kevin coupe cron-job.org : programmer aussi `course-reminders` avec le même modèle (une seule source par tâche).
 
 ```sql
+-- À exécuter AVANT L1-c (la purge de rate_limits utilise pg_cron).
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- Rappels lives (toutes les 10 min)
-select cron.schedule(
-  'fitmangas-course-reminders',
-  '*/10 * * * *',
-  $$
-  select net.http_post(
-    url := 'https://fitmangas.com/api/admin/cron/course-reminders',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
-    ),
-    body := '{}'::jsonb,
-    timeout_milliseconds := 60000
-  );
-  $$
-);
+-- 1) Secret généré dans la base, jamais affiché (rien n'est recréé s'il existe déjà).
+select vault.create_secret(
+  encode(extensions.gen_random_bytes(32), 'hex'),
+  'cron_secret',
+  'Supabase Cron → fitmangas.com (routes cron)'
+)
+where not exists (select 1 from vault.secrets where name = 'cron_secret');
 
--- Publication sociale (toutes les 10 min) — séparée
-select cron.schedule(
-  'fitmangas-social',
-  '*/10 * * * *',
-  $$
-  select net.http_post(
-    url := 'https://fitmangas.com/api/admin/cron/social',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret' limit 1)
-    ),
-    body := '{}'::jsonb,
-    timeout_milliseconds := 60000
+-- 2) Comparaison faite par la base (clé de service seulement).
+create or replace function public.cron_secret_matches(candidate text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from vault.decrypted_secrets
+    where name = 'cron_secret' and decrypted_secret = candidate
   );
-  $$
-);
+$$;
+revoke all on function public.cron_secret_matches(text) from public, anon, authenticated;
+grant execute on function public.cron_secret_matches(text) to service_role;
+```
 
--- Récapitulatifs (toutes les heures à :05)
+Après le déploiement du code (sinon la route n'existe pas encore en ligne) :
+
+```sql
 select cron.schedule(
   'fitmangas-hourly',
   '5 * * * *',
@@ -929,6 +927,21 @@ select cron.schedule(
   $$
 );
 ```
+
+Vérifications (sans jamais lire la valeur du secret) :
+
+```sql
+select public.cron_secret_matches('essai');           -- false
+select jobname, schedule, active from cron.job;       -- fitmangas-hourly + rate_limits_purge
+-- après le prochain passage à :05
+select status, return_message, start_time from cron.job_run_details
+where jobid = (select jobid from cron.job where jobname = 'fitmangas-hourly')
+order by start_time desc limit 3;
+select status_code, created from net._http_response order by created desc limit 3;  -- 200
+select job, last_run_at from public.cron_heartbeats;  -- ligne « hourly »
+```
+
+Modèle pour `course-reminders` le jour où cron-job.org est coupé (même requête, URL `/api/admin/cron/course-reminders`, `*/10 * * * *`, nom `fitmangas-course-reminders`). Ne pas programmer `/api/admin/cron/social` tant que `course-reminders` publie déjà les posts.
 
 ### L2-g. Visites de live — diagnostic (aucune écriture)
 

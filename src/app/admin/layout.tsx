@@ -1,5 +1,6 @@
 import { AdminMobileBottomNav } from '@/components/Admin/AdminMobileBottomNav';
 import { AdminSidebar } from '@/components/Admin/AdminSidebar';
+import { InternalTrafficMarker } from '@/components/Admin/InternalTrafficMarker';
 import { requireAdmin } from '@/lib/auth/require-admin';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative z-10">
+        <InternalTrafficMarker />
         <AdminSidebar />
         <AdminMobileBottomNav />
         <main className="luxury-main pb-16 pt-24 md:pb-16 md:pl-24 md:pt-0">{children}</main>

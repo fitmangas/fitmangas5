@@ -6,7 +6,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
-import { computeVisioAccessV2, currentVisioFromTier } from '../../src/lib/access/access-v2';
+import { computeVisioAccessV2, currentVisioFromTier, isDemoAccessUser } from '../../src/lib/access/access-v2';
 
 const short = (v: string | null | undefined) => (v ? `${v.slice(0, 8)}…` : '—');
 
@@ -37,7 +37,7 @@ async function main() {
     } catch {
       /* colonne / RPC : on garde customer_tier */
     }
-    const v2 = computeVisioAccessV2(own);
+    const v2 = isDemoAccessUser(p.id) ? { visio: true, reason: 'compte démo' } : computeVisioAccessV2(own);
     const gap = current !== v2.visio;
     if (gap) diffs += 1;
     rows.push(

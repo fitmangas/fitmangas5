@@ -27,6 +27,15 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-20 — Préparation de la mise en ligne du chantier d'octobre (Claude)
+
+- GO écrit de Kevin (20/10, 14 h 17) sur les migrations, corrections de données, réglages Stripe en mode réel (sans paiement test) et la mise en ligne ; mot de passe admin et double authentification : Kevin plus tard.
+- Compte démo « Margaux Demo » (`cliente.demo@fitmangas.com`, `f694a7d9…`) : **option 1 de Kevin (14 h 40)** — garde l'accès visio sans abonnement (`DEMO_ACCESS_USER_IDS`, `src/lib/access/access-v2.ts`) et archivé dans l'admin (hors liste Clients et compteurs). C'était le seul écart bloquant ACCESS_V2.
+- Supabase Cron : seule la route `/api/admin/cron/hourly` est programmée (pg_cron + pg_net) ; cron-job.org garde `course-reminders`. Secret généré dans la base (Vault `cron_secret`), jamais copié : la base le compare (`public.cron_secret_matches`). Routes `course-reminders`, `social`, `hourly` : `verifyAnyCronSecret`.
+- Récapitulatifs : plus aucun envoi si `NOTIF_V2_CUTOFF` manque (l'ancien arriéré ne peut plus partir par erreur).
+- Webhook Printful : l'API v1 ne signe pas → jeton dans l'URL (`?token=`) ou signature HMAC (`src/lib/printful-webhook-auth.ts`) ; script `scripts/chantier-oct/setup-printful-webhook.ts` (secret jamais affiché).
+- GA4 : cookie `fm_internal` posé par l'admin → `traffic_type: 'internal'` sur les pages publiques (filtre GA4 « Internal Traffic » à passer en Actif).
+
 ### 2026-10-20 — Chantier oct. : finitions de Claude (branche locale `chantier-oct-2026`, pas de push)
 
 - Écrans mis au niveau des maquettes et rendus fonctionnels derrière les drapeaux (tous éteints) : emails A01–A07 et écrans A08–A10 (centre, préférences, santé), lot 5 (D01 essai, D02 boutique, D03 habillage live sans toucher à la visio, D04 planning, D06 nav mobile, D07 Les cours, D09 suivi clientes).

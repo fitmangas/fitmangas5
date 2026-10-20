@@ -1,5 +1,17 @@
 import { isRealStripeSubscriptionId } from '@/lib/admin/member-health';
 
+/**
+ * Comptes démo : accès visio sans abonnement Stripe, pour montrer ou filmer l'espace cliente
+ * (décision de Kevin, 20/10/2026). Archivés côté admin : hors liste Clients et hors compteurs.
+ */
+export const DEMO_ACCESS_USER_IDS: ReadonlySet<string> = new Set([
+  'f694a7d9-a460-4574-899e-fa46bb461d3c', // « Margaux Demo » (cliente.demo@fitmangas.com)
+]);
+
+export function isDemoAccessUser(userId: string | null | undefined): boolean {
+  return Boolean(userId) && DEMO_ACCESS_USER_IDS.has(String(userId).trim().toLowerCase());
+}
+
 export type AccessV2Subscription = {
   status: string | null;
   ends_at: string | null;

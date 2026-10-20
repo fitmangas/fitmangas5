@@ -19,19 +19,20 @@ export type DigestQueueRow = {
 };
 
 /**
- * Un flush ne tourne pas tant que NOTIF_V2 est off.
+ * Un flush ne tourne pas tant que NOTIF_V2 est off, ni sans NOTIF_V2_CUTOFF.
  * Les lignes antérieures au cutoff ne sont jamais envoyées.
  */
 export function filterDigestRowsForFlush(
   rows: DigestQueueRow[],
   env: Record<string, string | undefined> = process.env,
-): { allowed: DigestQueueRow[]; skippedCutoff: number; skippedFlagOff: boolean } {
+): { allowed: DigestQueueRow[]; skippedCutoff: number; skippedFlagOff: boolean; missingCutoff?: boolean } {
   if (!isNotifV2Enabled(env)) {
     return { allowed: [], skippedCutoff: 0, skippedFlagOff: true };
   }
   const cutoff = notifV2CutoffIso(env);
   if (!cutoff) {
-    return { allowed: [...rows], skippedCutoff: 0, skippedFlagOff: false };
+    // Sans date de bascule, rien ne part : l'ancien arriéré ne doit jamais être envoyé par erreur.
+    return { allowed: [], skippedCutoff: rows.length, skippedFlagOff: false, missingCutoff: true };
   }
   const allowed = rows.filter((r) => {
     const created = r.created_at ? Date.parse(r.created_at) : 0;

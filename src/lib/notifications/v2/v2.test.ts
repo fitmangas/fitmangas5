@@ -113,6 +113,15 @@ describe('cutoff digest', () => {
     expect(r.allowed).toEqual([]);
   });
 
+  it('drapeau on sans cutoff : rien ne part (arriéré protégé)', () => {
+    process.env.NEXT_PUBLIC_FEATURE_NOTIF_V2 = '1';
+    delete process.env.NOTIF_V2_CUTOFF;
+    const r = filterDigestRowsForFlush([{ id: 'old', created_at: '2026-01-01T00:00:00.000Z' }]);
+    expect(r.allowed).toEqual([]);
+    expect(r.missingCutoff).toBe(true);
+    expect(r.skippedFlagOff).toBe(false);
+  });
+
   it('élément antérieur au cutoff jamais envoyé', () => {
     process.env.NEXT_PUBLIC_FEATURE_NOTIF_V2 = '1';
     process.env.NOTIF_V2_CUTOFF = '2026-10-19T00:00:00.000Z';

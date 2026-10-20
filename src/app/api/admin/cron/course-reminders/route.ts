@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { processDueSocialPostsInternal } from '@/lib/admin/social-publish-due';
-import { verifyCronSecret } from '@/lib/blog/cron-secret';
+import { verifyAnyCronSecret } from '@/lib/blog/cron-secret';
 import { runCourseCycles } from '@/lib/notifications/phase2';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { alertCronLagIfNeeded, writeHeartbeat } from '@/lib/notifications/v2/heartbeats';
@@ -10,7 +10,7 @@ import { alertCronLagIfNeeded, writeHeartbeat } from '@/lib/notifications/v2/hea
 export const maxDuration = 120;
 
 async function handle(request: Request) {
-  if (!verifyCronSecret(request)) {
+  if (!(await verifyAnyCronSecret(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 

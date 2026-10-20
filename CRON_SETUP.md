@@ -65,3 +65,10 @@ Test manuel :
 curl -sS -H "Authorization: Bearer $CRON_SECRET" \
   "https://fitmangas.com/api/admin/community/cron/publish-scheduled"
 ```
+
+## Supabase Cron (depuis le 20/10/2026)
+
+- **`/api/admin/cron/hourly`** (récapitulatifs, rappels « séance du jour », rappels J-14 / J-3 des cartes cadeaux, alerte de retard) est appelée **toutes les heures à :05 par Supabase Cron** (`pg_cron` + `pg_net`, tâche `fitmangas-hourly`).
+- Le secret de Supabase Cron est généré dans la base et rangé dans Vault (`cron_secret`) : il n'est copié nulle part. La base vérifie elle-même la valeur reçue (`public.cron_secret_matches`). Les routes `course-reminders`, `social` et `hourly` acceptent `CRON_SECRET` **ou** ce secret.
+- **cron-job.org garde `course-reminders`** (toutes les 10 min). Le jour où on le coupe : programmer `course-reminders` dans Supabase Cron (modèle dans `PROPOSITIONS_MIGRATIONS.md`, L2-f) — jamais les deux en même temps.
+- Contrôle : `select status, return_message, start_time from cron.job_run_details order by start_time desc limit 5;` et `select job, last_run_at from public.cron_heartbeats;`.

@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { useEffect, useRef, useState } from 'react';
 
 import { trackPurchase, trackTrialStarted } from '@/lib/analytics/ga4-client';
+import { ga4ConfigParams, isInternalTrafficCookie } from '@/lib/analytics/internal-traffic';
 import {
   COOKIE_CONSENT_EVENT,
   hasAnalyticsConsent,
@@ -40,8 +41,10 @@ export function CheckoutPurchaseTracker({
 }: Props) {
   const fired = useRef(false);
   const [allowed, setAllowed] = useState(false);
+  const [internal, setInternal] = useState(false);
 
   useEffect(() => {
+    setInternal(isInternalTrafficCookie(document.cookie));
     const sync = () => setAllowed(hasAnalyticsConsent());
     sync();
     const onConsent = (event: Event) => {
@@ -109,7 +112,7 @@ export function CheckoutPurchaseTracker({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${gaId}');
+              gtag('config', '${gaId}', ${ga4ConfigParams(internal)});
             `}
           </Script>
         </>
