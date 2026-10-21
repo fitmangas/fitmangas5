@@ -27,12 +27,12 @@ export const TOUR_READY_FLAG = '__fmTourReady';
 /** Vidéo de bienvenue (sous-titres incrustés) ; null = pas de vidéo dans cette langue, le texte suffit. */
 export const WELCOME_VIDEO: Record<OnboardingLang, string | null> = {
   fr: '/onboarding/bienvenue-fr.mp4',
-  es: null,
+  es: '/onboarding/bienvenue-es.mp4',
   en: null,
 };
 export const WELCOME_VIDEO_POSTER: Record<OnboardingLang, string | null> = {
   fr: '/onboarding/bienvenue-fr.jpg',
-  es: null,
+  es: '/onboarding/bienvenue-es.jpg',
   en: null,
 };
 

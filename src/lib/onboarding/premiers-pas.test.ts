@@ -60,9 +60,9 @@ describe('premiers pas — tuto guidé', () => {
     expect(tourCopy('en').welcomeBodyNoProgramme).not.toMatch(/programme/i);
   });
 
-  it('vidéo de bienvenue : française seulement pour l’instant', () => {
+  it('vidéo de bienvenue : française et espagnole (pas encore d’anglais)', () => {
     expect(WELCOME_VIDEO.fr).toBe('/onboarding/bienvenue-fr.mp4');
-    expect(WELCOME_VIDEO.es).toBeNull();
+    expect(WELCOME_VIDEO.es).toBe('/onboarding/bienvenue-es.mp4');
     expect(WELCOME_VIDEO.en).toBeNull();
   });
 });
