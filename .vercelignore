@@ -7,5 +7,7 @@ data/
 *.mp4
 !public/testimonials/
 !public/testimonials/**
+!public/onboarding/
+!public/onboarding/**
 
 library-originals/
