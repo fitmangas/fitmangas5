@@ -27,6 +27,14 @@ Objectif : qu’un nouveau chat Cursor n’ait pas besoin d’un « milliard de 
 
 ## Journal des validations
 
+### 2026-10-21 — Premiers pas, vidéos de bienvenue FR/ES et connexion sur téléphone
+
+- PR #51 (`8ca0746`) puis PR #52 (`0e0b51d`) : tuto guidé `/compte` (vidéo de bienvenue + 4 zones), carte « Tes premiers pas », bouton « ? », vidéos FR/ES ElevenLabs, calendrier sous le planning, middleware exclut les `.mp4` public, drapeau `PREMIERS_PAS_ENABLED`.
+- Suite : exception `.vercelignore` `!public/onboarding/` (sans elle les MP4 renvoyaient 404) + bouton « Connexion » visible sur téléphone (icône + entrée de menu).
+- **Allumé** : `PREMIERS_PAS_ENABLED=1` en production ; redeploy `dpl_EwhLwFmiFWygeAC2SZYaPX33kkod`. Contrôle Claude : **PREMIERS PAS : OK**.
+- Règle : tout nouveau `.mp4` dans `public/` doit avoir son exception dans `.vercelignore`, sinon 404 en production.
+- Turnstile et double authentification admin toujours reportés par Kevin (drapeaux éteints).
+
 ### 2026-10-20 (nuit) — Petit lot
 
 - PR #49 merge `6f52ab2` ; deploy prod `dpl_w8q5xfuWUoq2fML9oBUC3h39j6VL` (READY). Contrôle Claude : **PETIT LOT : OK**.
