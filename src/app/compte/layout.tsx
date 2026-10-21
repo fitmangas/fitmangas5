@@ -8,6 +8,7 @@ import { SupportFloatingButton } from '@/components/Compte/SupportFloatingButton
 import { comptePlanLabel, getClientLang } from '@/lib/compte/i18n';
 import { getUserTier } from '@/lib/access-control';
 import { clientHiddenNotificationKindsFilter } from '@/lib/notifications/client-notification-filter';
+import { isPremiersPasEnabled } from '@/lib/onboarding/flag';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -34,6 +35,8 @@ export default async function CompteLayout({ children }: { children: React.React
     supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', user.id).maybeSingle(),
     getUserTier(user.id).catch(() => null),
   ]);
+  /** « Premiers pas » : bouton « ? Comment ça marche ? » (drapeau serveur). */
+  const helpEnabled = isPremiersPasEnabled();
 
   return (
     <div className="luxury-shell relative min-h-screen" lang={lang}>
@@ -41,7 +44,7 @@ export default async function CompteLayout({ children }: { children: React.React
       <div className="luxury-bg-orbs" aria-hidden />
       <div className="luxury-grain" aria-hidden />
       <div className="relative">
-        <CompteSidebar lang={lang} unreadNotifications={unreadNotifications ?? 0} />
+        <CompteSidebar lang={lang} unreadNotifications={unreadNotifications ?? 0} helpEnabled={helpEnabled} />
         <CompteMobileBottomNav
           lang={lang}
           unreadNotifications={unreadNotifications ?? 0}
@@ -49,6 +52,7 @@ export default async function CompteLayout({ children }: { children: React.React
           lastName={navProfile?.last_name ?? null}
           avatarUrl={navProfile?.avatar_url ?? null}
           planLabel={comptePlanLabel(tier, lang)}
+          helpEnabled={helpEnabled}
         />
         <main className="luxury-main relative z-0 pb-32 pt-2 md:pb-16 md:pl-24 md:pt-0">{children}</main>
         <SupportFloatingButton lang={lang} />

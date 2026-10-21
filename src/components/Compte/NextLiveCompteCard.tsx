@@ -167,7 +167,10 @@ export function NextLiveCompteCard({ nextAppointment, liveUnread, lang = 'fr', i
 
   return (
     <>
-      <GlassCard className="relative order-3 col-span-2 h-full overflow-hidden p-4 md:order-none md:col-span-1 md:p-6">
+      <GlassCard
+        data-tour="next-live"
+        className="relative order-3 col-span-2 h-full overflow-hidden p-4 md:order-none md:col-span-1 md:p-6"
+      >
         <div className="relative z-10">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
